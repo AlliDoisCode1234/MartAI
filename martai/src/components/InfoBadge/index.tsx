@@ -17,7 +17,17 @@ export const InfoBadge: FC<Props> = ({ children, variant = 'primary' }) => {
     );
   }
   return (
-    <Badge bg="brand.orange" bgOpacity={0.1} color="gray.800" px={4} py={1.5} borderRadius="lg" fontSize="xs" fontWeight="medium" border="1px solid" borderColor="brand.orange" borderOpacity={0.3}>
+    <Badge 
+      bg="rgba(247, 148, 30, 0.1)" 
+      color="gray.800" 
+      px={4} 
+      py={1.5} 
+      borderRadius="lg" 
+      fontSize="xs" 
+      fontWeight="medium" 
+      border="1px solid" 
+      borderColor="rgba(247, 148, 30, 0.3)"
+    >
       {children}
     </Badge>
   );
