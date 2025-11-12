@@ -12,7 +12,7 @@ type Props = {
 export const CTAButton: FC<Props> = ({ children, variant = 'primary', onClick }) => {
   if (variant === 'primary') {
     return (
-      <Button bg="orange.500" color="white" size="lg" borderRadius="md" px={6} py={3} _hover={{ bg: 'orange.600' }} onClick={onClick}>
+      <Button variant="gradient" size="lg" borderRadius="md" px={6} py={3} onClick={onClick}>
         {children}
       </Button>
     );

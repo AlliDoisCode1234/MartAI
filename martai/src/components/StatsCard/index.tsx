@@ -12,7 +12,7 @@ export const StatsCard: FC = () => (
       <InfoBadge variant="live">Live & Automated</InfoBadge>
       <VStack align="start" spacing={6} mt={8}>
         <HStack spacing={6} w="full">
-          <StatItem icon="📈" label="Traffic Growth" value="+247%" iconBg="orange.100" valueColor="orange.500" />
+          <StatItem icon="📈" label="Traffic Growth" value="+247%" iconBg="orange.100" valueColor="brand.orange" />
           <StatItem icon="🎯" label="New Leads" value="1,248" iconBg="purple.100" valueColor="purple.500" />
         </HStack>
         <GrowthChart />
