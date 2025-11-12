@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "app/api/seo-agent/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
+
