@@ -16,16 +16,16 @@ export async function GET() {
 
 // Use Vercel AI Gateway if VERCEL_AI_GATEWAY_KEY is set, otherwise use direct OpenAI
 const getModel = () => {
+  // Don't throw during module load - only check when actually needed
   if (process.env.VERCEL_AI_GATEWAY_KEY) {
     // Vercel AI Gateway - use string format
     return 'openai/gpt-4o';
   } else if (process.env.OPENAI_API_KEY) {
     // Direct OpenAI API
     return openai('gpt-4o');
-  } else {
-    // Fallback for development - will show helpful error message
-    throw new Error('Either VERCEL_AI_GATEWAY_KEY or OPENAI_API_KEY must be set. Please add one to your .env.local file.');
   }
+  // Return null and handle in POST handler
+  return null;
 };
 
 type BusinessInfo = {
@@ -65,8 +65,22 @@ export async function POST(request: Request) {
 
 Perform a comprehensive SEO audit and provide actionable recommendations based on 2025-2026 SEO best practices, Google's latest SEO guidelines, and social media platform SEO strategies.`;
 
+    const model = getModel();
+    if (!model) {
+      return new Response(
+        JSON.stringify({
+          error: 'API key missing',
+          message: 'Please set either VERCEL_AI_GATEWAY_KEY or OPENAI_API_KEY in your environment variables.',
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     const result = await generateText({
-      model: getModel(),
+      model,
       prompt,
       stopWhen: stepCountIs(5),
       tools: {
