@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/MartAI/static/css/main.5e41044a.css",
+    "main.js": "/MartAI/static/js/main.db4c26fb.js",
+    "static/js/453.9f3eff3c.chunk.js": "/MartAI/static/js/453.9f3eff3c.chunk.js",
+    "index.html": "/MartAI/index.html",
+    "main.5e41044a.css.map": "/MartAI/static/css/main.5e41044a.css.map",
+    "main.db4c26fb.js.map": "/MartAI/static/js/main.db4c26fb.js.map",
+    "453.9f3eff3c.chunk.js.map": "/MartAI/static/js/453.9f3eff3c.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.5e41044a.css",
+    "static/js/main.db4c26fb.js"
+  ]
+}
