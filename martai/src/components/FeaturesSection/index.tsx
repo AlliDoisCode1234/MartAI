@@ -1,10 +1,12 @@
-import React from 'react';
+'use client';
+
+import { type FC } from 'react';
 import { Box, VStack, Heading, Text, Grid, GridItem } from '@chakra-ui/react';
 import { FeatureCard } from '../FeatureCard';
 
-export const FeaturesSection: React.FC = () => (
+export const FeaturesSection: FC = () => (
   <Box w="full" mt={24}>
-    <VStack gap={8}>
+    <VStack spacing={8}>
       <Heading size="2xl" fontWeight="bold" color="gray.800">How Phoo Drives Results</Heading>
       <Text fontSize="lg" color="gray.600" textAlign="center" maxW="2xl">
         From audit to ROI tracking — everything you need to scale your organic growth

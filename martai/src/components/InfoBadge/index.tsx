@@ -1,12 +1,12 @@
-import React from 'react';
+import { type FC, type ReactNode } from 'react';
 import { Badge } from '@chakra-ui/react';
 
-interface InfoBadgeProps {
-  children: React.ReactNode;
+type Props = {
+  children: ReactNode;
   variant?: 'primary' | 'live';
-}
+};
 
-export const InfoBadge: React.FC<InfoBadgeProps> = ({ children, variant = 'primary' }) => {
+export const InfoBadge: FC<Props> = ({ children, variant = 'primary' }) => {
   if (variant === 'live') {
     return (
       <Badge position="absolute" top={4} right={4} bg="orange.500" color="white" px={2} py={1} borderRadius="md" fontSize="xs">
