@@ -30,14 +30,16 @@ export const Navigation: FC = () => {
           <HStack spacing={8}>
             {navItems.map((item) => (
               <Link key={item.path} href={item.path} style={{ textDecoration: 'none' }}>
-                <Text
+                <Box
+                  as="span"
                   color={pathname === item.path ? 'brand.orange' : 'gray.600'}
                   fontWeight={pathname === item.path ? 'semibold' : 'normal'}
                   _hover={{ color: 'brand.orange' }}
                   cursor="pointer"
+                  transition="color 0.2s"
                 >
                   {item.label}
-                </Text>
+                </Box>
               </Link>
             ))}
           </HStack>
