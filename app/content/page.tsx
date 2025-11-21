@@ -5,46 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Container, VStack, Heading, Text, Box, Button, HStack, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Input, Textarea, FormControl, FormLabel, Grid, GridItem, Tabs, TabList, TabPanels, Tab, TabPanel, Progress, Divider } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
 import { LexicalEditorComponent } from '@/src/components/LexicalEditor';
-
-type Brief = {
-  _id?: string;
-  id?: string;
-  title: string;
-  scheduledDate: number;
-  clusterId?: string;
-  status: string;
-  titleOptions?: string[];
-  h2Outline?: string[];
-  faqs?: Array<{ question: string; answer: string }>;
-  metaTitle?: string;
-  metaDescription?: string;
-  internalLinks?: string[];
-  schemaSuggestion?: string;
-  cluster?: {
-    clusterName: string;
-    keywords: string[];
-  };
-  seoCheck?: {
-    valid: boolean;
-    issues: string[];
-  };
-};
-
-type Draft = {
-  _id?: string;
-  id?: string;
-  content: string;
-  qualityScore?: number;
-  toneScore?: number;
-  wordCount?: number;
-  status: string;
-  issues?: string[];
-  strengths?: string[];
-  seoCheck?: {
-    valid: boolean;
-    checklist: Array<{ item: string; passed: boolean; note?: string }>;
-  };
-};
+import type { Brief, Draft } from '@/types';
 
 function ContentContent() {
   const { isAuthenticated } = useAuth();
@@ -658,7 +619,7 @@ function ContentContent() {
                       {draft.seoCheck && (
                         <>
                           <Badge colorScheme={draft.seoCheck.valid ? 'green' : 'yellow'} mb={2} display="block" w="fit-content">
-                            {draft.seoCheck.checklist.filter(c => c.passed).length}/{draft.seoCheck.checklist.length}
+                            {draft.seoCheck.checklist?.filter(c => c.passed).length || 0}/{draft.seoCheck.checklist?.length || 0}
                           </Badge>
                           <Text fontSize="xs" color={draft.seoCheck.valid ? 'green.500' : 'yellow.500'}>
                             {draft.seoCheck.valid ? 'All checks passed' : 'Needs attention'}

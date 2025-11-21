@@ -185,6 +185,17 @@ export interface Brief {
   // Additional fields from Convex
   titleOptions?: string[];
   schemaSuggestion?: string;
+  // Populated by API responses
+  cluster?: {
+    clusterName: string;
+    keywords: string[];
+    intent?: string;
+  };
+  seoCheck?: {
+    valid: boolean;
+    issues: string[];
+    suggestions?: string[];
+  };
 }
 
 export interface BriefVersion {
@@ -221,6 +232,14 @@ export interface Draft {
   notes?: string;
   createdAt?: number;
   updatedAt?: number;
+  // Populated by API responses
+  brief?: Brief;
+  seoCheck?: {
+    valid: boolean;
+    checklist?: Array<{ item: string; passed: boolean; note?: string }>;
+    issues?: string[];
+    strengths?: string[];
+  };
 }
 
 export interface BriefInfo {

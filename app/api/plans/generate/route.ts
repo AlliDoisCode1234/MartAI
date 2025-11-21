@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { generateQuarterlyPlan, generatePlanSummary, estimateTraffic, estimateLeads } from '@/lib/quarterlyPlanning';
-import { callConvexMutation, callConvexQuery } from '@/lib/convexClient';
+import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
+import { assertProjectId } from '@/lib/typeGuards';
+import type { ProjectId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
 if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
+  if (!apiLocal) {
+    try {
+      apiLocal = require('@/convex/_generated/api')?.api;
+    } catch {
+      apiLocal = null as any;
+    }
   }
 }
 
@@ -36,12 +40,15 @@ export async function POST(request: NextRequest) {
 
     const planStartDate = startDate ? new Date(startDate).getTime() : Date.now();
 
+    // Validate required field first
+    const projectIdTyped = assertProjectId(projectId);
+
     // Get keyword clusters for the project
     let clusters: any[] = [];
-    if (api) {
+    if (apiLocal) {
       try {
-        clusters = await callConvexQuery(api.keywordClusters.getActiveClusters, {
-          projectId: projectId as any,
+        clusters = await callConvexQuery(apiLocal.keywordClusters.getActiveClusters, {
+          projectId: projectIdTyped,
         });
       } catch (error) {
         console.warn('Failed to get clusters:', error);
@@ -58,10 +65,10 @@ export async function POST(request: NextRequest) {
 
     // Generate plan summary/assumptions
     let assumptions = '';
-    if (api) {
+    if (apiLocal) {
       try {
-        const project = await callConvexQuery(api.projects.getProjectById, {
-          projectId: projectId as any,
+        const project = await callConvexQuery(apiLocal.projects.getProjectById, {
+          projectId: projectIdTyped,
         });
         assumptions = await generatePlanSummary(
           contentVelocity,
@@ -86,10 +93,10 @@ export async function POST(request: NextRequest) {
 
     // Create plan in Convex
     let planId;
-    if (api) {
+    if (apiLocal) {
       try {
-        planId = await callConvexMutation(api.quarterlyPlans.createQuarterlyPlan, {
-          projectId: projectId as any,
+        planId = await callConvexMutation(apiLocal.quarterlyPlans.createQuarterlyPlan, {
+          projectId: projectIdTyped,
           contentVelocity,
           startDate: planStartDate,
           goals: finalGoals,

@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexMutation, callConvexQuery } from '@/lib/convexClient';
+import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
+import { assertDraftId, assertProjectId } from '@/lib/typeGuards';
+import type { DraftId, ProjectId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
 if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
+  if (!apiLocal) {
+    try {
+      apiLocal = require('@/convex/_generated/api')?.api;
+    } catch {
+      apiLocal = null as any;
+    }
   }
 }
 
@@ -33,16 +37,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    // Get draft and brief info
-    const draft = await callConvexQuery(api.drafts.getDraftById, {
-      draftId: draftId as any,
+    // Validate required field - type guaranteed after assertion
+    const draftIdTyped = assertDraftId(draftId);
+    const draft = await callConvexQuery(apiLocal.drafts.getDraftById, {
+      draftId: draftIdTyped,
     });
 
     if (!draft) {
@@ -80,8 +85,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify platform connection exists
-    const platformConnection = await callConvexQuery(api.oauthTokens.getOAuthToken, {
-      clientId: draft.projectId as any,
+    const projectIdTyped = assertProjectId(draft.projectId);
+    const platformConnection = await callConvexQuery(apiLocal.oauthTokens.getOAuthToken, {
+      clientId: projectIdTyped,
       platform,
     });
     
@@ -93,9 +99,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create scheduled post
-    const postId = await callConvexMutation(api.scheduledPosts.createScheduledPost, {
-      draftId: draftId as any,
-      projectId: draft.projectId,
+    const postId = await callConvexMutation(apiLocal.scheduledPosts.createScheduledPost, {
+      draftId: draftIdTyped,
+      projectId: projectIdTyped,
       briefId: draft.briefId,
       publishDate: publishTimestamp,
       timezone,

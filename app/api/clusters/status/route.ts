@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexMutation } from '@/lib/convexClient';
+import { callConvexMutation, api } from '@/lib/convexClient';
+import { assertClusterId } from '@/lib/typeGuards';
+import type { ClusterId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
 if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
+  if (!apiLocal) {
+    try {
+      apiLocal = require('@/convex/_generated/api')?.api;
+    } catch {
+      apiLocal = null as any;
+    }
   }
 }
 
@@ -32,15 +36,16 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    await callConvexMutation(api.keywordClusters.updateClusterStatus, {
-      clusterId: clusterId as any,
+    const clusterIdTyped = assertClusterId(clusterId);
+    await callConvexMutation(apiLocal.keywordClusters.updateClusterStatus, {
+      clusterId: clusterIdTyped,
       status,
     });
 

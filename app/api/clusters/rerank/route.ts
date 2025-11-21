@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexMutation } from '@/lib/convexClient';
+import { callConvexMutation, api } from '@/lib/convexClient';
+import { assertProjectId } from '@/lib/typeGuards';
+import type { ProjectId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
 if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
+  if (!apiLocal) {
+    try {
+      apiLocal = require('@/convex/_generated/api')?.api;
+    } catch {
+      apiLocal = null as any;
+    }
   }
 }
 
@@ -25,15 +29,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    const result = await callConvexMutation(api.keywordClusters.rerankClusters, {
-      projectId: projectId as any,
+    const projectIdTyped = assertProjectId(projectId);
+    const result = await callConvexMutation(apiLocal.keywordClusters.rerankClusters, {
+      projectId: projectIdTyped,
       volumeWeight: volumeWeight ?? 0.4,
       intentWeight: intentWeight ?? 0.3,
       difficultyWeight: difficultyWeight ?? 0.3,

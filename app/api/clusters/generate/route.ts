@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { generateKeywordClusters, importKeywordsFromGSC } from '@/lib/keywordClustering';
-import { callConvexMutation, callConvexQuery } from '@/lib/convexClient';
+import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
+import { assertProjectId } from '@/lib/typeGuards';
+import type { ProjectId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
 if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
+  if (!apiLocal) {
+    try {
+      apiLocal = require('@/convex/_generated/api')?.api;
+    } catch {
+      apiLocal = null as any;
+    }
   }
 }
 
@@ -28,11 +32,14 @@ export async function POST(request: NextRequest) {
 
     let keywordInputs = keywords || [];
 
+    // Validate required field first
+    const projectIdTyped = assertProjectId(projectId);
+
     // Import from GSC if requested
-    if (importFromGSC && api) {
+    if (importFromGSC && apiLocal) {
       try {
-        const connection = await callConvexQuery(api.gscConnections.getGSCConnection, {
-          projectId: projectId as any,
+        const connection = await callConvexQuery(apiLocal.gscConnections.getGSCConnection, {
+          projectId: projectIdTyped,
         });
 
         if (connection && connection.accessToken) {
@@ -68,10 +75,10 @@ export async function POST(request: NextRequest) {
     let websiteUrl = '';
     let industry = '';
     
-    if (api) {
+    if (apiLocal) {
       try {
-        const project = await callConvexQuery(api.projects.getProjectById, {
-          projectId: projectId as any,
+        const project = await callConvexQuery(apiLocal.projects.getProjectById, {
+          projectId: projectIdTyped,
         });
         if (project) {
           websiteUrl = project.websiteUrl || '';
@@ -87,11 +94,11 @@ export async function POST(request: NextRequest) {
 
     // Store clusters in Convex
     const storedClusters = [];
-    if (api) {
+    if (apiLocal) {
       for (const cluster of clusters) {
         try {
-          const clusterId = await callConvexMutation(api.keywordClusters.createCluster, {
-            projectId: projectId as any,
+          const clusterId = await callConvexMutation(apiLocal.keywordClusters.createCluster, {
+            projectId: projectIdTyped,
             clusterName: cluster.clusterName,
             keywords: cluster.keywords,
             intent: cluster.intent,

@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { assertProjectId, assertClusterId } from '@/lib/typeGuards';
+import type { ProjectId, ClusterId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
 if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
+  if (!apiLocal) {
+    try {
+      apiLocal = require('@/convex/_generated/api')?.api;
+    } catch {
+      apiLocal = null as any;
+    }
   }
 }
 
@@ -27,26 +31,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
+    // Validate required field - type guaranteed after assertion
+    const projectIdTyped = assertProjectId(projectId);
+
     let clusters;
     if (status === 'all') {
-      clusters = await callConvexQuery(api.keywordClusters.getClustersByProject, {
-        projectId: projectId as any,
+      clusters = await callConvexQuery(apiLocal.keywordClusters.getClustersByProject, {
+        projectId: projectIdTyped,
       });
     } else {
-      clusters = await callConvexQuery(api.keywordClusters.getActiveClusters, {
-        projectId: projectId as any,
+      clusters = await callConvexQuery(apiLocal.keywordClusters.getActiveClusters, {
+        projectId: projectIdTyped,
       });
     }
 
     // Sort by impact score descending
-    clusters.sort((a: any, b: any) => b.impactScore - a.impactScore);
+    clusters.sort((a: { impactScore?: number }, b: { impactScore?: number }) => 
+      (b.impactScore || 0) - (a.impactScore || 0)
+    );
 
     return NextResponse.json({ clusters });
   } catch (error) {
@@ -72,15 +81,16 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    await callConvexMutation(api.keywordClusters.updateCluster, {
-      clusterId: clusterId as any,
+    const clusterIdTyped = assertClusterId(clusterId);
+    await callConvexMutation(apiLocal.keywordClusters.updateCluster, {
+      clusterId: clusterIdTyped,
       ...updates,
     });
 
@@ -108,15 +118,16 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    await callConvexMutation(api.keywordClusters.deleteCluster, {
-      clusterId: clusterId as any,
+    const clusterIdTyped = assertClusterId(clusterId);
+    await callConvexMutation(apiLocal.keywordClusters.deleteCluster, {
+      clusterId: clusterIdTyped,
     });
 
     return NextResponse.json({ success: true });
