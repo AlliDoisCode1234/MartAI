@@ -195,6 +195,26 @@ export default defineSchema({
   })
     .index("by_project", ["projectId"]),
 
+  // Keyword Clusters
+  keywordClusters: defineTable({
+    projectId: v.id("projects"),
+    clusterName: v.string(),
+    keywords: v.array(v.string()),
+    intent: v.string(), // informational, commercial, transactional, navigational
+    difficulty: v.number(), // 0-100
+    volumeRange: v.object({
+      min: v.number(),
+      max: v.number(),
+    }),
+    impactScore: v.number(), // 0-1, calculated
+    topSerpUrls: v.array(v.string()),
+    status: v.string(), // active, hidden, favorite
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_status", ["status"]),
+
   // Projects (renamed from clients for PRD alignment)
   projects: defineTable({
     userId: v.id("users"),
