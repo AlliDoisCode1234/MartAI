@@ -274,6 +274,27 @@ export default defineSchema({
     .index("by_project", ["projectId"])
     .index("by_status", ["status"]),
 
+  // Scheduled Posts
+  scheduledPosts: defineTable({
+    draftId: v.id("drafts"),
+    projectId: v.id("projects"),
+    briefId: v.id("briefs"),
+    publishDate: v.number(), // timestamp
+    timezone: v.string(),
+    platform: v.string(), // wordpress, shopify
+    tags: v.array(v.string()),
+    categories: v.array(v.string()),
+    slug: v.optional(v.string()),
+    status: v.string(), // scheduled, publishing, published, failed, cancelled
+    publishedUrl: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_status", ["status"])
+    .index("by_publish_date", ["publishDate"]),
+
   // Projects (renamed from clients for PRD alignment)
   projects: defineTable({
     userId: v.id("users"),
