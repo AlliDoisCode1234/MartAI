@@ -27,6 +27,55 @@ export class WordPressClient {
     this.apiUrl = `${this.siteUrl}/wp-json/wp/v2`;
   }
 
+  async testConnection(): Promise<{ valid: boolean; siteName?: string; error?: string }> {
+    try {
+      const response = await axios.get(`${this.apiUrl}/`, {
+        auth: {
+          username: this.auth.username,
+          password: this.auth.password,
+        },
+      });
+      return { valid: true, siteName: response.data?.name || 'WordPress Site' };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return { 
+          valid: false, 
+          error: error.response?.data?.message || error.message || 'Connection failed' 
+        };
+      }
+      return { valid: false, error: 'Connection failed' };
+    }
+  }
+
+  async checkPublishingRights(): Promise<{ canPublish: boolean; error?: string }> {
+    try {
+      // Try to get current user to check capabilities
+      const response = await axios.get(`${this.apiUrl}/users/me`, {
+        auth: {
+          username: this.auth.username,
+          password: this.auth.password,
+        },
+      });
+
+      const capabilities = response.data?.capabilities || {};
+      const canPublish = capabilities.publish_pages || capabilities.publish_posts || capabilities.edit_pages;
+
+      if (!canPublish) {
+        return { canPublish: false, error: 'User does not have publishing permissions' };
+      }
+
+      return { canPublish: true };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return { 
+          canPublish: false, 
+          error: error.response?.data?.message || 'Failed to check permissions' 
+        };
+      }
+      return { canPublish: false, error: 'Failed to check permissions' };
+    }
+  }
+
   async createPage(page: WordPressPage): Promise<{ id: number; link: string }> {
     try {
       const response = await axios.post(
@@ -117,19 +166,6 @@ export class WordPressClient {
     }
   }
 
-  async testConnection(): Promise<boolean> {
-    try {
-      await axios.get(`${this.apiUrl}/`, {
-        auth: {
-          username: this.auth.username,
-          password: this.auth.password,
-        },
-      });
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
 }
 
 // OAuth flow helpers

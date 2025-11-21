@@ -328,6 +328,29 @@ export default defineSchema({
     .index("by_project", ["projectId"])
     .index("by_type", ["type"]),
 
+  // Brief Versions (version history)
+  briefVersions: defineTable({
+    briefId: v.id("briefs"),
+    versionNumber: v.number(),
+    data: v.any(), // Snapshot of brief data
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_brief", ["briefId"])
+    .index("by_brief_version", ["briefId", "versionNumber"]),
+
+  // Competitors
+  competitors: defineTable({
+    projectId: v.id("projects"),
+    domain: v.string(),
+    priority: v.optional(v.number()), // 1-5
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_priority", ["priority"]),
+
   // Projects (renamed from clients for PRD alignment)
   projects: defineTable({
     userId: v.id("users"),

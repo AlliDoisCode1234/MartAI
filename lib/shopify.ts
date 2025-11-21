@@ -30,6 +30,57 @@ export class ShopifyClient {
     this.accessToken = auth.accessToken;
   }
 
+  async testConnection(): Promise<{ valid: boolean; shopName?: string; error?: string }> {
+    try {
+      const response = await fetch(
+        `https://${this.shopDomain}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/shop.json`,
+        {
+          headers: {
+            'X-Shopify-Access-Token': this.accessToken,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        return { valid: false, error: error.errors || 'Failed to connect to Shopify' };
+      }
+
+      const data = await response.json();
+      return { valid: true, shopName: data.shop?.name };
+    } catch (error) {
+      return { 
+        valid: false, 
+        error: error instanceof Error ? error.message : 'Connection failed' 
+      };
+    }
+  }
+
+  async checkPublishingRights(): Promise<{ canPublish: boolean; error?: string }> {
+    try {
+      // Try to list pages to check if we have write permissions
+      const response = await fetch(
+        `https://${this.shopDomain}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/pages.json?limit=1`,
+        {
+          headers: {
+            'X-Shopify-Access-Token': this.accessToken,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        return { canPublish: false, error: 'Insufficient permissions to manage pages' };
+      }
+
+      return { canPublish: true };
+    } catch (error) {
+      return { 
+        canPublish: false, 
+        error: error instanceof Error ? error.message : 'Failed to check permissions' 
+      };
+    }
+  }
+
   async createPage(page: ShopifyPage): Promise<{ id: number; handle: string; url: string }> {
     try {
       const response = await fetch(
@@ -133,21 +184,6 @@ export class ShopifyClient {
     }
   }
 
-  async testConnection(): Promise<boolean> {
-    try {
-      const response = await fetch(
-        `https://${this.shopDomain}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/shop.json`,
-        {
-          headers: {
-            'X-Shopify-Access-Token': this.accessToken,
-          },
-        }
-      );
-      return response.ok;
-    } catch (error) {
-      return false;
-    }
-  }
 }
 
 // OAuth flow helpers
