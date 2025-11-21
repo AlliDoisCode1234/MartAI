@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Container, VStack, Heading, Text, Box, Button, HStack, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Input, Textarea, FormControl, FormLabel, Grid, GridItem } from '@chakra-ui/react';
+import { Container, VStack, Heading, Text, Box, Button, HStack, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Input, Textarea, FormControl, FormLabel, Grid, GridItem, Tabs, TabList, TabPanels, Tab, TabPanel, Progress, Divider } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
 
 type Brief = {
@@ -29,13 +29,32 @@ type Brief = {
   };
 };
 
+type Draft = {
+  _id?: string;
+  id?: string;
+  content: string;
+  qualityScore?: number;
+  toneScore?: number;
+  wordCount?: number;
+  status: string;
+  issues?: string[];
+  strengths?: string[];
+  seoCheck?: {
+    valid: boolean;
+    checklist: Array<{ item: string; passed: boolean; note?: string }>;
+  };
+};
+
 function ContentContent() {
   const { isAuthenticated } = useAuth();
   const searchParams = useSearchParams();
   const [brief, setBrief] = useState<Brief | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generatingDraft, setGeneratingDraft] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [regenerationNotes, setRegenerationNotes] = useState('');
   const briefId = searchParams?.get('briefId');
 
   // Form state
@@ -53,6 +72,7 @@ function ContentContent() {
   useEffect(() => {
     if (briefId) {
       loadBrief(briefId);
+      loadDraft(briefId);
     }
   }, [briefId]);
 
@@ -114,6 +134,55 @@ function ContentContent() {
     }
   };
 
+  const loadDraft = async (briefId: string) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/drafts?briefId=${briefId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDraft(data.draft);
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+  };
+
+  const handleGenerateDraft = async () => {
+    if (!briefId) return;
+
+    setGeneratingDraft(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/drafts/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          briefId,
+          regenerationNotes: regenerationNotes || undefined,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setDraft(data.draft);
+        setRegenerationNotes('');
+        alert('Draft generated successfully!');
+      } else {
+        alert(data.error || 'Failed to generate draft');
+      }
+    } catch (error) {
+      alert('Failed to generate draft');
+    } finally {
+      setGeneratingDraft(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!briefId) return;
 
@@ -140,6 +209,72 @@ function ContentContent() {
       }
     } catch (error) {
       alert('Failed to save brief');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!draft?._id && !draft?.id) return;
+
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/drafts', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          draftId: draft._id || draft.id,
+          content: draft.content,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Draft saved successfully!');
+        if (briefId) await loadDraft(briefId);
+      } else {
+        alert('Failed to save draft');
+      }
+    } catch (error) {
+      alert('Failed to save draft');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApproveDraft = async () => {
+    if (!draft?._id && !draft?.id) return;
+
+    if (!confirm('Approve this draft? It will be locked for editing.')) return;
+
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/drafts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          draftId: draft._id || draft.id,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Draft approved!');
+        if (briefId) {
+          await loadDraft(briefId);
+          await loadBrief(briefId);
+        }
+      } else {
+        alert('Failed to approve draft');
+      }
+    } catch (error) {
+      alert('Failed to approve draft');
     } finally {
       setSaving(false);
     }
@@ -236,11 +371,11 @@ function ContentContent() {
           <HStack justify="space-between">
             <VStack align="start" spacing={2}>
               <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="gray.800">
-                Content Brief Editor
+                Content Editor
               </Heading>
               {brief?.cluster && (
                 <Text color="gray.600">
-                  Cluster: {brief.cluster.clusterName} • Scheduled: {new Date(brief.scheduledDate || 0).toLocaleDateString()}
+                  {brief.title} • {brief.cluster.clusterName} • {new Date(brief.scheduledDate || 0).toLocaleDateString()}
                 </Text>
               )}
             </VStack>
@@ -251,8 +386,19 @@ function ContentContent() {
                 loadingText="Generating..."
                 variant="outline"
                 isDisabled={!briefId}
+                size="sm"
               >
-                Generate Brief Details
+                Generate Brief
+              </Button>
+              <Button
+                onClick={handleGenerateDraft}
+                isLoading={generatingDraft}
+                loadingText="Generating..."
+                variant="outline"
+                isDisabled={!briefId || !brief?.h2Outline || brief.h2Outline.length === 0}
+                size="sm"
+              >
+                Generate Draft
               </Button>
               <Button
                 bg="brand.orange"
@@ -261,8 +407,9 @@ function ContentContent() {
                 onClick={handleSave}
                 isLoading={saving}
                 loadingText="Saving..."
+                size="sm"
               >
-                Save Brief
+                Save
               </Button>
             </HStack>
           </HStack>
@@ -286,9 +433,18 @@ function ContentContent() {
             </Alert>
           )}
 
-          <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={6}>
-            {/* Main Brief Editor */}
-            <VStack spacing={6} align="stretch">
+          <Tabs colorScheme="orange">
+            <TabList>
+              <Tab>Brief</Tab>
+              <Tab>Draft {draft && `(${draft.status})`}</Tab>
+            </TabList>
+
+            <TabPanels>
+              {/* Brief Tab */}
+              <TabPanel px={0}>
+                <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={6}>
+                  {/* Main Brief Editor */}
+                  <VStack spacing={6} align="stretch">
               {/* Title Options */}
               <Card>
                 <CardBody>
@@ -449,6 +605,169 @@ function ContentContent() {
               </Card>
             </VStack>
           </Grid>
+        </TabPanel>
+
+        {/* Draft Tab */}
+        <TabPanel px={0}>
+          {!draft ? (
+            <Alert status="info" borderRadius="md">
+              <AlertIcon />
+              <VStack align="start" spacing={2}>
+                <Text fontWeight="semibold">No draft yet</Text>
+                <Text fontSize="sm">
+                  Generate a draft from your brief to create the full content.
+                </Text>
+                <Button
+                  onClick={handleGenerateDraft}
+                  isLoading={generatingDraft}
+                  size="sm"
+                  bg="brand.orange"
+                  color="white"
+                  isDisabled={!brief?.h2Outline || brief.h2Outline.length === 0}
+                >
+                  Generate Draft
+                </Button>
+              </VStack>
+            </Alert>
+          ) : (
+            <VStack spacing={6} align="stretch">
+              {/* Draft Scores */}
+              <Card>
+                <CardBody>
+                  <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={4}>
+                    <Box>
+                      <Text fontSize="sm" color="gray.600">Quality Score</Text>
+                      <Progress value={draft.qualityScore || 0} colorScheme="green" size="lg" mb={2} />
+                      <Text fontWeight="bold">{draft.qualityScore || 0}/100</Text>
+                    </Box>
+                    <Box>
+                      <Text fontSize="sm" color="gray.600">Tone Score</Text>
+                      <Progress value={draft.toneScore || 0} colorScheme="blue" size="lg" mb={2} />
+                      <Text fontWeight="bold">{draft.toneScore || 0}/100</Text>
+                    </Box>
+                    <Box>
+                      <Text fontSize="sm" color="gray.600">Word Count</Text>
+                      <Text fontSize="2xl" fontWeight="bold">{draft.wordCount || 0}</Text>
+                      <Text fontSize="xs" color={draft.wordCount && draft.wordCount < 800 ? 'red.500' : 'green.500'}>
+                        {draft.wordCount && draft.wordCount < 800 ? 'Below minimum (800)' : 'Good length'}
+                      </Text>
+                    </Box>
+                  </Grid>
+                </CardBody>
+              </Card>
+
+              {/* Issues & Strengths */}
+              {(draft.issues && draft.issues.length > 0) || (draft.strengths && draft.strengths.length > 0) ? (
+                <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={4}>
+                  {draft.issues && draft.issues.length > 0 && (
+                    <Alert status="warning" borderRadius="md">
+                      <AlertIcon />
+                      <VStack align="start" spacing={1}>
+                        <Text fontWeight="semibold">Issues</Text>
+                        {draft.issues.map((issue, i) => (
+                          <Text key={i} fontSize="sm">• {issue}</Text>
+                        ))}
+                      </VStack>
+                    </Alert>
+                  )}
+                  {draft.strengths && draft.strengths.length > 0 && (
+                    <Alert status="success" borderRadius="md">
+                      <AlertIcon />
+                      <VStack align="start" spacing={1}>
+                        <Text fontWeight="semibold">Strengths</Text>
+                        {draft.strengths.map((strength, i) => (
+                          <Text key={i} fontSize="sm">• {strength}</Text>
+                        ))}
+                      </VStack>
+                    </Alert>
+                  )}
+                </Grid>
+              ) : null}
+
+              {/* SEO Checklist */}
+              {draft.seoCheck && (
+                <Card>
+                  <CardBody>
+                    <VStack align="stretch" spacing={3}>
+                      <Heading size="sm">SEO Checklist</Heading>
+                      {draft.seoCheck.checklist.map((item, i) => (
+                        <HStack key={i} justify="space-between">
+                          <Text fontSize="sm">{item.item}</Text>
+                          <Badge colorScheme={item.passed ? 'green' : 'red'}>
+                            {item.passed ? '✓' : '✗'} {item.note || ''}
+                          </Badge>
+                        </HStack>
+                      ))}
+                    </VStack>
+                  </CardBody>
+                </Card>
+              )}
+
+              {/* Regeneration Notes */}
+              <Card>
+                <CardBody>
+                  <VStack align="stretch" spacing={3}>
+                    <FormLabel>Regeneration Notes (optional)</FormLabel>
+                    <Textarea
+                      value={regenerationNotes}
+                      onChange={(e) => setRegenerationNotes(e.target.value)}
+                      placeholder="Add notes for re-generation (e.g., 'Make it more technical', 'Add more examples')"
+                      rows={3}
+                    />
+                  </VStack>
+                </CardBody>
+              </Card>
+
+              {/* Draft Content Editor */}
+              <Card>
+                <CardBody>
+                  <VStack align="stretch" spacing={4}>
+                    <HStack justify="space-between">
+                      <Heading size="md">Draft Content (Markdown)</Heading>
+                      <Badge colorScheme={draft.status === 'approved' ? 'green' : 'gray'}>
+                        {draft.status}
+                      </Badge>
+                    </HStack>
+                    <Textarea
+                      value={draft.content || ''}
+                      onChange={(e) => setDraft({ ...draft, content: e.target.value })}
+                      placeholder="Draft content will appear here..."
+                      rows={20}
+                      fontFamily="mono"
+                      isReadOnly={draft.status === 'approved'}
+                    />
+                    <HStack>
+                      <Button
+                        onClick={handleSaveDraft}
+                        isLoading={saving}
+                        isDisabled={draft.status === 'approved'}
+                      >
+                        Save Draft
+                      </Button>
+                      <Button
+                        onClick={handleGenerateDraft}
+                        isLoading={generatingDraft}
+                        variant="outline"
+                      >
+                        Re-generate
+                      </Button>
+                      <Button
+                        onClick={handleApproveDraft}
+                        bg="green.500"
+                        color="white"
+                        isDisabled={draft.status === 'approved'}
+                      >
+                        Approve Draft
+                      </Button>
+                    </HStack>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </VStack>
+          )}
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
         </VStack>
       </Container>
     </Box>

@@ -257,6 +257,23 @@ export default defineSchema({
     .index("by_project", ["projectId"])
     .index("by_status", ["status"]),
 
+  // Drafts
+  drafts: defineTable({
+    briefId: v.id("briefs"),
+    projectId: v.id("projects"),
+    content: v.string(), // Markdown
+    qualityScore: v.optional(v.number()), // 0-100
+    toneScore: v.optional(v.number()), // 0-100
+    wordCount: v.optional(v.number()),
+    status: v.string(), // draft, approved, published
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_brief", ["briefId"])
+    .index("by_project", ["projectId"])
+    .index("by_status", ["status"]),
+
   // Projects (renamed from clients for PRD alignment)
   projects: defineTable({
     userId: v.id("users"),
