@@ -8,15 +8,19 @@
     "@chakra-ui/react": "^2.10.9",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@react-oauth/google": "^0.12.2",
     "@shopify/shopify-api": "^12.1.2",
     "@types/node": "^20.0.0",
     "@types/react": "^19.2.3",
     "@types/react-dom": "^19.2.3",
     "ai": "^5.0.92",
     "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
     "cheerio": "^1.1.2",
     "convex": "^1.29.3",
     "framer-motion": "^10.18.0",
+    "googleapis": "^166.0.0",
+    "jsonwebtoken": "^9.0.2",
     "next": "^15.5.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -51,7 +55,9 @@
     ]
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/cheerio": "^0.22.35",
+    "@types/jsonwebtoken": "^9.0.10",
     "gh-pages": "^6.3.0"
   }
 }

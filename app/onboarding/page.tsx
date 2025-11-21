@@ -22,9 +22,17 @@ export default function OnboardingPage() {
     setLoading(true);
 
     try {
-      // Generate userId (in production, use actual auth)
-      const userId = sessionStorage.getItem('userId') || `user-${Date.now()}`;
-      sessionStorage.setItem('userId', userId);
+      // Get authenticated user
+      const userStr = localStorage.getItem('user');
+      const token = localStorage.getItem('auth_token');
+      
+      if (!userStr || !token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      const userId = user.id;
 
       // Save client to Convex via API
       const clientResponse = await fetch('/api/clients', {

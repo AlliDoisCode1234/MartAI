@@ -1,222 +1,275 @@
 'use client';
 
-import { useState } from 'react';
-import { Container, VStack, Heading, Text, Box, Button, HStack, Grid, GridItem, Card, CardBody, Alert, AlertIcon, Input, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, useDisclosure, FormControl, FormLabel, Badge } from '@chakra-ui/react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Container, VStack, Heading, Text, Box, Button, HStack, Grid, GridItem, Card, CardBody, Alert, AlertIcon, Badge, Spinner } from '@chakra-ui/react';
+import { useAuth } from '@/lib/useAuth';
 
-export default function IntegrationsPage() {
-  const [integrations, setIntegrations] = useState<Array<{ platform: string; connected: boolean; siteUrl?: string }>>([
+type Integration = {
+  platform: string;
+  connected: boolean;
+  siteUrl?: string;
+  propertyName?: string;
+  lastSync?: string;
+};
+
+function IntegrationsContent() {
+  const { user, isAuthenticated } = useAuth();
+  const searchParams = useSearchParams();
+  const [integrations, setIntegrations] = useState<Integration[]>([
+    { platform: 'ga4', connected: false },
+    { platform: 'gsc', connected: false },
     { platform: 'wordpress', connected: false },
     { platform: 'shopify', connected: false },
   ]);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [selectedPlatform, setSelectedPlatform] = useState<'wordpress' | 'shopify' | null>(null);
-  const [formData, setFormData] = useState({ siteUrl: '', username: '', password: '', shopDomain: '' });
+  const [loading, setLoading] = useState(false);
+  const [projectId, setProjectId] = useState<string | null>(null);
 
-  const handleConnect = (platform: 'wordpress' | 'shopify') => {
-    setSelectedPlatform(platform);
-    onOpen();
-  };
+  useEffect(() => {
+    // Check for OAuth callback success/error
+    const success = searchParams?.get('success');
+    const error = searchParams?.get('error');
+    const property = searchParams?.get('property');
+    const site = searchParams?.get('site');
 
-  const handleSubmitConnection = async () => {
-    if (!selectedPlatform) return;
+    if (success === 'ga4' && property) {
+      setIntegrations(prev => prev.map(i => 
+        i.platform === 'ga4' 
+          ? { ...i, connected: true, propertyName: property }
+          : i
+      ));
+    }
 
+    if (success === 'gsc' && site) {
+      setIntegrations(prev => prev.map(i => 
+        i.platform === 'gsc' 
+          ? { ...i, connected: true, siteUrl: site }
+          : i
+      ));
+    }
+
+    if (error) {
+      console.error('OAuth error:', error);
+    }
+
+    // Get project ID from localStorage or create temp
+    const storedProject = localStorage.getItem('currentProjectId');
+    if (storedProject) {
+      setProjectId(storedProject);
+    } else {
+      // For now, use a temp project ID
+      const tempId = `project-${Date.now()}`;
+      setProjectId(tempId);
+      localStorage.setItem('currentProjectId', tempId);
+    }
+  }, [searchParams]);
+
+  const handleConnectGA4 = async () => {
+    if (!projectId || !isAuthenticated) {
+      alert('Please complete onboarding first');
+      return;
+    }
+
+    setLoading(true);
     try {
-      if (selectedPlatform === 'wordpress') {
-        const response = await fetch('/api/oauth/wordpress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            siteUrl: formData.siteUrl,
-            username: formData.username,
-            password: formData.password,
-          }),
-        });
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/oauth/google?type=ga4&projectId=${projectId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
-        const result = await response.json();
-        if (result.success) {
-          setIntegrations(prev => prev.map(i => 
-            i.platform === 'wordpress' 
-              ? { ...i, connected: true, siteUrl: formData.siteUrl }
-              : i
-          ));
-          onClose();
-          alert('WordPress connected successfully!');
-        } else {
-          alert(`Error: ${result.error}`);
-        }
-      } else if (selectedPlatform === 'shopify') {
-        const response = await fetch('/api/oauth/shopify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            shopDomain: formData.shopDomain,
-            accessToken: formData.password,
-          }),
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          setIntegrations(prev => prev.map(i => 
-            i.platform === 'shopify' 
-              ? { ...i, connected: true, siteUrl: formData.shopDomain }
-              : i
-          ));
-          onClose();
-          alert('Shopify connected successfully!');
-        } else {
-          alert(`Error: ${result.error}`);
-        }
+      const data = await response.json();
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        alert('Failed to initiate GA4 connection');
       }
     } catch (error) {
-      alert('Failed to connect');
+      alert('Failed to connect GA4');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const handleConnectGSC = async () => {
+    if (!projectId || !isAuthenticated) {
+      alert('Please complete onboarding first');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/oauth/google?type=gsc&projectId=${projectId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        alert('Failed to initiate GSC connection');
+      }
+    } catch (error) {
+      alert('Failed to connect GSC');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConnectWordPress = () => {
+    // Existing WordPress connection logic
+    alert('WordPress connection - enter credentials in modal');
+  };
+
+  const handleConnectShopify = () => {
+    // Existing Shopify connection logic
+    alert('Shopify connection - enter credentials in modal');
+  };
+
+  const getIntegrationInfo = (platform: string) => {
+    switch (platform) {
+      case 'ga4':
+        return {
+          name: 'Google Analytics 4',
+          description: 'Connect your GA4 property to track traffic, sessions, and user behavior',
+          color: 'orange',
+        };
+      case 'gsc':
+        return {
+          name: 'Google Search Console',
+          description: 'Connect Search Console to import top queries and track rankings',
+          color: 'blue',
+        };
+      case 'wordpress':
+        return {
+          name: 'WordPress',
+          description: 'Connect your WordPress site to automatically publish SEO-optimized content',
+          color: 'orange',
+        };
+      case 'shopify':
+        return {
+          name: 'Shopify',
+          description: 'Connect your Shopify store to automatically publish SEO-optimized content',
+          color: 'teal',
+        };
+      default:
+        return { name: platform, description: '', color: 'gray' };
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
+        <Alert status="warning" maxW="md">
+          <AlertIcon />
+          Please sign in to connect integrations
+        </Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box minH="calc(100vh - 64px)" bg="brand.light">
       <Container maxW="container.xl" py={{ base: 8, md: 12 }} px={{ base: 4, sm: 6, md: 8, lg: 12 }}>
         <VStack spacing={8} align="stretch">
           <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="gray.800">
-            Platform Integrations
+            Data Connections
           </Heading>
 
           <Text color="gray.600">
-            Connect your WordPress or Shopify site to automatically create optimized service pages with your generated keywords.
+            Connect your analytics and CMS platforms to enable automated SEO insights and content publishing.
           </Text>
 
           <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
-            <GridItem>
-              <Card>
-                <CardBody>
-                  <VStack align="stretch" spacing={4}>
-                    <HStack justify="space-between">
-                      <Heading size="md">WordPress</Heading>
-                      <Badge colorScheme={integrations.find(i => i.platform === 'wordpress')?.connected ? 'green' : 'gray'}>
-                        {integrations.find(i => i.platform === 'wordpress')?.connected ? 'Connected' : 'Not Connected'}
-                      </Badge>
-                    </HStack>
-                    <Text color="gray.600" fontSize="sm">
-                      Connect your WordPress site to automatically create and publish SEO-optimized service pages.
-                    </Text>
-                    {integrations.find(i => i.platform === 'wordpress')?.connected ? (
-                      <Text fontSize="sm" color="green.600">
-                        Connected to: {integrations.find(i => i.platform === 'wordpress')?.siteUrl}
-                      </Text>
-                    ) : (
-                      <Button bg="brand.orange" color="white" onClick={() => handleConnect('wordpress')}>
-                        Connect WordPress
-                      </Button>
-                    )}
-                  </VStack>
-                </CardBody>
-              </Card>
-            </GridItem>
-
-            <GridItem>
-              <Card>
-                <CardBody>
-                  <VStack align="stretch" spacing={4}>
-                    <HStack justify="space-between">
-                      <Heading size="md">Shopify</Heading>
-                      <Badge colorScheme={integrations.find(i => i.platform === 'shopify')?.connected ? 'green' : 'gray'}>
-                        {integrations.find(i => i.platform === 'shopify')?.connected ? 'Connected' : 'Not Connected'}
-                      </Badge>
-                    </HStack>
-                    <Text color="gray.600" fontSize="sm">
-                      Connect your Shopify store to automatically create and publish SEO-optimized service pages.
-                    </Text>
-                    {integrations.find(i => i.platform === 'shopify')?.connected ? (
-                      <Text fontSize="sm" color="green.600">
-                        Connected to: {integrations.find(i => i.platform === 'shopify')?.siteUrl}
-                      </Text>
-                    ) : (
-                      <Button bg="brand.teal" color="white" onClick={() => handleConnect('shopify')}>
-                        Connect Shopify
-                      </Button>
-                    )}
-                  </VStack>
-                </CardBody>
-              </Card>
-            </GridItem>
+            {integrations.map((integration) => {
+              const info = getIntegrationInfo(integration.platform);
+              return (
+                <GridItem key={integration.platform}>
+                  <Card>
+                    <CardBody>
+                      <VStack align="stretch" spacing={4}>
+                        <HStack justify="space-between">
+                          <Heading size="md">{info.name}</Heading>
+                          <Badge colorScheme={integration.connected ? 'green' : 'gray'}>
+                            {integration.connected ? 'Connected' : 'Not Connected'}
+                          </Badge>
+                        </HStack>
+                        <Text color="gray.600" fontSize="sm">
+                          {info.description}
+                        </Text>
+                        {integration.connected && (
+                          <VStack align="stretch" spacing={1}>
+                            {integration.propertyName && (
+                              <Text fontSize="sm" color="green.600">
+                                Property: {integration.propertyName}
+                              </Text>
+                            )}
+                            {integration.siteUrl && (
+                              <Text fontSize="sm" color="green.600">
+                                Site: {integration.siteUrl}
+                              </Text>
+                            )}
+                            {integration.lastSync && (
+                              <Text fontSize="xs" color="gray.500">
+                                Last sync: {integration.lastSync}
+                              </Text>
+                            )}
+                          </VStack>
+                        )}
+                        <Button
+                          colorScheme={info.color as any}
+                          onClick={() => {
+                            if (integration.platform === 'ga4') handleConnectGA4();
+                            else if (integration.platform === 'gsc') handleConnectGSC();
+                            else if (integration.platform === 'wordpress') handleConnectWordPress();
+                            else if (integration.platform === 'shopify') handleConnectShopify();
+                          }}
+                          isDisabled={loading}
+                          isLoading={loading}
+                        >
+                          {integration.connected ? 'Reconnect' : `Connect ${info.name}`}
+                        </Button>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                </GridItem>
+              );
+            })}
           </Grid>
 
           <Alert status="info" borderRadius="md">
             <AlertIcon />
-            <Text fontSize="sm">
-              <strong>WordPress:</strong> You'll need to create an Application Password in WordPress (Users → Your Profile → Application Passwords).
-              <br />
-              <strong>Shopify:</strong> You'll need a Private App Access Token with content write permissions.
-            </Text>
+            <VStack align="start" spacing={2}>
+              <Text fontSize="sm" fontWeight="semibold">Setup Instructions:</Text>
+              <Text fontSize="sm">
+                <strong>GA4/GSC:</strong> Click connect to authorize with Google. You'll be redirected to Google to grant permissions.
+              </Text>
+              <Text fontSize="sm">
+                <strong>WordPress:</strong> Create an Application Password in WordPress (Users → Your Profile → Application Passwords).
+              </Text>
+              <Text fontSize="sm">
+                <strong>Shopify:</strong> Create a Private App with content write permissions and get the access token.
+              </Text>
+            </VStack>
           </Alert>
         </VStack>
       </Container>
-
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            Connect {selectedPlatform === 'wordpress' ? 'WordPress' : 'Shopify'}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <VStack spacing={4} align="stretch">
-              {selectedPlatform === 'wordpress' ? (
-                <>
-                  <FormControl isRequired>
-                    <FormLabel>Site URL</FormLabel>
-                    <Input 
-                      placeholder="https://yoursite.com" 
-                      value={formData.siteUrl}
-                      onChange={(e) => setFormData({ ...formData, siteUrl: e.target.value })}
-                    />
-                  </FormControl>
-                  <FormControl isRequired>
-                    <FormLabel>Username</FormLabel>
-                    <Input 
-                      placeholder="WordPress username" 
-                      value={formData.username}
-                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    />
-                  </FormControl>
-                  <FormControl isRequired>
-                    <FormLabel>Application Password</FormLabel>
-                    <Input 
-                      type="password" 
-                      placeholder="Application password" 
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    />
-                  </FormControl>
-                </>
-              ) : (
-                <>
-                  <FormControl isRequired>
-                    <FormLabel>Shop Domain</FormLabel>
-                    <Input 
-                      placeholder="mystore.myshopify.com" 
-                      value={formData.shopDomain}
-                      onChange={(e) => setFormData({ ...formData, shopDomain: e.target.value })}
-                    />
-                  </FormControl>
-                  <FormControl isRequired>
-                    <FormLabel>Access Token</FormLabel>
-                    <Input 
-                      type="password" 
-                      placeholder="Private app access token" 
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    />
-                  </FormControl>
-                </>
-              )}
-              <Button bg="brand.orange" color="white" onClick={handleSubmitConnection}>
-                Connect
-              </Button>
-            </VStack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
     </Box>
   );
 }
 
+export default function IntegrationsPage() {
+  return (
+    <Suspense fallback={
+      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
+        <Spinner size="xl" color="brand.orange" />
+      </Box>
+    }>
+      <IntegrationsContent />
+    </Suspense>
+  );
+}

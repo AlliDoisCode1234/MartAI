@@ -13,7 +13,7 @@ export const HeroSection: FC = () => (
         Your Answer to All Your Lead Generation and Revenue Problems
       </Heading>
       <Text fontSize="lg" color="gray.600" lineHeight="tall">
-        Phoo automates your SEO content system — from strategy to execution — to generate consistent traffic, leads, and sales.
+        MartAI automates your SEO content system — from strategy to execution — to generate consistent traffic, leads, and sales.
       </Text>
       <HStack spacing={4} mt={2}>
         <Link href="/onboarding">

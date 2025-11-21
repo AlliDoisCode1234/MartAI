@@ -24,7 +24,7 @@ export const Navigation: FC = () => {
         <HStack justify="space-between" h={16}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <Text fontSize="xl" fontWeight="bold" color="brand.orange">
-              Phoo
+              MartAI
             </Text>
           </Link>
           <HStack spacing={8}>

@@ -7,7 +7,7 @@ import { FeatureCard } from '../FeatureCard';
 export const FeaturesSection: FC = () => (
   <Box w="full" mt={24}>
     <VStack spacing={8}>
-      <Heading size="2xl" fontWeight="bold" color="gray.800">How Phoo Drives Results</Heading>
+      <Heading size="2xl" fontWeight="bold" color="gray.800">How MartAI Drives Results</Heading>
       <Text fontSize="lg" color="gray.600" textAlign="center" maxW="2xl">
         From audit to ROI tracking — everything you need to scale your organic growth
       </Text>

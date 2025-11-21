@@ -6,7 +6,7 @@ import '@/src/index.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Phoo - AI-Powered SEO Automation',
+  title: 'MartAI - AI-Powered SEO Automation',
   description: 'Automate your SEO. Accelerate your growth.',
 };
 

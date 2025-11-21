@@ -22,7 +22,7 @@ export default function AssistantPage() {
                 </VStack>
               </Box>
               <HStack>
-                <Input placeholder="Ask Phoo anything..." />
+                <Input placeholder="Ask MartAI anything..." />
                 <Button bg="brand.orange" color="white" _hover={{ bg: '#E8851A' }}>Send</Button>
               </HStack>
             </Box>
