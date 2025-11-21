@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { format } from 'date-fns';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
@@ -111,23 +112,26 @@ export async function getGSCSites(accessToken: string) {
 export async function getGA4Data(
   accessToken: string,
   propertyId: string,
-  startDate: string,
-  endDate: string
+  startDate: string | Date,
+  endDate: string | Date
 ) {
   try {
     const oauth2Client = createOAuth2Client();
     oauth2Client.setCredentials({ access_token: accessToken });
+    
+    // Format dates
+    const startDateStr = typeof startDate === 'string' ? startDate : format(startDate, 'yyyy-MM-dd');
+    const endDateStr = typeof endDate === 'string' ? endDate : format(endDate, 'yyyy-MM-dd');
     
     // Use GA4 Data API
     const analyticsData = google.analyticsdata('v1beta');
     const response = await analyticsData.properties.runReport({
       property: `properties/${propertyId}`,
       requestBody: {
-        dateRanges: [{ startDate, endDate }],
+        dateRanges: [{ startDate: startDateStr, endDate: endDateStr }],
         metrics: [
           { name: 'sessions' },
           { name: 'activeUsers' },
-          { name: 'screenPageViews' },
         ],
         dimensions: [{ name: 'date' }],
       },
@@ -137,7 +141,8 @@ export async function getGA4Data(
     return response.data;
   } catch (error) {
     console.error('Error fetching GA4 data:', error);
-    throw error;
+    // Return empty data structure on error
+    return { rows: [] };
   }
 }
 
@@ -145,20 +150,24 @@ export async function getGA4Data(
 export async function getGSCData(
   accessToken: string,
   siteUrl: string,
-  startDate: string,
-  endDate: string,
+  startDate: string | Date,
+  endDate: string | Date,
   rowLimit: number = 100
 ) {
   try {
     const oauth2Client = createOAuth2Client();
     oauth2Client.setCredentials({ access_token: accessToken });
     
+    // Format dates
+    const startDateStr = typeof startDate === 'string' ? startDate : format(startDate, 'yyyy-MM-dd');
+    const endDateStr = typeof endDate === 'string' ? endDate : format(endDate, 'yyyy-MM-dd');
+    
     const webmasters = google.webmasters('v3');
     const response = await webmasters.searchanalytics.query({
       siteUrl,
       requestBody: {
-        startDate,
-        endDate,
+        startDate: startDateStr,
+        endDate: endDateStr,
         rowLimit,
         dimensions: ['query'],
       },
@@ -168,7 +177,8 @@ export async function getGSCData(
     return response.data;
   } catch (error) {
     console.error('Error fetching GSC data:', error);
-    throw error;
+    // Return empty data structure on error
+    return { rows: [] };
   }
 }
 

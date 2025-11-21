@@ -295,6 +295,39 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_publish_date", ["publishDate"]),
 
+  // Analytics Data
+  analyticsData: defineTable({
+    projectId: v.id("projects"),
+    date: v.number(), // timestamp
+    source: v.string(), // ga4, gsc
+    sessions: v.optional(v.number()),
+    clicks: v.optional(v.number()),
+    impressions: v.optional(v.number()),
+    ctr: v.optional(v.number()),
+    avgPosition: v.optional(v.number()),
+    leads: v.optional(v.number()),
+    revenue: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_project_date", ["projectId", "date"])
+    .index("by_project_date_source", ["projectId", "date", "source"]),
+
+  // Insights
+  insights: defineTable({
+    projectId: v.id("projects"),
+    type: v.string(), // top_gainer, underperformer, quick_win
+    title: v.string(),
+    description: v.string(),
+    action: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    status: v.string(), // active, applied, dismissed
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_type", ["type"]),
+
   // Projects (renamed from clients for PRD alignment)
   projects: defineTable({
     userId: v.id("users"),
