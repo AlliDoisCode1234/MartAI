@@ -3,15 +3,7 @@ import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
 import { validateSEOChecklist } from '@/lib/briefGenerator';
 
-// Import api dynamically
-let api: any = null;
-if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
-  }
-}
+// API imported from convexClient
 
 // GET - Get brief by ID
 export async function GET(request: NextRequest) {
@@ -34,8 +26,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Validate required ID - type guaranteed after assertion
+    const briefIdTyped = assertBriefId(briefId);
     const brief = await callConvexQuery(api.briefs.getBriefById, {
-      briefId: briefId as any,
+      briefId: briefIdTyped,
     });
 
     if (!brief) {
@@ -45,14 +39,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get cluster info if assigned
+    // Get cluster info if assigned - clusterId is optional in schema
     let cluster = null;
-    if (brief.clusterId) {
+    const clusterId = parseClusterId(brief.clusterId); // Returns null if invalid/absent
+    if (clusterId) {
       try {
-        const clusters = await callConvexQuery(api.keywordClusters.getClustersByProject, {
+        const clusters = await callConvexQuery(apiLocal.keywordClusters.getClustersByProject, {
           projectId: brief.projectId,
         });
-        cluster = clusters?.find((c: any) => c._id === brief.clusterId);
+        cluster = clusters?.find((c: any) => (c._id || c.id) === clusterId) || null;
       } catch (error) {
         console.warn('Failed to get cluster:', error);
       }
@@ -99,15 +94,16 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    await callConvexMutation(api.briefs.updateBrief, {
-      briefId: briefId as any,
+    const briefIdTyped = assertBriefId(briefId);
+    await callConvexMutation(apiLocal.briefs.updateBrief, {
+      briefId: briefIdTyped,
       ...updates,
     });
 
@@ -135,15 +131,16 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    await callConvexMutation(api.briefs.deleteBrief, {
-      briefId: briefId as any,
+    const briefIdTyped = assertBriefId(briefId);
+    await callConvexMutation(apiLocal.briefs.deleteBrief, {
+      briefId: briefIdTyped,
     });
 
     return NextResponse.json({ success: true });

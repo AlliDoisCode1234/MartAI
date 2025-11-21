@@ -1,8 +1,23 @@
 import { ConvexHttpClient } from "convex/browser";
+import type { FunctionReference } from "convex/server";
+import type {
+  ProjectId,
+  BriefId,
+  DraftId,
+  ClusterId,
+  PlanId,
+  UserId,
+  ClientId,
+  InsightId,
+  CompetitorId,
+  BriefVersionId,
+  ScheduledPostId,
+} from "@/types";
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "";
 
 // Dynamically import api to avoid build errors when Convex not initialized
+// Use any for the dynamic import since it may not exist during build
 let api: any = null;
 
 // Only try to import in Node.js environment (not during build)
@@ -22,8 +37,12 @@ if (!convexUrl) {
 
 export const convexClient = convexUrl ? new ConvexHttpClient(convexUrl) : null;
 
-// Helper to call Convex mutations from API routes
-export async function callConvexMutation(mutation: any, args: any) {
+// Type-safe helper to call Convex mutations from API routes
+// Generic type preserves the mutation's argument and return types
+export async function callConvexMutation<Args = any, Return = any>(
+  mutation: any,
+  args: Args
+): Promise<Return> {
   if (!convexUrl || !convexClient) {
     throw new Error("Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL");
   }
@@ -33,8 +52,12 @@ export async function callConvexMutation(mutation: any, args: any) {
   return await convexClient.mutation(mutation, args);
 }
 
-// Helper to call Convex queries from API routes
-export async function callConvexQuery(query: any, args: any) {
+// Type-safe helper to call Convex queries from API routes
+// Generic type preserves the query's argument and return types
+export async function callConvexQuery<Args = any, Return = any>(
+  query: any,
+  args: Args
+): Promise<Return> {
   if (!convexUrl || !convexClient) {
     throw new Error("Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL");
   }

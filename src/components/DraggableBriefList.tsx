@@ -20,25 +20,24 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Box, VStack, HStack, Text, Badge, IconButton } from '@chakra-ui/react';
+import { Box, VStack, HStack, Text, Badge } from '@chakra-ui/react';
+import type { Brief, BriefId } from '@/types';
 
-type Brief = {
-  _id?: string;
-  id?: string;
-  title: string;
-  scheduledDate: number;
-  clusterId?: string;
-  status: string;
-  week?: number;
-};
-
-type DraggableBriefListProps = {
+// Pass whole brief object to maintain type inference
+interface DraggableBriefListProps {
   briefs: Brief[];
   onReorder: (briefs: Brief[]) => void;
-  onReschedule?: (briefId: string, newDate: number) => void;
-};
+  onReschedule?: (briefId: BriefId, newDate: number) => void;
+}
 
-function SortableBriefItem({ brief, onReschedule }: { brief: Brief; onReschedule?: (briefId: string, newDate: number) => void }) {
+interface SortableBriefItemProps {
+  brief: Brief;
+  onReschedule?: (briefId: BriefId, newDate: number) => void;
+}
+
+function SortableBriefItem({ brief, onReschedule }: SortableBriefItemProps) {
+  const briefId = (brief._id || brief.id || '') as string;
+  
   const {
     attributes,
     listeners,
@@ -46,7 +45,7 @@ function SortableBriefItem({ brief, onReschedule }: { brief: Brief; onReschedule
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: brief._id || brief.id || '' });
+  } = useSortable({ id: briefId });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -99,7 +98,7 @@ function SortableBriefItem({ brief, onReschedule }: { brief: Brief; onReschedule
 }
 
 export function DraggableBriefList({ briefs, onReorder, onReschedule }: DraggableBriefListProps) {
-  const [items, setItems] = useState(briefs);
+  const [items, setItems] = useState<Brief[]>(briefs);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -112,16 +111,21 @@ export function DraggableBriefList({ briefs, onReorder, onReschedule }: Draggabl
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setItems((items) => {
-        const oldIndex = items.findIndex((item) => (item._id || item.id) === active.id);
-        const newIndex = items.findIndex((item) => (item._id || item.id) === over.id);
+      setItems((currentItems) => {
+        const getBriefId = (brief: Brief) => (brief._id || brief.id || '') as string;
+        const oldIndex = currentItems.findIndex((item) => getBriefId(item) === active.id);
+        const newIndex = currentItems.findIndex((item) => getBriefId(item) === over.id);
         
-        const newItems = arrayMove(items, oldIndex, newIndex);
+        if (oldIndex === -1 || newIndex === -1) return currentItems;
+        
+        const newItems = arrayMove(currentItems, oldIndex, newIndex);
         onReorder(newItems);
         return newItems;
       });
     }
   };
+
+  const getBriefId = (brief: Brief): string => (brief._id || brief.id || '') as string;
 
   return (
     <DndContext
@@ -130,17 +134,20 @@ export function DraggableBriefList({ briefs, onReorder, onReschedule }: Draggabl
       onDragEnd={handleDragEnd}
     >
       <SortableContext
-        items={items.map((b) => b._id || b.id || '')}
+        items={items.map(getBriefId)}
         strategy={verticalListSortingStrategy}
       >
         <VStack spacing={3} align="stretch">
-          {items.map((brief) => (
-            <SortableBriefItem
-              key={brief._id || brief.id}
-              brief={brief}
-              onReschedule={onReschedule}
-            />
-          ))}
+          {items.map((brief) => {
+            const id = getBriefId(brief);
+            return (
+              <SortableBriefItem
+                key={id}
+                brief={brief}
+                onReschedule={onReschedule}
+              />
+            );
+          })}
         </VStack>
       </SortableContext>
     </DndContext>

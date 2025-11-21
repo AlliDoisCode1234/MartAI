@@ -4,45 +4,16 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Container, VStack, Heading, Text, Box, Button, HStack, Grid, GridItem, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, ModalFooter, useDisclosure, FormControl, FormLabel, Input, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper, Select, Checkbox, Table, Thead, Tbody, Tr, Th, Td, Stat, StatLabel, StatNumber, StatHelpText } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
-
-type KeywordCluster = {
-  _id?: string;
-  id?: string;
-  clusterName: string;
-  keywords: string[];
-  intent: 'informational' | 'commercial' | 'transactional' | 'navigational';
-  difficulty: number;
-  volumeRange: { min: number; max: number };
-  impactScore: number;
-  topSerpUrls: string[];
-  status: 'active' | 'hidden' | 'favorite';
-  reasoning?: string;
-};
-
-type Brief = {
-  _id?: string;
-  id?: string;
-  title: string;
-  scheduledDate: number;
-  clusterId?: string;
-  status: string;
-  week?: number;
-};
-
-type QuarterlyPlan = {
-  _id?: string;
-  contentVelocity: number;
-  startDate: number;
-  goals: { traffic?: number; leads?: number; revenue?: number };
-  assumptions?: string;
-  briefs: Brief[];
-};
+import type { KeywordCluster, Brief, QuarterlyPlan, PlanProps, ClusterProps } from '@/types';
+import { DraggableBriefList } from '@/src/components/DraggableBriefList';
 
 function StrategyContent() {
   const { isAuthenticated } = useAuth();
   const searchParams = useSearchParams();
   const [clusters, setClusters] = useState<KeywordCluster[]>([]);
   const [plan, setPlan] = useState<QuarterlyPlan | null>(null);
+  
+  // Pass whole objects to maintain type inference
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -304,7 +275,7 @@ function StrategyContent() {
                       </Thead>
                       <Tbody>
                         {plan.briefs.map((brief, index) => (
-                          <Tr key={brief._id || brief.id || index}>
+                          <Tr key={(brief as Brief)._id || (brief as Brief).id || index}>
                             <Td>{brief.week || Math.floor(index / plan.contentVelocity) + 1}</Td>
                             <Td>{new Date(brief.scheduledDate).toLocaleDateString()}</Td>
                             <Td>{brief.title}</Td>

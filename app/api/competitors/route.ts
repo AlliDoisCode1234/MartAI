@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { assertProjectId, assertCompetitorId } from '@/lib/typeGuards';
+import type { ProjectId, CompetitorId } from '@/types';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,8 +24,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Validate required field - throws if invalid, type is guaranteed after
+    const projectIdTyped = assertProjectId(projectId);
     const competitors = await callConvexQuery(api.competitors.getCompetitorsByProject, {
-      projectId: projectId as any,
+      projectId: projectIdTyped,
     });
 
     return NextResponse.json({ competitors });
@@ -56,8 +60,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const projectIdTyped = assertProjectId(projectId);
     const competitorId = await callConvexMutation(api.competitors.addCompetitor, {
-      projectId: projectId as any,
+      projectId: projectIdTyped,
       domain,
       priority,
       notes,
@@ -93,8 +98,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    const competitorIdTyped = assertCompetitorId(competitorId);
     await callConvexMutation(api.competitors.removeCompetitor, {
-      competitorId: competitorId as any,
+      competitorId: competitorIdTyped,
     });
 
     return NextResponse.json({ success: true });
@@ -127,8 +133,9 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    const competitorIdTyped = assertCompetitorId(competitorId);
     await callConvexMutation(api.competitors.updateCompetitorPriority, {
-      competitorId: competitorId as any,
+      competitorId: competitorIdTyped,
       priority,
     });
 
