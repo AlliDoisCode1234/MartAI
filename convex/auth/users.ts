@@ -48,6 +48,23 @@ export const getUserById = query({
   },
 });
 
+// Get user snapshot by ID (excludes passwordHash)
+export const getUserSnapshotById = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) return null;
+    
+    // Return only safe fields
+    return {
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+      createdAt: user.createdAt,
+    };
+  },
+});
+
 // Update user
 export const updateUser = mutation({
   args: {

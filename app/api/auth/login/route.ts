@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyPassword, generateToken, validateEmail } from '@/lib/auth';
 import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
+import { createUserSnapshot } from '@/lib/userSnapshots';
+import type { UserSnapshot } from '@/types';
 
 // Import api dynamically - will be available after npx convex dev
 let api: any = null;
@@ -86,14 +88,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Create safe user snapshot (excludes passwordHash)
+    const userSnapshot = createUserSnapshot(user);
+    
+    if (!userSnapshot) {
+      return NextResponse.json(
+        { error: 'Failed to get user data' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-      },
+      user: userSnapshot,
     });
   } catch (error) {
     console.error('Login error:', error);

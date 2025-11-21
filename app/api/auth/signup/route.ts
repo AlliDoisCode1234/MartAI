@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hashPassword, validatePassword, validateEmail, generateToken } from '@/lib/auth';
 import { callConvexMutation, callConvexQuery } from '@/lib/convexClient';
+import { createUserSnapshot } from '@/lib/userSnapshots';
+import type { UserSnapshot, UserId } from '@/types';
 
 // Import api dynamically - will be available after npx convex dev
 let api: any = null;
@@ -60,13 +62,20 @@ export async function POST(request: NextRequest) {
     const passwordHash = await hashPassword(password);
 
     // Create user in Convex
-    let userId;
+    let userId: UserId | string;
+    let createdUser: any = null;
+    
     if (api) {
       try {
         userId = await callConvexMutation(api.auth.users.createUser, {
           email,
           name: name || undefined,
           passwordHash,
+        });
+        
+        // Fetch the created user to get full record
+        createdUser = await callConvexQuery(api.auth.users.getUserById, { 
+          userId: userId as any 
         });
       } catch (error: any) {
         if (error.message?.includes('already exists')) {
@@ -101,14 +110,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Create safe user snapshot
+    let userSnapshot: UserSnapshot | null = null;
+    
+    if (createdUser) {
+      userSnapshot = createUserSnapshot(createdUser);
+    } else {
+      // Fallback snapshot for development
+      userSnapshot = {
+        _id: userId as any,
+        email,
+        name: name || undefined,
+        createdAt: Date.now(),
+      };
+    }
+
     return NextResponse.json({
       success: true,
       token,
-      user: {
-        id: userId,
-        email,
-        name: name || undefined,
-      },
+      user: userSnapshot,
     });
   } catch (error) {
     console.error('Signup error:', error);

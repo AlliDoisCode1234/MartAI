@@ -60,12 +60,28 @@ export type GeneratedPageId = Id<'generatedPages'>;
 // Core Domain Types
 // ============================================================================
 
+// Internal user type (full database record)
 export interface User {
   _id: UserId;
   email: string;
-  passwordHash: string;
+  name?: string;
+  passwordHash: string; // Never expose this
   createdAt: number;
-  updatedAt: number;
+  updatedAt?: number;
+}
+
+// Public user snapshot - safe to expose in API responses
+export interface UserSnapshot {
+  _id: UserId;
+  email: string;
+  name?: string;
+  createdAt: number;
+}
+
+// Minimal user info for auth context
+export interface AuthUser {
+  userId: string;
+  email: string;
 }
 
 export interface Project {
@@ -456,11 +472,8 @@ export interface CMSTestResult {
 // API Request/Response Types
 // ============================================================================
 
-export interface AuthUser {
-  userId: string;
-  email: string;
-}
-
+// AuthUser is defined above with User types
+// UserPayload is for JWT tokens
 export interface UserPayload {
   userId: string;
   email: string;
