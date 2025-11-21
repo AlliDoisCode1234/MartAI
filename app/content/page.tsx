@@ -665,7 +665,7 @@ function ContentContent() {
                   <CardBody>
                     <VStack align="stretch" spacing={3}>
                       <Heading size="sm">SEO Checklist</Heading>
-                      {draft.seoCheck.checklist.map((item, i) => (
+                      {draft.seoCheck.checklist?.map((item, i) => (
                         <HStack key={i} justify="space-between">
                           <Text fontSize="sm">{item.item}</Text>
                           <Badge colorScheme={item.passed ? 'green' : 'red'}>

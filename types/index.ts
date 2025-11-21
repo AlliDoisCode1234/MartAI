@@ -240,6 +240,9 @@ export interface Draft {
     issues?: string[];
     strengths?: string[];
   };
+  // Additional fields from API
+  issues?: string[];
+  strengths?: string[];
 }
 
 export interface BriefInfo {
