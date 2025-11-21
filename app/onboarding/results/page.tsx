@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, VStack, Heading, Text, Box, Button, HStack, Grid, GridItem, Badge, Divider, Alert, AlertIcon, Spinner } from '@chakra-ui/react';
+import { sessionStorageUtil } from '@/lib/storage';
 
 type SEOAnalysis = {
   businessInfo: {
@@ -25,9 +26,9 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('seoAnalysis');
+    const stored = sessionStorageUtil.getSeoAnalysis<SEOAnalysis>();
     if (stored) {
-      setAnalysis(JSON.parse(stored));
+      setAnalysis(stored);
     }
     setLoading(false);
   }, []);

@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: Run `npx convex dev` to generate proper types
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -9,6 +7,7 @@ export const createUser = mutation({
     email: v.string(),
     name: v.optional(v.string()),
     passwordHash: v.string(), // Hashed on API side
+    avatarUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Check if user exists
@@ -21,10 +20,14 @@ export const createUser = mutation({
       throw new Error("User already exists");
     }
 
+    const now = Date.now();
     return await ctx.db.insert("users", {
       email: args.email,
       name: args.name,
-      createdAt: Date.now(),
+      passwordHash: args.passwordHash,
+      avatarUrl: args.avatarUrl,
+      createdAt: now,
+      updatedAt: now,
     });
   },
 });
@@ -55,12 +58,16 @@ export const getUserSnapshotById = query({
     const user = await ctx.db.get(args.userId);
     if (!user) return null;
     
-    // Return only safe fields
+    // Return only safe fields (profile data is safe to expose)
     return {
       _id: user._id,
       email: user.email,
       name: user.name,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      preferences: user.preferences,
       createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     };
   },
 });
@@ -70,11 +77,52 @@ export const updateUser = mutation({
   args: {
     userId: v.id("users"),
     name: v.optional(v.string()),
+    avatarUrl: v.optional(v.string()),
+    bio: v.optional(v.string()),
+    preferences: v.optional(v.object({
+      theme: v.optional(v.union(v.literal("light"), v.literal("dark"), v.literal("auto"))),
+      notifications: v.optional(v.boolean()),
+      timezone: v.optional(v.string()),
+    })),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.patch(args.userId, {
-      name: args.name,
-    });
+    const updates: any = {
+      updatedAt: Date.now(),
+    };
+    
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.avatarUrl !== undefined) updates.avatarUrl = args.avatarUrl;
+    if (args.bio !== undefined) updates.bio = args.bio;
+    if (args.preferences !== undefined) updates.preferences = args.preferences;
+    
+    return await ctx.db.patch(args.userId, updates);
+  },
+});
+
+// Update user profile (non-sensitive fields only)
+export const updateUserProfile = mutation({
+  args: {
+    userId: v.id("users"),
+    name: v.optional(v.string()),
+    avatarUrl: v.optional(v.string()),
+    bio: v.optional(v.string()),
+    preferences: v.optional(v.object({
+      theme: v.optional(v.union(v.literal("light"), v.literal("dark"), v.literal("auto"))),
+      notifications: v.optional(v.boolean()),
+      timezone: v.optional(v.string()),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const updates: any = {
+      updatedAt: Date.now(),
+    };
+    
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.avatarUrl !== undefined) updates.avatarUrl = args.avatarUrl;
+    if (args.bio !== undefined) updates.bio = args.bio;
+    if (args.preferences !== undefined) updates.preferences = args.preferences;
+    
+    return await ctx.db.patch(args.userId, updates);
   },
 });
 

@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: Run `npx convex dev` to generate proper types
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 

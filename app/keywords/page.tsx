@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Container, VStack, Heading, Text, Box, Button, HStack, Grid, GridItem, Badge, Input, Select, Table, Thead, Tbody, Tr, Th, Td, Alert, AlertIcon, Spinner } from '@chakra-ui/react';
+import { sessionStorageUtil } from '@/lib/storage';
 
 type Keyword = {
   _id: string;
@@ -28,9 +29,9 @@ export default function KeywordsPage() {
   const loadKeywords = async () => {
     try {
       // In production, fetch from Convex
-      const stored = sessionStorage.getItem('seoAnalysis');
+      const stored = sessionStorageUtil.getSeoAnalysis<any>();
       if (stored) {
-        const analysis = JSON.parse(stored);
+        const analysis = stored;
         const keywordResults = analysis.toolResults?.find((r: any) => r.toolName === 'generateKeywords')?.result || [];
         setKeywords(keywordResults.map((kw: any, i: number) => ({
           _id: `kw-${i}`,
@@ -52,10 +53,10 @@ export default function KeywordsPage() {
   };
 
   const handleCreatePage = async (platform: 'wordpress' | 'shopify') => {
-    const stored = sessionStorage.getItem('seoAnalysis');
+    const stored = sessionStorageUtil.getSeoAnalysis<any>();
     if (!stored) return;
 
-    const analysis = JSON.parse(stored);
+    const analysis = stored;
     const businessInfo = analysis.businessInfo;
     const selectedKws = selectedKeywords.length > 0 
       ? keywords.filter(k => selectedKeywords.includes(k._id)).map(k => k.keyword)

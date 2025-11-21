@@ -1,7 +1,5 @@
-// @ts-nocheck
 // HTTP action to handle scheduled publishing
 // This can be called by external cron or webhook
-// @ts-nocheck
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 

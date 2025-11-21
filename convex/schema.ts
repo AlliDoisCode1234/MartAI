@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: Run `npx convex dev` to generate proper types
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
@@ -145,7 +143,15 @@ export default defineSchema({
     email: v.string(),
     name: v.optional(v.string()),
     passwordHash: v.string(), // bcrypt hash
+    avatarUrl: v.optional(v.string()), // User profile picture
+    bio: v.optional(v.string()), // User bio/description
+    preferences: v.optional(v.object({
+      theme: v.optional(v.union(v.literal("light"), v.literal("dark"), v.literal("auto"))),
+      notifications: v.optional(v.boolean()),
+      timezone: v.optional(v.string()),
+    })),
     createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
   })
     .index("by_email", ["email"]),
 

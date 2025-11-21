@@ -16,7 +16,11 @@ export function createUserSnapshot(user: User | null | undefined): UserSnapshot 
     _id: user._id,
     email: user.email,
     name: user.name,
+    avatarUrl: user.avatarUrl,
+    bio: user.bio,
+    preferences: user.preferences,
     createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
   };
 }
 

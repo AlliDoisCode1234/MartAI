@@ -66,16 +66,31 @@ export interface User {
   email: string;
   name?: string;
   passwordHash: string; // Never expose this
+  avatarUrl?: string;
+  bio?: string;
+  preferences?: UserPreferences;
   createdAt: number;
   updatedAt?: number;
 }
 
+// User preferences
+export interface UserPreferences {
+  theme?: 'light' | 'dark' | 'auto';
+  notifications?: boolean;
+  timezone?: string;
+}
+
 // Public user snapshot - safe to expose in API responses
+// Includes profile data but excludes passwordHash
 export interface UserSnapshot {
   _id: UserId;
   email: string;
   name?: string;
+  avatarUrl?: string;
+  bio?: string;
+  preferences?: UserPreferences;
   createdAt: number;
+  updatedAt?: number;
 }
 
 // Minimal user info for auth context

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, VStack, Heading, Text, Box, Input, Button, HStack, FormControl, FormLabel, Spinner, Alert, AlertIcon } from '@chakra-ui/react';
+import { sessionStorageUtil } from '@/lib/storage';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -60,11 +61,11 @@ export default function OnboardingPage() {
 
       const data = await seoResponse.json();
       
-      sessionStorage.setItem('seoAnalysis', JSON.stringify({
+      sessionStorageUtil.setSeoAnalysis({
         ...data,
         businessInfo: formData,
         userId,
-      }));
+      });
 
       router.push('/onboarding/results');
     } catch (err) {
