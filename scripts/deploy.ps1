@@ -15,7 +15,14 @@ if (-not (Test-Path .git)) {
     exit 1
 }
 
-# Build the project first
+# Clean build artifacts first
+Write-Host "Cleaning build artifacts..." -ForegroundColor Cyan
+npm run clean
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Clean had issues, continuing anyway..." -ForegroundColor Yellow
+}
+
+# Build the project
 Write-Host "Building project..." -ForegroundColor Yellow
 npm run build
 

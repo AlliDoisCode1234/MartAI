@@ -21,7 +21,11 @@ if [ ! -d .git ]; then
     exit 1
 fi
 
-# Build the project first
+# Clean build artifacts first
+echo "🧹 Cleaning build artifacts..."
+npm run clean || echo "⚠️  Clean had issues, continuing anyway..."
+
+# Build the project
 echo "📦 Building project..."
 npm run build
 
