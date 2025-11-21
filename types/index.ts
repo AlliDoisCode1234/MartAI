@@ -30,10 +30,8 @@ export type Id<T extends string> =
     ? U extends (arg: any) => infer R ? R : string & { __brand: T }
     : string & { __brand: T };
 
-// Re-export Convex ID types for easy access
-export type {
-  Id,
-} from '../convex/_generated/dataModel';
+// Id type defined above to handle Convex not being initialized
+// Don't re-export to avoid conflicts
 
 // Specific ID types for each table
 export type ClientId = Id<'clients'>;
@@ -109,7 +107,8 @@ export interface Keyword {
 }
 
 export interface KeywordCluster {
-  _id: ClusterId;
+  _id?: ClusterId;
+  id?: ClusterId; // Support both _id (Convex) and id (API response)
   projectId: ProjectId;
   clusterName: string;
   keywords: string[];
@@ -120,8 +119,8 @@ export interface KeywordCluster {
   topSerpUrls: string[];
   status: 'active' | 'hidden' | 'favorite';
   reasoning?: string;
-  createdAt: number;
-  updatedAt: number;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface Competitor {
@@ -152,7 +151,8 @@ export interface BriefPlaceholder {
 }
 
 export interface QuarterlyPlan {
-  _id: PlanId;
+  _id?: PlanId;
+  id?: PlanId; // Support both _id (Convex) and id (API response)
   projectId: ProjectId;
   contentVelocity: number; // posts per week
   startDate: number;
@@ -160,8 +160,8 @@ export interface QuarterlyPlan {
   goals: PlanGoals;
   assumptions?: string;
   briefs: Brief[];
-  createdAt: number;
-  updatedAt: number;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface Brief {
@@ -209,7 +209,8 @@ export interface BriefVersion {
 // ============================================================================
 
 export interface Draft {
-  _id: DraftId;
+  _id?: DraftId;
+  id?: DraftId; // Support both _id (Convex) and id (API response)
   briefId: BriefId;
   projectId: ProjectId;
   content: string; // Markdown
@@ -218,8 +219,8 @@ export interface Draft {
   wordCount?: number;
   status: 'draft' | 'approved' | 'published';
   notes?: string;
-  createdAt: number;
-  updatedAt: number;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface BriefInfo {

@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { validateSEOChecklist } from '@/lib/briefGenerator';
+import { assertBriefId, parseClusterId } from '@/lib/typeGuards';
+import type { Brief, BriefId } from '@/types';
 
-// API imported from convexClient
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
+if (typeof window === 'undefined' && !apiLocal) {
+  try {
+    apiLocal = require('@/convex/_generated/api')?.api;
+  } catch {
+    apiLocal = null as any;
+  }
+}
 
 // GET - Get brief by ID
 export async function GET(request: NextRequest) {
@@ -19,7 +29,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
@@ -28,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // Validate required ID - type guaranteed after assertion
     const briefIdTyped = assertBriefId(briefId);
-    const brief = await callConvexQuery(api.briefs.getBriefById, {
+    const brief = await callConvexQuery(apiLocal.briefs.getBriefById, {
       briefId: briefIdTyped,
     });
 

@@ -309,7 +309,7 @@ function StrategyContent() {
               <Heading size="lg">Keyword Clusters</Heading>
               <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={6}>
                 {clusters.slice(0, 6).map((cluster, index) => (
-                  <GridItem key={cluster._id || cluster.id || index}>
+                  <GridItem key={(cluster as KeywordCluster)._id || (cluster as KeywordCluster).id || index}>
                     <Card>
                       <CardBody>
                         <VStack align="stretch" spacing={2}>
