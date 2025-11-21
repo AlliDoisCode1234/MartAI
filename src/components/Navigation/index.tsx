@@ -12,6 +12,8 @@ const navItems = [
   { label: 'Keywords', path: '/keywords' },
   { label: 'Integrations', path: '/integrations' },
   { label: 'Strategy', path: '/strategy' },
+  { label: 'Content', path: '/content' },
+  { label: 'Publish', path: '/publish' },
   { label: 'Analytics', path: '/analytics' },
   { label: 'Settings', path: '/settings' },
 ];
