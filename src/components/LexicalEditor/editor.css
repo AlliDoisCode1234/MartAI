@@ -1,0 +1,84 @@
+.lexical-content-editable {
+  min-height: 400px;
+}
+
+.lexical-content-editable:focus {
+  outline: none;
+}
+
+.lexical-placeholder {
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Hide placeholder when content exists */
+.lexical-content-editable:not(:empty) + .lexical-placeholder {
+  display: none;
+}
+
+/* Rich text styles */
+.lexical-content-editable h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 1rem 0;
+  line-height: 1.2;
+}
+
+.lexical-content-editable h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0.75rem 0;
+  line-height: 1.3;
+}
+
+.lexical-content-editable h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  line-height: 1.4;
+}
+
+.lexical-content-editable p {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.lexical-content-editable ul,
+.lexical-content-editable ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.lexical-content-editable li {
+  margin: 0.25rem 0;
+}
+
+.lexical-content-editable a {
+  color: #3182ce;
+  text-decoration: underline;
+}
+
+.lexical-content-editable strong {
+  font-weight: bold;
+}
+
+.lexical-content-editable em {
+  font-style: italic;
+}
+
+.lexical-content-editable code {
+  background-color: #f7fafc;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.lexical-content-editable blockquote {
+  border-left: 4px solid #e2e8f0;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #4a5568;
+  font-style: italic;
+}
+

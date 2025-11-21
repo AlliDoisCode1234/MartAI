@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Container, VStack, Heading, Text, Box, Button, HStack, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Input, Textarea, FormControl, FormLabel, Grid, GridItem, Tabs, TabList, TabPanels, Tab, TabPanel, Progress, Divider } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
+import { LexicalEditorComponent } from '@/src/components/LexicalEditor';
 
 type Brief = {
   _id?: string;
@@ -634,7 +635,7 @@ function ContentContent() {
               {/* Draft Scores */}
               <Card>
                 <CardBody>
-                  <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={4}>
+                  <Grid templateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }} gap={4}>
                     <Box>
                       <Text fontSize="sm" color="gray.600">Quality Score</Text>
                       <Progress value={draft.qualityScore || 0} colorScheme="green" size="lg" mb={2} />
@@ -647,10 +648,23 @@ function ContentContent() {
                     </Box>
                     <Box>
                       <Text fontSize="sm" color="gray.600">Word Count</Text>
-                      <Text fontSize="2xl" fontWeight="bold">{draft.wordCount || 0}</Text>
-                      <Text fontSize="xs" color={draft.wordCount && draft.wordCount < 800 ? 'red.500' : 'green.500'}>
-                        {draft.wordCount && draft.wordCount < 800 ? 'Below minimum (800)' : 'Good length'}
+                      <Text fontSize="2xl" fontWeight="bold">{draft.wordCount || (draft.content ? draft.content.split(/\s+/).filter(w => w.length > 0).length : 0)}</Text>
+                      <Text fontSize="xs" color={(draft.wordCount || (draft.content ? draft.content.split(/\s+/).filter(w => w.length > 0).length : 0)) < 800 ? 'red.500' : 'green.500'}>
+                        {(draft.wordCount || (draft.content ? draft.content.split(/\s+/).filter(w => w.length > 0).length : 0)) < 800 ? 'Below minimum (800)' : 'Good length'}
                       </Text>
+                    </Box>
+                    <Box>
+                      <Text fontSize="sm" color="gray.600">SEO Status</Text>
+                      {draft.seoCheck && (
+                        <>
+                          <Badge colorScheme={draft.seoCheck.valid ? 'green' : 'yellow'} mb={2} display="block" w="fit-content">
+                            {draft.seoCheck.checklist.filter(c => c.passed).length}/{draft.seoCheck.checklist.length}
+                          </Badge>
+                          <Text fontSize="xs" color={draft.seoCheck.valid ? 'green.500' : 'yellow.500'}>
+                            {draft.seoCheck.valid ? 'All checks passed' : 'Needs attention'}
+                          </Text>
+                        </>
+                      )}
                     </Box>
                   </Grid>
                 </CardBody>
@@ -723,17 +737,16 @@ function ContentContent() {
                 <CardBody>
                   <VStack align="stretch" spacing={4}>
                     <HStack justify="space-between">
-                      <Heading size="md">Draft Content (Markdown)</Heading>
+                      <Heading size="md">Draft Content Editor</Heading>
                       <Badge colorScheme={draft.status === 'approved' ? 'green' : 'gray'}>
                         {draft.status}
                       </Badge>
                     </HStack>
-                    <Textarea
+                    <LexicalEditorComponent
                       value={draft.content || ''}
-                      onChange={(e) => setDraft({ ...draft, content: e.target.value })}
+                      onChange={(markdown) => setDraft({ ...draft, content: markdown })}
                       placeholder="Draft content will appear here..."
-                      rows={20}
-                      fontFamily="mono"
+                      minHeight="500px"
                       isReadOnly={draft.status === 'approved'}
                     />
                     <HStack>
