@@ -1,126 +1,60 @@
 /* eslint-disable */
 /**
- * Generated data model.
- * Run `npx convex dev` to regenerate this file with proper types.
+ * Generated data model types.
+ *
+ * THIS CODE IS AUTOMATICALLY GENERATED.
+ *
+ * To regenerate, run `npx convex dev`.
+ * @module
  */
 
+import type {
+  DataModelFromSchemaDefinition,
+  DocumentByName,
+  TableNamesInDataModel,
+  SystemTableNames,
+} from "convex/server";
 import type { GenericId } from "convex/values";
+import schema from "../schema.js";
 
-export type Id<T extends string> = GenericId<T>;
-export type TableNames = "clients" | "keywords" | "oauthTokens" | "generatedPages" | "rankings" | "seoAudits" | "seoStatistics";
+/**
+ * The names of all of your Convex tables.
+ */
+export type TableNames = TableNamesInDataModel<DataModel>;
 
-export type DataModel = {
-  clients: {
-    _id: Id<"clients">;
-    _creationTime: number;
-    companyName: string;
-    website: string;
-    industry: string;
-    targetAudience: string;
-    monthlyRevenueGoal?: string;
-    userId: string;
-    createdAt: number;
-    updatedAt: number;
-  };
-  keywords: {
-    _id: Id<"keywords">;
-    _creationTime: number;
-    clientId: Id<"clients">;
-    keyword: string;
-    searchVolume?: number;
-    difficulty?: number;
-    cpc?: number;
-    intent?: string;
-    priority?: string;
-    status: string;
-    createdAt: number;
-  };
-  oauthTokens: {
-    _id: Id<"oauthTokens">;
-    _creationTime: number;
-    clientId: Id<"clients">;
-    platform: string;
-    accessToken: string;
-    refreshToken?: string;
-    tokenExpiry?: number;
-    siteUrl: string;
-    shopifyShop?: string;
-    wordpressSiteId?: string;
-    createdAt: number;
-    updatedAt: number;
-  };
-  generatedPages: {
-    _id: Id<"generatedPages">;
-    _creationTime: number;
-    clientId: Id<"clients">;
-    platform: string;
-    pageId: string;
-    pageUrl: string;
-    title: string;
-    content: string;
-    keywords: string[];
-    status: string;
-    createdAt: number;
-    updatedAt: number;
-  };
-  rankings: {
-    _id: Id<"rankings">;
-    _creationTime: number;
-    clientId: Id<"clients">;
-    keyword: string;
-    position: number;
-    url: string;
-    searchEngine: string;
-    location?: string;
-    date: number;
-  };
-  seoAudits: {
-    _id: Id<"seoAudits">;
-    _creationTime: number;
-    clientId: Id<"clients">;
-    website: string;
-    overallScore: number;
-    technicalSeo: {
-      score: number;
-      issues: string[];
-      recommendations: string[];
-    };
-    onPageSeo: {
-      score: number;
-      issues: string[];
-      recommendations: string[];
-    };
-    contentQuality: {
-      score: number;
-      issues: string[];
-      recommendations: string[];
-    };
-    backlinks: {
-      score: number;
-      issues: string[];
-      recommendations: string[];
-    };
-    priorityActions: string[];
-    pageSpeed?: number;
-    mobileFriendly?: boolean;
-    sslEnabled?: boolean;
-    indexedPages?: number;
-    crawlErrors?: number;
-    createdAt: number;
-  };
-  seoStatistics: {
-    _id: Id<"seoStatistics">;
-    _creationTime: number;
-    clientId: Id<"clients">;
-    organicTraffic?: number;
-    organicKeywords?: number;
-    backlinks?: number;
-    referringDomains?: number;
-    avgPosition?: number;
-    clickThroughRate?: number;
-    impressions?: number;
-    periodStart: number;
-    periodEnd: number;
-    createdAt: number;
-  };
-};
+/**
+ * The type of a document stored in Convex.
+ *
+ * @typeParam TableName - A string literal type of the table name (like "users").
+ */
+export type Doc<TableName extends TableNames> = DocumentByName<
+  DataModel,
+  TableName
+>;
+
+/**
+ * An identifier for a document in Convex.
+ *
+ * Convex documents are uniquely identified by their `Id`, which is accessible
+ * on the `_id` field. To learn more, see [Document IDs](https://docs.convex.dev/using/document-ids).
+ *
+ * Documents can be loaded using `db.get(id)` in query and mutation functions.
+ *
+ * IDs are just strings at runtime, but this type can be used to distinguish them from other
+ * strings when type checking.
+ *
+ * @typeParam TableName - A string literal type of the table name (like "users").
+ */
+export type Id<TableName extends TableNames | SystemTableNames> =
+  GenericId<TableName>;
+
+/**
+ * A type describing your Convex data model.
+ *
+ * This type includes information about what tables you have, the type of
+ * documents stored in those tables, and the indexes defined on them.
+ *
+ * This type is used to parameterize methods like `queryGeneric` and
+ * `mutationGeneric` to make them type-safe.
+ */
+export type DataModel = DataModelFromSchemaDefinition<typeof schema>;

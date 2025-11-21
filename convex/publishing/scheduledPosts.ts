@@ -1,167 +1,135 @@
-import { mutation, query } from "../_generated/server";
+import {
+  mutation,
+  query,
+  internalMutation,
+  internalQuery,
+} from "../_generated/server";
 import { v } from "convex/values";
-import { internalMutation, internalQuery } from "../_generated/server";
-import { internal } from "../_generated/api";
 import { internal } from "../_generated/api";
 
-// Create scheduled post
+/**
+ * CREATE SCHEDULED POST
+ */
 export const createScheduledPost = mutation({
   args: {
     draftId: v.id("drafts"),
     projectId: v.id("projects"),
     briefId: v.id("briefs"),
-    publishDate: v.number(), // timestamp
-    timezone: v.string(), // e.g., "America/New_York"
-    platform: v.string(), // wordpress, shopify
+    publishDate: v.number(),
+    timezone: v.string(),
+    platform: v.string(),
     tags: v.optional(v.array(v.string())),
     categories: v.optional(v.array(v.string())),
     slug: v.optional(v.string()),
-    status: v.string(), // scheduled, publishing, published, failed
+    status: v.string(),
   },
   handler: async (ctx, args) => {
     const postId = await ctx.db.insert("scheduledPosts", {
-      draftId: args.draftId,
-      projectId: args.projectId,
-      briefId: args.briefId,
-      publishDate: args.publishDate,
-      timezone: args.timezone,
-      platform: args.platform,
-      tags: args.tags || [],
-      categories: args.categories || [],
-      slug: args.slug,
-      status: args.status || "scheduled",
+      ...args,
+      tags: args.tags ?? [],
+      categories: args.categories ?? [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
-    // Schedule the publish job using Convex's internal scheduling
-    // Calculate delay in milliseconds
+    // schedule publish job
     const delayMs = args.publishDate - Date.now();
-    
-    // Schedule the publish job using Convex's scheduler
-    const delayMs = args.publishDate - Date.now();
-    
-    if (delayMs > 0 && delayMs < 365 * 24 * 60 * 60 * 1000) { // Max 1 year
-      // Schedule the publish mutation to run at the specified time
-      await ctx.scheduler.runAfter(delayMs, internal.scheduledPosts.publishPost, {
-        postId,
-      });
-    } else if (delayMs <= 0) {
-      // Publish immediately if time has passed
-      await ctx.scheduler.runAfter(0, internal.scheduledPosts.publishPost, {
-        postId,
-      });
-    }
+    const publishFn = internal.publishing.scheduledPosts.publishPost;
+
+    await ctx.scheduler.runAfter(
+      delayMs > 0 ? delayMs : 0,
+      publishFn,
+      { postId }
+    );
 
     return postId;
   },
 });
 
-// Internal mutation to publish the post (called by scheduler)
+/**
+ * INTERNAL PUBLISH POST
+ */
 export const publishPost = internalMutation({
-  args: {
-    postId: v.id("scheduledPosts"),
-  },
-  handler: async (ctx, args) => {
-    const post = await ctx.db.get(args.postId);
+  args: { postId: v.id("scheduledPosts") },
+  handler: async (ctx, { postId }) => {
+    const post = await ctx.db.get(postId);
+    if (!post) return;
+    if (post.status !== "scheduled") return;
     
-    if (!post) {
-      console.error('Scheduled post not found:', args.postId);
-      return;
-    }
-
-    if (post.status !== 'scheduled') {
-      console.log('Post already processed:', post.status);
-      return;
-    }
-
-    // Update status to publishing
-    await ctx.db.patch(args.postId, {
-      status: 'publishing',
-      updatedAt: Date.now(),
-    });
-
+    // Mark publishing
+    await ctx.db.patch(postId, { status: "publishing", updatedAt: Date.now() });
+    
     try {
-      // Get draft content
+      // Get draft
       const draft = await ctx.db.get(post.draftId);
-      if (!draft) {
-        throw new Error('Draft not found');
-      }
-
-      // Get brief for metadata
+      if (!draft) throw new Error("Draft not found");
+    
+      // Get brief
       const brief = await ctx.db.get(post.briefId);
-      
-      // Get OAuth connection
+    
+      // 1️⃣ Get project
+      const project = await ctx.db.get(post.projectId);
+      if (!project) throw new Error("Project not found");
+    
+      // 2️⃣ Find client ID from project → user → client
+      const client = await ctx.db
+        .query("clients")
+        .withIndex("by_user", (q) => q.eq("userId", project.userId))
+        .first();
+      if (!client) throw new Error("Client not found");
+    
+      // 3️⃣ Query OAuth token using the correct client ID
       const connection = await ctx.db
         .query("oauthTokens")
-        .withIndex("by_client_platform", (q) => 
-          q.eq("clientId", post.projectId).eq("platform", post.platform)
+        .withIndex("by_client_platform", (q) =>
+          q.eq("clientId", client._id).eq("platform", post.platform)
         )
         .first();
-
-      if (!connection) {
-        throw new Error(`${post.platform} connection not found`);
-      }
-
-      // Note: Convex internal mutations can't make external HTTP calls
-      // The actual publishing will be handled by the /api/publish/now endpoint
-      // which can be called via webhook or scheduled job
-      // For now, we'll mark it as needing external processing
-      const publishResult = {
-        success: true,
-        url: connection?.siteUrl ? `${connection.siteUrl}/${post.slug || 'post'}` : 'pending',
-      };
-
-      // Note: Actual publishing happens via external HTTP call
-      // This mutation just updates status when triggered
-      // The /api/publish/trigger endpoint handles the actual CMS API calls
-      await ctx.db.patch(args.postId, {
-        status: 'publishing',
-        updatedAt: Date.now(),
-      });
-
-      // Draft and brief will be updated by external HTTP action
-      // after successful CMS publish
-
-    } catch (error) {
-      console.error('Publish error:', error);
-      await ctx.db.patch(args.postId, {
-        status: 'failed',
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      if (!connection) throw new Error("OAuth connection not found");
+    
+      // External publishing handled elsewhere
+      await ctx.db.patch(postId, { updatedAt: Date.now() });
+    
+    } catch (err) {
+      await ctx.db.patch(postId, {
+        status: "failed",
+        errorMessage: err instanceof Error ? err.message : "Unknown error",
         updatedAt: Date.now(),
       });
     }
-  },
-});
+    },
+}); 
 
-// Get scheduled posts by project
+/**
+ * QUERY: Get scheduled posts for a project
+ */
 export const getScheduledPosts = query({
   args: { projectId: v.id("projects") },
-  handler: async (ctx, args) => {
-    return await ctx.db
+  handler: async (ctx, { projectId }) =>
+    ctx.db
       .query("scheduledPosts")
-      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
-      .collect();
-  },
+      .withIndex("by_project", (q) => q.eq("projectId", projectId))
+      .collect(),
 });
 
-// Get scheduled posts by status
+/**
+ * QUERY: Get posts filtered by status
+ */
 export const getScheduledPostsByStatus = query({
-  args: { 
-    projectId: v.id("projects"),
-    status: v.string(),
-  },
+  args: { projectId: v.id("projects"), status: v.string() },
   handler: async (ctx, args) => {
-    const allPosts = await ctx.db
+    const posts = await ctx.db
       .query("scheduledPosts")
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
       .collect();
-    
-    return allPosts.filter(p => p.status === args.status);
+
+    return posts.filter((p) => p.status === args.status);
   },
 });
 
-// Update scheduled post
+/**
+ * UPDATE SCHEDULED POST
+ */
 export const updateScheduledPost = mutation({
   args: {
     postId: v.id("scheduledPosts"),
@@ -173,66 +141,57 @@ export const updateScheduledPost = mutation({
   },
   handler: async (ctx, args) => {
     const { postId, ...updates } = args;
-    const cleanUpdates: any = { updatedAt: Date.now() };
-    
-    Object.keys(updates).forEach(key => {
-      if (updates[key] !== undefined) {
-        cleanUpdates[key] = updates[key];
-      }
-    });
 
     const post = await ctx.db.get(postId);
-    if (!post) {
-      throw new Error('Post not found');
-    }
+    if (!post) throw new Error("Post not found");
 
-    // If publish date changed, reschedule
+    // reschedule if needed
     if (updates.publishDate && updates.publishDate !== post.publishDate) {
       const delayMs = updates.publishDate - Date.now();
-      if (delayMs > 0 && delayMs < 365 * 24 * 60 * 60 * 1000) {
-        await ctx.scheduler.runAfter(delayMs, internal.scheduledPosts.publishPost, {
-          postId,
-        });
-      }
+      await ctx.scheduler.runAfter(
+        delayMs > 0 ? delayMs : 0,
+        internal.publishing.scheduledPosts.publishPost,
+        { postId }
+      );
     }
-    
-    return await ctx.db.patch(postId, cleanUpdates);
-  },
-});
 
-// Cancel scheduled post
-export const cancelScheduledPost = mutation({
-  args: { postId: v.id("scheduledPosts") },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.postId, {
-      status: 'cancelled',
+    return ctx.db.patch(postId, {
+      ...updates,
       updatedAt: Date.now(),
     });
   },
 });
 
-// Delete scheduled post
-export const deleteScheduledPost = mutation({
+/**
+ * CANCEL
+ */
+export const cancelScheduledPost = mutation({
   args: { postId: v.id("scheduledPosts") },
-  handler: async (ctx, args) => {
-    await ctx.db.delete(args.postId);
-  },
+  handler: async (ctx, { postId }) =>
+    ctx.db.patch(postId, {
+      status: "cancelled",
+      updatedAt: Date.now(),
+    }),
 });
 
-// Internal query to get due posts (for cron/webhook)
+/**
+ * DELETE
+ */
+export const deleteScheduledPost = mutation({
+  args: { postId: v.id("scheduledPosts") },
+  handler: async (ctx, { postId }) => ctx.db.delete(postId),
+});
+
+/**
+ * INTERNAL QUERY (used by cron)
+ */
 export const getDuePosts = internalQuery({
-  args: {
-    beforeTime: v.number(),
-  },
-  handler: async (ctx, args) => {
-    // Get all scheduled posts due before the specified time
-    const allPosts = await ctx.db
-      .query("scheduledPosts")
-      .collect();
-    
-    return allPosts.filter(p => 
-      p.status === 'scheduled' && p.publishDate <= args.beforeTime
+  args: { beforeTime: v.number() },
+  handler: async (ctx, { beforeTime }) => {
+    const posts = await ctx.db.query("scheduledPosts").collect();
+
+    return posts.filter(
+      (p) => p.status === "scheduled" && p.publishDate <= beforeTime
     );
   },
 });
-

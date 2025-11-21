@@ -4,8 +4,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Container, VStack, Heading, Text, Box, Button, HStack, Grid, GridItem, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, ModalFooter, useDisclosure, FormControl, FormLabel, Input, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper, Select, Checkbox, Table, Thead, Tbody, Tr, Th, Td, Stat, StatLabel, StatNumber, StatHelpText } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
-import type { KeywordCluster, Brief, QuarterlyPlan, PlanProps, ClusterProps } from '@/types';
+import type { KeywordCluster, Brief, QuarterlyPlan, PlanProps, ClusterProps, ProjectId } from '@/types';
 import { DraggableBriefList } from '@/src/components/DraggableBriefList';
+import { assertProjectId } from '@/lib/typeGuards';
 
 function StrategyContent() {
   const { isAuthenticated } = useAuth();
@@ -57,19 +58,33 @@ function StrategyContent() {
     }
   };
 
-  const loadPlan = async (pid: string) => {
-    try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/plans?projectId=${pid}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+  const projectIdTyped = assertProjectId(projectId);
 
+  const loadPlan = async (pid: ProjectId) => {
+    try {
+      const token = localStorage.getItem("auth_token");
+  
+      // First, fetch the project to get the client ID
+      const projectResp = await fetch(`/api/projects/${pid}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!projectResp.ok) throw new Error("Project not found");
+      const projectData = await projectResp.json();
+      const clientId = projectData.clientId; // Id<"clients">
+  
+      // Now fetch the plan for the client
+      const response = await fetch(`/api/plans?clientId=${clientId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
       if (response.ok) {
         const data = await response.json();
         setPlan(data.plan);
+      } else {
+        console.error("Error loading plan:", response.statusText);
       }
     } catch (error) {
-      console.error('Error loading plan:', error);
+      console.error("Error loading plan:", error);
     }
   };
 
