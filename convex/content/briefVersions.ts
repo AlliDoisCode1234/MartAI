@@ -1,5 +1,5 @@
 // Brief version history
-import { mutation, query } from "./_generated/server";
+import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 
 // Create a new version of a brief

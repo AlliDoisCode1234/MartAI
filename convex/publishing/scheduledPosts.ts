@@ -1,8 +1,8 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { internalMutation, internalQuery } from "./_generated/server";
-import { internal } from "./_generated/api";
-import { internal } from "./_generated/api";
+import { internalMutation, internalQuery } from "../_generated/server";
+import { internal } from "../_generated/api";
+import { internal } from "../_generated/api";
 
 // Create scheduled post
 export const createScheduledPost = mutation({
