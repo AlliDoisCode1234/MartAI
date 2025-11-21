@@ -1,184 +1,172 @@
 # MartAI Architecture
 
-## High-Level Overview
+## System Overview
 
-MartAI is an AI-powered SEO automation platform that helps businesses improve their online presence through automated keyword research, site audits, rank tracking, and content generation with direct integration to WordPress and Shopify.
+MartAI is an AI-powered SEO automation platform that automates keyword research, content planning, and publishing to WordPress, Shopify, and Webflow.
 
-## Core Components
+## Tech Stack
 
-### 1. Frontend (Next.js 15)
-- **Framework**: Next.js 15 with App Router
+### Frontend
+- **Framework**: Next.js 15 (App Router)
 - **UI**: Chakra UI
-- **State**: React hooks + sessionStorage (temporary), Convex (persistent)
-- **Pages**:
-  - `/` - Dashboard
-  - `/onboarding` - Customer intake and initial SEO analysis
-  - `/keywords` - Keyword research and management
-  - `/integrations` - WordPress/Shopify OAuth connections
-  - `/strategy` - SEO strategy dashboard
-  - `/analytics` - Performance metrics
+- **Editor**: Lexical (rich text)
+- **Charts**: Recharts
+- **Drag & Drop**: @dnd-kit
+- **State**: React hooks + Convex reactive queries
 
-### 2. Backend (Convex)
-- **Database**: Convex reactive database
-- **Schema**: 
-  - `clients` - Business/client information
-  - `seoAudits` - SEO audit results and scores
-  - `keywords` - Generated keyword suggestions
-  - `oauthTokens` - WordPress/Shopify OAuth credentials
-  - `generatedPages` - Automatically created pages
-  - `rankings` - Keyword ranking history
-  - `seoStatistics` - Aggregated SEO metrics
+### Backend
+- **Database**: Convex (reactive, type-safe)
+- **AI**: OpenAI GPT-4o via AI SDK
+- **Auth**: JWT (REST-based)
+- **Scheduling**: Convex `runAfter` + HTTP actions for cron
 
-### 3. AI Agent (OpenAI)
-- **Model**: GPT-4o
-- **Capabilities**:
-  - Site crawling and analysis
-  - Keyword generation with intent analysis
-  - SEO audit with scoring
-  - Content suggestions
-  - Social media post generation
+### Integrations
+- **WordPress**: REST API with Application Passwords
+- **Shopify**: Admin API with Private App tokens
+- **Webflow**: API with OAuth
+- **Google**: Analytics Data API, Search Console API
 
-### 4. Integrations
+## System Architecture
 
-#### WordPress
-- **Authentication**: Application Password (OAuth 1.0a supported)
-- **API**: WordPress REST API
-- **Actions**: Create/update pages with SEO-optimized content
+```
+┌─────────────────┐
+│   Next.js App   │
+│  (Frontend)     │
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    │         │
+┌───▼───┐  ┌──▼────┐
+│Convex │  │OpenAI │
+│(DB)   │  │(AI)   │
+└───┬───┘  └───────┘
+    │
+┌───▼──────────────────────────┐
+│  WordPress / Shopify / Webflow│
+│  GA4 / GSC                    │
+└───────────────────────────────┘
+```
 
-#### Shopify
-- **Authentication**: Private App Access Token
-- **API**: Shopify Admin API
-- **Actions**: Create/update pages with SEO-optimized content
+## Data Model (Convex)
+
+### Core Tables
+- `users` - User accounts
+- `sessions` - JWT sessions
+- `projects` - Client projects
+- `clients` - Legacy client data
+
+### SEO & Content
+- `keywordClusters` - AI-generated keyword clusters
+- `quarterlyPlans` - 12-week content calendars
+- `briefs` - Content briefs with SEO metadata
+- `briefVersions` - Brief version history
+- `drafts` - Generated content drafts
+- `scheduledPosts` - Publishing schedule
+
+### Analytics
+- `ga4Connections` - GA4 OAuth tokens
+- `gscConnections` - GSC OAuth tokens
+- `analyticsData` - Aggregated GA4/GSC data
+- `competitors` - Competitor tracking
+
+### Integrations
+- `oauthTokens` - CMS OAuth credentials
+- `generatedPages` - Published pages
+- `seoAudits` - Site audit results
+- `keywords` - Keyword suggestions
+- `rankings` - Ranking history
+- `seoStatistics` - Aggregated metrics
 
 ## Data Flow
 
-### Customer Onboarding
-1. User fills intake form (company name, website, industry, target audience)
-2. Data saved to Convex `clients` table
-3. AI agent crawls website and performs analysis
-4. Keywords generated based on business info
-5. SEO audit results stored in `seoAudits`
-6. Keywords saved to `keywords` table
-7. Statistics calculated and stored in `seoStatistics`
-
-### Keyword Generation
-1. AI analyzes business context (industry, audience, website)
-2. Generates 20-30 keyword suggestions with:
-   - Search intent (informational, commercial, transactional)
-   - Priority level (high, medium, low)
-   - Estimated volume and difficulty
-   - Reasoning for each keyword
-3. Keywords stored in Convex
-4. User can filter, approve, and implement keywords
-
-### Page Automation
-1. User connects WordPress/Shopify via OAuth
-2. Credentials stored securely in `oauthTokens`
-3. User selects keywords from generated list
-4. AI generates SEO-optimized page content
-5. Content includes:
-   - Primary and secondary keywords
-   - Proper heading structure (H1, H2)
-   - Meta descriptions
-   - Internal linking opportunities
-   - Call-to-action elements
-6. Page created via platform API
-7. Page record saved in `generatedPages`
-
-### Rank Tracking
-1. Periodically check keyword rankings
-2. Store position data in `rankings` table
-3. Track changes over time
-4. Display in analytics dashboard
-
-## Key Features (Ahrefs-Inspired)
-
-### Site Explorer (Site Audit)
-- Technical SEO analysis
-- On-page optimization review
-- Content quality assessment
-- Backlink analysis (basic)
-- Page speed metrics
-- Mobile-friendliness check
-- SSL verification
-
-### Keywords Explorer
-- AI-powered keyword generation
-- Intent classification
-- Priority scoring
-- Related keyword suggestions
-- Search volume estimates
-- Difficulty assessment
-
-### Rank Tracker
-- Keyword position monitoring
-- Historical tracking
-- Multi-search engine support
-- Location-based tracking
-
-### Site Audit
-- Automated crawling
-- Issue detection
-- Priority recommendations
-- Score calculation
-
-### Content Automation
-- AI-generated service pages
-- Keyword-optimized content
-- Platform-specific formatting
-- Automatic publishing
-
-## Security Considerations
-
-1. **OAuth Tokens**: Stored encrypted in Convex
-2. **API Keys**: Environment variables only
-3. **WordPress**: Application Passwords (more secure than user passwords)
-4. **Shopify**: Private App tokens with scoped permissions
-5. **Rate Limiting**: Implemented in API routes
-6. **Error Handling**: Comprehensive try-catch blocks
-
-## Environment Variables
-
-```env
-OPENAI_API_KEY=              # Required for AI agent
-NEXT_PUBLIC_CONVEX_URL=       # Required for database
-SHOPIFY_API_KEY=              # Optional, for Shopify OAuth
-SHOPIFY_API_SECRET=           # Optional, for Shopify OAuth
-VERCEL_AI_GATEWAY_KEY=        # Optional, alternative to OpenAI
+### 1. Onboarding
 ```
+User Input → Convex (projects) → AI Analysis → Keywords → Clusters
+```
+
+### 2. Content Planning
+```
+Clusters → AI Planning → Quarterly Plan → Briefs → Drafts → Publish
+```
+
+### 3. Analytics
+```
+GA4/GSC OAuth → Data Sync → Analytics Data → KPIs → Insights
+```
+
+## Key Components
+
+### API Routes (`app/api/`)
+- **Auth**: `/api/auth/*` - Signup, login, logout, me
+- **OAuth**: `/api/oauth/*` - Google, WordPress, Shopify, Webflow
+- **Content**: `/api/briefs/*`, `/api/drafts/*`, `/api/publish/*`
+- **Planning**: `/api/plans/*`, `/api/clusters/*`
+- **Analytics**: `/api/analytics/*`, `/api/ga4/*`, `/api/gsc/*`
+- **AI**: `/api/seo-agent` - Main AI agent endpoint
+
+### Convex Functions (`convex/`)
+- **Mutations**: Create, update, delete operations
+- **Queries**: Read operations with reactive updates
+- **Actions**: External API calls, scheduled jobs
+- **HTTP Actions**: Cron triggers
+
+### Lib Utilities (`lib/`)
+- `typeGuards.ts` - Type validation (assert*, parse*)
+- `convexClient.ts` - Convex client wrapper
+- `authMiddleware.ts` - JWT verification
+- `googleAuth.ts` - GA4/GSC OAuth
+- `wordpress.ts`, `shopify.ts`, `webflow.ts` - CMS clients
+- `keywordClustering.ts`, `quarterlyPlanning.ts` - AI utilities
+- `briefGenerator.ts`, `draftGenerator.ts` - Content generation
+
+### Components (`src/components/`)
+- `LexicalEditor/` - Rich text editor with SEO validation
+- `DraggableBriefList/` - Drag-and-drop rescheduling
+- `Navigation/` - App navigation
+- `ProtectedRoute/` - Auth guard
+
+## Type System
+
+### Centralized Types (`types/index.ts`)
+- Single source of truth for all domain types
+- Convex ID types (ProjectId, BriefId, etc.)
+- Component prop types
+- API request/response types
+
+### Type Guards (`lib/typeGuards.ts`)
+- `assert*` functions: Validate and throw (required fields)
+- `parse*` functions: Return null for optional fields
+- Validates Convex ID format
+- No null returns for required fields
+
+### Principles
+- Types reflect reality, not convenience
+- Validate at boundaries, guarantee type after
+- Pass whole objects to maintain type inference
+- No `as any` casting
+
+## Security
+
+- **JWT**: Secure token-based auth
+- **OAuth**: Minimal scopes, encrypted tokens
+- **API Keys**: Environment variables only
+- **Rate Limiting**: Per-route protection
+- **Input Validation**: Type guards at boundaries
+- **Error Handling**: Comprehensive try-catch
 
 ## Deployment
 
-### Convex Setup
-1. Run `npx convex dev` to initialize
-2. Set `NEXT_PUBLIC_CONVEX_URL` in environment
-3. Deploy with `npx convex deploy`
-
-### Next.js Deployment
-- Vercel (recommended)
-- Set root directory to `martai` if needed
-- Configure environment variables
-- Build command: `npm run build`
-
-## API Routes
-
-- `POST /api/seo-agent` - Generate SEO analysis
-- `POST /api/clients` - Create/update client
-- `GET /api/clients` - Get clients by user
-- `GET /api/oauth/wordpress` - WordPress OAuth flow
-- `POST /api/oauth/wordpress` - WordPress connection test
-- `GET /api/oauth/shopify` - Shopify OAuth flow
-- `POST /api/oauth/shopify` - Shopify connection test
-- `POST /api/automation/create-page` - Create page on WordPress/Shopify
+- **Frontend**: Vercel (automatic from main)
+- **Backend**: Convex (managed)
+- **Environment**: `.env.local` for dev, Vercel env vars for prod
+- **Build**: `npm run build` with clean step
+- **Cron**: External service triggers HTTP actions
 
 ## Future Enhancements
 
-1. **Ahrefs API Integration**: Real keyword data, backlink analysis
-2. **Advanced Rank Tracking**: Automated SERP monitoring
-3. **Content Scheduling**: Queue page creation
-4. **A/B Testing**: Test different page variations
-5. **Multi-language Support**: International SEO
-6. **Competitor Analysis**: Track competitor keywords
-7. **Reporting**: Automated client reports
-8. **Webhooks**: Real-time updates from platforms
-
+- Ahrefs API integration
+- Advanced rank tracking
+- Multi-language support
+- Competitor analysis
+- Automated reporting
+- Webhook support
