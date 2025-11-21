@@ -1,0 +1,5 @@
+# Add .next to gitignore patterns
+.next/
+.next/cache/
+.turbo/
+

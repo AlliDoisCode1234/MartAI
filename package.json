@@ -40,8 +40,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:clean": "npm run clean && next build",
     "start": "next start",
     "lint": "next lint",
+    "clean": "node scripts/clean.js",
+    "clean:win": "if exist .next rmdir /s /q .next && if exist .next\\cache rmdir /s /q .next\\cache",
+    "clean:unix": "rm -rf .next .next/cache",
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy",
     "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1",
