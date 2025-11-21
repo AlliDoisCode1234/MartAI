@@ -215,6 +215,45 @@ export default defineSchema({
     .index("by_project", ["projectId"])
     .index("by_status", ["status"]),
 
+  // Quarterly Plans
+  quarterlyPlans: defineTable({
+    projectId: v.id("projects"),
+    contentVelocity: v.number(), // posts per week
+    startDate: v.number(), // timestamp
+    goals: v.object({
+      traffic: v.optional(v.number()),
+      leads: v.optional(v.number()),
+      revenue: v.optional(v.number()),
+    }),
+    assumptions: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_project", ["projectId"]),
+
+  // Briefs
+  briefs: defineTable({
+    planId: v.id("quarterlyPlans"),
+    projectId: v.id("projects"),
+    clusterId: v.optional(v.id("keywordClusters")),
+    title: v.string(),
+    scheduledDate: v.number(),
+    status: v.string(), // planned, in_progress, approved, published
+    // Brief details
+    titleOptions: v.optional(v.array(v.string())),
+    h2Outline: v.optional(v.array(v.string())),
+    faqs: v.optional(v.array(v.string())),
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+    internalLinks: v.optional(v.array(v.string())),
+    schemaSuggestion: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_plan", ["planId"])
+    .index("by_project", ["projectId"])
+    .index("by_status", ["status"]),
+
   // Projects (renamed from clients for PRD alignment)
   projects: defineTable({
     userId: v.id("users"),
