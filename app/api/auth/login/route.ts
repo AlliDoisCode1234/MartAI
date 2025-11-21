@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     let passwordHash;
     
     try {
-      user = await callConvexQuery(api.users.getUserByEmail, { email });
+      user = await callConvexQuery(api.auth.users.getUserByEmail, { email });
       if (!user) {
         return NextResponse.json(
           { error: 'Invalid email or password' },
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     if (api) {
       const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
       try {
-        await callConvexMutation(api.sessions.createSession, {
+        await callConvexMutation(api.auth.sessions.createSession, {
           userId: user._id,
           token,
           expiresAt,

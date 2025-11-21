@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // Delete session from Convex
     if (api) {
       try {
-        await callConvexMutation(api.sessions.deleteSession, { token });
+        await callConvexMutation(api.auth.sessions.deleteSession, { token });
       } catch (error) {
         console.warn('Failed to delete session:', error);
       }

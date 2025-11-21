@@ -37,12 +37,12 @@ export async function GET(request: NextRequest) {
     let posts = [];
     try {
       if (status) {
-        posts = await callConvexQuery(api.scheduledPosts.getScheduledPostsByStatus, {
+        posts = await callConvexQuery(api.publishing.scheduledPosts.getScheduledPostsByStatus, {
           projectId: projectId as any,
           status,
         });
       } else {
-        posts = await callConvexQuery(api.scheduledPosts.getScheduledPosts, {
+        posts = await callConvexQuery(api.publishing.scheduledPosts.getScheduledPosts, {
           projectId: projectId as any,
         });
       }
@@ -92,7 +92,7 @@ export async function PATCH(request: NextRequest) {
         : updates.publishDate;
     }
 
-    await callConvexMutation(api.scheduledPosts.updateScheduledPost, {
+    await callConvexMutation(api.publishing.scheduledPosts.updateScheduledPost, {
       postId: postId as any,
       ...updates,
     });
@@ -128,7 +128,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await callConvexMutation(api.scheduledPosts.cancelScheduledPost, {
+    await callConvexMutation(api.publishing.scheduledPosts.cancelScheduledPost, {
       postId: postId as any,
     });
 

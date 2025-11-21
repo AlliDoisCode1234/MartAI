@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     
     if (projectId) {
       // Query specific project
-      allPosts = await callConvexQuery(api.scheduledPosts.getScheduledPosts, {
+      allPosts = await callConvexQuery(api.publishing.scheduledPosts.getScheduledPosts, {
         projectId: projectId as any,
       }) || [];
     } else {
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     for (const post of duePosts) {
       try {
         // Get draft
-        const draft = await callConvexQuery(api.drafts.getDraftById, {
+        const draft = await callConvexQuery(api.content.drafts.getDraftById, {
           draftId: post.draftId,
         });
 
@@ -77,12 +77,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Get brief
-        const brief = await callConvexQuery(api.briefs.getBriefById, {
+        const brief = await callConvexQuery(api.content.briefs.getBriefById, {
           briefId: post.briefId,
         });
 
         // Get connection
-        const connection = await callConvexQuery(api.oauthTokens.getOAuthToken, {
+        const connection = await callConvexQuery(api.integrations.oauth.getOAuthToken, {
           clientId: post.projectId as any,
           platform: post.platform,
         });
@@ -123,20 +123,20 @@ export async function POST(request: NextRequest) {
         }
 
         // Update post status
-        await callConvexMutation(api.scheduledPosts.updateScheduledPost, {
+        await callConvexMutation(api.publishing.scheduledPosts.updateScheduledPost, {
           postId: post._id,
           status: 'published',
           publishedUrl,
         });
 
         // Update draft and brief
-        await callConvexMutation(api.drafts.updateDraft, {
+        await callConvexMutation(api.content.drafts.updateDraft, {
           draftId: post.draftId,
           status: 'published',
         });
 
         if (brief) {
-          await callConvexMutation(api.briefs.updateBrief, {
+          await callConvexMutation(api.content.briefs.updateBrief, {
             briefId: post.briefId,
             status: 'published',
           });
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
         results.push({ postId: post._id, success: true, url: publishedUrl });
       } catch (error) {
         console.error(`Error publishing post ${post._id}:`, error);
-        await callConvexMutation(api.scheduledPosts.updateScheduledPost, {
+        await callConvexMutation(api.publishing.scheduledPosts.updateScheduledPost, {
           postId: post._id,
           status: 'failed',
           errorMessage: error instanceof Error ? error.message : 'Unknown error',

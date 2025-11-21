@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await callConvexQuery(api.analytics.getAnalyticsData, {
+    const data = await callConvexQuery(api.analytics.analytics.getAnalyticsData, {
       projectId: projectId as any,
       startDate: parseInt(startDate),
       endDate: parseInt(endDate),

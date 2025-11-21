@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 
       if (api) {
         try {
-          await callMutation(api.ga4Connections.upsertGA4Connection, {
+          await callMutation(api.integrations.ga4Connections.upsertGA4Connection, {
             projectId: projectId as any,
             propertyId,
             propertyName: property.name || 'Unknown',
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
 
       if (api) {
         try {
-          await callMutation(api.gscConnections.upsertGSCConnection, {
+          await callMutation(api.integrations.gscConnections.upsertGSCConnection, {
             projectId: projectId as any,
             siteUrl,
             accessToken: tokens.access_token,

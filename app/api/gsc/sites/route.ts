@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const connection = await callConvexQuery(api.gscConnections.getGSCConnection, {
+    const connection = await callConvexQuery(api.integrations.gscConnections.getGSCConnection, {
       projectId: projectId as any,
     });
 

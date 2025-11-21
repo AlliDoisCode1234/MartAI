@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const insights = await callConvexQuery(api.analytics.getInsights, {
+    const insights = await callConvexQuery(api.analytics.analytics.getInsights, {
       projectId: projectId as any,
       type: type || undefined,
     });
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await callConvexMutation(api.analytics.applyInsight, {
+    await callConvexMutation(api.analytics.analytics.applyInsight, {
       insightId: insightId as any,
     });
 

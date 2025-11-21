@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get current period KPIs
-    const currentKPIs = await callConvexQuery(api.analytics.getKPIs, {
+    const currentKPIs = await callConvexQuery(api.analytics.analytics.getKPIs, {
       projectId: projectId as any,
       startDate: parseInt(startDate),
       endDate: parseInt(endDate),
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const prevStartDate = parseInt(startDate) - periodLength;
     const prevEndDate = parseInt(startDate) - 1;
 
-    const previousKPIs = await callConvexQuery(api.analytics.getKPIs, {
+    const previousKPIs = await callConvexQuery(api.analytics.analytics.getKPIs, {
       projectId: projectId as any,
       startDate: prevStartDate,
       endDate: prevEndDate,

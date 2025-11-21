@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     // Validate required field - throws if invalid, type is guaranteed after
     const projectIdTyped = assertProjectId(projectId);
-    const competitors = await callConvexQuery(api.competitors.getCompetitorsByProject, {
+    const competitors = await callConvexQuery(api.seo.competitors.getCompetitorsByProject, {
       projectId: projectIdTyped,
     });
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     const projectIdTyped = assertProjectId(projectId);
-    const competitorId = await callConvexMutation(api.competitors.addCompetitor, {
+    const competitorId = await callConvexMutation(api.seo.competitors.addCompetitor, {
       projectId: projectIdTyped,
       domain,
       priority,
@@ -99,7 +99,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const competitorIdTyped = assertCompetitorId(competitorId);
-    await callConvexMutation(api.competitors.removeCompetitor, {
+    await callConvexMutation(api.seo.competitors.removeCompetitor, {
       competitorId: competitorIdTyped,
     });
 
@@ -134,7 +134,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const competitorIdTyped = assertCompetitorId(competitorId);
-    await callConvexMutation(api.competitors.updateCompetitorPriority, {
+    await callConvexMutation(api.seo.competitors.updateCompetitorPriority, {
       competitorId: competitorIdTyped,
       priority,
     });

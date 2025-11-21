@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     // In production, call Convex mutation
-    // const clientId = await convex.mutation(api.clients.createClient, { ... });
+    // const clientId = await convex.mutation(api.projects.clients.createClient, { ... });
     
     return NextResponse.json({
       success: true,
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   }
 
   // In production, call Convex query
-  // const clients = await convex.query(api.clients.getClientsByUser, { userId });
+  // const clients = await convex.query(api.projects.clients.getClientsByUser, { userId });
   
   return NextResponse.json({
     clients: [],

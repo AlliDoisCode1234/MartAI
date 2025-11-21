@@ -77,6 +77,43 @@ MartAI is an AI-powered SEO automation platform that automates keyword research,
 - `rankings` - Ranking history
 - `seoStatistics` - Aggregated metrics
 
+## Convex Directory Structure
+
+Organized by domain:
+
+```
+convex/
+├── auth/              # Authentication
+│   ├── users.ts
+│   └── sessions.ts
+├── projects/          # Project management
+│   ├── projects.ts
+│   └── clients.ts
+├── content/           # Content creation
+│   ├── briefs.ts
+│   ├── briefVersions.ts
+│   ├── drafts.ts
+│   └── quarterlyPlans.ts
+├── seo/               # SEO intelligence
+│   ├── keywordClusters.ts
+│   ├── keywords.ts
+│   ├── seoAudits.ts
+│   ├── rankings.ts
+│   ├── statistics.ts
+│   └── competitors.ts
+├── integrations/      # External connections
+│   ├── oauth.ts
+│   ├── ga4Connections.ts
+│   ├── gscConnections.ts
+│   └── pages.ts
+├── publishing/        # Content publishing
+│   └── scheduledPosts.ts
+├── analytics/         # Analytics data
+│   └── analytics.ts
+├── schema.ts          # Database schema
+└── http.ts            # HTTP actions
+```
+
 ## Data Flow
 
 ### 1. Onboarding

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const connection = await callConvexQuery(api.ga4Connections.getGA4Connection, {
+    const connection = await callConvexQuery(api.integrations.ga4Connections.getGA4Connection, {
       projectId: projectId as any,
     });
 

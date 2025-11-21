@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       // Store connection if valid and has publishing rights
       if (testResult.valid && testResult.canPublish && api) {
         try {
-          await callConvexMutation(api.oauth.storeOAuthToken, {
+          await callConvexMutation(api.integrations.oauth.storeOAuthToken, {
             projectId: projectId as any,
             platform,
             accessToken: JSON.stringify(credentials),

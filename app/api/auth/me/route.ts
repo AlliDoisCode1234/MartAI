@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     // Get user from Convex
     if (api) {
       try {
-        const user = await callConvexQuery(api.users.getUserById, { 
+        const user = await callConvexQuery(api.auth.users.getUserById, { 
           userId: payload.userId as any 
         });
 

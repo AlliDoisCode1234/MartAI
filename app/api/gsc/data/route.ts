@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const connection = await callConvexQuery(api.gscConnections.getGSCConnection, {
+    const connection = await callConvexQuery(api.integrations.gscConnections.getGSCConnection, {
       projectId: projectId as any,
     });
 
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     // Update last sync
     if (api) {
       try {
-        await callConvexMutation(api.gscConnections.updateLastSync, {
+        await callConvexMutation(api.integrations.gscConnections.updateLastSync, {
           connectionId: connection._id,
         });
       } catch (error) {

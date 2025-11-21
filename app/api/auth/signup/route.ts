@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     // Check if user exists
     if (api) {
       try {
-        const existingUser = await callConvexQuery(api.users.getUserByEmail, { email });
+        const existingUser = await callConvexQuery(api.auth.users.getUserByEmail, { email });
         if (existingUser) {
           return NextResponse.json(
             { error: 'User already exists' },
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     let userId;
     if (api) {
       try {
-        userId = await callConvexMutation(api.users.createUser, {
+        userId = await callConvexMutation(api.auth.users.createUser, {
           email,
           name: name || undefined,
           passwordHash,
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     if (api) {
       const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
       try {
-        await callConvexMutation(api.sessions.createSession, {
+        await callConvexMutation(api.auth.sessions.createSession, {
           userId: userId as any,
           token,
           expiresAt,
