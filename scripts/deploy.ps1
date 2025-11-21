@@ -50,7 +50,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # Commit
-Write-Host "💾 Committing changes..." -ForegroundColor Yellow
+Write-Host "Committing changes..." -ForegroundColor Yellow
 git commit -m $CommitMessage
 
 if ($LASTEXITCODE -ne 0) {

@@ -242,7 +242,10 @@ export default defineSchema({
     // Brief details
     titleOptions: v.optional(v.array(v.string())),
     h2Outline: v.optional(v.array(v.string())),
-    faqs: v.optional(v.array(v.string())),
+    faqs: v.optional(v.array(v.object({
+      question: v.string(),
+      answer: v.string(),
+    }))),
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
     internalLinks: v.optional(v.array(v.string())),

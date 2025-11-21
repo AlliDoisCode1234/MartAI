@@ -14,7 +14,10 @@ export const createBrief = mutation({
     status: v.optional(v.string()), // planned, in_progress, approved, published
     titleOptions: v.optional(v.array(v.string())),
     h2Outline: v.optional(v.array(v.string())),
-    faqs: v.optional(v.array(v.string())),
+    faqs: v.optional(v.array(v.object({
+      question: v.string(),
+      answer: v.string(),
+    }))),
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
     internalLinks: v.optional(v.array(v.string())),
@@ -62,7 +65,10 @@ export const updateBrief = mutation({
     title: v.optional(v.string()),
     titleOptions: v.optional(v.array(v.string())),
     h2Outline: v.optional(v.array(v.string())),
-    faqs: v.optional(v.array(v.string())),
+    faqs: v.optional(v.array(v.object({
+      question: v.string(),
+      answer: v.string(),
+    }))),
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
     internalLinks: v.optional(v.array(v.string())),

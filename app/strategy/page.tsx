@@ -314,8 +314,12 @@ function StrategyContent() {
                               </Badge>
                             </Td>
                             <Td>
-                              <Button size="xs" variant="outline">
-                                Edit
+                              <Button 
+                                size="xs" 
+                                variant="outline"
+                                onClick={() => window.location.href = `/content?briefId=${brief._id || brief.id}`}
+                              >
+                                Edit Brief
                               </Button>
                             </Td>
                           </Tr>
