@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { assertProjectId, assertInsightId, parseClusterId } from '@/lib/typeGuards';
+import type { ProjectId, InsightId } from '@/types';
+
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
+if (typeof window === 'undefined' && !apiLocal) {
+  try {
+    apiLocal = require('@/convex/_generated/api')?.api;
+  } catch {
+    apiLocal = null as any;
+  }
+}
 
 // Apply insight - adjust plan or draft task
 export async function POST(request: NextRequest) {
@@ -16,19 +28,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
+    // Validate required fields - type guaranteed after assertion
+    const projectIdTyped = assertProjectId(projectId);
+    const insightIdTyped = assertInsightId(insightId);
+
     // Get insight details
-    const insights = await callConvexQuery(api.analytics.getInsights, {
-      projectId: projectId as any,
+    const insights = await callConvexQuery(apiLocal.analytics.getInsights, {
+      projectId: projectIdTyped,
     });
 
-    const insight = insights.find((i: any) => (i._id || i.id) === insightId);
+    const insight = insights.find((i: any) => (i._id || i.id) === insightIdTyped);
     if (!insight) {
       return NextResponse.json(
         { error: 'Insight not found' },
@@ -37,25 +53,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Apply the insight based on action type
-    let result: any = { success: true };
+    let result: { success: boolean; briefId?: string; message?: string } = { success: true };
 
     switch (action) {
       case 'adjust_plan':
         // Add new brief to plan based on insight
         if (insight.metadata?.keywords || insight.metadata?.clusterId) {
           // Get current plan
-          const plans = await callConvexQuery(api.quarterlyPlans.getQuarterlyPlansByProjectId, {
-            projectId: projectId as any,
+          const plans = await callConvexQuery(apiLocal.quarterlyPlans.getQuarterlyPlansByProjectId, {
+            projectId: projectIdTyped,
           });
           
           if (plans && plans.length > 0) {
             const plan = plans[0];
+            const clusterId = parseClusterId(insight.metadata?.clusterId);
             // Create new brief for this insight
-            const briefId = await callConvexMutation(api.briefs.createBrief, {
+            const briefId = await callConvexMutation(apiLocal.briefs.createBrief, {
               planId: plan._id,
+              projectId: projectIdTyped,
               title: insight.title,
               scheduledDate: Date.now() + (7 * 24 * 60 * 60 * 1000), // Next week
-              clusterId: insight.metadata?.clusterId,
+              clusterId,
               status: 'draft',
             });
             result.briefId = briefId;
@@ -66,8 +84,9 @@ export async function POST(request: NextRequest) {
 
       case 'draft_task':
         // Create a task/brief based on insight
-        const taskBriefId = await callConvexMutation(api.briefs.createBrief, {
+        const taskBriefId = await callConvexMutation(apiLocal.briefs.createBrief, {
           planId: undefined, // Standalone task
+          projectId: projectIdTyped,
           title: `Task: ${insight.title}`,
           scheduledDate: Date.now(),
           status: 'draft',
@@ -94,8 +113,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark insight as applied
-    await callConvexMutation(api.analytics.applyInsight, {
-      insightId: insightId as any,
+    await callConvexMutation(apiLocal.analytics.applyInsight, {
+      insightId: insightIdTyped,
     });
 
     return NextResponse.json(result);

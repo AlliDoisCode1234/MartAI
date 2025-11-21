@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { assertBriefId, assertBriefVersionId } from '@/lib/typeGuards';
+import type { BriefId, BriefVersionId } from '@/types';
+
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
+if (typeof window === 'undefined' && !apiLocal) {
+  try {
+    apiLocal = require('@/convex/_generated/api')?.api;
+  } catch {
+    apiLocal = null as any;
+  }
+}
 
 // GET - Get versions for a brief
 export async function GET(request: NextRequest) {
@@ -16,15 +28,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    const versions = await callConvexQuery(api.briefVersions.getBriefVersions, {
-      briefId: briefId as any,
+    const briefIdTyped = assertBriefId(briefId);
+    const versions = await callConvexQuery(apiLocal.briefVersions.getBriefVersions, {
+      briefId: briefIdTyped,
     });
 
     return NextResponse.json({ versions });
@@ -51,15 +64,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    const versionId = await callConvexMutation(api.briefVersions.createBriefVersion, {
-      briefId: briefId as any,
+    const briefIdTyped = assertBriefId(briefId);
+    const versionId = await callConvexMutation(apiLocal.briefVersions.createBriefVersion, {
+      briefId: briefIdTyped,
       ...versionData,
     });
 
@@ -87,15 +101,16 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    const newVersionId = await callConvexMutation(api.briefVersions.restoreBriefVersion, {
-      versionId: versionId as any,
+    const versionIdTyped = assertBriefVersionId(versionId);
+    const newVersionId = await callConvexMutation(apiLocal.briefVersions.restoreBriefVersion, {
+      versionId: versionIdTyped,
     });
 
     return NextResponse.json({ success: true, versionId: newVersionId });

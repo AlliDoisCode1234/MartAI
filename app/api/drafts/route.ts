@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { validateDraftSEO } from '@/lib/draftGenerator';
+import { assertDraftId, assertBriefId } from '@/lib/typeGuards';
+import type { DraftId, BriefId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
-if (typeof window === 'undefined') {
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
+if (typeof window === 'undefined' && !apiLocal) {
   try {
-    api = require('@/convex/_generated/api')?.api;
+    apiLocal = require('@/convex/_generated/api')?.api;
   } catch {
-    api = null;
+    apiLocal = null as any;
   }
 }
 
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
@@ -37,12 +39,14 @@ export async function GET(request: NextRequest) {
 
     let draft;
     if (draftId) {
-      draft = await callConvexQuery(api.drafts.getDraftById, {
-        draftId: draftId as any,
+      const draftIdTyped = assertDraftId(draftId);
+      draft = await callConvexQuery(apiLocal.drafts.getDraftById, {
+        draftId: draftIdTyped,
       });
-    } else {
-      draft = await callConvexQuery(api.drafts.getDraftByBrief, {
-        briefId: briefId as any,
+    } else if (briefId) {
+      const briefIdTyped = assertBriefId(briefId);
+      draft = await callConvexQuery(apiLocal.drafts.getDraftByBrief, {
+        briefId: briefIdTyped,
       });
     }
 
@@ -57,7 +61,7 @@ export async function GET(request: NextRequest) {
     let brief = null;
     if (draft.briefId) {
       try {
-        brief = await callConvexQuery(api.briefs.getBriefById, {
+        brief = await callConvexQuery(apiLocal.briefs.getBriefById, {
           briefId: draft.briefId,
         });
       } catch (error) {
@@ -108,8 +112,9 @@ export async function PATCH(request: NextRequest) {
       updates.wordCount = updates.content.split(/\s+/).length;
     }
 
-    await callConvexMutation(api.drafts.updateDraft, {
-      draftId: draftId as any,
+    const draftIdTyped = assertDraftId(draftId);
+    await callConvexMutation(apiLocal.drafts.updateDraft, {
+      draftId: draftIdTyped,
       ...updates,
     });
 
@@ -137,24 +142,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    await callConvexMutation(api.drafts.approveDraft, {
-      draftId: draftId as any,
+    const draftIdTyped = assertDraftId(draftId);
+    await callConvexMutation(apiLocal.drafts.approveDraft, {
+      draftId: draftIdTyped,
     });
 
     // Update brief status
-    const draft = await callConvexQuery(api.drafts.getDraftById, {
-      draftId: draftId as any,
+    const draft = await callConvexQuery(apiLocal.drafts.getDraftById, {
+      draftId: draftIdTyped,
     });
 
     if (draft?.briefId) {
-      await callConvexMutation(api.briefs.updateBrief, {
+      await callConvexMutation(apiLocal.briefs.updateBrief, {
         briefId: draft.briefId,
         status: 'approved',
       });
@@ -184,15 +190,16 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    await callConvexMutation(api.drafts.deleteDraft, {
-      draftId: draftId as any,
+    const draftIdTyped = assertDraftId(draftId);
+    await callConvexMutation(apiLocal.drafts.deleteDraft, {
+      draftId: draftIdTyped,
     });
 
     return NextResponse.json({ success: true });

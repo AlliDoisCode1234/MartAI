@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { generateBriefDetails } from '@/lib/briefGenerator';
-import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { assertBriefId, parseClusterId } from '@/lib/typeGuards';
+import type { BriefId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
-if (typeof window === 'undefined') {
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
+if (typeof window === 'undefined' && !apiLocal) {
   try {
-    api = require('@/convex/_generated/api')?.api;
+    apiLocal = require('@/convex/_generated/api')?.api;
   } catch {
-    api = null;
+    apiLocal = null as any;
   }
 }
 
@@ -26,16 +28,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    // Get brief
-    const brief = await callConvexQuery(api.briefs.getBriefById, {
-      briefId: briefId as any,
+    // Validate required field - type guaranteed after assertion
+    const briefIdTyped = assertBriefId(briefId);
+    const brief = await callConvexQuery(apiLocal.briefs.getBriefById, {
+      briefId: briefIdTyped,
     });
 
     if (!brief) {
@@ -45,16 +48,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get cluster info
+    // Get cluster info - clusterId is optional
     let cluster;
-    const targetClusterId = clusterId || brief.clusterId;
+    const targetClusterId = parseClusterId(clusterId || brief.clusterId);
     
     if (targetClusterId) {
       try {
-        const clusters = await callConvexQuery(api.keywordClusters.getClustersByProject, {
+        const clusters = await callConvexQuery(apiLocal.keywordClusters.getClustersByProject, {
           projectId: brief.projectId,
         });
-        cluster = clusters?.find((c: any) => c._id === targetClusterId);
+        cluster = clusters?.find((c: any) => (c._id || c.id) === targetClusterId) || null;
       } catch (error) {
         console.warn('Failed to get cluster:', error);
       }
@@ -68,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get project details for context
-    const project = await callConvexQuery(api.projects.getProjectById, {
+    const project = await callConvexQuery(apiLocal.projects.getProjectById, {
       projectId: brief.projectId,
     });
 
@@ -86,8 +89,8 @@ export async function POST(request: NextRequest) {
     );
 
     // Update brief with generated details
-    await callConvexMutation(api.briefs.updateBrief, {
-      briefId: briefId as any,
+    await callConvexMutation(apiLocal.briefs.updateBrief, {
+      briefId: briefIdTyped,
       ...briefDetails,
       status: 'in_progress',
     });

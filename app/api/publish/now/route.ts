@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { WordPressClient } from '@/lib/wordpress';
 import { ShopifyClient } from '@/lib/shopify';
+import { assertDraftId, assertProjectId } from '@/lib/typeGuards';
+import type { DraftId, ProjectId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
 if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
+  if (!apiLocal) {
+    try {
+      apiLocal = require('@/convex/_generated/api')?.api;
+    } catch {
+      apiLocal = null as any;
+    }
   }
 }
 
@@ -27,16 +31,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    // Get draft
-    const draft = await callConvexQuery(api.drafts.getDraftById, {
-      draftId: draftId as any,
+    // Validate required field - type guaranteed after assertion
+    const draftIdTyped = assertDraftId(draftId);
+    const draft = await callConvexQuery(apiLocal.drafts.getDraftById, {
+      draftId: draftIdTyped,
     });
 
     if (!draft) {
@@ -54,13 +59,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get brief for metadata
-    const brief = await callConvexQuery(api.briefs.getBriefById, {
+    const brief = await callConvexQuery(apiLocal.briefs.getBriefById, {
       briefId: draft.briefId,
     });
 
     // Get OAuth connection
-    const connection = await callConvexQuery(api.oauthTokens.getOAuthToken, {
-      clientId: draft.projectId as any,
+    const projectIdTyped = assertProjectId(draft.projectId);
+    const connection = await callConvexQuery(apiLocal.oauthTokens.getOAuthToken, {
+      clientId: projectIdTyped,
       platform,
     });
     
@@ -109,13 +115,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Update draft and brief status
-    await callConvexMutation(api.drafts.updateDraft, {
-      draftId: draftId as any,
+    await callConvexMutation(apiLocal.drafts.updateDraft, {
+      draftId: draftIdTyped,
       status: 'published',
     });
 
     if (brief) {
-      await callConvexMutation(api.briefs.updateBrief, {
+      await callConvexMutation(apiLocal.briefs.updateBrief, {
         briefId: draft.briefId,
         status: 'published',
       });

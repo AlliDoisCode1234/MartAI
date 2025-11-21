@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { assertProjectId, assertPlanId } from '@/lib/typeGuards';
+import type { ProjectId, PlanId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
-if (typeof window === 'undefined') {
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
+if (typeof window === 'undefined' && !apiLocal) {
   try {
-    api = require('@/convex/_generated/api')?.api;
+    apiLocal = require('@/convex/_generated/api')?.api;
   } catch {
-    api = null;
+    apiLocal = null as any;
   }
 }
 
@@ -26,15 +28,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    const plan = await callConvexQuery(api.quarterlyPlans.getPlanByProject, {
-      projectId: projectId as any,
+    const projectIdTyped = assertProjectId(projectId);
+    const plan = await callConvexQuery(apiLocal.quarterlyPlans.getPlanByProject, {
+      projectId: projectIdTyped,
     });
 
     return NextResponse.json({ plan });
@@ -61,15 +64,16 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    await callConvexMutation(api.quarterlyPlans.updatePlan, {
-      planId: planId as any,
+    const planIdTyped = assertPlanId(planId);
+    await callConvexMutation(apiLocal.quarterlyPlans.updatePlan, {
+      planId: planIdTyped,
       ...updates,
     });
 
@@ -97,15 +101,16 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    await callConvexMutation(api.quarterlyPlans.deletePlan, {
-      planId: planId as any,
+    const planIdTyped = assertPlanId(planId);
+    await callConvexMutation(apiLocal.quarterlyPlans.deletePlan, {
+      planId: planIdTyped,
     });
 
     return NextResponse.json({ success: true });

@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexMutation } from '@/lib/convexClient';
+import { callConvexMutation, api } from '@/lib/convexClient';
+import { assertBriefId } from '@/lib/typeGuards';
+import type { BriefId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
-if (typeof window === 'undefined') {
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
+if (typeof window === 'undefined' && !apiLocal) {
   try {
-    api = require('@/convex/_generated/api')?.api;
+    apiLocal = require('@/convex/_generated/api')?.api;
   } catch {
-    api = null;
+    apiLocal = null as any;
   }
 }
 
@@ -25,17 +27,18 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
+    const briefIdTyped = assertBriefId(briefId);
     const timestamp = typeof newDate === 'string' ? new Date(newDate).getTime() : newDate;
 
-    await callConvexMutation(api.quarterlyPlans.rescheduleBrief, {
-      briefId: briefId as any,
+    await callConvexMutation(apiLocal.quarterlyPlans.rescheduleBrief, {
+      briefId: briefIdTyped,
       newDate: timestamp,
     });
 

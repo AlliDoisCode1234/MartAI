@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { generateDraftFromBrief } from '@/lib/draftGenerator';
-import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { assertBriefId, parseClusterId } from '@/lib/typeGuards';
+import type { BriefId } from '@/types';
 
-// Import api dynamically
-let api: any = null;
-if (typeof window === 'undefined') {
+// Import api dynamically for routes that need it
+let apiLocal: typeof api = api;
+if (typeof window === 'undefined' && !apiLocal) {
   try {
-    api = require('@/convex/_generated/api')?.api;
+    apiLocal = require('@/convex/_generated/api')?.api;
   } catch {
-    api = null;
+    apiLocal = null as any;
   }
 }
 
@@ -26,16 +28,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!api) {
+    if (!apiLocal) {
       return NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
     }
 
-    // Get brief with details
-    const brief = await callConvexQuery(api.briefs.getBriefById, {
-      briefId: briefId as any,
+    // Validate required field - type guaranteed after assertion
+    const briefIdTyped = assertBriefId(briefId);
+    const brief = await callConvexQuery(apiLocal.briefs.getBriefById, {
+      briefId: briefIdTyped,
     });
 
     if (!brief) {
@@ -57,17 +60,18 @@ export async function POST(request: NextRequest) {
     let cluster = null;
     if (brief.clusterId) {
       try {
-        const clusters = await callConvexQuery(api.keywordClusters.getClustersByProject, {
+        const clusters = await callConvexQuery(apiLocal.keywordClusters.getClustersByProject, {
           projectId: brief.projectId,
         });
-        cluster = clusters?.find((c: any) => c._id === brief.clusterId);
+        const clusterId = parseClusterId(brief.clusterId);
+        cluster = clusterId ? clusters?.find((c: any) => (c._id || c.id) === clusterId) : null;
       } catch (error) {
         console.warn('Failed to get cluster:', error);
       }
     }
 
     // Get project details
-    const project = await callConvexQuery(api.projects.getProjectById, {
+    const project = await callConvexQuery(apiLocal.projects.getProjectById, {
       projectId: brief.projectId,
     });
 
@@ -95,14 +99,14 @@ export async function POST(request: NextRequest) {
     );
 
     // Check if draft already exists
-    const existingDraft = await callConvexQuery(api.drafts.getDraftByBrief, {
-      briefId: briefId as any,
+    const existingDraft = await callConvexQuery(apiLocal.drafts.getDraftByBrief, {
+      briefId: briefIdTyped,
     });
 
     let draftId;
     if (existingDraft) {
       // Update existing draft
-      await callConvexMutation(api.drafts.updateDraft, {
+      await callConvexMutation(apiLocal.drafts.updateDraft, {
         draftId: existingDraft._id,
         content: draftResult.content,
         qualityScore: draftResult.qualityScore,
@@ -114,8 +118,8 @@ export async function POST(request: NextRequest) {
       draftId = existingDraft._id;
     } else {
       // Create new draft
-      draftId = await callConvexMutation(api.drafts.createDraft, {
-        briefId: briefId as any,
+      draftId = await callConvexMutation(apiLocal.drafts.createDraft, {
+        briefId: briefIdTyped,
         projectId: brief.projectId,
         content: draftResult.content,
         qualityScore: draftResult.qualityScore,
@@ -127,8 +131,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Update brief status
-    await callConvexMutation(api.briefs.updateBrief, {
-      briefId: briefId as any,
+    await callConvexMutation(apiLocal.briefs.updateBrief, {
+      briefId: briefIdTyped,
       status: 'in_progress',
     });
 
