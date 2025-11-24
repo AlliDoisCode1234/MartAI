@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { assertBriefId, assertBriefVersionId } from '@/lib/typeGuards';
-import type { BriefId, BriefVersionId } from '@/types';
 
 // Import api dynamically for routes that need it
 let apiLocal: typeof api = api;
@@ -17,7 +16,7 @@ if (typeof window === 'undefined' && !apiLocal) {
 // GET - Get versions for a brief
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const briefId = searchParams.get('briefId');
 
@@ -53,7 +52,7 @@ export async function GET(request: NextRequest) {
 // POST - Create new version
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { briefId, ...versionData } = body;
 
@@ -90,7 +89,7 @@ export async function POST(request: NextRequest) {
 // POST /restore - Restore a version
 export async function PUT(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { versionId } = body;
 
@@ -122,4 +121,3 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-

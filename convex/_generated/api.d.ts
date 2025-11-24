@@ -9,6 +9,7 @@
  */
 
 import type * as analytics_analytics from "../analytics/analytics.js";
+import type * as auth_seed from "../auth/seed.js";
 import type * as auth_sessions from "../auth/sessions.js";
 import type * as auth_users from "../auth/users.js";
 import type * as content_briefVersions from "../content/briefVersions.js";
@@ -17,6 +18,7 @@ import type * as content_drafts from "../content/drafts.js";
 import type * as content_quarterlyPlans from "../content/quarterlyPlans.js";
 import type * as http from "../http.js";
 import type * as http_checkScheduledPosts from "../http/checkScheduledPosts.js";
+import type * as http_seedAdmin from "../http/seedAdmin.js";
 import type * as integrations_ga4Connections from "../integrations/ga4Connections.js";
 import type * as integrations_gscConnections from "../integrations/gscConnections.js";
 import type * as integrations_oauth from "../integrations/oauth.js";
@@ -39,6 +41,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "analytics/analytics": typeof analytics_analytics;
+  "auth/seed": typeof auth_seed;
   "auth/sessions": typeof auth_sessions;
   "auth/users": typeof auth_users;
   "content/briefVersions": typeof content_briefVersions;
@@ -47,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   "content/quarterlyPlans": typeof content_quarterlyPlans;
   http: typeof http;
   "http/checkScheduledPosts": typeof http_checkScheduledPosts;
+  "http/seedAdmin": typeof http_seedAdmin;
   "integrations/ga4Connections": typeof integrations_ga4Connections;
   "integrations/gscConnections": typeof integrations_gscConnections;
   "integrations/oauth": typeof integrations_oauth;

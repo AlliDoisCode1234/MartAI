@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
 import { assertDraftId, assertProjectId } from '@/lib/typeGuards';
-import type { DraftId, ProjectId } from '@/types';
 
 // Import api dynamically for routes that need it
 let apiLocal: typeof api = api;
@@ -18,7 +17,7 @@ if (typeof window === 'undefined') {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { 
       draftId, 
@@ -126,4 +125,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

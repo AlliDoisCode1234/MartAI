@@ -35,7 +35,12 @@ function StrategyContent() {
     if (storedProject) {
       setProjectId(storedProject);
       loadClusters(storedProject);
-      loadPlan(storedProject);
+      try {
+        const validatedProjectId = assertProjectId(storedProject);
+        loadPlan(validatedProjectId);
+      } catch (error) {
+        console.error('Invalid project ID:', error);
+      }
     }
   }, []);
 
@@ -156,7 +161,10 @@ function StrategyContent() {
       const data = await response.json();
       if (response.ok && data.success) {
         setPlan(data.plan);
-        await loadPlan(projectId);
+        if (projectId) {
+          const validatedProjectId = assertProjectId(projectId);
+          await loadPlan(validatedProjectId);
+        }
         onPlanModalClose();
         alert(`Generated 12-week plan with ${data.count} content briefs!`);
       } else {
@@ -182,7 +190,8 @@ function StrategyContent() {
       });
 
       if (response.ok && projectId) {
-        await loadPlan(projectId);
+        const validatedProjectId = assertProjectId(projectId);
+        await loadPlan(validatedProjectId);
       }
     } catch (error) {
       console.error('Error rescheduling:', error);

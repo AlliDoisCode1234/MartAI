@@ -1,11 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, VStack, Heading, Text, Box, Input, Button, FormControl, FormLabel, Alert, AlertIcon, Link } from '@chakra-ui/react';
+import { authStorage } from '@/lib/storage';
+import { useAuth } from '@/lib/useAuth';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { isAuthenticated, login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -13,32 +16,25 @@ export default function LoginPage() {
     password: '',
   });
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/strategy');
+    }
+  }, [isAuthenticated, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+      // Use centralized login function from useAuth
+      await login(formData.email, formData.password);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to login');
-      }
-
-      // Store token
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-
-      // Redirect to dashboard
-      router.push('/');
+      // Redirect to strategy page (main app)
+      router.push('/strategy');
+      router.refresh(); // Force refresh to update auth state
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

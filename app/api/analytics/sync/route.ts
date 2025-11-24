@@ -18,7 +18,7 @@ if (typeof window === 'undefined' && !apiLocal) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { projectId, days = 30 } = body;
 

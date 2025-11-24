@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { assertProjectId, assertPlanId } from '@/lib/typeGuards';
-import type { ProjectId, PlanId } from '@/types';
 
 // Import api dynamically for routes that need it
 let apiLocal: typeof api = api;
@@ -17,7 +16,7 @@ if (typeof window === 'undefined' && !apiLocal) {
 // GET - Get plan for a project
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const projectId = searchParams.get('projectId');
 
@@ -53,7 +52,7 @@ export async function GET(request: NextRequest) {
 // PATCH - Update plan
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { planId, ...updates } = body;
 
@@ -90,7 +89,7 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Delete plan
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const planId = searchParams.get('planId');
 
@@ -122,4 +121,3 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
-

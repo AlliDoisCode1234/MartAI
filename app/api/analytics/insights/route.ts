@@ -15,7 +15,7 @@ if (typeof window === 'undefined') {
 // GET - Get insights
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const projectId = searchParams.get('projectId');
     const type = searchParams.get('type');
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 // POST - Apply insight
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { insightId } = body;
 

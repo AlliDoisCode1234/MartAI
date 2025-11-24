@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyPassword, generateToken, validateEmail } from '@/lib/auth';
-import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
-import { createUserSnapshot } from '@/lib/userSnapshots';
+import { generateToken, generateRefreshToken, validateEmail } from '@/lib/auth';
+import { callConvexMutation } from '@/lib/convexClient';
 import type { UserSnapshot } from '@/types';
+import { checkRateLimit, getAccountLock, recordFailedAttempt, clearFailedAttempts } from '@/lib/authRateLimiter';
+import { logAuthEvent } from '@/lib/auditLogger';
 
 // Import api dynamically - will be available after npx convex dev
 let api: any = null;
+let internal: any = null;
 if (typeof window === 'undefined') {
   try {
-    api = require('@/convex/_generated/api')?.api;
+    const apiModule = require('@/convex/_generated/api');
+    api = apiModule?.api || null;
+    internal = apiModule?.internal || null;
   } catch {
     api = null;
+    internal = null;
   }
 }
 
@@ -34,73 +39,146 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user from Convex
-    if (!api) {
+    const identifier = email.toLowerCase();
+    const clientIp = extractClientIp(request);
+    const rateLimit = checkRateLimit(clientIp);
+    if (!rateLimit.allowed) {
+      logAuthEvent({
+        type: 'login.rate_limited',
+        email: identifier,
+        ip: clientIp || undefined,
+        metadata: { retryAfter: rateLimit.retryAfter },
+      });
+      return NextResponse.json(
+        {
+          error: 'Too many login attempts. Please wait and try again.',
+          retryAfter: rateLimit.retryAfter,
+        },
+        {
+          status: 429,
+          headers: rateLimit.retryAfter
+            ? { 'Retry-After': String(rateLimit.retryAfter) }
+            : undefined,
+        }
+      );
+    }
+
+    const lock = getAccountLock(identifier);
+    if (lock.locked) {
+      logAuthEvent({
+        type: 'login.locked',
+        email: identifier,
+        ip: clientIp || undefined,
+        metadata: { lockedUntil: lock.lockedUntil },
+      });
+      return NextResponse.json(
+        {
+          error: 'Account temporarily locked due to repeated failures. Try again later.',
+          lockedUntil: lock.lockedUntil,
+        },
+        { status: 423 }
+      );
+    }
+
+    // Verify credentials using internal mutation (never exposes passwordHash)
+    if (!internal || !api) {
       return NextResponse.json(
         { error: 'Authentication service not configured. Please run npx convex dev' },
         { status: 503 }
       );
     }
 
-    let user;
-    let passwordHash;
+    let verificationResult;
     
     try {
-      user = await callConvexQuery(api.auth.users.getUserByEmail, { email });
-      if (!user) {
-        return NextResponse.json(
-          { error: 'Invalid email or password' },
-          { status: 401 }
-        );
-      }
-      passwordHash = user.passwordHash;
+      // Use internal mutation for password verification - passwordHash never leaves Convex
+      verificationResult = await callConvexMutation(internal.auth.users.verifyUserPassword, {
+        email: identifier,
+        password,
+      });
     } catch (error) {
-      console.warn('Convex error:', error);
+      // Never log password or sensitive data
+      console.error('Authentication error:', error instanceof Error ? error.message : 'Unknown error');
       return NextResponse.json(
         { error: 'Authentication service error' },
         { status: 503 }
       );
     }
 
-    // Verify password
-    const isValid = await verifyPassword(password, passwordHash);
-    if (!isValid) {
+    if (!verificationResult.valid || !verificationResult.user) {
+      const failed = recordFailedAttempt(identifier);
+      logAuthEvent({
+        type: 'login.failure',
+        email: identifier,
+        ip: clientIp || undefined,
+        metadata: {
+          attempts: failed.attempts,
+          lockedUntil: failed.lockedUntil,
+        },
+      });
+
+      if (failed.locked) {
+        return NextResponse.json(
+          {
+            error: 'Account temporarily locked due to repeated failures. Try again later.',
+            lockedUntil: failed.lockedUntil,
+          },
+          { status: 423 }
+        );
+      }
+
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       );
     }
 
-    // Generate token
-    const token = generateToken({ userId: user._id.toString(), email: user.email });
+    clearFailedAttempts(identifier);
 
-    // Store session in Convex
-    if (api) {
+    const user = verificationResult.user;
+
+    // Generate tokens
+    const payload = { 
+      userId: user._id.toString(), 
+      email: user.email,
+      role: user.role 
+    };
+    const accessToken = generateToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    // Store session in Convex with refresh token
+    try {
       const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
-      try {
-        await callConvexMutation(api.auth.sessions.createSession, {
-          userId: user._id,
-          token,
-          expiresAt,
-        });
-      } catch (error) {
-        console.warn('Failed to create session:', error);
-      }
+      await callConvexMutation(api.auth.sessions.createSession, {
+        userId: verificationResult.userId,
+        token: refreshToken, // Store refresh token in session
+        expiresAt,
+      });
+    } catch (error) {
+      console.warn('Failed to create session:', error);
     }
 
-    // Create safe user snapshot (excludes passwordHash)
-    const userSnapshot = createUserSnapshot(user);
-    
-    if (!userSnapshot) {
-      return NextResponse.json(
-        { error: 'Failed to get user data' },
-        { status: 500 }
-      );
-    }
+    // User data already excludes passwordHash from internal mutation
+    const userSnapshot: UserSnapshot = {
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+
+    logAuthEvent({
+      type: 'login.success',
+      email: identifier,
+      ip: clientIp || undefined,
+    });
 
     return NextResponse.json({
       success: true,
-      token,
+      token: accessToken,
+      refreshToken: refreshToken,
       user: userSnapshot,
     });
   } catch (error) {
@@ -110,5 +188,13 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+function extractClientIp(request: NextRequest) {
+  const header = request.headers.get('x-forwarded-for');
+  if (header) {
+    return header.split(',')[0]?.trim() || null;
+  }
+  return (request as any)?.ip || null;
 }
 

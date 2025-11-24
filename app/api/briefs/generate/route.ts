@@ -3,7 +3,6 @@ import { requireAuth } from '@/lib/authMiddleware';
 import { generateBriefDetails } from '@/lib/briefGenerator';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { assertBriefId, parseClusterId } from '@/lib/typeGuards';
-import type { BriefId } from '@/types';
 
 // Import api dynamically for routes that need it
 let apiLocal: typeof api = api;
@@ -17,7 +16,7 @@ if (typeof window === 'undefined' && !apiLocal) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { briefId, clusterId } = body;
 

@@ -15,7 +15,7 @@ if (typeof window === 'undefined') {
 // GET - Get scheduled posts
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const projectId = searchParams.get('projectId');
     const status = searchParams.get('status');
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 // PATCH - Update scheduled post
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { postId, ...updates } = body;
 
@@ -110,7 +110,7 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Cancel/delete scheduled post
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const postId = searchParams.get('postId');
 

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexMutation, api } from '@/lib/convexClient';
 import { assertClusterId } from '@/lib/typeGuards';
-import type { ClusterId } from '@/types';
 
 // Import api dynamically for routes that need it
 let apiLocal: typeof api = api;
@@ -18,7 +17,7 @@ if (typeof window === 'undefined') {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { clusterId, status } = body;
 
@@ -58,4 +57,3 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
-

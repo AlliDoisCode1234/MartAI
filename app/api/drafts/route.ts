@@ -3,7 +3,6 @@ import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { validateDraftSEO } from '@/lib/draftGenerator';
 import { assertDraftId, assertBriefId } from '@/lib/typeGuards';
-import type { DraftId, BriefId } from '@/types';
 
 // Import api dynamically for routes that need it
 let apiLocal: typeof api = api;
@@ -18,7 +17,7 @@ if (typeof window === 'undefined' && !apiLocal) {
 // GET - Get draft
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const draftId = searchParams.get('draftId');
     const briefId = searchParams.get('briefId');
@@ -89,7 +88,7 @@ export async function GET(request: NextRequest) {
 // PATCH - Update draft
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { draftId, ...updates } = body;
 
@@ -131,7 +130,7 @@ export async function PATCH(request: NextRequest) {
 // POST - Approve draft
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { draftId } = body;
 
@@ -179,7 +178,7 @@ export async function POST(request: NextRequest) {
 // DELETE - Delete draft
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const draftId = searchParams.get('draftId');
 

@@ -60,17 +60,25 @@ export type GeneratedPageId = Id<'generatedPages'>;
 // Core Domain Types
 // ============================================================================
 
-// Internal user type (full database record)
+// User roles
+export type UserRole = 'admin' | 'user' | 'viewer';
+
+// Public user model (safe for UI and API responses)
 export interface User {
   _id: UserId;
   email: string;
   name?: string;
-  passwordHash: string; // Never expose this
+  role?: UserRole; // User role: admin, user, viewer (default: user)
   avatarUrl?: string;
   bio?: string;
   preferences?: UserPreferences;
   createdAt: number;
   updatedAt?: number;
+}
+
+// Internal user record (includes sensitive fields - server only)
+export interface UserRecord extends User {
+  passwordHash: string; // Never expose this in API responses
 }
 
 // User preferences
@@ -82,21 +90,13 @@ export interface UserPreferences {
 
 // Public user snapshot - safe to expose in API responses
 // Includes profile data but excludes passwordHash
-export interface UserSnapshot {
-  _id: UserId;
-  email: string;
-  name?: string;
-  avatarUrl?: string;
-  bio?: string;
-  preferences?: UserPreferences;
-  createdAt: number;
-  updatedAt?: number;
-}
+export interface UserSnapshot extends User {}
 
 // Minimal user info for auth context
 export interface AuthUser {
   userId: string;
   email: string;
+  role?: UserRole;
 }
 
 export interface Project {

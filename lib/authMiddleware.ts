@@ -25,6 +25,7 @@ export function verifyAuth(request: NextRequest): { user: AuthUser } | null {
     user: {
       userId: payload.userId,
       email: payload.email,
+      role: payload.role,
     }
   };
 }

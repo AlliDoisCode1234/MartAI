@@ -20,21 +20,78 @@ export function useAuth() {
       setToken(storedToken);
       setUser(storedUser);
       
+      // Helper function to refresh token (defined later in component)
+      const doRefresh = async (): Promise<string | null> => {
+        const refreshToken = authStorage.getRefreshToken();
+        if (!refreshToken) return null;
+
+        try {
+          const response = await fetch('/api/auth/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            authStorage.clear();
+            setUser(null);
+            setToken(null);
+            return null;
+          }
+
+          if (data.token) {
+            authStorage.setToken(data.token);
+            if (data.user) {
+              authStorage.setUser(data.user);
+              setUser(data.user);
+            }
+            setToken(data.token);
+            return data.token;
+          }
+
+          return null;
+        } catch (error) {
+          console.error('Token refresh error:', error);
+          return null;
+        }
+      };
+
       // Verify token is still valid
       fetch('/api/auth/me', {
         headers: getAuthHeaders(),
       })
-        .then(res => res.json())
-        .then(data => {
-          if (data.user) {
-            setUser(data.user);
-            // Update stored user with latest data
-            authStorage.setUser(data.user);
+        .then(async res => {
+          if (res.status === 401) {
+            // Token expired, try to refresh
+            const newToken = await doRefresh();
+            if (newToken) {
+              // Retry with new token
+              const retryRes = await fetch('/api/auth/me', {
+                headers: { Authorization: `Bearer ${newToken}` },
+              });
+              const retryData = await retryRes.json();
+              if (retryData.user) {
+                setUser(retryData.user);
+                authStorage.setUser(retryData.user);
+              }
+            } else {
+              // Refresh failed, clear auth
+              authStorage.clear();
+              setUser(null);
+              setToken(null);
+            }
           } else {
-            // Token invalid, clear storage
-            authStorage.clear();
-            setUser(null);
-            setToken(null);
+            const data = await res.json();
+            if (data.user) {
+              setUser(data.user);
+              authStorage.setUser(data.user);
+            } else {
+              authStorage.clear();
+              setUser(null);
+              setToken(null);
+            }
           }
         })
         .catch(() => {
@@ -61,12 +118,53 @@ export function useAuth() {
 
     if (data.token && data.user) {
       authStorage.setToken(data.token);
+      if (data.refreshToken) {
+        authStorage.setRefreshToken(data.refreshToken);
+      }
       authStorage.setUser(data.user);
       setToken(data.token);
       setUser(data.user);
     }
 
     return data;
+  };
+
+  const refreshAccessToken = async (): Promise<string | null> => {
+    const refreshToken = authStorage.getRefreshToken();
+    if (!refreshToken) return null;
+
+    try {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Refresh token invalid, clear auth
+        authStorage.clear();
+        setUser(null);
+        setToken(null);
+        return null;
+      }
+
+      if (data.token) {
+        authStorage.setToken(data.token);
+        if (data.user) {
+          authStorage.setUser(data.user);
+          setUser(data.user);
+        }
+        setToken(data.token);
+        return data.token;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      return null;
+    }
   };
 
   const signup = async (email: string, password: string, name?: string) => {
@@ -84,6 +182,9 @@ export function useAuth() {
 
     if (data.token && data.user) {
       authStorage.setToken(data.token);
+      if (data.refreshToken) {
+        authStorage.setRefreshToken(data.refreshToken);
+      }
       authStorage.setUser(data.user);
       setToken(data.token);
       setUser(data.user);
@@ -144,6 +245,7 @@ export function useAuth() {
     signup,
     logout,
     updateProfile,
+    refreshAccessToken,
     isAuthenticated: !!user && !!token,
   };
 }

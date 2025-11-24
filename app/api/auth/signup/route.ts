@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hashPassword, validatePassword, validateEmail, generateToken } from '@/lib/auth';
+import { hashPassword, validatePassword, validateEmail, generateToken, generateRefreshToken } from '@/lib/auth';
 import { callConvexMutation, callConvexQuery } from '@/lib/convexClient';
 import { createUserSnapshot } from '@/lib/userSnapshots';
 import type { UserSnapshot, UserId } from '@/types';
@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user exists
+    // Check if user exists (using safe snapshot query - no passwordHash)
     if (api) {
       try {
-        const existingUser = await callConvexQuery(api.auth.users.getUserByEmail, { email });
+        const existingUser = await callConvexQuery(api.auth.users.getUserSnapshotByEmail, { email });
         if (existingUser) {
           return NextResponse.json(
             { error: 'User already exists' },
@@ -93,8 +93,10 @@ export async function POST(request: NextRequest) {
       userId = `user-${Date.now()}`;
     }
 
-    // Generate token
-    const token = generateToken({ userId: userId.toString(), email });
+    // Generate tokens
+    const payload = { userId: userId.toString(), email, role: createdUser?.role };
+    const accessToken = generateToken(payload);
+    const refreshToken = generateRefreshToken(payload);
 
     // Store session in Convex
     if (api) {
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
       try {
         await callConvexMutation(api.auth.sessions.createSession, {
           userId: userId as any,
-          token,
+          token: refreshToken,
           expiresAt,
         });
       } catch (error) {
@@ -127,7 +129,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      token,
+      token: accessToken,
+      refreshToken: refreshToken,
       user: userSnapshot,
     });
   } catch (error) {

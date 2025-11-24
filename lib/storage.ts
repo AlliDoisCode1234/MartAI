@@ -5,6 +5,7 @@
 
 const STORAGE_KEYS = {
   AUTH_TOKEN: 'auth_token',
+  REFRESH_TOKEN: 'refresh_token',
   USER: 'user',
   CURRENT_PROJECT_ID: 'currentProjectId',
   PROJECT_ID: 'projectId',
@@ -90,6 +91,10 @@ export const authStorage = {
   setToken: (token: string) => setLocalStorage(STORAGE_KEYS.AUTH_TOKEN, token),
   removeToken: () => removeLocalStorage(STORAGE_KEYS.AUTH_TOKEN),
   
+  getRefreshToken: () => getLocalStorage(STORAGE_KEYS.REFRESH_TOKEN),
+  setRefreshToken: (token: string) => setLocalStorage(STORAGE_KEYS.REFRESH_TOKEN, token),
+  removeRefreshToken: () => removeLocalStorage(STORAGE_KEYS.REFRESH_TOKEN),
+  
   getUser: <T = any>(): T | null => {
     const userStr = getLocalStorage(STORAGE_KEYS.USER);
     if (!userStr) return null;
@@ -110,6 +115,7 @@ export const authStorage = {
   
   clear: () => {
     authStorage.removeToken();
+    authStorage.removeRefreshToken();
     authStorage.removeUser();
   },
 };

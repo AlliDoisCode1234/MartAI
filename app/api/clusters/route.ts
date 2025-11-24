@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { assertProjectId, assertClusterId } from '@/lib/typeGuards';
-import type { ProjectId, ClusterId } from '@/types';
 
 // Import api dynamically for routes that need it
 let apiLocal: typeof api = api;
@@ -19,7 +18,7 @@ if (typeof window === 'undefined') {
 // GET - Get clusters for a project
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const projectId = searchParams.get('projectId');
     const status = searchParams.get('status'); // active, hidden, favorite, all
@@ -70,7 +69,7 @@ export async function GET(request: NextRequest) {
 // PATCH - Update cluster
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { clusterId, ...updates } = body;
 
@@ -107,7 +106,7 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Delete cluster
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const clusterId = searchParams.get('clusterId');
 

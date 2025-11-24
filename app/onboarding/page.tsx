@@ -1,21 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Container, VStack, Heading, Text, Box, Input, Button, HStack, FormControl, FormLabel, Spinner, Alert, AlertIcon } from '@chakra-ui/react';
-import { sessionStorageUtil } from '@/lib/storage';
+import { Container, VStack, Heading, Text, Box, Input, Button, FormControl, FormLabel, Alert, AlertIcon, HStack } from '@chakra-ui/react';
+import { useAuth } from '@/lib/useAuth';
+import { authStorage } from '@/lib/storage';
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { isAuthenticated, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    companyName: '',
+    businessName: '',
     website: '',
-    industry: '',
-    targetAudience: '',
-    monthlyRevenueGoal: '',
   });
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+    }
+  }, [isAuthenticated, router]);
+
+  // Redirect to app if user already has a project
+  useEffect(() => {
+    const projectId = localStorage.getItem('currentProjectId');
+    if (projectId && isAuthenticated) {
+      router.push('/strategy');
+    }
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,169 +37,131 @@ export default function OnboardingPage() {
     setLoading(true);
 
     try {
-      // Get authenticated user
-      const userStr = localStorage.getItem('user');
-      const token = localStorage.getItem('auth_token');
-      
-      if (!userStr || !token) {
+      if (!user || !formData.website) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      const token = authStorage.getToken();
+      if (!token) {
         router.push('/auth/login');
         return;
       }
 
-      const user = JSON.parse(userStr);
-      const userId = user.id;
-
-      // Save client to Convex via API
-      const clientResponse = await fetch('/api/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          userId,
-        }),
-      });
-
-      // Generate SEO analysis
-      const seoResponse = await fetch('/api/seo-agent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          userId,
-        }),
-      });
-
-      if (!seoResponse.ok) {
-        throw new Error('Failed to generate SEO analysis');
+      // Normalize website URL
+      let websiteUrl = formData.website.trim();
+      if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
+        websiteUrl = 'https://' + websiteUrl;
       }
 
-      const data = await seoResponse.json();
-      
-      sessionStorageUtil.setSeoAnalysis({
-        ...data,
-        businessInfo: formData,
-        userId,
+      // Create project (minimal setup)
+      const projectResponse = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: formData.businessName || 'My Business',
+          websiteUrl: websiteUrl,
+        }),
       });
 
-      router.push('/onboarding/results');
+      if (!projectResponse.ok) {
+        const errorData = await projectResponse.json();
+        throw new Error(errorData.error || 'Failed to create project');
+      }
+
+      const projectData = await projectResponse.json();
+      if (projectData.projectId) {
+        localStorage.setItem('currentProjectId', projectData.projectId);
+      }
+
+      // Redirect to main app
+      router.push('/strategy');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setLoading(false);
     }
   };
 
-  return (
-    <Box minH="calc(100vh - 64px)" bg="brand.light">
-      <Container maxW="container.xl" py={{ base: 8, md: 12 }} px={{ base: 4, sm: 6, md: 8, lg: 12 }}>
-        <HStack spacing={8} align="start" flexDirection={{ base: 'column', lg: 'row' }}>
-          <Box flex={1} bg="white" p={8} borderRadius="lg" shadow="md">
-            <form onSubmit={handleSubmit}>
-              <VStack spacing={6} align="stretch">
-                <Heading size="xl" fontWeight="bold" fontFamily="heading" color="gray.800">Business Setup</Heading>
-                <Text color="gray.600">Tell us about your business to generate your personalized SEO growth plan.</Text>
-                
-                {error && (
-                  <Alert status="error" borderRadius="md">
-                    <AlertIcon />
-                    {error}
-                  </Alert>
-                )}
+  if (!isAuthenticated) {
+    return null; // Will redirect in useEffect
+  }
 
-                <FormControl isRequired>
-                  <FormLabel>Business Name</FormLabel>
-                  <Input 
-                    placeholder="Enter your business name" 
-                    value={formData.companyName}
-                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+  return (
+    <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center">
+      <Container maxW="container.sm" py={12}>
+        <Box bg="white" p={8} borderRadius="lg" shadow="md">
+          <VStack spacing={6} align="stretch">
+            <VStack spacing={2} align="stretch" textAlign="center">
+              <Heading size="xl" fontWeight="bold" fontFamily="heading" color="gray.800">
+                Welcome to MartAI! 🎉
+              </Heading>
+              <Text color="gray.600" fontSize="lg">
+                Let's get your website ready to grow. We'll help you get found on Google - no SEO knowledge needed!
+              </Text>
+            </VStack>
+
+            {error && (
+              <Alert status="error" borderRadius="md">
+                <AlertIcon />
+                {error}
+              </Alert>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              <VStack spacing={5} align="stretch">
+                <FormControl>
+                  <FormLabel fontWeight="semibold">What's your business name?</FormLabel>
+                  <Input
+                    placeholder="e.g., Acme Bakery"
+                    value={formData.businessName}
+                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                     disabled={loading}
+                    size="lg"
                   />
+                  <Text fontSize="xs" color="gray.500" mt={1}>
+                    Optional - we can update this later
+                  </Text>
                 </FormControl>
 
                 <FormControl isRequired>
-                  <FormLabel>Website</FormLabel>
-                  <Input 
-                    placeholder="https://yourwebsite.com" 
+                  <FormLabel fontWeight="semibold">What's your website address?</FormLabel>
+                  <Input
+                    placeholder="yourwebsite.com"
                     type="url"
                     value={formData.website}
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                     disabled={loading}
+                    size="lg"
                   />
+                  <Text fontSize="xs" color="gray.500" mt={1}>
+                    Don't worry about adding "https://" - we'll add that for you
+                  </Text>
                 </FormControl>
 
-                <FormControl isRequired>
-                  <FormLabel>Industry / Niche</FormLabel>
-                  <Input 
-                    placeholder="e.g., E-commerce, SaaS, Consulting" 
-                    value={formData.industry}
-                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                    disabled={loading}
-                  />
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel>Target Audience</FormLabel>
-                  <Input 
-                    placeholder="Describe your ideal customer" 
-                    value={formData.targetAudience}
-                    onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-                    disabled={loading}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Monthly Revenue Goal</FormLabel>
-                  <Input 
-                    placeholder="$10,000" 
-                    type="text"
-                    value={formData.monthlyRevenueGoal}
-                    onChange={(e) => setFormData({ ...formData, monthlyRevenueGoal: e.target.value })}
-                    disabled={loading}
-                  />
-                </FormControl>
-
-                <Button 
+                <Button
                   type="submit"
-                  bg="brand.orange" 
-                  color="white" 
-                  size="lg" 
-                  mt={4} 
+                  bg="brand.orange"
+                  color="white"
+                  size="lg"
                   _hover={{ bg: '#E8851A' }}
-                  disabled={loading}
+                  disabled={loading || !formData.website}
                   isLoading={loading}
-                  loadingText="Generating..."
+                  loadingText="Getting everything ready..."
                 >
-                  {loading ? 'Generating SEO Plan...' : 'Generate My SEO Growth Plan'}
+                  {loading ? 'Setting things up...' : 'Get Started →'}
                 </Button>
               </VStack>
             </form>
-          </Box>
 
-          <Box w={{ base: 'full', lg: '400px' }} bg="white" p={6} borderRadius="lg" shadow="md" bgGradient="linear(to-br, brand.lavender, white)">
-            <VStack spacing={4} align="stretch">
-              <Heading size="md" fontFamily="heading">What You'll Get</Heading>
-              <Box p={6} bg="white" borderRadius="md">
-                <VStack spacing={4} align="stretch">
-                  <HStack>
-                    <Text color="gray.600">✓</Text>
-                    <Text color="gray.600" fontSize="sm">Comprehensive SEO Audit</Text>
-                  </HStack>
-                  <HStack>
-                    <Text color="gray.600">✓</Text>
-                    <Text color="gray.600" fontSize="sm">Custom Taglines & Content Ideas</Text>
-                  </HStack>
-                  <HStack>
-                    <Text color="gray.600">✓</Text>
-                    <Text color="gray.600" fontSize="sm">Social Media Post Suggestions</Text>
-                  </HStack>
-                  <HStack>
-                    <Text color="gray.600">✓</Text>
-                    <Text color="gray.600" fontSize="sm">Actionable SEO Recommendations</Text>
-                  </HStack>
-                </VStack>
-              </Box>
-            </VStack>
-          </Box>
-        </HStack>
+            <Box bg="gray.50" p={4} borderRadius="md" mt={4}>
+              <Text fontSize="sm" color="gray.600" textAlign="center">
+                <strong>What happens next?</strong> We'll analyze your website and create a personalized plan to help you rank higher on Google. You can always add more details later!
+              </Text>
+            </Box>
+          </VStack>
+        </Box>
       </Container>
     </Box>
   );

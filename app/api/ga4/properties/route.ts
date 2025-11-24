@@ -15,7 +15,7 @@ if (typeof window === 'undefined') {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const projectId = searchParams.get('projectId');
 

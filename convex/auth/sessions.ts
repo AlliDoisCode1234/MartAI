@@ -48,6 +48,17 @@ export const getSessionByToken = query({
   },
 });
 
+// Get sessions by user
+export const getSessionsByUser = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("sessions")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+  },
+});
+
 // Delete session
 export const deleteSession = mutation({
   args: { token: v.string() },

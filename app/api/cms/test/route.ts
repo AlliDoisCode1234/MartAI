@@ -8,7 +8,7 @@ import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { platform, projectId, credentials } = body;
 

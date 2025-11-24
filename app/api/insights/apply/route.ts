@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { assertProjectId, assertInsightId, parseClusterId } from '@/lib/typeGuards';
-import type { ProjectId, InsightId } from '@/types';
 
 // Import api dynamically for routes that need it
 let apiLocal: typeof api = api;
@@ -17,7 +16,7 @@ if (typeof window === 'undefined' && !apiLocal) {
 // Apply insight - adjust plan or draft task
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { insightId, action, projectId } = body;
 

@@ -143,6 +143,7 @@ export default defineSchema({
     email: v.string(),
     name: v.optional(v.string()),
     passwordHash: v.string(), // bcrypt hash
+    role: v.optional(v.union(v.literal("admin"), v.literal("user"), v.literal("viewer"))), // User role: admin, user, viewer
     avatarUrl: v.optional(v.string()), // User profile picture
     bio: v.optional(v.string()), // User bio/description
     preferences: v.optional(v.object({
@@ -153,7 +154,8 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_role", ["role"]),
 
   // Sessions (for auth)
   sessions: defineTable({
@@ -255,6 +257,7 @@ export default defineSchema({
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
     internalLinks: v.optional(v.array(v.string())),
+    schema: v.optional(v.any()),
     schemaSuggestion: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),

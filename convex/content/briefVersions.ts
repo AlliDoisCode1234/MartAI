@@ -87,11 +87,27 @@ export const restoreBriefVersion = mutation({
       throw new Error('Version not found');
     }
 
+    // Get current brief
+    const brief = await ctx.db.get(version.briefId);
+    if (!brief) {
+      throw new Error('Brief not found');
+    }
+
     // Create new version with restored data
-    return await createBriefVersion(ctx, {
+    return await ctx.db.insert("briefVersions", {
       briefId: version.briefId,
-      ...version.data,
+      versionNumber: await getNextVersionNumber(ctx, version.briefId),
+      data: {
+        title: version.data.title || brief.title,
+        h2Outline: version.data.h2Outline || brief.h2Outline,
+        faqs: version.data.faqs || brief.faqs,
+        metaTitle: version.data.metaTitle || brief.metaTitle,
+        metaDescription: version.data.metaDescription || brief.metaDescription,
+        internalLinks: version.data.internalLinks || brief.internalLinks,
+        schema: version.data.schema || brief.schema,
+      },
       notes: `Restored from version ${version.versionNumber}`,
+      createdAt: Date.now(),
     });
   },
 });

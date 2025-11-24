@@ -117,13 +117,13 @@ export const updatePlan = mutation({
   },
   handler: async (ctx, args) => {
     const { planId, ...updates } = args;
-    const cleanUpdates: any = { updatedAt: Date.now() };
+    const cleanUpdates: Record<string, any> = { updatedAt: Date.now() };
     
-    Object.keys(updates).forEach(key => {
-      if (updates[key] !== undefined) {
-        cleanUpdates[key] = updates[key];
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) {
+        cleanUpdates[key] = value;
       }
-    });
+    }
     
     return await ctx.db.patch(planId, cleanUpdates);
   },

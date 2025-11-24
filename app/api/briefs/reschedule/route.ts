@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexMutation, api } from '@/lib/convexClient';
 import { assertBriefId } from '@/lib/typeGuards';
-import type { BriefId } from '@/types';
 
 // Import api dynamically for routes that need it
 let apiLocal: typeof api = api;
@@ -16,7 +15,7 @@ if (typeof window === 'undefined' && !apiLocal) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await requireAuth(request);
+    await requireAuth(request);
     const body = await request.json();
     const { briefId, newDate } = body;
 
@@ -51,4 +50,3 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
-

@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, VStack, Heading, Text, Box, Input, Button, FormControl, FormLabel, Alert, AlertIcon, Link } from '@chakra-ui/react';
+import { useAuth } from '@/lib/useAuth';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { signup } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -33,30 +35,12 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+      // Use centralized signup function from useAuth
+      await signup(formData.email, formData.password, formData.name);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create account');
-      }
-
-      // Store token
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-
-      // Redirect to onboarding
+      // Redirect to onboarding (only for new signups)
       router.push('/onboarding');
+      router.refresh(); // Force refresh to update auth state
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -70,10 +54,10 @@ export default function SignupPage() {
         <Box bg="white" p={8} borderRadius="lg" shadow="md">
           <VStack spacing={6} align="stretch">
             <Heading size="xl" fontWeight="bold" fontFamily="heading" color="gray.800" textAlign="center">
-              Create Your MartAI Account
+              Get Started - It's Free! 🚀
             </Heading>
             <Text color="gray.600" textAlign="center">
-              Get started with AI-powered SEO automation
+              No SEO knowledge needed. We'll help you get found on Google.
             </Text>
 
             {error && (
@@ -86,49 +70,53 @@ export default function SignupPage() {
             <form onSubmit={handleSubmit}>
               <VStack spacing={4} align="stretch">
                 <FormControl>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel fontWeight="semibold">What should we call you?</FormLabel>
                   <Input
                     type="text"
-                    placeholder="Your name"
+                    placeholder="Your name (optional)"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     disabled={loading}
+                    size="lg"
                   />
                 </FormControl>
 
                 <FormControl isRequired>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel fontWeight="semibold">Email address</FormLabel>
                   <Input
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder="you@example.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     disabled={loading}
+                    size="lg"
                   />
                 </FormControl>
 
                 <FormControl isRequired>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel fontWeight="semibold">Create a password</FormLabel>
                   <Input
                     type="password"
                     placeholder="At least 8 characters"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     disabled={loading}
+                    size="lg"
                   />
                   <Text fontSize="xs" color="gray.500" mt={1}>
-                    Must be at least 8 characters
+                    Make it something you'll remember
                   </Text>
                 </FormControl>
 
                 <FormControl isRequired>
-                  <FormLabel>Confirm Password</FormLabel>
+                  <FormLabel fontWeight="semibold">Confirm password</FormLabel>
                   <Input
                     type="password"
-                    placeholder="Confirm your password"
+                    placeholder="Type it again"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     disabled={loading}
+                    size="lg"
                   />
                 </FormControl>
 

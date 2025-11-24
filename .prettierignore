@@ -1,0 +1,42 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Generated files
+convex/_generated
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs
+*.log
+
+# Environment variables
+.env*.local
+.env.local
+
+# Package manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage
+
+# Vercel
+.vercel
+
