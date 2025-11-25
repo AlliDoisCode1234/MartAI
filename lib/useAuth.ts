@@ -133,8 +133,13 @@ export function useAuth() {
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
-      const response = await fetch('/api/login', {
+  const login = async (
+    email: string,
+    password: string,
+    options?: { endpoint?: string }
+  ) => {
+    const endpoint = options?.endpoint ?? '/api/login';
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

@@ -1,0 +1,192 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Button,
+  Container,
+  Heading,
+  Text,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Badge,
+  Input,
+  FormControl,
+  FormLabel,
+  VStack,
+  useToast,
+  HStack,
+} from "@chakra-ui/react";
+import type { Prospect } from "@/types";
+
+interface ProspectRecord {
+  prospect: Prospect;
+  detail?: {
+    topPriority?: string;
+  };
+  urls?: Array<{ url: string; label: string }>;
+}
+
+export default function AdminDashboardPage() {
+  const [prospects, setProspects] = useState<ProspectRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [running, setRunning] = useState<string | null>(null);
+  const [manualUrl, setManualUrl] = useState("");
+  const toast = useToast();
+
+  useEffect(() => {
+    const loadProspects = async () => {
+      try {
+        const response = await fetch("/api/admin/prospects");
+        const data = await response.json();
+        if (response.ok) {
+          setProspects(data.prospects || []);
+        } else {
+          toast({
+            status: "error",
+            title: "Failed to load prospects",
+            description: data.error || "Unknown error",
+          });
+        }
+      } catch (error) {
+        toast({
+          status: "error",
+          title: "Failed to load prospects",
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProspects();
+  }, [toast]);
+
+  const triggerAnalysis = async (payload: Record<string, string>) => {
+    try {
+      setRunning(payload.prospectId || payload.url || "manual");
+      const response = await fetch("/api/ai/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to run analysis");
+      }
+      toast({
+        status: "success",
+        title: "Analysis running",
+        description: `Report ${data.reportId} created`,
+      });
+      if (payload.url && !payload.prospectId && !payload.projectId) {
+        setManualUrl("");
+      }
+    } catch (error) {
+      toast({
+        status: "error",
+        title: "Failed to run analysis",
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setRunning(null);
+    }
+  };
+
+  return (
+    <Container maxW="6xl" py={10}>
+      <VStack align="stretch" spacing={10}>
+        <Box>
+          <Heading size="lg">Admin Portal</Heading>
+          <Text color="gray.600">Manage prospects and trigger MartAI intelligence.</Text>
+        </Box>
+
+        <Box bg="white" p={6} borderRadius="lg" shadow="md">
+          <Heading size="md" mb={4}>
+            Run Analysis for a URL
+          </Heading>
+          <HStack as="form" gap={4} onSubmit={(e) => e.preventDefault()}>
+            <FormControl>
+              <FormLabel>Website URL</FormLabel>
+              <Input
+                placeholder="https://example.com"
+                value={manualUrl}
+                onChange={(e) => setManualUrl(e.target.value)}
+              />
+            </FormControl>
+            <Button
+              colorScheme="purple"
+              isLoading={running === manualUrl}
+              onClick={() => manualUrl && triggerAnalysis({ url: manualUrl })}
+            >
+              Run Analysis
+            </Button>
+          </HStack>
+        </Box>
+
+        <Box bg="white" p={6} borderRadius="lg" shadow="md">
+          <Heading size="md" mb={4}>
+            Prospect Intake
+          </Heading>
+          {loading ? (
+            <Text color="gray.500">Loading prospects…</Text>
+          ) : prospects.length === 0 ? (
+            <Text color="gray.500">No prospects yet.</Text>
+          ) : (
+            <Table>
+              <Thead>
+                <Tr>
+                  <Th>Name</Th>
+                  <Th>Status</Th>
+                  <Th>Priority</Th>
+                  <Th>Actions</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {prospects.map((record) => (
+                  <Tr key={record.prospect._id}>
+                    <Td>
+                      <Text fontWeight="semibold">
+                        {record.prospect.firstName || 'New'} {record.prospect.lastName || ''}
+                      </Text>
+                      <Text fontSize="sm" color="gray.500">
+                        {record.urls?.[0]?.url || record.prospect.source || 'No URL'}
+                      </Text>
+                    </Td>
+                    <Td>
+                      <Badge colorScheme={record.prospect.status === 'details_submitted' ? 'green' : 'orange'}>
+                        {record.prospect.status}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      <Text fontSize="sm" color="gray.600">
+                        {record.detail?.topPriority || 'N/A'}
+                      </Text>
+                    </Td>
+                    <Td>
+                      <Button
+                        size="sm"
+                        colorScheme="purple"
+                        isLoading={running === record.prospect._id.toString()}
+                        onClick={() =>
+                          triggerAnalysis({ prospectId: record.prospect._id.toString() })
+                        }
+                      >
+                        Run AI
+                      </Button>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          )}
+        </Box>
+      </VStack>
+    </Container>
+  );
+}
+
