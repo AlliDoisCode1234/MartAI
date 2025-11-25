@@ -4,7 +4,7 @@ import { type FC } from 'react';
 import { Box, VStack, HStack } from '@chakra-ui/react';
 import { InfoBadge } from '../InfoBadge';
 import { StatItem } from '../StatItem';
-import { GrowthChart } from '../GrowthChart';
+import { GrowthChart } from '@/src/components/GrowthChart';
 
 export const StatsCard: FC = () => (
   <Box flex={{ base: '1', lg: '0 0 400px' }} w={{ base: 'full', lg: '400px' }}>

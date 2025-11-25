@@ -19,15 +19,8 @@ export default function OnboardingPage() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push('/auth/login');
-    }
-  }, [isAuthenticated, router]);
-
-  // Redirect to app if user already has a project
-  useEffect(() => {
-    const projectId = localStorage.getItem('currentProjectId');
-    if (projectId && isAuthenticated) {
-      router.push('/strategy');
+      router.replace('/auth/login');
+      return;
     }
   }, [isAuthenticated, router]);
 
@@ -76,8 +69,8 @@ export default function OnboardingPage() {
         localStorage.setItem('currentProjectId', projectData.projectId);
       }
 
-      // Redirect to main app
-      router.push('/strategy');
+      // Redirect to reveal page for cool onboarding journey
+      router.push('/onboarding/reveal');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setLoading(false);

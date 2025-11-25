@@ -167,6 +167,51 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_token", ["token"]),
 
+  // Prospect intake (lead capture)
+  prospects: defineTable({
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    companyName: v.optional(v.string()),
+    monthlyRevenue: v.optional(v.string()),
+    marketingFrustration: v.optional(v.string()),
+    investedBefore: v.optional(v.string()),
+    timeline: v.optional(v.string()),
+    source: v.optional(v.string()),
+    status: v.string(), // draft, initial_submitted, details_submitted
+    userId: v.optional(v.id("users")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_status", ["status"])
+    .index("by_user", ["userId"]),
+
+  prospectDetails: defineTable({
+    prospectId: v.id("prospects"),
+    businessName: v.optional(v.string()),
+    topPriority: v.optional(v.string()),
+    marketingTried: v.optional(v.string()),
+    goals: v.optional(v.string()),
+    supportNeeds: v.optional(v.array(v.string())),
+    idealOutcome: v.optional(v.string()),
+    additionalNotes: v.optional(v.string()),
+    hearAbout: v.optional(v.string()),
+    sendSms: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_prospect", ["prospectId"]),
+
+  submittedUrls: defineTable({
+    prospectId: v.id("prospects"),
+    label: v.string(),
+    url: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_prospect", ["prospectId"]),
+
   // Projects (user's SEO projects)
   projects: defineTable({
     userId: v.id("users"),

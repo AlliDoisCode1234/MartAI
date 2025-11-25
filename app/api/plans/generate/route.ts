@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/authMiddleware';
+import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { generateQuarterlyPlan, generatePlanSummary, estimateTraffic, estimateLeads } from '@/lib/quarterlyPlanning';
 import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
 import { assertProjectId } from '@/lib/typeGuards';
@@ -18,22 +18,31 @@ if (typeof window === 'undefined') {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth(request);
+    await requireAuth(request, {
+      requireOrigin: true,
+      requireCsrf: true,
+      allowedMethods: ['POST'],
+      allowedContentTypes: ['application/json'],
+    });
     const body = await request.json();
     const { projectId, contentVelocity, startDate, goals } = body;
 
     if (!projectId || !contentVelocity) {
-      return NextResponse.json(
-        { error: 'projectId and contentVelocity are required' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'projectId and contentVelocity are required' },
+          { status: 400 }
+        )
       );
     }
 
     // Validate content velocity
     if (contentVelocity < 1 || contentVelocity > 7) {
-      return NextResponse.json(
-        { error: 'contentVelocity must be between 1 and 7 posts per week' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'contentVelocity must be between 1 and 7 posts per week' },
+          { status: 400 }
+        )
       );
     }
 
@@ -104,37 +113,46 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error('Failed to create plan in Convex:', error);
         // Return plan data even if Convex fails
-        return NextResponse.json({
-          success: true,
-          plan: {
-            contentVelocity,
-            startDate: planStartDate,
-            goals: finalGoals,
-            assumptions,
-            briefs,
-          },
-          count: briefs.length,
-        });
+        return secureResponse(
+          NextResponse.json({
+            success: true,
+            plan: {
+              contentVelocity,
+              startDate: planStartDate,
+              goals: finalGoals,
+              assumptions,
+              briefs,
+            },
+            count: briefs.length,
+          })
+        );
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      planId,
-      plan: {
-        contentVelocity,
-        startDate: planStartDate,
-        goals: finalGoals,
-        assumptions,
-        briefs,
-      },
-      count: briefs.length,
-    });
-  } catch (error) {
+    return secureResponse(
+      NextResponse.json({
+        success: true,
+        planId,
+        plan: {
+          contentVelocity,
+          startDate: planStartDate,
+          goals: finalGoals,
+          assumptions,
+          briefs,
+        },
+        count: briefs.length,
+      })
+    );
+  } catch (error: any) {
     console.error('Generate plan error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to generate plan' },
-      { status: 500 }
+    if (error.status === 401 && error.response) {
+      return error.response;
+    }
+    return secureResponse(
+      NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to generate plan' },
+        { status: 500 }
+      )
     );
   }
 }

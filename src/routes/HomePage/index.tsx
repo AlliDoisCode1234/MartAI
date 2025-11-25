@@ -3,7 +3,7 @@
 import { type FC } from 'react';
 import { Box, Container, HStack } from '@chakra-ui/react';
 import { HeroSection } from '../../components/HeroSection';
-import { StatsCard } from '../../components/StatsCard';
+import { StatsCard } from '@/src/components/shared';
 import { FeaturesSection } from '../../components/FeaturesSection';
 
 export const HomePage: FC = () => (

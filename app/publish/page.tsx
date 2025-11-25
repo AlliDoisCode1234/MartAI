@@ -280,7 +280,7 @@ function PublishPageContent() {
                     </Thead>
                     <Tbody>
                       {scheduledPosts.map((post) => (
-                        <Tr key={post._id || post.id}>
+                        <Tr key={post._id}>
                           <Td>{post.slug || 'Untitled'}</Td>
                           <Td>
                             <Badge>{post.platform}</Badge>
@@ -300,14 +300,14 @@ function PublishPageContent() {
                                 <>
                                   <Button
                                     size="sm"
-                                    onClick={() => handlePublishNow(post._id || post.id)}
+                                    onClick={() => handlePublishNow(post._id)}
                                   >
                                     Publish Now
                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => handleCancelSchedule(post._id || post.id)}
+                                    onClick={() => handleCancelSchedule(post._id)}
                                   >
                                     Cancel
                                   </Button>

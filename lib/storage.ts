@@ -174,6 +174,56 @@ export const sessionStorageUtil = {
 
 export function getAuthHeaders(): HeadersInit {
   const token = authStorage.getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const headers: HeadersInit = {};
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  // Add CSRF token if available (for state-changing operations)
+  const csrfToken = sessionStorage.getItem('csrf-token');
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken;
+  }
+  
+  // Add request ID for tracking
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    headers['X-Request-ID'] = crypto.randomUUID();
+  }
+  
+  return headers;
+}
+
+/**
+ * Fetch and store a new CSRF token
+ * Call this after successful login or when token expires
+ */
+export async function fetchCsrfToken(): Promise<string | null> {
+  try {
+    const token = authStorage.getToken();
+    if (!token) {
+      return null;
+    }
+
+    const response = await fetch('/api/csrf', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const csrfToken = data.csrfToken;
+      if (csrfToken) {
+        sessionStorage.setItem('csrf-token', csrfToken);
+        return csrfToken;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to fetch CSRF token:', error);
+    return null;
+  }
 }
 

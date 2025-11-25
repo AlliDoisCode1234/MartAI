@@ -1,5 +1,6 @@
 import { mutation, query, internalMutation, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 
 // Create user
 export const createUser = mutation({
@@ -103,7 +104,8 @@ export const getUserByIdInternal = internalQuery({
 });
 
 // Internal: Verify user password (never exposes passwordHash)
-export const verifyUserPassword = internalMutation({
+// Can only be called from within Convex
+const verifyUserPasswordInternal = internalMutation({
   args: {
     email: v.string(),
     password: v.string(),
@@ -115,7 +117,7 @@ export const verifyUserPassword = internalMutation({
       .first();
     
     if (!user || !user.passwordHash) {
-      return { valid: false, userId: null };
+      return { valid: false, userId: null, user: null };
     }
     
     // Import bcrypt dynamically (Convex mutations can't use setTimeout)
@@ -123,6 +125,45 @@ export const verifyUserPassword = internalMutation({
     const isValid = bcrypt.compareSync(args.password, user.passwordHash);
     
     // NEVER log passwordHash or password
+    return {
+      valid: isValid,
+      userId: isValid ? user._id : null,
+      user: isValid ? {
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      } : null,
+    };
+  },
+});
+
+// Public mutation to verify password (never exposes passwordHash)
+// Password hash stays in Convex, only returns validation result
+export const verifyUserPassword = mutation({
+  args: {
+    email: v.string(),
+    password: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+    
+    if (!user || !user.passwordHash) {
+      return { valid: false, userId: null, user: null };
+    }
+    
+    // Import bcrypt dynamically (Convex mutations can't use setTimeout)
+    const bcrypt = require("bcryptjs");
+    const isValid = bcrypt.compareSync(args.password, user.passwordHash);
+    
+    // NEVER log passwordHash or password
+    // Return user data without passwordHash
     return {
       valid: isValid,
       userId: isValid ? user._id : null,

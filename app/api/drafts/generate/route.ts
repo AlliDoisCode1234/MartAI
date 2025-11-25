@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/authMiddleware';
+import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { generateDraftFromBrief } from '@/lib/draftGenerator';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { assertBriefId, parseClusterId } from '@/lib/typeGuards';
@@ -16,21 +16,30 @@ if (typeof window === 'undefined' && !apiLocal) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth(request);
+    await requireAuth(request, {
+      requireOrigin: true,
+      requireCsrf: true,
+      allowedMethods: ['POST'],
+      allowedContentTypes: ['application/json'],
+    });
     const body = await request.json();
     const { briefId, regenerationNotes } = body;
 
     if (!briefId) {
-      return NextResponse.json(
-        { error: 'briefId is required' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'briefId is required' },
+          { status: 400 }
+        )
       );
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Convex not configured' },
+          { status: 503 }
+        )
       );
     }
 
@@ -41,17 +50,21 @@ export async function POST(request: NextRequest) {
     });
 
     if (!brief) {
-      return NextResponse.json(
-        { error: 'Brief not found' },
-        { status: 404 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Brief not found' },
+          { status: 404 }
+        )
       );
     }
 
     // Check if brief has required details
     if (!brief.h2Outline || brief.h2Outline.length === 0) {
-      return NextResponse.json(
-        { error: 'Brief details not generated. Please generate brief details first.' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Brief details not generated. Please generate brief details first.' },
+          { status: 400 }
+        )
       );
     }
 
@@ -63,7 +76,7 @@ export async function POST(request: NextRequest) {
           projectId: brief.projectId,
         });
         const clusterId = parseClusterId(brief.clusterId);
-        cluster = clusterId ? clusters?.find((c: any) => (c._id || c.id) === clusterId) : null;
+        cluster = clusterId ? clusters?.find((c: any) => c._id === clusterId) : null;
       } catch (error) {
         console.warn('Failed to get cluster:', error);
       }
@@ -135,19 +148,26 @@ export async function POST(request: NextRequest) {
       status: 'in_progress',
     });
 
-    return NextResponse.json({
-      success: true,
-      draft: {
-        _id: draftId,
-        ...draftResult,
-        status: 'draft',
-      },
-    });
-  } catch (error) {
+    return secureResponse(
+      NextResponse.json({
+        success: true,
+        draft: {
+          _id: draftId,
+          ...draftResult,
+          status: 'draft',
+        },
+      })
+    );
+  } catch (error: any) {
     console.error('Generate draft error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to generate draft' },
-      { status: 500 }
+    if (error.status === 401 && error.response) {
+      return error.response;
+    }
+    return secureResponse(
+      NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to generate draft' },
+        { status: 500 }
+      )
     );
   }
 }

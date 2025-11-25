@@ -82,15 +82,18 @@ export default function SignupPage() {
                 </FormControl>
 
                 <FormControl isRequired>
-                  <FormLabel fontWeight="semibold">Email address</FormLabel>
+                  <FormLabel fontWeight="semibold">Username</FormLabel>
                   <Input
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="username (we use your email)"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase() })}
                     disabled={loading}
                     size="lg"
                   />
+                  <Text fontSize="xs" color="gray.500" mt={1}>
+                    Your email doubles as your username so sign-ins stay simple.
+                  </Text>
                 </FormControl>
 
                 <FormControl isRequired>

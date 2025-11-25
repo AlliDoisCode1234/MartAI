@@ -55,6 +55,9 @@ export type SEOAuditId = Id<'seoAudits'>;
 export type RankingId = Id<'rankings'>;
 export type StatisticsId = Id<'seoStatistics'>;
 export type GeneratedPageId = Id<'generatedPages'>;
+export type ProspectId = Id<'prospects'>;
+export type ProspectDetailId = Id<'prospectDetails'>;
+export type SubmittedUrlId = Id<'submittedUrls'>;
 
 // ============================================================================
 // Core Domain Types
@@ -64,9 +67,8 @@ export type GeneratedPageId = Id<'generatedPages'>;
 export type UserRole = 'admin' | 'user' | 'viewer';
 
 // Public user model (safe for UI and API responses)
-export interface User {
+interface UserCore {
   _id: UserId;
-  email: string;
   name?: string;
   role?: UserRole; // User role: admin, user, viewer (default: user)
   avatarUrl?: string;
@@ -76,8 +78,17 @@ export interface User {
   updatedAt?: number;
 }
 
+// Public user model (safe for UI and API responses)
+export interface UserSnapshot extends UserCore {
+  username: string;
+}
+
+// Alias for backwards compatibility
+export type User = UserSnapshot;
+
 // Internal user record (includes sensitive fields - server only)
-export interface UserRecord extends User {
+export interface UserRecord extends UserCore {
+  email: string;
   passwordHash: string; // Never expose this in API responses
 }
 
@@ -88,14 +99,10 @@ export interface UserPreferences {
   timezone?: string;
 }
 
-// Public user snapshot - safe to expose in API responses
-// Includes profile data but excludes passwordHash
-export interface UserSnapshot extends User {}
-
 // Minimal user info for auth context
 export interface AuthUser {
   userId: string;
-  email: string;
+  username: string;
   role?: UserRole;
 }
 
@@ -123,6 +130,54 @@ export interface Client {
 }
 
 // ============================================================================
+// Prospecting Types
+// ============================================================================
+
+export type ProspectStatus = 'draft' | 'initial_submitted' | 'details_submitted';
+
+export interface Prospect {
+  _id: ProspectId;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  companyName?: string;
+  monthlyRevenue?: string;
+  marketingFrustration?: string;
+  investedBefore?: string;
+  timeline?: string;
+  source?: string;
+  status: ProspectStatus;
+  userId?: UserId;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ProspectDetail {
+  _id: ProspectDetailId;
+  prospectId: ProspectId;
+  businessName?: string;
+  topPriority?: string;
+  marketingTried?: string;
+  goals?: string;
+  supportNeeds?: string[];
+  idealOutcome?: string;
+  additionalNotes?: string;
+  hearAbout?: string;
+  sendSms?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SubmittedUrl {
+  _id: SubmittedUrlId;
+  prospectId: ProspectId;
+  label: string;
+  value: string;
+  createdAt: number;
+}
+
+// ============================================================================
 // SEO Intelligence Types
 // ============================================================================
 
@@ -138,8 +193,7 @@ export interface Keyword {
 }
 
 export interface KeywordCluster {
-  _id?: ClusterId;
-  id?: ClusterId; // Support both _id (Convex) and id (API response)
+  _id: ClusterId;
   projectId: ProjectId;
   clusterName: string;
   keywords: string[];
@@ -182,8 +236,7 @@ export interface BriefPlaceholder {
 }
 
 export interface QuarterlyPlan {
-  _id?: PlanId;
-  id?: PlanId; // Support both _id (Convex) and id (API response)
+  _id: PlanId;
   projectId: ProjectId;
   contentVelocity: number; // posts per week
   startDate: number;
@@ -196,8 +249,7 @@ export interface QuarterlyPlan {
 }
 
 export interface Brief {
-  _id?: BriefId;
-  id?: BriefId; // Support both _id (Convex) and id (API response)
+  _id: BriefId;
   planId?: PlanId;
   projectId: ProjectId;
   title: string;
@@ -251,8 +303,7 @@ export interface BriefVersion {
 // ============================================================================
 
 export interface Draft {
-  _id?: DraftId;
-  id?: DraftId; // Support both _id (Convex) and id (API response)
+  _id: DraftId;
   briefId: BriefId;
   projectId: ProjectId;
   content: string; // Markdown

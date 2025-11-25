@@ -2,7 +2,7 @@
 
 import { type FC } from 'react';
 import { Box, VStack, HStack, Heading, Text, Button } from '@chakra-ui/react';
-import { InfoBadge } from '../InfoBadge';
+import { InfoBadge } from '@/src/components/shared';
 import Link from 'next/link';
 
 export const HeroSection: FC = () => (

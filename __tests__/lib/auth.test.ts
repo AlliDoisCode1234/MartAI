@@ -1,4 +1,4 @@
-import { hashPassword, comparePassword, generateToken, verifyToken } from '@/lib/auth';
+import { hashPassword, verifyPassword, generateToken, verifyToken } from '@/lib/auth';
 
 describe('Auth utilities', () => {
   describe('hashPassword', () => {
@@ -20,12 +20,12 @@ describe('Auth utilities', () => {
     });
   });
 
-  describe('comparePassword', () => {
+  describe('verifyPassword', () => {
     it('should return true for correct password', async () => {
       const password = 'testpassword123';
       const hash = await hashPassword(password);
       
-      const result = await comparePassword(password, hash);
+      const result = await verifyPassword(password, hash);
       expect(result).toBe(true);
     });
 
@@ -33,14 +33,14 @@ describe('Auth utilities', () => {
       const password = 'testpassword123';
       const hash = await hashPassword(password);
       
-      const result = await comparePassword('wrongpassword', hash);
+      const result = await verifyPassword('wrongpassword', hash);
       expect(result).toBe(false);
     });
   });
 
   describe('generateToken and verifyToken', () => {
     it('should generate and verify a valid token', () => {
-      const payload = { userId: '123', email: 'test@example.com' };
+      const payload = { userId: '123', username: 'test@example.com' };
       const token = generateToken(payload);
       
       expect(token).toBeDefined();
@@ -49,7 +49,7 @@ describe('Auth utilities', () => {
       const decoded = verifyToken(token);
       expect(decoded).toBeDefined();
       expect(decoded.userId).toBe(payload.userId);
-      expect(decoded.email).toBe(payload.email);
+      expect(decoded?.username).toBe(payload.username);
     });
 
     it('should reject invalid tokens', () => {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/authMiddleware';
+import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { assertProjectId, assertInsightId, parseClusterId } from '@/lib/typeGuards';
 
@@ -16,21 +16,30 @@ if (typeof window === 'undefined' && !apiLocal) {
 // Apply insight - adjust plan or draft task
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth(request);
+    await requireAuth(request, {
+      requireOrigin: true,
+      requireCsrf: true,
+      allowedMethods: ['POST'],
+      allowedContentTypes: ['application/json'],
+    });
     const body = await request.json();
     const { insightId, action, projectId } = body;
 
     if (!insightId || !action || !projectId) {
-      return NextResponse.json(
-        { error: 'insightId, action, and projectId are required' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'insightId, action, and projectId are required' },
+          { status: 400 }
+        )
       );
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Convex not configured' },
+          { status: 503 }
+        )
       );
     }
 
@@ -43,11 +52,13 @@ export async function POST(request: NextRequest) {
       projectId: projectIdTyped,
     });
 
-    const insight = insights.find((i: any) => (i._id || i.id) === insightIdTyped);
+    const insight = insights.find((i: any) => i._id === insightIdTyped);
     if (!insight) {
-      return NextResponse.json(
-        { error: 'Insight not found' },
-        { status: 404 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Insight not found' },
+          { status: 404 }
+        )
       );
     }
 
@@ -105,9 +116,11 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        return NextResponse.json(
-          { error: `Unknown action: ${action}` },
-          { status: 400 }
+        return secureResponse(
+          NextResponse.json(
+            { error: `Unknown action: ${action}` },
+            { status: 400 }
+          )
         );
     }
 
@@ -116,12 +129,19 @@ export async function POST(request: NextRequest) {
       insightId: insightIdTyped,
     });
 
-    return NextResponse.json(result);
-  } catch (error) {
+    return secureResponse(
+      NextResponse.json(result)
+    );
+  } catch (error: any) {
     console.error('Apply insight error:', error);
-    return NextResponse.json(
-      { error: 'Failed to apply insight' },
-      { status: 500 }
+    if (error.status === 401 && error.response) {
+      return error.response;
+    }
+    return secureResponse(
+      NextResponse.json(
+        { error: 'Failed to apply insight' },
+        { status: 500 }
+      )
     );
   }
 }

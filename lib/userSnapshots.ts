@@ -12,9 +12,14 @@ import type { UserRecord, UserSnapshot, AuthUser } from '@/types';
 export function createUserSnapshot(user: UserRecord | UserSnapshot | null | undefined): UserSnapshot | null {
   if (!user) return null;
 
+  const username =
+    (user as UserSnapshot).username ||
+    ('email' in user ? user.email : undefined) ||
+    'user';
+
   return {
     _id: user._id,
-    email: user.email,
+    username,
     name: user.name,
     role: user.role,
     avatarUrl: user.avatarUrl,
@@ -33,7 +38,10 @@ export function createAuthUser(user: UserRecord | UserSnapshot | null | undefine
 
   return {
     userId: user._id.toString(),
-    email: user.email,
+    username:
+      (user as UserSnapshot).username ||
+      ('email' in user ? user.email : undefined) ||
+      'user',
     role: user.role,
   };
 }
@@ -53,7 +61,7 @@ export function isUserSnapshot(obj: any): obj is UserSnapshot {
     obj &&
     typeof obj === 'object' &&
     '_id' in obj &&
-    'email' in obj &&
+    'username' in obj &&
     !('passwordHash' in obj)
   );
 }

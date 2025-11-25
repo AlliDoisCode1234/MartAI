@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/authMiddleware';
+import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
 import { assertProjectId, assertUserId } from '@/lib/typeGuards';
 
@@ -18,13 +18,18 @@ if (typeof window === 'undefined') {
 // GET - Get projects for authenticated user
 export async function GET(request: NextRequest) {
   try {
-    const authUser = await requireAuth(request);
+    // Require auth with origin validation for GET requests
+    const authUser = await requireAuth(request, {
+      requireOrigin: true,
+      allowedMethods: ['GET'],
+    });
 
     if (!apiLocal) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
+      return secureResponse(response);
     }
 
     const userId = assertUserId(authUser.userId);
@@ -33,35 +38,49 @@ export async function GET(request: NextRequest) {
       userId: userId as any,
     });
 
-    return NextResponse.json({ projects: projects || [] });
-  } catch (error) {
+    const response = NextResponse.json({ projects: projects || [] });
+    return secureResponse(response);
+  } catch (error: any) {
     console.error('Get projects error:', error);
-    return NextResponse.json(
+    if (error.status === 401 && error.response) {
+      return error.response;
+    }
+    const response = NextResponse.json(
       { error: 'Failed to get projects' },
       { status: 500 }
     );
+    return secureResponse(response);
   }
 }
 
 // POST - Create new project
 export async function POST(request: NextRequest) {
   try {
-    const authUser = await requireAuth(request);
+    // Require auth with CSRF protection for state-changing operations
+    const authUser = await requireAuth(request, {
+      requireOrigin: true,
+      requireCsrf: true, // CSRF protection for POST
+      allowedMethods: ['POST'],
+      allowedContentTypes: ['application/json'],
+    });
+
     const body = await request.json();
     const { name, websiteUrl, industry } = body;
 
     if (!name || !websiteUrl) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'name and websiteUrl are required' },
         { status: 400 }
       );
+      return secureResponse(response);
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
       );
+      return secureResponse(response);
     }
 
     const userId = assertUserId(authUser.userId);
@@ -73,16 +92,21 @@ export async function POST(request: NextRequest) {
       industry: industry || undefined,
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       projectId: projectId.toString(),
     });
-  } catch (error) {
+    return secureResponse(response);
+  } catch (error: any) {
     console.error('Create project error:', error);
-    return NextResponse.json(
+    if (error.status === 401 && error.response) {
+      return error.response;
+    }
+    const response = NextResponse.json(
       { error: 'Failed to create project' },
       { status: 500 }
     );
+    return secureResponse(response);
   }
 }
 

@@ -67,6 +67,20 @@ export async function callConvexQuery<Args = any, Return = any>(
   return await convexClient.query(query, args);
 }
 
+// Type-safe helper to call Convex actions from API routes
+export async function callConvexAction<Args = any, Return = any>(
+  action: any,
+  args: Args
+): Promise<Return> {
+  if (!convexUrl || !convexClient) {
+    throw new Error("Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL");
+  }
+  if (!api) {
+    throw new Error("Convex API not generated. Run 'npx convex dev'");
+  }
+  return await convexClient.action(action, args);
+}
+
 // Export api for use in API routes
 export { api };
 

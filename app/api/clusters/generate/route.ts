@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/authMiddleware';
+import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { generateKeywordClusters, importKeywordsFromGSC } from '@/lib/keywordClustering';
 import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
 import { assertProjectId } from '@/lib/typeGuards';
@@ -18,14 +18,21 @@ if (typeof window === 'undefined') {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth(request);
+    await requireAuth(request, {
+      requireOrigin: true,
+      requireCsrf: true,
+      allowedMethods: ['POST'],
+      allowedContentTypes: ['application/json'],
+    });
     const body = await request.json();
     const { projectId, keywords, importFromGSC } = body;
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: 'projectId is required' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'projectId is required' },
+          { status: 400 }
+        )
       );
     }
 
@@ -64,9 +71,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (keywordInputs.length === 0) {
-      return NextResponse.json(
-        { error: 'No keywords provided' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'No keywords provided' },
+          { status: 400 }
+        )
       );
     }
 
@@ -118,16 +127,23 @@ export async function POST(request: NextRequest) {
       storedClusters.push(...clusters);
     }
 
-    return NextResponse.json({
-      success: true,
-      clusters: storedClusters,
-      count: storedClusters.length,
-    });
-  } catch (error) {
+    return secureResponse(
+      NextResponse.json({
+        success: true,
+        clusters: storedClusters,
+        count: storedClusters.length,
+      })
+    );
+  } catch (error: any) {
     console.error('Generate clusters error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to generate clusters' },
-      { status: 500 }
+    if (error.status === 401 && error.response) {
+      return error.response;
+    }
+    return secureResponse(
+      NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to generate clusters' },
+        { status: 500 }
+      )
     );
   }
 }

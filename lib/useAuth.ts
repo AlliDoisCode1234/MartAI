@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authStorage, getAuthHeaders } from '@/lib/storage';
+import { authStorage, getAuthHeaders, fetchCsrfToken } from '@/lib/storage';
 import type { UserSnapshot } from '@/types';
 
 export function useAuth() {
@@ -32,12 +32,25 @@ export function useAuth() {
             body: JSON.stringify({ refreshToken }),
           });
 
-          const data = await response.json();
-
           if (!response.ok) {
+            // Don't parse JSON if response is not OK - might be empty
             authStorage.clear();
             setUser(null);
             setToken(null);
+            return null;
+          }
+
+          const text = await response.text();
+          if (!text || text.trim() === '') {
+            console.error('Empty response from refresh endpoint');
+            return null;
+          }
+
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (parseError) {
+            console.error('Error parsing refresh response:', parseError, 'Response text:', text);
             return null;
           }
 
@@ -71,10 +84,19 @@ export function useAuth() {
               const retryRes = await fetch('/api/auth/me', {
                 headers: { Authorization: `Bearer ${newToken}` },
               });
-              const retryData = await retryRes.json();
-              if (retryData.user) {
-                setUser(retryData.user);
-                authStorage.setUser(retryData.user);
+              if (retryRes.ok) {
+                const retryText = await retryRes.text();
+                if (retryText) {
+                  try {
+                    const retryData = JSON.parse(retryText);
+                    if (retryData.user) {
+                      setUser(retryData.user);
+                      authStorage.setUser(retryData.user);
+                    }
+                  } catch (error) {
+                    console.error('Error parsing retry response:', error);
+                  }
+                }
               }
             } else {
               // Refresh failed, clear auth
@@ -82,20 +104,28 @@ export function useAuth() {
               setUser(null);
               setToken(null);
             }
-          } else {
-            const data = await res.json();
-            if (data.user) {
-              setUser(data.user);
-              authStorage.setUser(data.user);
-            } else {
-              authStorage.clear();
-              setUser(null);
-              setToken(null);
+          } else if (res.ok) {
+            const text = await res.text();
+            if (text) {
+              try {
+                const data = JSON.parse(text);
+                if (data.user) {
+                  setUser(data.user);
+                  authStorage.setUser(data.user);
+                } else {
+                  authStorage.clear();
+                  setUser(null);
+                  setToken(null);
+                }
+              } catch (error) {
+                console.error('Error parsing /api/auth/me response:', error);
+              }
             }
           }
         })
-        .catch(() => {
-          // API not available, use stored user
+        .catch((error) => {
+          // API not available or network error, use stored user
+          console.warn('Failed to verify token:', error);
         })
         .finally(() => setLoading(false));
     } else {
@@ -104,13 +134,23 @@ export function useAuth() {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    if (!text) {
+      throw new Error('Empty response from server');
+    }
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (error) {
+      throw new Error('Invalid response from server');
+    }
 
     if (!response.ok) {
       throw new Error(data.error || 'Login failed');
@@ -124,6 +164,11 @@ export function useAuth() {
       authStorage.setUser(data.user);
       setToken(data.token);
       setUser(data.user);
+      
+      // Fetch CSRF token after successful login
+      await fetchCsrfToken().catch(err => {
+        console.warn('Failed to fetch CSRF token:', err);
+      });
     }
 
     return data;
@@ -140,13 +185,25 @@ export function useAuth() {
         body: JSON.stringify({ refreshToken }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
         // Refresh token invalid, clear auth
         authStorage.clear();
         setUser(null);
         setToken(null);
+        return null;
+      }
+
+      const text = await response.text();
+      if (!text) {
+        console.error('Empty response from refresh endpoint');
+        return null;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (error) {
+        console.error('Error parsing refresh response:', error);
         return null;
       }
 
@@ -174,7 +231,17 @@ export function useAuth() {
       body: JSON.stringify({ email, password, name }),
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    if (!text) {
+      throw new Error('Empty response from server');
+    }
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (error) {
+      throw new Error('Invalid response from server');
+    }
 
     if (!response.ok) {
       throw new Error(data.error || 'Signup failed');
@@ -223,7 +290,17 @@ export function useAuth() {
       body: JSON.stringify(updates),
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    if (!text) {
+      throw new Error('Empty response from server');
+    }
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (error) {
+      throw new Error('Invalid response from server');
+    }
 
     if (!response.ok) {
       throw new Error(data.error || 'Failed to update profile');

@@ -177,7 +177,7 @@ function ContentContent() {
   };
 
   const handleSaveDraft = async () => {
-    if (!draft?._id && !draft?.id) return;
+    if (!draft?._id) return;
 
     setSaving(true);
     try {
@@ -189,7 +189,7 @@ function ContentContent() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          draftId: draft._id || draft.id,
+          draftId: draft._id,
           content: draft.content,
         }),
       });
@@ -208,7 +208,7 @@ function ContentContent() {
   };
 
   const handleApproveDraft = async () => {
-    if (!draft?._id && !draft?.id) return;
+    if (!draft?._id) return;
 
     if (!confirm('Approve this draft? It will be locked for editing.')) return;
 
@@ -222,7 +222,7 @@ function ContentContent() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          draftId: draft._id || draft.id,
+          draftId: draft._id,
         }),
       });
 

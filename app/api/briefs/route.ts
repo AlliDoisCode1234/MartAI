@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/authMiddleware';
+import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { validateSEOChecklist } from '@/lib/briefGenerator';
 import { assertBriefId, parseClusterId } from '@/lib/typeGuards';
@@ -17,7 +17,10 @@ if (typeof window === 'undefined' && !apiLocal) {
 // GET - Get brief by ID
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth(request);
+    await requireAuth(request, {
+      requireOrigin: true,
+      allowedMethods: ['GET'],
+    });
     const searchParams = request.nextUrl.searchParams;
     const briefId = searchParams.get('briefId');
 
@@ -42,9 +45,11 @@ export async function GET(request: NextRequest) {
     });
 
     if (!brief) {
-      return NextResponse.json(
-        { error: 'Brief not found' },
-        { status: 404 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Brief not found' },
+          { status: 404 }
+        )
       );
     }
 
@@ -56,7 +61,7 @@ export async function GET(request: NextRequest) {
         const clusters = await callConvexQuery(apiLocal.keywordClusters.getClustersByProject, {
           projectId: brief.projectId,
         });
-        cluster = clusters?.find((c: any) => (c._id || c.id) === clusterId) || null;
+        cluster = clusters?.find((c: any) => c._id === clusterId) || null;
       } catch (error) {
         console.warn('Failed to get cluster:', error);
       }
@@ -75,16 +80,23 @@ export async function GET(request: NextRequest) {
         })
       : { valid: false, issues: ['Brief details not generated yet'] };
 
-    return NextResponse.json({
-      brief,
-      cluster,
-      seoCheck,
-    });
-  } catch (error) {
+    return secureResponse(
+      NextResponse.json({
+        brief,
+        cluster,
+        seoCheck,
+      })
+    );
+  } catch (error: any) {
     console.error('Get brief error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get brief' },
-      { status: 500 }
+    if (error.status === 401 && error.response) {
+      return error.response;
+    }
+    return secureResponse(
+      NextResponse.json(
+        { error: 'Failed to get brief' },
+        { status: 500 }
+      )
     );
   }
 }
@@ -92,21 +104,30 @@ export async function GET(request: NextRequest) {
 // PATCH - Update brief
 export async function PATCH(request: NextRequest) {
   try {
-    await requireAuth(request);
+    await requireAuth(request, {
+      requireOrigin: true,
+      requireCsrf: true,
+      allowedMethods: ['PATCH'],
+      allowedContentTypes: ['application/json'],
+    });
     const body = await request.json();
     const { briefId, ...updates } = body;
 
     if (!briefId) {
-      return NextResponse.json(
-        { error: 'briefId is required' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'briefId is required' },
+          { status: 400 }
+        )
       );
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Convex not configured' },
+          { status: 503 }
+        )
       );
     }
 
@@ -116,12 +137,19 @@ export async function PATCH(request: NextRequest) {
       ...updates,
     });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
+    return secureResponse(
+      NextResponse.json({ success: true })
+    );
+  } catch (error: any) {
     console.error('Update brief error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update brief' },
-      { status: 500 }
+    if (error.status === 401 && error.response) {
+      return error.response;
+    }
+    return secureResponse(
+      NextResponse.json(
+        { error: 'Failed to update brief' },
+        { status: 500 }
+      )
     );
   }
 }
@@ -129,21 +157,29 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Delete brief
 export async function DELETE(request: NextRequest) {
   try {
-    await requireAuth(request);
+    await requireAuth(request, {
+      requireOrigin: true,
+      requireCsrf: true,
+      allowedMethods: ['DELETE'],
+    });
     const searchParams = request.nextUrl.searchParams;
     const briefId = searchParams.get('briefId');
 
     if (!briefId) {
-      return NextResponse.json(
-        { error: 'briefId is required' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'briefId is required' },
+          { status: 400 }
+        )
       );
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Convex not configured' },
+          { status: 503 }
+        )
       );
     }
 
@@ -152,12 +188,19 @@ export async function DELETE(request: NextRequest) {
       briefId: briefIdTyped,
     });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
+    return secureResponse(
+      NextResponse.json({ success: true })
+    );
+  } catch (error: any) {
     console.error('Delete brief error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete brief' },
-      { status: 500 }
+    if (error.status === 401 && error.response) {
+      return error.response;
+    }
+    return secureResponse(
+      NextResponse.json(
+        { error: 'Failed to delete brief' },
+        { status: 500 }
+      )
     );
   }
 }

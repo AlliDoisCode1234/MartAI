@@ -3,6 +3,7 @@ import { hashPassword, validatePassword, validateEmail, generateToken, generateR
 import { callConvexMutation, callConvexQuery } from '@/lib/convexClient';
 import { createUserSnapshot } from '@/lib/userSnapshots';
 import type { UserSnapshot, UserId } from '@/types';
+import { secureResponse, validateApiSecurity } from '@/lib/apiSecurity';
 
 // Import api dynamically - will be available after npx convex dev
 let api: any = null;
@@ -16,29 +17,48 @@ if (typeof window === 'undefined') {
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate security (origin validation, no CSRF needed for public signup)
+    const securityCheck = await validateApiSecurity(request, {
+      requireOrigin: true,
+      allowedMethods: ['POST'],
+      allowedContentTypes: ['application/json'],
+    });
+
+    if (!securityCheck.valid) {
+      return secureResponse(
+        NextResponse.json({ error: securityCheck.error }, { status: 401 })
+      );
+    }
+
     const body = await request.json();
     const { email, password, name } = body;
 
     // Validation
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Email and password are required' },
+          { status: 400 }
+        )
       );
     }
 
     if (!validateEmail(email)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Invalid email format' },
+          { status: 400 }
+        )
       );
     }
 
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.valid) {
-      return NextResponse.json(
-        { error: passwordValidation.error },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: passwordValidation.error },
+          { status: 400 }
+        )
       );
     }
 
@@ -47,9 +67,11 @@ export async function POST(request: NextRequest) {
       try {
         const existingUser = await callConvexQuery(api.auth.users.getUserSnapshotByEmail, { email });
         if (existingUser) {
-          return NextResponse.json(
-            { error: 'User already exists' },
-            { status: 409 }
+          return secureResponse(
+            NextResponse.json(
+              { error: 'User already exists' },
+              { status: 409 }
+            )
           );
         }
       } catch (error) {
@@ -79,9 +101,11 @@ export async function POST(request: NextRequest) {
         });
       } catch (error: any) {
         if (error.message?.includes('already exists')) {
-          return NextResponse.json(
-            { error: 'User already exists' },
-            { status: 409 }
+          return secureResponse(
+            NextResponse.json(
+              { error: 'User already exists' },
+              { status: 409 }
+            )
           );
         }
         // Fallback for development without Convex
@@ -94,7 +118,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate tokens
-    const payload = { userId: userId.toString(), email, role: createdUser?.role };
+    const payload = { userId: userId.toString(), username: email, role: createdUser?.role };
     const accessToken = generateToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
@@ -121,23 +145,27 @@ export async function POST(request: NextRequest) {
       // Fallback snapshot for development
       userSnapshot = {
         _id: userId as any,
-        email,
+        username: email,
         name: name || undefined,
         createdAt: Date.now(),
       };
     }
 
-    return NextResponse.json({
-      success: true,
-      token: accessToken,
-      refreshToken: refreshToken,
-      user: userSnapshot,
-    });
+    return secureResponse(
+      NextResponse.json({
+        success: true,
+        token: accessToken,
+        refreshToken: refreshToken,
+        user: userSnapshot,
+      })
+    );
   } catch (error) {
     console.error('Signup error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create account' },
-      { status: 500 }
+    return secureResponse(
+      NextResponse.json(
+        { error: 'Failed to create account' },
+        { status: 500 }
+      )
     );
   }
 }

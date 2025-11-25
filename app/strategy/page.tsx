@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Container, VStack, Heading, Text, Box, Button, HStack, Grid, GridItem, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, ModalFooter, useDisclosure, FormControl, FormLabel, Input, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper, Select, Checkbox, Table, Thead, Tbody, Tr, Th, Td, Stat, StatLabel, StatNumber, StatHelpText } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
 import type { KeywordCluster, Brief, QuarterlyPlan, PlanProps, ClusterProps, ProjectId } from '@/types';
@@ -9,7 +9,8 @@ import { DraggableBriefList } from '@/src/components/DraggableBriefList';
 import { assertProjectId } from '@/lib/typeGuards';
 
 function StrategyContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [clusters, setClusters] = useState<KeywordCluster[]>([]);
   const [plan, setPlan] = useState<QuarterlyPlan | null>(null);
@@ -18,6 +19,7 @@ function StrategyContent() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectsLoading, setProjectsLoading] = useState(true);
   
   // Modals
   const { isOpen: isClusterModalOpen, onOpen: onClusterModalOpen, onClose: onClusterModalClose } = useDisclosure();
@@ -31,18 +33,116 @@ function StrategyContent() {
   });
 
   useEffect(() => {
-    const storedProject = localStorage.getItem('currentProjectId');
-    if (storedProject) {
-      setProjectId(storedProject);
-      loadClusters(storedProject);
-      try {
-        const validatedProjectId = assertProjectId(storedProject);
-        loadPlan(validatedProjectId);
-      } catch (error) {
-        console.error('Invalid project ID:', error);
-      }
+    // Wait for auth to finish loading before checking
+    if (authLoading) {
+      return;
     }
-  }, []);
+
+    // If not authenticated, redirect to login
+    if (!isAuthenticated) {
+      router.replace('/auth/login');
+      return;
+    }
+
+    const loadUserProjects = async () => {
+      const storedProject = localStorage.getItem('currentProjectId');
+      
+      // If we have a stored project, try to use it
+      if (storedProject) {
+        try {
+          const validatedProjectId = assertProjectId(storedProject);
+          setProjectId(storedProject);
+          setProjectsLoading(false);
+          loadClusters(storedProject);
+          loadPlan(validatedProjectId);
+          return;
+        } catch (error) {
+          console.error('Invalid stored project ID:', error);
+          localStorage.removeItem('currentProjectId');
+        }
+      }
+
+      // No valid project in localStorage, fetch user's projects
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+          router.replace('/auth/login');
+          return;
+        }
+
+        console.log('Fetching projects for user...');
+        const response = await fetch('/api/projects', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const projects = data.projects || [];
+          console.log(`Found ${projects.length} project(s) for user`, projects);
+
+          if (projects.length > 0) {
+            // Use the first project
+            const firstProject = projects[0];
+            const projectIdStr = typeof firstProject._id === 'string' 
+              ? firstProject._id 
+              : firstProject._id.toString();
+            console.log('Setting project ID:', projectIdStr);
+            localStorage.setItem('currentProjectId', projectIdStr);
+            setProjectId(projectIdStr);
+            setProjectsLoading(false);
+            loadClusters(projectIdStr);
+            try {
+              const validatedProjectId = assertProjectId(projectIdStr);
+              loadPlan(validatedProjectId);
+            } catch (error) {
+              console.error('Invalid project ID:', error);
+            }
+          } else {
+            // No projects - clear loading and show empty state (don't redirect)
+            console.log('No projects found for user - showing empty state');
+            setProjectsLoading(false);
+          }
+        } else {
+          // Failed to fetch projects - clear loading and show error state
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Failed to fetch projects:', response.status, errorData);
+          setProjectsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error loading projects:', error);
+        setProjectsLoading(false);
+        // Don't redirect - show error state instead
+      }
+    };
+
+    loadUserProjects();
+  }, [router, isAuthenticated, authLoading]);
+
+  // Don't try to use projectId before it's loaded
+  if (projectsLoading && !projectId) {
+    return (
+      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
+        <VStack spacing={4}>
+          <Spinner size="xl" color="brand.orange" />
+          <Text color="gray.600">Loading your projects...</Text>
+        </VStack>
+      </Box>
+    );
+  }
+
+  if (!projectId) {
+    return (
+      <Container maxW="container.xl" py={12}>
+        <VStack spacing={6}>
+          <Heading size="xl">No project found</Heading>
+          <Text>You need to create a project first.</Text>
+          <Button bg="brand.orange" color="white" onClick={() => router.push('/onboarding')}>
+            Create Project
+          </Button>
+        </VStack>
+      </Container>
+    );
+  }
 
   const loadClusters = async (pid: string) => {
     setLoading(true);
@@ -63,22 +163,12 @@ function StrategyContent() {
     }
   };
 
-  const projectIdTyped = assertProjectId(projectId);
-
   const loadPlan = async (pid: ProjectId) => {
     try {
       const token = localStorage.getItem("auth_token");
-  
-      // First, fetch the project to get the client ID
-      const projectResp = await fetch(`/api/projects/${pid}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!projectResp.ok) throw new Error("Project not found");
-      const projectData = await projectResp.json();
-      const clientId = projectData.clientId; // Id<"clients">
-  
-      // Now fetch the plan for the client
-      const response = await fetch(`/api/plans?clientId=${clientId}`, {
+      
+      // Fetch the plan for the project
+      const response = await fetch(`/api/plans?projectId=${pid}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
   
@@ -299,7 +389,7 @@ function StrategyContent() {
                       </Thead>
                       <Tbody>
                         {plan.briefs.map((brief, index) => (
-                          <Tr key={(brief as Brief)._id || (brief as Brief).id || index}>
+                          <Tr key={brief._id || index}>
                             <Td>{brief.week || Math.floor(index / plan.contentVelocity) + 1}</Td>
                             <Td>{new Date(brief.scheduledDate).toLocaleDateString()}</Td>
                             <Td>{brief.title}</Td>
@@ -312,7 +402,7 @@ function StrategyContent() {
                               <Button 
                                 size="xs" 
                                 variant="outline"
-                                onClick={() => window.location.href = `/content?briefId=${brief._id || brief.id}`}
+                                onClick={() => window.location.href = `/content?briefId=${brief._id}`}
                               >
                                 Edit Brief
                               </Button>
@@ -333,7 +423,7 @@ function StrategyContent() {
               <Heading size="lg">Keyword Clusters</Heading>
               <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={6}>
                 {clusters.slice(0, 6).map((cluster, index) => (
-                  <GridItem key={(cluster as KeywordCluster)._id || (cluster as KeywordCluster).id || index}>
+                  <GridItem key={cluster._id || index}>
                     <Card>
                       <CardBody>
                         <VStack align="stretch" spacing={2}>

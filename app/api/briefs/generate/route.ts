@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/authMiddleware';
+import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { generateBriefDetails } from '@/lib/briefGenerator';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { assertBriefId, parseClusterId } from '@/lib/typeGuards';
@@ -16,21 +16,30 @@ if (typeof window === 'undefined' && !apiLocal) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth(request);
+    await requireAuth(request, {
+      requireOrigin: true,
+      requireCsrf: true,
+      allowedMethods: ['POST'],
+      allowedContentTypes: ['application/json'],
+    });
     const body = await request.json();
     const { briefId, clusterId } = body;
 
     if (!briefId) {
-      return NextResponse.json(
-        { error: 'briefId is required' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'briefId is required' },
+          { status: 400 }
+        )
       );
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Convex not configured' },
+          { status: 503 }
+        )
       );
     }
 
@@ -41,9 +50,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!brief) {
-      return NextResponse.json(
-        { error: 'Brief not found' },
-        { status: 404 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Brief not found' },
+          { status: 404 }
+        )
       );
     }
 
@@ -56,16 +67,18 @@ export async function POST(request: NextRequest) {
         const clusters = await callConvexQuery(apiLocal.keywordClusters.getClustersByProject, {
           projectId: brief.projectId,
         });
-        cluster = clusters?.find((c: any) => (c._id || c.id) === targetClusterId) || null;
+        cluster = clusters?.find((c: any) => c._id === targetClusterId) || null;
       } catch (error) {
         console.warn('Failed to get cluster:', error);
       }
     }
 
     if (!cluster) {
-      return NextResponse.json(
-        { error: 'Keyword cluster not found or not assigned' },
-        { status: 400 }
+      return secureResponse(
+        NextResponse.json(
+          { error: 'Keyword cluster not found or not assigned' },
+          { status: 400 }
+        )
       );
     }
 
@@ -94,19 +107,26 @@ export async function POST(request: NextRequest) {
       status: 'in_progress',
     });
 
-    return NextResponse.json({
-      success: true,
-      brief: {
-        ...brief,
-        ...briefDetails,
-        status: 'in_progress',
-      },
-    });
-  } catch (error) {
+    return secureResponse(
+      NextResponse.json({
+        success: true,
+        brief: {
+          ...brief,
+          ...briefDetails,
+          status: 'in_progress',
+        },
+      })
+    );
+  } catch (error: any) {
     console.error('Generate brief details error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to generate brief details' },
-      { status: 500 }
+    if (error.status === 401 && error.response) {
+      return error.response;
+    }
+    return secureResponse(
+      NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to generate brief details' },
+        { status: 500 }
+      )
     );
   }
 }

@@ -791,7 +791,7 @@ function AnalyticsPageContent() {
                                   </Text>
                                   <Button
                                     size="sm"
-                                    onClick={() => handleApplyInsight(insight._id || insight.id)}
+                                    onClick={() => handleApplyInsight(insight._id)}
                                     bg="white"
                                     color={colors.border}
                                     _hover={{ bg: 'gray.50', transform: 'scale(1.05)' }}

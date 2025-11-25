@@ -1,13 +1,30 @@
 import { type ReactNode } from 'react';
-import { ChakraProviderWrapper } from '@/src/components/ChakraProviderWrapper';
+import { ChakraProviderWrapper } from '@/src/providers/ChakraProvider';
+import { SecurityProvider } from '@/src/providers/SecurityProvider';
 import { Layout } from '@/src/components/Layout';
-import { ErrorBoundary } from '@/src/components/ErrorBoundary';
+import { ErrorBoundary } from '@/src/components/shared/ErrorBoundary';
 import '@/src/index.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'MartAI - AI-Powered SEO Automation',
   description: 'Automate your SEO. Accelerate your growth.',
+  // Security metadata
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  // Additional security hints
+  other: {
+    'format-detection': 'telephone=no',
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -22,11 +39,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body suppressHydrationWarning>
         <ErrorBoundary>
-          <ChakraProviderWrapper>
-            <Layout>
-              {children}
-            </Layout>
-          </ChakraProviderWrapper>
+          <SecurityProvider>
+            <ChakraProviderWrapper>
+              <Layout>
+                {children}
+              </Layout>
+            </ChakraProviderWrapper>
+          </SecurityProvider>
         </ErrorBoundary>
       </body>
     </html>
