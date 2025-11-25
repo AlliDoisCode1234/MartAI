@@ -16,6 +16,7 @@ import type {
   CompetitorId,
   BriefVersionId,
   ScheduledPostId,
+  ProspectId,
   Id,
 } from "@/types";
 
@@ -72,6 +73,13 @@ export function assertUserId(id: string | null | undefined): UserId {
     throw new Error(`Invalid userId: ${id}. Must be a valid Convex user ID.`);
   }
   return id as UserId;
+}
+
+export function assertProspectId(id: string | null | undefined): ProspectId {
+  if (!isValidConvexId(id, 'prospects')) {
+    throw new Error(`Invalid prospectId: ${id}. Must be a valid Convex prospect ID.`);
+  }
+  return id as ProspectId;
 }
 
 export function assertClientId(id: string | null | undefined): ClientId {

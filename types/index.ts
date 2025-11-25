@@ -58,6 +58,11 @@ export type GeneratedPageId = Id<'generatedPages'>;
 export type ProspectId = Id<'prospects'>;
 export type ProspectDetailId = Id<'prospectDetails'>;
 export type SubmittedUrlId = Id<'submittedUrls'>;
+export type AIReportId = Id<'aiReports'>;
+export type KeywordIdeaId = Id<'keywordIdeas'>;
+export type ContentCalendarId = Id<'contentCalendars'>;
+export type SubscriptionId = Id<'subscriptions'>;
+export type UsageSnapshotId = Id<'usageLimits'>;
 
 // ============================================================================
 // Core Domain Types
@@ -65,6 +70,7 @@ export type SubmittedUrlId = Id<'submittedUrls'>;
 
 // User roles
 export type UserRole = 'admin' | 'user' | 'viewer';
+export type PlanTier = 'starter' | 'growth' | 'scale';
 
 // Public user model (safe for UI and API responses)
 interface UserCore {
@@ -173,8 +179,99 @@ export interface SubmittedUrl {
   _id: SubmittedUrlId;
   prospectId: ProspectId;
   label: string;
-  value: string;
+  url: string;
   createdAt: number;
+}
+
+export interface AIReport {
+  _id: AIReportId;
+  prospectId?: ProspectId;
+  projectId?: ProjectId;
+  url?: string;
+  status: 'pending' | 'completed' | 'failed';
+  summary?: string;
+  metrics?: {
+    coverageScore?: number;
+    backlinksProxy?: number;
+    domainRatingProxy?: number;
+    organicKeywords?: number;
+    trafficEstimate?: number;
+  };
+  confidence: {
+    score: number;
+    sources: string[];
+  };
+  dataSources?: string[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface KeywordIdea {
+  _id: KeywordIdeaId;
+  prospectId?: ProspectId;
+  projectId?: ProjectId;
+  primaryKeyword: string;
+  supportingKeywords?: string[];
+  intent?: string;
+  trafficPotential?: number;
+  kdScore?: number;
+  cpc?: number;
+  entities?: string[];
+  serpNotes?: string;
+  priority?: string;
+  status: 'candidate' | 'shortlisted' | 'scheduled';
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ContentCalendarEntry {
+  _id: ContentCalendarId;
+  prospectId?: ProspectId;
+  projectId?: ProjectId;
+  title: string;
+  contentType: string;
+  primaryKeyword?: string;
+  supportingKeywords?: string[];
+  status: 'idea' | 'scheduled' | 'published';
+  publishDate?: number;
+  notes?: string;
+  heroOffer?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SubscriptionFeatures {
+  maxUrls: number;
+  maxKeywordIdeas: number;
+  maxAiReports: number;
+  maxContentPieces: number;
+}
+
+export interface Subscription {
+  _id: SubscriptionId;
+  userId: UserId;
+  planTier: PlanTier;
+  status: 'active' | 'past_due' | 'cancelled';
+  priceMonthly: number;
+  features: SubscriptionFeatures;
+  oneTimeFeePaid?: boolean;
+  startsAt: number;
+  renewsAt?: number;
+  cancelAt?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface UsageSnapshot {
+  _id: UsageSnapshotId;
+  userId: UserId;
+  periodStart: number;
+  periodEnd: number;
+  urlsAnalyzed: number;
+  keywordIdeasGenerated: number;
+  aiReportsGenerated: number;
+  contentPiecesPlanned: number;
+  updatedAt: number;
 }
 
 // ============================================================================

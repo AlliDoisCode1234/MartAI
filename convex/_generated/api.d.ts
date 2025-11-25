@@ -8,12 +8,15 @@
  * @module
  */
 
+import type * as ai_analysis from "../ai/analysis.js";
+import type * as ai_reports from "../ai/reports.js";
 import type * as analytics_analytics from "../analytics/analytics.js";
 import type * as auth_seed from "../auth/seed.js";
 import type * as auth_sessions from "../auth/sessions.js";
 import type * as auth_users from "../auth/users.js";
 import type * as content_briefVersions from "../content/briefVersions.js";
 import type * as content_briefs from "../content/briefs.js";
+import type * as content_calendars from "../content/calendars.js";
 import type * as content_content from "../content/content.js";
 import type * as content_drafts from "../content/drafts.js";
 import type * as content_quarterlyPlans from "../content/quarterlyPlans.js";
@@ -32,12 +35,14 @@ import type * as publishing_publishing from "../publishing/publishing.js";
 import type * as publishing_scheduledPosts from "../publishing/scheduledPosts.js";
 import type * as seo_competitors from "../seo/competitors.js";
 import type * as seo_keywordClusters from "../seo/keywordClusters.js";
+import type * as seo_keywordIdeas from "../seo/keywordIdeas.js";
 import type * as seo_keywords from "../seo/keywords.js";
 import type * as seo_keywordsData from "../seo/keywordsData.js";
 import type * as seo_rankings from "../seo/rankings.js";
 import type * as seo_seoAudits from "../seo/seoAudits.js";
 import type * as seo_statistics from "../seo/statistics.js";
 import type * as seo_strategy from "../seo/strategy.js";
+import type * as subscriptions_subscriptions from "../subscriptions/subscriptions.js";
 
 import type {
   ApiFromModules,
@@ -46,12 +51,15 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "ai/analysis": typeof ai_analysis;
+  "ai/reports": typeof ai_reports;
   "analytics/analytics": typeof analytics_analytics;
   "auth/seed": typeof auth_seed;
   "auth/sessions": typeof auth_sessions;
   "auth/users": typeof auth_users;
   "content/briefVersions": typeof content_briefVersions;
   "content/briefs": typeof content_briefs;
+  "content/calendars": typeof content_calendars;
   "content/content": typeof content_content;
   "content/drafts": typeof content_drafts;
   "content/quarterlyPlans": typeof content_quarterlyPlans;
@@ -70,12 +78,14 @@ declare const fullApi: ApiFromModules<{
   "publishing/scheduledPosts": typeof publishing_scheduledPosts;
   "seo/competitors": typeof seo_competitors;
   "seo/keywordClusters": typeof seo_keywordClusters;
+  "seo/keywordIdeas": typeof seo_keywordIdeas;
   "seo/keywords": typeof seo_keywords;
   "seo/keywordsData": typeof seo_keywordsData;
   "seo/rankings": typeof seo_rankings;
   "seo/seoAudits": typeof seo_seoAudits;
   "seo/statistics": typeof seo_statistics;
   "seo/strategy": typeof seo_strategy;
+  "subscriptions/subscriptions": typeof subscriptions_subscriptions;
 }>;
 
 /**

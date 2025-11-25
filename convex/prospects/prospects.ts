@@ -191,3 +191,61 @@ export const getProspect = query({
   },
 });
 
+export const listProspects = query({
+  args: {
+    status: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const baseQuery = args.status
+      ? ctx.db
+          .query("prospects")
+          .withIndex("by_status", (idx) => idx.eq("status", args.status!))
+          .order("desc")
+      : ctx.db.query("prospects").order("desc");
+
+    const prospects = await (args.limit
+      ? baseQuery.take(args.limit)
+      : baseQuery.collect());
+
+    return Promise.all(
+      prospects.map(async (prospect) => {
+        const detail = await ctx.db
+          .query("prospectDetails")
+          .withIndex("by_prospect", (q2) => q2.eq("prospectId", prospect._id))
+          .first();
+
+        const urls = await ctx.db
+          .query("submittedUrls")
+          .withIndex("by_prospect", (q2) => q2.eq("prospectId", prospect._id))
+          .collect();
+
+        return { prospect, detail, urls };
+      })
+    );
+  },
+});
+
+export const updateProspectStatus = mutation({
+  args: {
+    prospectId: v.id("prospects"),
+    status: v.string(),
+    assignedUserId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    const { prospectId, status, assignedUserId } = args;
+    const existing = await ctx.db.get(prospectId);
+    if (!existing) {
+      throw new Error("Prospect not found");
+    }
+
+    await ctx.db.patch(prospectId, {
+      status,
+      userId: assignedUserId ?? existing.userId,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+

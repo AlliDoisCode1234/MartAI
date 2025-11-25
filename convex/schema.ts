@@ -212,6 +212,104 @@ export default defineSchema({
   })
     .index("by_prospect", ["prospectId"]),
 
+  aiReports: defineTable({
+    prospectId: v.optional(v.id("prospects")),
+    projectId: v.optional(v.id("projects")),
+    url: v.optional(v.string()),
+    status: v.string(), // pending, completed, failed
+    summary: v.optional(v.string()),
+    metrics: v.object({
+      coverageScore: v.optional(v.number()),
+      backlinksProxy: v.optional(v.number()),
+      domainRatingProxy: v.optional(v.number()),
+      organicKeywords: v.optional(v.number()),
+      trafficEstimate: v.optional(v.number()),
+    }),
+    confidence: v.object({
+      score: v.number(),
+      sources: v.array(v.string()),
+    }),
+    dataSources: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_prospect", ["prospectId"])
+    .index("by_project", ["projectId"])
+    .index("by_status", ["status"]),
+
+  keywordIdeas: defineTable({
+    prospectId: v.optional(v.id("prospects")),
+    projectId: v.optional(v.id("projects")),
+    primaryKeyword: v.string(),
+    supportingKeywords: v.optional(v.array(v.string())),
+    intent: v.optional(v.string()),
+    trafficPotential: v.optional(v.number()),
+    kdScore: v.optional(v.number()),
+    cpc: v.optional(v.number()),
+    entities: v.optional(v.array(v.string())),
+    serpNotes: v.optional(v.string()),
+    priority: v.optional(v.string()),
+    status: v.string(), // candidate, shortlisted, scheduled
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_prospect", ["prospectId"])
+    .index("by_project", ["projectId"])
+    .index("by_keyword", ["primaryKeyword"]),
+
+  contentCalendars: defineTable({
+    prospectId: v.optional(v.id("prospects")),
+    projectId: v.optional(v.id("projects")),
+    title: v.string(),
+    contentType: v.string(),
+    primaryKeyword: v.optional(v.string()),
+    supportingKeywords: v.optional(v.array(v.string())),
+    status: v.string(), // idea, scheduled, published
+    publishDate: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    heroOffer: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_status", ["status"])
+    .index("by_prospect", ["prospectId"])
+    .index("by_publish_date", ["publishDate"]),
+
+  subscriptions: defineTable({
+    userId: v.id("users"),
+    planTier: v.string(), // starter, growth, scale
+    status: v.string(), // active, past_due, cancelled
+    features: v.object({
+      maxUrls: v.number(),
+      maxKeywordIdeas: v.number(),
+      maxAiReports: v.number(),
+      maxContentPieces: v.number(),
+    }),
+    priceMonthly: v.number(),
+    oneTimeFeePaid: v.optional(v.boolean()),
+    startsAt: v.number(),
+    renewsAt: v.optional(v.number()),
+    cancelAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"]),
+
+  usageLimits: defineTable({
+    userId: v.id("users"),
+    periodStart: v.number(),
+    periodEnd: v.number(),
+    urlsAnalyzed: v.number(),
+    keywordIdeasGenerated: v.number(),
+    aiReportsGenerated: v.number(),
+    contentPiecesPlanned: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user_period", ["userId", "periodStart"])
+    .index("by_user_period_end", ["userId", "periodEnd"]),
+
   // Projects (user's SEO projects)
   projects: defineTable({
     userId: v.id("users"),
