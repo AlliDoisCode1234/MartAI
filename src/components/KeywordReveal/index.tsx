@@ -9,9 +9,9 @@ import {
   HStack,
   Badge,
   Flex,
-  keyframes,
   usePrefersReducedMotion,
 } from '@chakra-ui/react';
+import { keyframes } from '@chakra-ui/system';
 import type { KeywordCluster } from '@/types';
 
 const float = keyframes`

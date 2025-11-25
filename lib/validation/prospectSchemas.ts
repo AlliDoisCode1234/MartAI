@@ -25,9 +25,7 @@ export const prospectIntakeSchema = z.object({
     .string()
     .min(10, 'Share at least 10 characters')
     .max(2000, 'Keep it under 2000 characters'),
-  investedBefore: z.enum(['yes', 'no'], {
-    errorMap: () => ({ message: 'Please select an option' }),
-  }),
+  investedBefore: z.enum(['yes', 'no']),
   timeline: z.string().min(1, 'Timeline is required'),
   source: z.string().optional(),
 });

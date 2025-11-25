@@ -3,7 +3,8 @@ import { hashPassword, validatePassword, validateEmail, generateToken, generateR
 import { callConvexMutation, callConvexQuery } from '@/lib/convexClient';
 import { createUserSnapshot } from '@/lib/userSnapshots';
 import type { UserSnapshot, UserId } from '@/types';
-import { secureResponse, validateApiSecurity } from '@/lib/apiSecurity';
+import { validateApiSecurity } from '@/lib/apiSecurity';
+import { secureResponse } from '@/lib/authMiddleware';
 
 // Import api dynamically - will be available after npx convex dev
 let api: any = null;

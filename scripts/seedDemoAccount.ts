@@ -8,12 +8,10 @@ import bcrypt from "bcryptjs";
 import { api } from "../convex/_generated/api";
 import { generateDemoData } from "../lib/demoData";
 
-const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
+const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL ?? process.env.CONVEX_URL;
 
 if (!CONVEX_URL) {
-  console.error("ERROR: CONVEX_URL environment variable not set");
-  console.error("Please set NEXT_PUBLIC_CONVEX_URL or CONVEX_URL before running this script.");
-  process.exit(1);
+  throw new Error("Please set NEXT_PUBLIC_CONVEX_URL or CONVEX_URL before running this script.");
 }
 
 const DEMO_EMAIL = process.env.DEMO_ADMIN_EMAIL || "demo+admin@martai.com";

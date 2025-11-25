@@ -27,6 +27,11 @@ import {
   prospectIntakeSchema,
   ProspectIntakeValues,
 } from "@/lib/validation/prospectSchemas";
+import {
+  createProspectDraft,
+  loadProspectRecord,
+  saveProspectDraft,
+} from "@/lib/services/prospectIntake";
 
 const monthlyRevenueOptions = [
   "Less than $10k",
@@ -75,9 +80,7 @@ export default function ApplyPage() {
 
   const fetchExistingProspect = async (id: string) => {
     try {
-      const res = await fetch(`/api/prospects?id=${id}`);
-      if (!res.ok) return;
-      const data = await res.json();
+      const data = await loadProspectRecord(id);
       if (data?.prospect) {
         form.reset({
           firstName: data.prospect.firstName || "",
@@ -99,15 +102,7 @@ export default function ApplyPage() {
 
   const createDraftProspect = async () => {
     try {
-      const res = await fetch("/api/prospects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "draft" }),
-      });
-      if (!res.ok) {
-        throw new Error("Failed to create draft prospect");
-      }
-      const data = await res.json();
+      const data = await createProspectDraft({ status: "draft" });
       sessionStorage.setItem("prospectId", data.prospectId);
       setProspectId(data.prospectId);
     } catch (error) {
@@ -148,14 +143,7 @@ export default function ApplyPage() {
 
     const timeout = setTimeout(async () => {
       try {
-        await fetch("/api/prospects", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prospectId,
-            ...watchedValues,
-          }),
-        });
+        await saveProspectDraft(prospectId, watchedValues || {});
       } catch (error) {
         console.warn("Autosave failed", error);
       }
@@ -168,21 +156,7 @@ export default function ApplyPage() {
     if (!prospectId) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/prospects", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prospectId,
-          ...values,
-          markSubmitted: true,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to submit application");
-      }
-
+      await saveProspectDraft(prospectId, values, { markSubmitted: true });
       toast({
         title: "Great!",
         description: "Tell us more about your business.",

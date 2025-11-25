@@ -1,5 +1,6 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 
 const baseProspectFields = {
   firstName: v.optional(v.string()),
@@ -31,6 +32,89 @@ const urlInput = v.object({
   label: v.string(),
   value: v.string(),
 });
+
+type ProspectDetailPayload = {
+  prospectId: Id<"prospects">;
+  businessName?: string;
+  topPriority?: string;
+  marketingTried?: string;
+  goals?: string;
+  supportNeeds?: string[];
+  idealOutcome?: string;
+  additionalNotes?: string;
+  hearAbout?: string;
+  sendSms?: string;
+  urls?: Array<{ label: string; value: string }>;
+  markCompleted?: boolean;
+};
+
+async function persistProspectDetails(ctx: any, args: ProspectDetailPayload) {
+  const { prospectId, urls, markCompleted, ...detailPayload } = args;
+  const existingProspect = await ctx.db.get(prospectId);
+  if (!existingProspect) {
+    throw new Error("Prospect not found");
+  }
+
+  const now = Date.now();
+
+  const existingDetail = await ctx.db
+    .query("prospectDetails")
+    .withIndex("by_prospect", (q: any) => q.eq("prospectId", prospectId))
+    .first();
+
+  if (existingDetail) {
+    const updates: Record<string, any> = { updatedAt: now };
+    for (const [key, value] of Object.entries(detailPayload)) {
+      if (value !== undefined) {
+        updates[key] = value;
+      }
+    }
+    await ctx.db.patch(existingDetail._id, updates);
+  } else {
+    await ctx.db.insert("prospectDetails", {
+      prospectId,
+      ...detailPayload,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  if (urls !== undefined) {
+    const existingUrls = await ctx.db
+      .query("submittedUrls")
+      .withIndex("by_prospect", (q: any) => q.eq("prospectId", prospectId))
+      .collect();
+
+    for (const url of existingUrls) {
+      await ctx.db.delete(url._id);
+    }
+
+    for (const entry of urls) {
+      if (!entry.value) {
+        continue;
+      }
+      await ctx.db.insert("submittedUrls", {
+        prospectId,
+        label: entry.label || "Link",
+        url: entry.value,
+        createdAt: now,
+      });
+    }
+  }
+
+  if (markCompleted) {
+    await ctx.db.patch(prospectId, {
+      status: "details_submitted",
+      updatedAt: now,
+    });
+  } else {
+    await ctx.db.patch(prospectId, {
+      updatedAt: now,
+    });
+  }
+
+  return { success: true };
+}
 
 export const createProspect = mutation({
   args: {
@@ -91,79 +175,35 @@ export const saveProspectDetails = mutation({
     markCompleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const {
-      prospectId,
-      urls,
-      markCompleted,
-      ...detailPayload
-    } = args;
+    return persistProspectDetails(ctx, args);
+  },
+});
 
-    const existingProspect = await ctx.db.get(prospectId);
-    if (!existingProspect) {
-      throw new Error("Prospect not found");
-    }
+export const completeProspectIntake = mutation({
+  args: {
+    prospectId: v.id("prospects"),
+    ...detailFields,
+    urls: v.optional(v.array(urlInput)),
+  },
+  handler: async (ctx, args) => {
+    await persistProspectDetails(ctx, { ...args, markCompleted: true });
 
-    const now = Date.now();
-
-    // Upsert detail record
-    const existingDetail = await ctx.db
+    const prospect = await ctx.db.get(args.prospectId);
+    const detail = await ctx.db
       .query("prospectDetails")
-      .withIndex("by_prospect", (q) => q.eq("prospectId", prospectId))
+      .withIndex("by_prospect", (q) => q.eq("prospectId", args.prospectId))
       .first();
+    const urls = await ctx.db
+      .query("submittedUrls")
+      .withIndex("by_prospect", (q) => q.eq("prospectId", args.prospectId))
+      .collect();
 
-    if (existingDetail) {
-      const updates: Record<string, any> = { updatedAt: now };
-      for (const [key, value] of Object.entries(detailPayload)) {
-        if (value !== undefined) {
-          updates[key] = value;
-        }
-      }
-      await ctx.db.patch(existingDetail._id, updates);
-    } else {
-      await ctx.db.insert("prospectDetails", {
-        prospectId,
-        ...detailPayload,
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
-
-    // Replace submitted URLs
-    if (urls !== undefined) {
-      const existingUrls = await ctx.db
-        .query("submittedUrls")
-        .withIndex("by_prospect", (q) => q.eq("prospectId", prospectId))
-        .collect();
-
-      for (const url of existingUrls) {
-        await ctx.db.delete(url._id);
-      }
-
-      for (const entry of urls) {
-        if (!entry.value) {
-          continue;
-        }
-        await ctx.db.insert("submittedUrls", {
-          prospectId,
-          label: entry.label || "Link",
-          url: entry.value,
-          createdAt: now,
-        });
-      }
-    }
-
-    if (markCompleted) {
-      await ctx.db.patch(prospectId, {
-        status: "details_submitted",
-        updatedAt: now,
-      });
-    } else {
-      await ctx.db.patch(prospectId, {
-        updatedAt: now,
-      });
-    }
-
-    return { success: true };
+    return {
+      success: true,
+      prospect,
+      detail,
+      urls,
+    };
   },
 });
 

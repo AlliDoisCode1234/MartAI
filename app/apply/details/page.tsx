@@ -34,6 +34,11 @@ import {
   UrlEntryValues,
   prospectDetailsSchema,
 } from "@/lib/validation/prospectSchemas";
+import {
+  loadProspectRecord,
+  saveProspectDetailsDraft,
+  submitProspectDetails,
+} from "@/lib/services/prospectIntake";
 
 const supportOptions = [
   "Website Creation/Rebuild",
@@ -88,9 +93,7 @@ export default function ProspectDetailsPage() {
 
   const populateFromServer = async (id: string) => {
     try {
-      const response = await fetch(`/api/prospects?id=${id}`);
-      if (!response.ok) return;
-      const data = await response.json();
+      const data = await loadProspectRecord(id);
       const detail = data?.detail;
       const urls = data?.urls || [];
       form.reset({
@@ -146,14 +149,7 @@ export default function ProspectDetailsPage() {
 
     const timeout = setTimeout(async () => {
       try {
-        await fetch("/api/prospect-details", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prospectId,
-            ...(watchValues as ProspectDetailsValues),
-          }),
-        });
+        await saveProspectDetailsDraft(prospectId, watchValues as ProspectDetailsValues);
       } catch (error) {
         console.warn("Autosave (details) failed", error);
       }
@@ -166,19 +162,7 @@ export default function ProspectDetailsPage() {
     if (!prospectId) return;
     setLoading(true);
     try {
-      const response = await fetch("/api/prospect-details", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prospectId,
-          ...values,
-          markCompleted: true,
-        }),
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Submission failed");
-      }
+      await submitProspectDetails(prospectId, values);
       toast({
         title: "Discovery received",
         description: "Watch your inbox—we’re crafting a custom brief.",

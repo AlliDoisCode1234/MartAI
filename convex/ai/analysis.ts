@@ -9,8 +9,8 @@ interface ResolveTargetArgs {
 }
 
 interface TargetInfo {
-  prospectId?: string;
-  projectId?: string;
+  prospectId?: Id<"prospects">;
+  projectId?: Id<"projects">;
   url: string;
   hints: {
     companyName?: string;
@@ -130,7 +130,12 @@ export const runPipeline = action({
 
 async function resolveTarget(ctx: any, args: ResolveTargetArgs): Promise<TargetInfo> {
   if (args.url) {
-    return { url: normalizeUrl(args.url), prospectId: args.prospectId, projectId: args.projectId, hints: {} };
+    return {
+      url: normalizeUrl(args.url),
+      prospectId: args.prospectId as Id<"prospects"> | undefined,
+      projectId: args.projectId as Id<"projects"> | undefined,
+      hints: {},
+    };
   }
 
   if (args.prospectId) {
@@ -146,7 +151,7 @@ async function resolveTarget(ctx: any, args: ResolveTargetArgs): Promise<TargetI
     }
     return {
       url: normalizeUrl(firstUrl),
-      prospectId: args.prospectId,
+      prospectId: args.prospectId as Id<"prospects">,
       hints: {
         companyName: prospectRecord.prospect?.companyName,
         industry: undefined,
@@ -163,7 +168,7 @@ async function resolveTarget(ctx: any, args: ResolveTargetArgs): Promise<TargetI
     }
     return {
       url: normalizeUrl(project.websiteUrl),
-      projectId: args.projectId,
+      projectId: args.projectId as Id<"projects">,
       hints: {
         companyName: project.name,
         industry: project.industry,

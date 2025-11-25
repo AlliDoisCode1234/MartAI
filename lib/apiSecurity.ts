@@ -249,7 +249,8 @@ export function extractClientIp(request: NextRequest): string {
     return realIp;
   }
   
-  return request.ip || 'unknown';
+  const reqWithIp = request as NextRequest & { ip?: string | null };
+  return reqWithIp.ip ?? 'unknown';
 }
 
 /**

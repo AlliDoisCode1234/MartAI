@@ -160,14 +160,14 @@ export const getSubscriptionByUser = query({
 export const listSubscriptions = query({
   args: { status: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    let builder = ctx.db.query("subscriptions").order("desc");
     if (args.status) {
-      builder = ctx.db
+      return await ctx.db
         .query("subscriptions")
-        .withIndex("by_status", (q) => q.eq("status", args.status))
-        .order("desc");
+        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .order("desc")
+        .collect();
     }
-    return await builder.collect();
+    return await ctx.db.query("subscriptions").order("desc").collect();
   },
 });
 
