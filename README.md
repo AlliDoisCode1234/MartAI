@@ -32,5 +32,10 @@ Seed demo data (admin user, project, fake analytics) any time with:
 npx tsx scripts/seedDemoAccount.ts
 ```
 
-That’s it—after the servers start, visit `/auth/login` (demo credentials are printed by the seed script) and explore the dashboard, onboarding journey, and AI demo data.*** End Patch
+That’s it—after the servers start, visit `/auth/login` (demo credentials are printed by the seed script) and explore the dashboard, onboarding journey, and AI demo data.
+
+## Core Convex Workflows
+
+- `api.seo.keywordClusters.generateClusters` replaces the legacy `/api/clusters/generate` route and handles optional GSC imports before persisting clusters.
+- `api.content.quarterlyPlans.generatePlan` replaces `/api/plans/generate`, validating inputs and creating the 12-week calendar directly in Convex.
 

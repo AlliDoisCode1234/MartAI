@@ -22,7 +22,7 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon, CloseIcon } from "@chakra-ui/icons";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useFieldArray,
@@ -34,6 +34,10 @@ import {
   UrlEntryValues,
   prospectDetailsSchema,
 } from "@/lib/validation/prospectSchemas";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { assertProspectId } from "@/lib/typeGuards";
 
 const supportOptions = [
   "Website Creation/Rebuild",
@@ -60,7 +64,8 @@ export default function ProspectDetailsPage() {
   const [prospectId, setProspectId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
-  const latestValues = useRef<ProspectDetailsValues | null>(null);
+  const [waitingForPrefill, setWaitingForPrefill] = useState(false);
+  const latestSerialized = useRef<string | null>(null);
 
   const form = useForm<ProspectDetailsValues>({
     resolver: zodResolver(prospectDetailsSchema),
@@ -84,36 +89,16 @@ export default function ProspectDetailsPage() {
     name: "urls",
   });
 
-  const watchValues = useWatch({ control: form.control });
+  const watchValues = useWatch({ control: form.control }) as ProspectDetailsValues;
 
-  const populateFromServer = async (id: string) => {
-    try {
-      const response = await fetch(`/api/prospects?id=${id}`);
-      if (!response.ok) return;
-      const data = await response.json();
-      const detail = data?.detail;
-      const urls = data?.urls || [];
-      form.reset({
-        businessName: detail?.businessName || data?.prospect?.companyName || "",
-        topPriority: detail?.topPriority || "",
-        marketingTried: detail?.marketingTried || "",
-        goals: detail?.goals || "",
-        supportNeeds: detail?.supportNeeds || [],
-        idealOutcome: detail?.idealOutcome || "",
-        additionalNotes: detail?.additionalNotes || "",
-        hearAbout: detail?.hearAbout || "",
-        sendSms: detail?.sendSms || "",
-        urls:
-          urls.length > 0
-            ? urls.map((entry: any) => ({ label: entry.label, value: entry.url }))
-            : [defaultUrl],
-      });
-    } catch (error) {
-      console.warn("Prospect load failed", error);
-    } finally {
-      setInitializing(false);
-    }
-  };
+  const saveProspectDetails = useMutation(api.prospects.prospects.saveProspectDetails);
+  const completeProspectIntake = useMutation(
+    api.prospects.prospects.completeProspectIntake,
+  );
+  const prospectRecord = useQuery(
+    api.prospects.prospects.getProspect,
+    prospectId ? { prospectId: prospectId as Id<"prospects"> } : "skip",
+  );
 
   useEffect(() => {
     const queryId = params.get("prospectId");
@@ -130,55 +115,108 @@ export default function ProspectDetailsPage() {
       return;
     }
 
-    setProspectId(id);
-    sessionStorage.setItem("prospectId", id);
-    populateFromServer(id);
+    try {
+      const typed = assertProspectId(id);
+      const idString = typed as unknown as string;
+      setProspectId(idString);
+      sessionStorage.setItem("prospectId", idString);
+      setWaitingForPrefill(true);
+    } catch {
+      sessionStorage.removeItem("prospectId");
+      toast({
+        title: "Invalid prospect link",
+        description: "Please restart your application.",
+        status: "error",
+      });
+      router.push("/apply");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!prospectId || initializing) return;
-    const serialized = JSON.stringify(watchValues);
-    if (latestValues.current && JSON.stringify(latestValues.current) === serialized) {
+    if (!waitingForPrefill) return;
+    if (prospectRecord === undefined) return;
+
+    if (!prospectRecord) {
+      toast({
+        title: "Prospect not found",
+        description: "Start over so we can capture your details.",
+        status: "error",
+      });
+      setWaitingForPrefill(false);
+      setInitializing(false);
+      router.push("/apply");
       return;
     }
-    latestValues.current = watchValues as ProspectDetailsValues;
+
+    const detail = prospectRecord.detail;
+    const urls = prospectRecord.urls || [];
+    form.reset({
+      businessName: detail?.businessName || prospectRecord.prospect?.companyName || "",
+      topPriority: detail?.topPriority || "",
+      marketingTried: detail?.marketingTried || "",
+      goals: detail?.goals || "",
+      supportNeeds: detail?.supportNeeds || [],
+      idealOutcome: detail?.idealOutcome || "",
+      additionalNotes: detail?.additionalNotes || "",
+      hearAbout: detail?.hearAbout || "",
+      sendSms: detail?.sendSms || "",
+      urls:
+        urls.length > 0
+          ? urls.map((entry: any) => ({ label: entry.label, value: entry.url }))
+          : [defaultUrl],
+    });
+
+    setWaitingForPrefill(false);
+    setInitializing(false);
+  }, [waitingForPrefill, prospectRecord, form, router, toast]);
+
+  const saveDetailsDraft = useCallback(
+    async (values: ProspectDetailsValues) => {
+      if (!prospectId) return;
+      await saveProspectDetails({
+        prospectId: prospectId as Id<"prospects">,
+        ...values,
+      });
+    },
+    [prospectId, saveProspectDetails],
+  );
+
+  const submitDetails = useCallback(
+    async (values: ProspectDetailsValues) => {
+      if (!prospectId) return;
+      return completeProspectIntake({
+        prospectId: prospectId as Id<"prospects">,
+        ...values,
+      });
+    },
+    [prospectId, completeProspectIntake],
+  );
+
+  useEffect(() => {
+    if (!prospectId || initializing) return;
+    const serialized = JSON.stringify(watchValues);
+    if (latestSerialized.current === serialized) {
+      return;
+    }
+    latestSerialized.current = serialized;
 
     const timeout = setTimeout(async () => {
       try {
-        await fetch("/api/prospect-details", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prospectId,
-            ...(watchValues as ProspectDetailsValues),
-          }),
-        });
+        await saveDetailsDraft(watchValues as ProspectDetailsValues);
       } catch (error) {
         console.warn("Autosave (details) failed", error);
       }
     }, autosaveDelay);
 
     return () => clearTimeout(timeout);
-  }, [prospectId, watchValues, initializing]);
+  }, [prospectId, watchValues, initializing, saveDetailsDraft]);
 
   const handleSubmit = async (values: ProspectDetailsValues) => {
     if (!prospectId) return;
     setLoading(true);
     try {
-      const response = await fetch("/api/prospect-details", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prospectId,
-          ...values,
-          markCompleted: true,
-        }),
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Submission failed");
-      }
+      await submitDetails(values);
       toast({
         title: "Discovery received",
         description: "Watch your inbox—we’re crafting a custom brief.",

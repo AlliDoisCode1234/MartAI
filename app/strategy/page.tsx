@@ -2,24 +2,48 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Container, VStack, Heading, Text, Box, Button, HStack, Grid, GridItem, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, ModalFooter, useDisclosure, FormControl, FormLabel, Input, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper, Select, Checkbox, Table, Thead, Tbody, Tr, Th, Td, Stat, StatLabel, StatNumber, StatHelpText } from '@chakra-ui/react';
+import { Container, VStack, Heading, Text, Box, Button, HStack, Grid, GridItem, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, ModalFooter, useDisclosure, useToast, FormControl, FormLabel, Input, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper, Select, Table, Thead, Tbody, Tr, Th, Td, Stat, StatLabel, StatNumber, StatHelpText } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
-import type { KeywordCluster, Brief, QuarterlyPlan, PlanProps, ClusterProps, ProjectId } from '@/types';
+import { useAction, useMutation, useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
+import type { Brief } from '@/types';
 import { DraggableBriefList } from '@/src/components/DraggableBriefList';
 import { assertProjectId } from '@/lib/typeGuards';
 
 function StrategyContent() {
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, user } = useAuth();
+  const toast = useToast();
+  const projects = useQuery(
+    api.projects.projects.getProjectsByUser,
+    user?._id ? { userId: user._id as unknown as Id<'users'> } : 'skip',
+  );
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [clusters, setClusters] = useState<KeywordCluster[]>([]);
-  const [plan, setPlan] = useState<QuarterlyPlan | null>(null);
-  
-  // Pass whole objects to maintain type inference
-  const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectsLoading, setProjectsLoading] = useState(true);
+  const rescheduleBrief = useMutation(api.content.quarterlyPlans.rescheduleBrief);
+  const generateClustersAction = useAction(api.seo.keywordClusters.generateClusters);
+  const generatePlanAction = useAction(api.content.quarterlyPlans.generatePlan);
+  const projectIdForQuery =
+    projectId !== null
+      ? (() => {
+          try {
+            assertProjectId(projectId);
+            return projectId as unknown as Id<'projects'>;
+          } catch {
+            return null;
+          }
+        })()
+      : null;
+  const strategyData = useQuery(
+    api.seo.strategy.getStrategyByProject,
+    projectIdForQuery ? { projectId: projectIdForQuery } : "skip",
+  );
+  const clusters = strategyData?.clusters ?? [];
+  const plan = strategyData?.plan ?? null;
+  const strategyLoading = projectIdForQuery ? strategyData === undefined : false;
   
   // Modals
   const { isOpen: isClusterModalOpen, onOpen: onClusterModalOpen, onClose: onClusterModalClose } = useDisclosure();
@@ -33,98 +57,65 @@ function StrategyContent() {
   });
 
   useEffect(() => {
-    // Wait for auth to finish loading before checking
     if (authLoading) {
       return;
     }
-
-    // If not authenticated, redirect to login
     if (!isAuthenticated) {
       router.replace('/auth/login');
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (authLoading || !isAuthenticated) {
+      return;
+    }
+    if (projects === undefined) {
+      setProjectsLoading(true);
       return;
     }
 
-    const loadUserProjects = async () => {
-      const storedProject = localStorage.getItem('currentProjectId');
-      
-      // If we have a stored project, try to use it
-      if (storedProject) {
-        try {
-          const validatedProjectId = assertProjectId(storedProject);
-          setProjectId(storedProject);
-          setProjectsLoading(false);
-          loadClusters(storedProject);
-          loadPlan(validatedProjectId);
-          return;
-        } catch (error) {
-          console.error('Invalid stored project ID:', error);
-          localStorage.removeItem('currentProjectId');
-        }
-      }
+    setProjectsLoading(false);
 
-      // No valid project in localStorage, fetch user's projects
+    if (!projects || projects.length === 0) {
+      setProjectId(null);
+      return;
+    }
+
+    const storedId =
+      typeof window !== 'undefined' ? window.localStorage.getItem('currentProjectId') : null;
+
+    let normalizedStored: string | null = null;
+    if (storedId) {
       try {
-        const token = localStorage.getItem('auth_token');
-        if (!token) {
-          router.replace('/auth/login');
-          return;
-        }
-
-        console.log('Fetching projects for user...');
-        const response = await fetch('/api/projects', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const projects = data.projects || [];
-          console.log(`Found ${projects.length} project(s) for user`, projects);
-
-          if (projects.length > 0) {
-            // Use the first project
-            const firstProject = projects[0];
-            const projectIdStr = typeof firstProject._id === 'string' 
-              ? firstProject._id 
-              : firstProject._id.toString();
-            console.log('Setting project ID:', projectIdStr);
-            localStorage.setItem('currentProjectId', projectIdStr);
-            setProjectId(projectIdStr);
-            setProjectsLoading(false);
-            loadClusters(projectIdStr);
-            try {
-              const validatedProjectId = assertProjectId(projectIdStr);
-              loadPlan(validatedProjectId);
-            } catch (error) {
-              console.error('Invalid project ID:', error);
-            }
-          } else {
-            // No projects - clear loading and show empty state (don't redirect)
-            console.log('No projects found for user - showing empty state');
-            setProjectsLoading(false);
-          }
-        } else {
-          // Failed to fetch projects - clear loading and show error state
-          const errorData = await response.json().catch(() => ({}));
-          console.error('Failed to fetch projects:', response.status, errorData);
-          setProjectsLoading(false);
-        }
-      } catch (error) {
-        console.error('Error loading projects:', error);
-        setProjectsLoading(false);
-        // Don't redirect - show error state instead
+        assertProjectId(storedId);
+        normalizedStored = storedId;
+      } catch {
+        window.localStorage.removeItem('currentProjectId');
       }
-    };
+    }
 
-    loadUserProjects();
-  }, [router, isAuthenticated, authLoading]);
+    const matchedProject = normalizedStored
+      ? projects.find((proj) => (proj._id as unknown as string) === normalizedStored)
+      : null;
+
+    const nextProject = matchedProject ?? projects[0];
+    const nextId = (nextProject._id as unknown as string) ?? nextProject._id.toString();
+
+    if (nextId !== projectId) {
+      setProjectId(nextId);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('currentProjectId', nextId);
+      }
+    }
+  }, [projects, authLoading, isAuthenticated, projectId]);
 
   // Don't try to use projectId before it's loaded
-  if (projectsLoading && !projectId) {
+  if ((projectsLoading && !projectId) || strategyLoading) {
     return (
       <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
         <VStack spacing={4}>
           <Spinner size="xl" color="brand.orange" />
-          <Text color="gray.600">Loading your projects...</Text>
+          <Text color="gray.600">Loading your strategy...</Text>
         </VStack>
       </Box>
     );
@@ -144,72 +135,45 @@ function StrategyContent() {
     );
   }
 
-  const loadClusters = async (pid: string) => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/clusters?projectId=${pid}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setClusters(data.clusters || []);
-      }
-    } catch (error) {
-      console.error('Error loading clusters:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadPlan = async (pid: ProjectId) => {
-    try {
-      const token = localStorage.getItem("auth_token");
-      
-      // Fetch the plan for the project
-      const response = await fetch(`/api/plans?projectId=${pid}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-  
-      if (response.ok) {
-        const data = await response.json();
-        setPlan(data.plan);
-      } else {
-        console.error("Error loading plan:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error loading plan:", error);
-    }
-  };
-
   const handleGenerateClusters = async () => {
     if (!projectId) {
-      alert('Please complete onboarding first');
+      toast({
+        title: 'Select a project first',
+        status: 'warning',
+      });
+      return;
+    }
+
+    let typedProjectId: Id<'projects'>;
+    try {
+      typedProjectId = assertProjectId(projectId);
+    } catch {
+      toast({
+        title: 'Invalid project identifier',
+        status: 'error',
+      });
       return;
     }
 
     setGenerating(true);
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/clusters/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ projectId, keywords: [], importFromGSC: true }),
+      const result = await generateClustersAction({
+        projectId: typedProjectId,
+        importFromGSC: true,
       });
-
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setClusters(data.clusters || []);
-        alert(`Generated ${data.count} keyword clusters!`);
-      } else {
-        alert(data.error || 'Failed to generate clusters');
-      }
-    } catch (error) {
-      alert('Failed to generate clusters');
+      toast({
+        title: 'Clusters generated',
+        description: `Created ${result?.count ?? 0} keyword clusters`,
+        status: 'success',
+      });
+      onClusterModalClose();
+    } catch (error: any) {
+      console.error('Failed to generate clusters', error);
+      toast({
+        title: 'Failed to generate clusters',
+        description: error?.message || 'Please try again.',
+        status: 'error',
+      });
     } finally {
       setGenerating(false);
     }
@@ -217,51 +181,63 @@ function StrategyContent() {
 
   const handleGeneratePlan = async () => {
     if (!projectId) {
-      alert('Please complete onboarding first');
+      toast({
+        title: 'Select a project first',
+        status: 'warning',
+      });
       return;
     }
 
     if (clusters.length === 0) {
-      alert('Please generate keyword clusters first');
+      toast({
+        title: 'Add keyword clusters first',
+        status: 'info',
+      });
+      return;
+    }
+
+    let typedProjectId: Id<'projects'>;
+    try {
+      typedProjectId = assertProjectId(projectId);
+    } catch {
+      toast({
+        title: 'Invalid project identifier',
+        status: 'error',
+      });
       return;
     }
 
     setGenerating(true);
     try {
-      const token = localStorage.getItem('auth_token');
       const startDate = new Date(planFormData.startDate).getTime();
-      
-      const response = await fetch('/api/plans/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          projectId,
-          contentVelocity: planFormData.contentVelocity,
-          startDate,
-          goals: {
-            traffic: planFormData.trafficGoal ? parseInt(planFormData.trafficGoal) : undefined,
-            leads: planFormData.leadsGoal ? parseInt(planFormData.leadsGoal) : undefined,
-          },
-        }),
+      const goalPayload: { traffic?: number; leads?: number; revenue?: number } = {};
+      if (planFormData.trafficGoal) {
+        goalPayload.traffic = parseInt(planFormData.trafficGoal, 10);
+      }
+      if (planFormData.leadsGoal) {
+        goalPayload.leads = parseInt(planFormData.leadsGoal, 10);
+      }
+
+      await generatePlanAction({
+        projectId: typedProjectId,
+        contentVelocity: planFormData.contentVelocity,
+        startDate,
+        goals: Object.keys(goalPayload).length ? goalPayload : undefined,
       });
 
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setPlan(data.plan);
-        if (projectId) {
-          const validatedProjectId = assertProjectId(projectId);
-          await loadPlan(validatedProjectId);
-        }
-        onPlanModalClose();
-        alert(`Generated 12-week plan with ${data.count} content briefs!`);
-      } else {
-        alert(data.error || 'Failed to generate plan');
-      }
-    } catch (error) {
-      alert('Failed to generate plan');
+      toast({
+        title: 'Plan generated',
+        description: 'A 12-week calendar has been created for this project.',
+        status: 'success',
+      });
+      onPlanModalClose();
+    } catch (error: any) {
+      console.error('Failed to generate plan', error);
+      toast({
+        title: 'Failed to generate plan',
+        description: error?.message || 'Please try again.',
+        status: 'error',
+      });
     } finally {
       setGenerating(false);
     }
@@ -269,20 +245,10 @@ function StrategyContent() {
 
   const handleRescheduleBrief = async (briefId: string, newDate: number) => {
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/briefs/reschedule', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ briefId, newDate }),
+      await rescheduleBrief({
+        briefId: briefId as Id<'briefs'>,
+        newDate,
       });
-
-      if (response.ok && projectId) {
-        const validatedProjectId = assertProjectId(projectId);
-        await loadPlan(validatedProjectId);
-      }
     } catch (error) {
       console.error('Error rescheduling:', error);
     }
@@ -522,7 +488,7 @@ function StrategyContent() {
                 <Button variant="ghost" mr={3} onClick={onClusterModalClose}>
                   Cancel
                 </Button>
-                <Button bg="brand.orange" color="white" onClick={() => { handleGenerateClusters(); onClusterModalClose(); }} isLoading={generating}>
+                <Button bg="brand.orange" color="white" onClick={handleGenerateClusters} isLoading={generating}>
                   Generate
                 </Button>
               </ModalFooter>

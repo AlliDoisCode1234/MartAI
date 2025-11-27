@@ -2,7 +2,12 @@ type AuthEventType =
   | 'login.success'
   | 'login.failure'
   | 'login.locked'
-  | 'login.rate_limited';
+  | 'login.rate_limited'
+  | 'admin_login.success'
+  | 'admin_login.failure'
+  | 'admin_login.locked'
+  | 'admin_login.rate_limited'
+  | 'admin_login.non_admin_attempt';
 
 type AuthEvent = {
   type: AuthEventType;

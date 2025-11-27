@@ -6,19 +6,18 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 
-const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
+const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL ?? process.env.CONVEX_URL;
 const DEMO_EMAIL = process.env.DEMO_ADMIN_EMAIL || "demo+admin@martai.com";
 
 if (!CONVEX_URL) {
-  console.error("ERROR: CONVEX_URL environment variable not set");
-  process.exit(1);
+  throw new Error("ERROR: CONVEX_URL environment variable not set");
 }
 
 async function verifySeededData() {
   const client = new ConvexHttpClient(CONVEX_URL);
 
   console.log("\n🔍 Verifying All Seeded Data");
-  console.log("=" .repeat(60));
+  console.log("=".repeat(60));
 
   let allPassed = true;
 
@@ -33,7 +32,7 @@ async function verifySeededData() {
       console.error("   ❌ User not found");
       allPassed = false;
     } else {
-      console.log(`   ✅ User: ${user.email} (${user._id})`);
+      console.log(`   ✅ User: ${user.username} (${user._id})`);
       console.log(`      Role: ${user.role || 'user'}`);
     }
 

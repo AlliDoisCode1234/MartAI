@@ -6,20 +6,18 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 
-const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
+const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL ?? process.env.CONVEX_URL;
 const DEMO_EMAIL = process.env.DEMO_ADMIN_EMAIL || "demo+admin@martai.com";
 
 if (!CONVEX_URL) {
-  console.error("ERROR: CONVEX_URL environment variable not set");
-  console.error("Please set NEXT_PUBLIC_CONVEX_URL or CONVEX_URL before running this script.");
-  process.exit(1);
+  throw new Error("Please set NEXT_PUBLIC_CONVEX_URL or CONVEX_URL before running this script.");
 }
 
 async function testStrategyData() {
   const client = new ConvexHttpClient(CONVEX_URL);
 
   console.log("\n🔍 Testing Strategy Data Access");
-  console.log("=" .repeat(50));
+  console.log("=".repeat(50));
 
   try {
     // 1. Get demo user
@@ -34,7 +32,7 @@ async function testStrategyData() {
       process.exit(1);
     }
 
-    console.log(`   ✅ Found user: ${user.email} (${user._id})`);
+    console.log(`   ✅ Found user: ${user.username} (${user._id})`);
 
     // 2. Get user's projects
     console.log("\n2️⃣ Finding user projects...");
@@ -59,7 +57,7 @@ async function testStrategyData() {
     });
 
     console.log("\n📊 Strategy Data Summary:");
-    console.log("=" .repeat(50));
+    console.log("=".repeat(50));
     console.log(`   Project ID: ${strategy.projectId}`);
     console.log(`   Clusters: ${strategy.stats.clusterCount} total, ${strategy.stats.activeClusterCount} active`);
     console.log(`   Plan: ${strategy.stats.planExists ? "✅ Exists" : "❌ Missing"}`);
@@ -101,8 +99,8 @@ async function testStrategyData() {
     console.log("\n" + "=".repeat(50));
     if (strategy.stats.clusterCount > 0 && strategy.stats.planExists) {
       console.log("✅ Strategy data is properly seeded!");
-      console.log(`\n💡 Test the API endpoint:`);
-      console.log(`   GET /api/strategy?projectId=${projectId}`);
+      console.log(`\n💡 Use Convex directly: api.seo.strategy.getStrategyByProject`);
+      console.log(`   Project ID tested: ${projectId}`);
       console.log(`   (After logging in as ${DEMO_EMAIL})`);
     } else {
       console.log("⚠️  Strategy data incomplete:");

@@ -21,15 +21,11 @@ import {
   useToast,
   HStack,
 } from "@chakra-ui/react";
-import type { Prospect } from "@/types";
-
-interface ProspectRecord {
-  prospect: Prospect;
-  detail?: {
-    topPriority?: string;
-  };
-  urls?: Array<{ url: string; label: string }>;
-}
+import type { ProspectRecord } from "@/lib/services/admin";
+import {
+  fetchAdminProspects,
+  runMartAiAnalysis,
+} from "@/lib/services/admin";
 
 export default function AdminDashboardPage() {
   const [prospects, setProspects] = useState<ProspectRecord[]>([]);
@@ -41,17 +37,8 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const loadProspects = async () => {
       try {
-        const response = await fetch("/api/admin/prospects");
-        const data = await response.json();
-        if (response.ok) {
-          setProspects(data.prospects || []);
-        } else {
-          toast({
-            status: "error",
-            title: "Failed to load prospects",
-            description: data.error || "Unknown error",
-          });
-        }
+        const data = await fetchAdminProspects();
+        setProspects(data.prospects || []);
       } catch (error) {
         toast({
           status: "error",
@@ -69,15 +56,7 @@ export default function AdminDashboardPage() {
   const triggerAnalysis = async (payload: Record<string, string>) => {
     try {
       setRunning(payload.prospectId || payload.url || "manual");
-      const response = await fetch("/api/ai/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to run analysis");
-      }
+      const data = await runMartAiAnalysis(payload);
       toast({
         status: "success",
         title: "Analysis running",

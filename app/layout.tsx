@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { ChakraProviderWrapper } from '@/src/providers/ChakraProvider';
 import { SecurityProvider } from '@/src/providers/SecurityProvider';
+import { ConvexProviderWrapper } from '@/src/providers/ConvexProvider';
 import { Layout } from '@/src/components/Layout';
 import { ErrorBoundary } from '@/src/components/shared/ErrorBoundary';
 import '@/src/index.css';
@@ -40,11 +41,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body suppressHydrationWarning>
         <ErrorBoundary>
           <SecurityProvider>
-            <ChakraProviderWrapper>
-              <Layout>
-                {children}
-              </Layout>
-            </ChakraProviderWrapper>
+            <ConvexProviderWrapper>
+              <ChakraProviderWrapper>
+                <Layout>
+                  {children}
+                </Layout>
+              </ChakraProviderWrapper>
+            </ConvexProviderWrapper>
           </SecurityProvider>
         </ErrorBoundary>
       </body>

@@ -49,7 +49,7 @@ export const Navigation: FC = () => {
                   </Link>
                 ))}
                 <HStack spacing={2}>
-                  <Text fontSize="sm" color="gray.600">{user?.email}</Text>
+                  <Text fontSize="sm" color="gray.600">{user?.username}</Text>
                   <Button size="sm" variant="outline" onClick={logout}>
                     Logout
                   </Button>

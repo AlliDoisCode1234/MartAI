@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyRefreshToken, generateToken } from '@/lib/auth';
 import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
 import { createUserSnapshot } from '@/lib/userSnapshots';
-import { secureResponse, validateApiSecurity } from '@/lib/apiSecurity';
+import { validateApiSecurity } from '@/lib/apiSecurity';
+import { secureResponse } from '@/lib/authMiddleware';
 
 // Import api dynamically
 let api: any = null;

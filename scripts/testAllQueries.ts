@@ -6,19 +6,18 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 
-const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
+const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL ?? process.env.CONVEX_URL;
 const DEMO_EMAIL = process.env.DEMO_ADMIN_EMAIL || "demo+admin@martai.com";
 
 if (!CONVEX_URL) {
-  console.error("ERROR: CONVEX_URL environment variable not set");
-  process.exit(1);
+  throw new Error("ERROR: CONVEX_URL environment variable not set");
 }
 
 async function testAllQueries() {
   const client = new ConvexHttpClient(CONVEX_URL);
 
   console.log("\n🧪 Testing All Queries and Mutations");
-  console.log("=" .repeat(60));
+  console.log("=".repeat(60));
 
   try {
     // 1. Get user
@@ -32,7 +31,7 @@ async function testAllQueries() {
       console.error("   Run: npx tsx scripts/seedDemoAccount.ts");
       process.exit(1);
     }
-    console.log(`   ✅ User found: ${user.email} (${user._id})`);
+    console.log(`   ✅ User found: ${user.username} (${user._id})`);
 
     // 2. Test Projects
     console.log("\n2️⃣ Testing Project Queries...");

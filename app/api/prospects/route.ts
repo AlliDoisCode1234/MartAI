@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateApiSecurity, secureResponse } from '@/lib/apiSecurity';
+import { validateApiSecurity } from '@/lib/apiSecurity';
+import { secureResponse } from '@/lib/authMiddleware';
 import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
 import {
   prospectIntakeSchema,

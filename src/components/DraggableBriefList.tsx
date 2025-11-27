@@ -35,8 +35,12 @@ interface SortableBriefItemProps {
   onReschedule?: (briefId: BriefId, newDate: number) => void;
 }
 
+function toBriefIdString(briefId: BriefId): string {
+  return (briefId as unknown as string) ?? '';
+}
+
 function SortableBriefItem({ brief, onReschedule }: SortableBriefItemProps) {
-  const briefId = (brief._id || brief.id || '') as string;
+  const briefId = toBriefIdString(brief._id);
   
   const {
     attributes,
@@ -112,7 +116,7 @@ export function DraggableBriefList({ briefs, onReorder, onReschedule }: Draggabl
 
     if (over && active.id !== over.id) {
       setItems((currentItems) => {
-        const getBriefId = (brief: Brief) => (brief._id || brief.id || '') as string;
+        const getBriefId = (brief: Brief) => toBriefIdString(brief._id);
         const oldIndex = currentItems.findIndex((item) => getBriefId(item) === active.id);
         const newIndex = currentItems.findIndex((item) => getBriefId(item) === over.id);
         
@@ -125,7 +129,7 @@ export function DraggableBriefList({ briefs, onReorder, onReschedule }: Draggabl
     }
   };
 
-  const getBriefId = (brief: Brief): string => (brief._id || brief.id || '') as string;
+  const getBriefId = (brief: Brief): string => toBriefIdString(brief._id);
 
   return (
     <DndContext

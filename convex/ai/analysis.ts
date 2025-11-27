@@ -1,16 +1,21 @@
 import { action } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
 
 interface ResolveTargetArgs {
-  prospectId?: string;
-  projectId?: string;
+  prospectId?: Id<"prospects">;
+  projectId?: Id<"projects">;
+}
+
+interface PipelineArgs extends ResolveTargetArgs {
   url?: string;
+  force?: boolean;
 }
 
 interface TargetInfo {
-  prospectId?: string;
-  projectId?: string;
+  prospectId?: Id<"prospects">;
+  projectId?: Id<"projects">;
   url: string;
   hints: {
     companyName?: string;
@@ -54,7 +59,7 @@ export const runPipeline = action({
     url: v.optional(v.string()),
     force: v.optional(v.boolean()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (ctx, args: PipelineArgs): Promise<{
     reportId: string;
     metrics: FusionResult;
     keywordIdeasCreated: number;
@@ -64,12 +69,14 @@ export const runPipeline = action({
     }
 
     const target = await resolveTarget(ctx, args);
+    const typedProspectId = target.prospectId as Id<"prospects"> | undefined;
+    const typedProjectId = target.projectId as Id<"projects"> | undefined;
     console.info("Starting MartAI pipeline", target);
 
     const initialSummary = `Running MartAI intelligence pipeline for ${target.url}`;
     const reportId = await ctx.runMutation(api.ai.reports.createAiReport, {
-      prospectId: target.prospectId,
-      projectId: target.projectId,
+      prospectId: typedProspectId,
+      projectId: typedProjectId,
       url: target.url,
       status: "pending",
       summary: initialSummary,
@@ -108,8 +115,16 @@ export const runPipeline = action({
         dataSources: fusion.sources,
       });
 
-      await persistKeywordIdeas(ctx, keywordCandidates, target);
-      await persistCalendarPreview(ctx, keywordCandidates, target);
+      await persistKeywordIdeas(ctx, keywordCandidates, {
+        ...target,
+        prospectId: typedProspectId,
+        projectId: typedProjectId,
+      });
+      await persistCalendarPreview(ctx, keywordCandidates, {
+        ...target,
+        prospectId: typedProspectId,
+        projectId: typedProjectId,
+      });
 
       return {
         reportId: reportId.toString(),
@@ -128,9 +143,14 @@ export const runPipeline = action({
   },
 });
 
-async function resolveTarget(ctx: any, args: ResolveTargetArgs): Promise<TargetInfo> {
+async function resolveTarget(ctx: any, args: PipelineArgs): Promise<TargetInfo> {
   if (args.url) {
-    return { url: normalizeUrl(args.url), prospectId: args.prospectId, projectId: args.projectId, hints: {} };
+    return {
+      url: normalizeUrl(args.url),
+      prospectId: args.prospectId,
+      projectId: args.projectId,
+      hints: {},
+    };
   }
 
   if (args.prospectId) {

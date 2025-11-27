@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateApiSecurity, secureResponse } from '@/lib/apiSecurity';
+import { validateApiSecurity } from '@/lib/apiSecurity';
+import { secureResponse } from '@/lib/authMiddleware';
 import { callConvexMutation, api } from '@/lib/convexClient';
 import {
   prospectDetailsSchema,
@@ -52,10 +53,18 @@ export async function POST(request: NextRequest) {
 
     const module = getProspectsModule();
 
+    if (markCompleted) {
+      const result = await callConvexMutation(module.completeProspectIntake, {
+        prospectId,
+        ...payload,
+      });
+
+      return secureResponse(NextResponse.json(result));
+    }
+
     await callConvexMutation(module.saveProspectDetails, {
       prospectId,
       ...payload,
-      markCompleted: !!markCompleted,
     });
 
     return secureResponse(

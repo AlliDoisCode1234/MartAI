@@ -8,12 +8,10 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 
-const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
+const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL ?? process.env.CONVEX_URL;
 
 if (!CONVEX_URL) {
-  console.error("ERROR: CONVEX_URL environment variable not set");
-  console.error("Please set NEXT_PUBLIC_CONVEX_URL or CONVEX_URL");
-  process.exit(1);
+  throw new Error("Please set NEXT_PUBLIC_CONVEX_URL or CONVEX_URL before running this script.");
 }
 
 async function seedAdmin() {
