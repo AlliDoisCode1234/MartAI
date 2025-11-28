@@ -76,35 +76,83 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Publish to platform
+    // Publish to platform with retry logic
     let publishedUrl;
     const title = brief?.titleOptions?.[0] || brief?.title || 'Untitled';
     const content = draft.content;
 
+    const { publishWithRetry } = await import('@/lib/publishingRetry');
+
     if (platform === 'wordpress') {
       const wpClient = new WordPressClient({
         siteUrl: connection.siteUrl,
-        username: connection.wordpressSiteId || 'admin', // Use stored username or default
+        username: connection.wordpressSiteId || 'admin',
         password: connection.accessToken,
       });
-      const result = await wpClient.createPage({
-        title,
-        content,
-        slug: slug || undefined,
-        status: 'publish',
-      });
-      publishedUrl = result.link;
+
+      const result = await publishWithRetry(
+        async () => {
+          const publishResult = await wpClient.createPage({
+            title,
+            content,
+            slug: slug || undefined,
+            status: 'publish',
+          });
+          return { url: publishResult.link };
+        },
+        {
+          maxRetries: 3,
+          initialDelayMs: 1000,
+          retryableErrors: [
+            'ECONNRESET',
+            'ETIMEDOUT',
+            'timeout',
+            'rate limit',
+            '429',
+            '503',
+            '502',
+            '500',
+          ],
+        }
+      );
+
+      if (!result.success) {
+        return NextResponse.json(
+          { error: result.error || 'Failed to publish after retries' },
+          { status: 500 }
+        );
+      }
+
+      publishedUrl = result.url;
     } else if (platform === 'shopify') {
       const shopifyClient = new ShopifyClient({
         shopDomain: connection.shopifyShop || connection.siteUrl,
         accessToken: connection.accessToken,
       });
-      const result = await shopifyClient.createPage({
-        title,
-        body_html: content,
-        handle: slug || undefined,
-        published: true,
-      });
+
+      const result = await publishWithRetry(
+        async () => {
+          const publishResult = await shopifyClient.createPage({
+            title,
+            body_html: content,
+            handle: slug || undefined,
+            published: true,
+          });
+          return { url: publishResult.url };
+        },
+        {
+          maxRetries: 3,
+          initialDelayMs: 1000,
+        }
+      );
+
+      if (!result.success) {
+        return NextResponse.json(
+          { error: result.error || 'Failed to publish after retries' },
+          { status: 500 }
+        );
+      }
+
       publishedUrl = result.url;
     } else {
       return NextResponse.json(

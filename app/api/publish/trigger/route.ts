@@ -37,35 +37,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get all scheduled posts due now
+    const body = await request.json().catch(() => ({}));
+    const { postId } = body;
+
+    // If postId provided, publish that specific post
+    if (postId) {
+      const post = await callConvexQuery(api.publishing.scheduledPosts.getScheduledPostById, {
+        postId: postId as any,
+      });
+
+      if (!post || post.status !== 'scheduled') {
+        return NextResponse.json(
+          { error: 'Post not found or not scheduled' },
+          { status: 404 }
+        );
+      }
+
+      const duePosts = [post];
+      return await processPosts(duePosts, api);
+    }
+
+    // Otherwise, get all due posts
     const now = Date.now();
-    
-    // Query all scheduled posts by iterating through known projects
-    // In production, you'd want a global query or iterate through all projects
     const searchParams = request.nextUrl.searchParams;
     const projectId = searchParams.get('projectId');
     
     let allPosts: any[] = [];
     
     if (projectId) {
-      // Query specific project
       allPosts = await callConvexQuery(api.publishing.scheduledPosts.getScheduledPosts, {
         projectId: projectId as any,
       }) || [];
     } else {
-      // For cron, we'd need to query all projects
-      // This is a limitation - we need projectId or a global query
-      // For now, return empty and require projectId param
-      allPosts = [];
+      // Use internal query to get all due posts across all projects
+      const duePostsQuery = await callConvexQuery(api.publishing.scheduledPosts.getDuePosts, {
+        beforeTime: now,
+      });
+      allPosts = duePostsQuery || [];
     }
 
     const duePosts = (allPosts || []).filter((p: any) => 
       p.status === 'scheduled' && p.publishDate <= now
     );
 
-    const results = [];
+    return await processPosts(duePosts, api);
+  } catch (error) {
+    console.error('Trigger publish error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to trigger publish' },
+      { status: 500 }
+    );
+  }
+}
 
-    for (const post of duePosts) {
+async function processPosts(duePosts: any[], api: any) {
+
+  const results = [];
+
+  for (const post of duePosts) {
       try {
         // Get draft
         const draft = await callConvexQuery(api.content.drafts.getDraftById, {
@@ -95,34 +124,80 @@ export async function POST(request: NextRequest) {
         const title = brief?.titleOptions?.[0] || brief?.title || 'Untitled';
         let publishedUrl = '';
 
+        const { publishWithRetry } = await import('@/lib/publishingRetry');
+
         if (post.platform === 'wordpress') {
           const wpClient = new WordPressClient({
             siteUrl: connection.siteUrl,
             username: connection.wordpressSiteId || 'admin',
             password: connection.accessToken,
           });
-          const result = await wpClient.createPage({
-            title,
-            content: draft.content,
-            slug: post.slug || undefined,
-            status: 'publish',
-          });
-          publishedUrl = result.link;
+
+          const result = await publishWithRetry(
+            async () => {
+              const publishResult = await wpClient.createPage({
+                title,
+                content: draft.content,
+                slug: post.slug || undefined,
+                status: 'publish',
+              });
+              return { url: publishResult.link };
+            },
+            {
+              maxRetries: 3,
+              initialDelayMs: 1000,
+              retryableErrors: [
+                'ECONNRESET',
+                'ETIMEDOUT',
+                'timeout',
+                'rate limit',
+                '429',
+                '503',
+                '502',
+                '500',
+              ],
+            }
+          );
+
+          if (!result.success || !result.url) {
+            throw new Error(result.error || 'Failed to publish after retries');
+          }
+
+          publishedUrl = result.url;
         } else if (post.platform === 'shopify') {
           const shopifyClient = new ShopifyClient({
             shopDomain: connection.shopifyShop || connection.siteUrl,
             accessToken: connection.accessToken,
           });
-          const result = await shopifyClient.createPage({
-            title,
-            body_html: draft.content,
-            handle: post.slug || undefined,
-            published: true,
-          });
+
+          const result = await publishWithRetry(
+            async () => {
+              const publishResult = await shopifyClient.createPage({
+                title,
+                body_html: draft.content,
+                handle: post.slug || undefined,
+                published: true,
+              });
+              return { url: publishResult.url };
+            },
+            {
+              maxRetries: 3,
+              initialDelayMs: 1000,
+            }
+          );
+
+          if (!result.success || !result.url) {
+            throw new Error(result.error || 'Failed to publish after retries');
+          }
+
           publishedUrl = result.url;
         }
 
         // Update post status
+        if (!publishedUrl) {
+          throw new Error('Published URL not returned from platform');
+        }
+
         await callConvexMutation(api.publishing.scheduledPosts.updateScheduledPost, {
           postId: post._id,
           status: 'published',
@@ -150,21 +225,14 @@ export async function POST(request: NextRequest) {
           status: 'failed',
           errorMessage: error instanceof Error ? error.message : 'Unknown error',
         });
-        results.push({ postId: post._id, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
-      }
+      results.push({ postId: post._id, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
     }
-
-    return NextResponse.json({
-      success: true,
-      processed: duePosts.length,
-      results,
-    });
-  } catch (error) {
-    console.error('Trigger publish error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to trigger publish' },
-      { status: 500 }
-    );
   }
+
+  return NextResponse.json({
+    success: true,
+    processed: duePosts.length,
+    results,
+  });
 }
 

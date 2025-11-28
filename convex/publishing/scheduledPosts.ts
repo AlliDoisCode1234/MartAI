@@ -139,6 +139,9 @@ export const updateScheduledPost = mutation({
     tags: v.optional(v.array(v.string())),
     categories: v.optional(v.array(v.string())),
     slug: v.optional(v.string()),
+    status: v.optional(v.string()),
+    publishedUrl: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { postId, ...updates } = args;
@@ -184,6 +187,16 @@ export const deleteScheduledPost = mutation({
 });
 
 /**
+ * QUERY: Get single post by ID
+ */
+export const getScheduledPostById = query({
+  args: { postId: v.id("scheduledPosts") },
+  handler: async (ctx, { postId }) => {
+    return await ctx.db.get(postId);
+  },
+});
+
+/**
  * INTERNAL QUERY (used by cron)
  */
 export const getDuePosts = internalQuery({
@@ -194,5 +207,37 @@ export const getDuePosts = internalQuery({
     return posts.filter(
       (p) => p.status === "scheduled" && p.publishDate <= beforeTime
     );
+  },
+});
+
+/**
+ * MUTATION: Retry failed publish
+ */
+export const retryFailedPublish = mutation({
+  args: { postId: v.id("scheduledPosts") },
+  handler: async (ctx, { postId }) => {
+    const post = await ctx.db.get(postId);
+    if (!post) throw new Error("Post not found");
+    
+    if (post.status !== "failed") {
+      throw new Error("Post is not in failed status");
+    }
+
+    // Reset to scheduled and reschedule
+    await ctx.db.patch(postId, {
+      status: "scheduled",
+      errorMessage: undefined,
+      updatedAt: Date.now(),
+    });
+
+    // Reschedule for immediate execution (or use original publishDate if in future)
+    const delayMs = Math.max(0, post.publishDate - Date.now());
+    await ctx.scheduler.runAfter(
+      delayMs,
+      internal.publishing.scheduledPosts.publishPost,
+      { postId }
+    );
+
+    return postId;
   },
 });

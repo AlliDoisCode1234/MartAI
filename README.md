@@ -24,7 +24,11 @@ Create `.env.local` with at least:
 NEXT_PUBLIC_CONVEX_URL=<your convex deployment url>
 JWT_SECRET=<secure random string>
 JWT_REFRESH_SECRET=<secure random string>
+GOOGLE_CLIENT_ID=<your google oauth client id>
+GOOGLE_CLIENT_SECRET=<your google oauth client secret>
 ```
+
+See `docs/VERCEL_SETUP.md` for complete environment variable setup and deployment guide.
 
 Seed demo data (admin user, project, fake analytics) any time with:
 
