@@ -1,6 +1,7 @@
 import { action, mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
+import { Id } from "../_generated/dataModel";
 import {
   generatePlanSummary,
   estimateTraffic,
@@ -238,7 +239,7 @@ export const generatePlan = action({
       startDate,
       goals,
       assumptions,
-    });
+    }) as Id<"quarterlyPlans">;
 
     return {
       success: true,

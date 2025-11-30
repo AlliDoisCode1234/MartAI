@@ -60,6 +60,7 @@
     "build:clean": "npm run clean && next build",
     "type-check": "tsc --noEmit",
     "type-check:watch": "tsc --noEmit --watch",
+    "test": "jest",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
@@ -80,8 +81,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "react-app",
-      "react-app/jest",
+      "next/core-web-vitals",
       "prettier"
     ]
   },
@@ -101,8 +101,11 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/cheerio": "^0.22.35",
     "@types/jsonwebtoken": "^9.0.10",
+    "dotenv": "^17.2.3",
+    "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "gh-pages": "^6.3.0",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6"
   }
 }

@@ -20,12 +20,26 @@ import {
   Badge,
   Stack,
   Divider,
+  Icon,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
 import { LoadingState } from '@/src/components/shared';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
+import { motion } from 'framer-motion';
+import { 
+  ArrowForwardIcon, 
+  TimeIcon, 
+  ViewIcon, 
+  CopyIcon, 
+  ExternalLinkIcon 
+} from '@chakra-ui/icons';
+
+const MotionGrid = motion(Grid);
+const MotionCard = motion(Card);
+const MotionBox = motion(Box);
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -103,19 +117,31 @@ export default function DashboardPage() {
     projectsLoading ||
     (selectedProjectId !== null && strategy === undefined);
 
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const heroGradient = useColorModeValue(
+    'linear(to-r, brand.orange, brand.red)',
+    'linear(to-r, brand.orange, brand.red)'
+  );
+
   if (loadingDashboard) {
     return <LoadingState message="Loading dashboard..." fullPage />;
   }
 
   if (!project) {
     return (
-      <Container maxW="container.xl" py={12}>
-        <VStack spacing={6}>
-          <Heading size="xl">Welcome to MartAI</Heading>
-          <Text>You need to create a project to get started.</Text>
+      <Container maxW="container.xl" py={20}>
+        <VStack spacing={8} textAlign="center">
+          <Heading size="2xl" bgGradient={heroGradient} bgClip="text">
+            Welcome to MartAI
+          </Heading>
+          <Text fontSize="xl" color="gray.500" maxW="lg">
+            Automate your SEO strategy with AI-powered insights. Create your first project to get started.
+          </Text>
           <Button
-            bg="brand.orange"
-            color="white"
+            size="lg"
+            variant="solid"
+            colorScheme="brand"
+            rightIcon={<ArrowForwardIcon />}
             onClick={() => router.push('/onboarding')}
           >
             Create Your First Project
@@ -125,179 +151,227 @@ export default function DashboardPage() {
     );
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 },
+  };
+
   return (
     <Container maxW="container.xl" py={8}>
       <VStack spacing={8} align="stretch">
-        <Box>
-          <Heading size="xl" mb={2}>
-            Welcome back, {user?.name || 'there'}! 👋
-          </Heading>
-          <Text color="gray.600">
-            Here's what's happening with your SEO projects
-          </Text>
-        </Box>
+        {/* Hero Section */}
+        <MotionBox
+          bgGradient={heroGradient}
+          borderRadius="2xl"
+          p={8}
+          color="white"
+          boxShadow="xl"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          // @ts-ignore
+          transition={{ duration: 0.5 }}
+        >
+          <HStack justify="space-between" align="center" wrap="wrap" spacing={4}>
+            <Box>
+              <Heading size="lg" mb={2}>
+                Welcome back, {user?.name || 'there'}! 👋
+              </Heading>
+              <Text fontSize="lg" opacity={0.9}>
+                Here's what's happening with <b>{project.name}</b>
+              </Text>
+            </Box>
+            <Button
+              bg="whiteAlpha.200"
+              _hover={{ bg: 'whiteAlpha.300' }}
+              color="white"
+              onClick={() => router.push('/strategy')}
+              rightIcon={<ArrowForwardIcon />}
+            >
+              View Strategy
+            </Button>
+          </HStack>
+        </MotionBox>
 
-        <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap={6}>
-          <Card>
+        {/* Stats Grid */}
+        <MotionGrid
+          templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }}
+          gap={6}
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+        >
+          <MotionCard variants={itemVariants} variant="glass">
             <CardBody>
               <Stat>
-                <StatLabel>Active Projects</StatLabel>
-                <StatNumber>1</StatNumber>
+                <HStack mb={2} color="brand.orange">
+                  <Icon as={TimeIcon} boxSize={5} />
+                  <StatLabel fontWeight="bold">Active Projects</StatLabel>
+                </HStack>
+                <StatNumber fontSize="3xl">1</StatNumber>
                 <StatHelpText>
-                  <Badge colorScheme="green">{project.name}</Badge>
+                  <Badge colorScheme="green" borderRadius="full" px={2}>
+                    Active
+                  </Badge>
                 </StatHelpText>
               </Stat>
             </CardBody>
-          </Card>
+          </MotionCard>
 
           {stats && (
             <>
-              <Card>
+              <MotionCard variants={itemVariants} variant="glass">
                 <CardBody>
                   <Stat>
-                    <StatLabel>Keyword Clusters</StatLabel>
-                    <StatNumber>{stats.clusterCount || 0}</StatNumber>
+                    <HStack mb={2} color="brand.teal">
+                      <Icon as={ViewIcon} boxSize={5} />
+                      <StatLabel fontWeight="bold">Keyword Clusters</StatLabel>
+                    </HStack>
+                    <StatNumber fontSize="3xl">{stats.clusterCount || 0}</StatNumber>
                     <StatHelpText>{stats.activeClusterCount || 0} active</StatHelpText>
                   </Stat>
                 </CardBody>
-              </Card>
+              </MotionCard>
 
-              <Card>
+              <MotionCard variants={itemVariants} variant="glass">
                 <CardBody>
                   <Stat>
-                    <StatLabel>Content Plan</StatLabel>
-                    <StatNumber>{stats.planExists ? 'Active' : 'None'}</StatNumber>
+                    <HStack mb={2} color="purple.500">
+                      <Icon as={CopyIcon} boxSize={5} />
+                      <StatLabel fontWeight="bold">Content Plan</StatLabel>
+                    </HStack>
+                    <StatNumber fontSize="3xl">{stats.planExists ? 'Active' : 'None'}</StatNumber>
                     <StatHelpText>{stats.briefCount || 0} briefs scheduled</StatHelpText>
                   </Stat>
                 </CardBody>
-              </Card>
+              </MotionCard>
 
-              <Card>
+              <MotionCard variants={itemVariants} variant="glass">
                 <CardBody>
                   <Stat>
-                    <StatLabel>Quick Actions</StatLabel>
+                    <HStack mb={2} color="blue.500">
+                      <Icon as={ExternalLinkIcon} boxSize={5} />
+                      <StatLabel fontWeight="bold">Quick Actions</StatLabel>
+                    </HStack>
                     <StatNumber>
-                      <VStack spacing={2} align="stretch">
+                      <HStack spacing={2} mt={1}>
                         <Button
                           size="sm"
-                          bg="brand.orange"
-                          color="white"
-                          onClick={() => router.push('/strategy')}
+                          colorScheme="brand"
+                          variant="solid"
+                          onClick={() => router.push('/content')}
                         >
-                          View Strategy
+                          Content
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => router.push('/content')}
+                          onClick={() => router.push('/analytics')}
                         >
-                          Manage Content
+                          Analytics
                         </Button>
-                      </VStack>
+                      </HStack>
                     </StatNumber>
                   </Stat>
                 </CardBody>
-              </Card>
+              </MotionCard>
             </>
           )}
-        </Grid>
+        </MotionGrid>
 
-        <Card variant="outline">
+        {/* Intelligence Section */}
+        <MotionCard
+          variant="outline"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          bg={cardBg}
+          borderColor="gray.100"
+          overflow="hidden"
+        >
+          <Box h="4px" bgGradient="linear(to-r, brand.orange, brand.teal)" />
           <CardBody>
-            <HStack justify="space-between" mb={4} align="flex-start">
+            <HStack justify="space-between" mb={6} align="flex-start">
               <Box>
-                <Heading size="md">MartAI Intelligence</Heading>
-                <Text color="gray.600" fontSize="sm">
+                <Heading size="md" mb={1}>MartAI Intelligence</Heading>
+                <Text color="gray.500" fontSize="sm">
                   Latest automated crawl & keyword intelligence for this project.
                 </Text>
               </Box>
-              <Badge colorScheme={aiReport?.status === 'completed' ? 'green' : 'orange'}>
+              <Badge
+                colorScheme={aiReport?.status === 'completed' ? 'green' : 'orange'}
+                variant="subtle"
+                borderRadius="full"
+                px={3}
+                py={1}
+              >
                 {aiReport?.status ?? 'pending'}
               </Badge>
             </HStack>
 
             {aiReport ? (
-              <Stack spacing={4}>
+              <Stack spacing={6}>
                 {aiReport.summary && (
-                  <Text color="gray.700">{aiReport.summary}</Text>
+                  <Text color="gray.700" fontSize="md" lineHeight="tall">
+                    {aiReport.summary}
+                  </Text>
                 )}
                 <Divider />
-                <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={4}>
+                <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={6}>
                   <Stat>
-                    <StatLabel>Coverage Score</StatLabel>
-                    <StatNumber>{aiReport.metrics?.coverageScore ?? '—'}</StatNumber>
+                    <StatLabel color="gray.500">Coverage Score</StatLabel>
+                    <StatNumber fontSize="2xl" fontWeight="bold">{aiReport.metrics?.coverageScore ?? '—'}</StatNumber>
                   </Stat>
                   <Stat>
-                    <StatLabel>Organic Keywords</StatLabel>
-                    <StatNumber>{aiReport.metrics?.organicKeywords ?? '—'}</StatNumber>
+                    <StatLabel color="gray.500">Organic Keywords</StatLabel>
+                    <StatNumber fontSize="2xl" fontWeight="bold">{aiReport.metrics?.organicKeywords ?? '—'}</StatNumber>
                   </Stat>
                   <Stat>
-                    <StatLabel>Traffic Estimate</StatLabel>
-                    <StatNumber>
+                    <StatLabel color="gray.500">Traffic Estimate</StatLabel>
+                    <StatNumber fontSize="2xl" fontWeight="bold">
                       {aiReport.metrics?.trafficEstimate
                         ? aiReport.metrics.trafficEstimate.toLocaleString()
                         : '—'}
                     </StatNumber>
                   </Stat>
                   <Stat>
-                    <StatLabel>Confidence</StatLabel>
-                    <StatNumber>{aiReport.confidence?.score ?? '—'}%</StatNumber>
+                    <StatLabel color="gray.500">Confidence</StatLabel>
+                    <StatNumber fontSize="2xl" fontWeight="bold">{aiReport.confidence?.score ?? '—'}%</StatNumber>
                   </Stat>
                 </Grid>
                 {aiReport.dataSources?.length ? (
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize="xs" color="gray.400" mt={2}>
                     Data sources: {aiReport.dataSources.join(', ')}
                   </Text>
                 ) : null}
               </Stack>
             ) : (
-              <Stack spacing={3}>
-                <Text color="gray.600">
-                  No AI intelligence report yet. Run an analysis from the Admin portal to populate insights here.
+              <Stack spacing={4} align="center" py={8} bg="gray.50" borderRadius="lg">
+                <Text color="gray.500">
+                  No AI intelligence report yet. Run an analysis to populate insights.
                 </Text>
-                <HStack>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => router.push('/admin')}
-                  >
-                    Go to Admin
-                  </Button>
-                </HStack>
+                <Button
+                  size="sm"
+                  colorScheme="brand"
+                  variant="outline"
+                  onClick={() => router.push('/admin')}
+                >
+                  Run Analysis
+                </Button>
               </Stack>
             )}
           </CardBody>
-        </Card>
-
-        <HStack spacing={4}>
-          <Button
-            bg="brand.orange"
-            color="white"
-            onClick={() => router.push('/strategy')}
-          >
-            Go to Strategy
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => router.push('/analytics')}
-          >
-            View Analytics
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => router.push('/dashboard/intelligence')}
-          >
-            AI Insights
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => router.push('/content')}
-          >
-            Content Calendar
-          </Button>
-        </HStack>
+        </MotionCard>
       </VStack>
     </Container>
   );
 }
-

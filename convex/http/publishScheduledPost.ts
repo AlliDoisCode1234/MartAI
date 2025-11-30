@@ -1,5 +1,5 @@
 import { httpAction } from "../_generated/server";
-import { internal } from "../_generated/api";
+import { internal, api } from "../_generated/api";
 
 /**
  * HTTP action to publish a scheduled post
@@ -26,7 +26,7 @@ export const publishScheduledPost = httpAction(async (ctx, request) => {
 
   try {
     // Get the post
-    const post = await ctx.runQuery(internal.publishing.scheduledPosts.getScheduledPostById, {
+    const post = await ctx.runQuery(api.publishing.scheduledPosts.getScheduledPostById, {
       postId,
     });
 

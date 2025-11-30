@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/useAuth';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import type { Brief } from '@/types';
+import type { Brief, ProjectId } from '@/types';
 import { DraggableBriefList } from '@/src/components/DraggableBriefList';
 import { assertProjectId } from '@/lib/typeGuards';
 
@@ -24,7 +24,7 @@ function StrategyContent() {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const rescheduleBrief = useMutation(api.content.quarterlyPlans.rescheduleBrief);
-  const generateClustersAction = useAction(api.seo.keywordClusters.generateClusters);
+  const generateClustersAction = useAction(api.seo.keywordActions.generateClusters);
   const generatePlanAction = useAction(api.content.quarterlyPlans.generatePlan);
   const projectIdForQuery =
     projectId !== null
@@ -95,7 +95,7 @@ function StrategyContent() {
     }
 
     const matchedProject = normalizedStored
-      ? projects.find((proj) => (proj._id as unknown as string) === normalizedStored)
+      ? projects.find((proj: any) => (proj._id as unknown as string) === normalizedStored)
       : null;
 
     const nextProject = matchedProject ?? projects[0];
@@ -146,7 +146,7 @@ function StrategyContent() {
 
     let typedProjectId: Id<'projects'>;
     try {
-      typedProjectId = assertProjectId(projectId);
+      typedProjectId = assertProjectId(projectId) as unknown as Id<'projects'>;
     } catch {
       toast({
         title: 'Invalid project identifier',
@@ -198,7 +198,7 @@ function StrategyContent() {
 
     let typedProjectId: Id<'projects'>;
     try {
-      typedProjectId = assertProjectId(projectId);
+      typedProjectId = assertProjectId(projectId) as unknown as Id<'projects'>;
     } catch {
       toast({
         title: 'Invalid project identifier',

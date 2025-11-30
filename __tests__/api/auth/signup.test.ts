@@ -2,7 +2,7 @@ import { POST } from '@/app/api/auth/signup/route';
 import { NextRequest } from 'next/server';
 import { callConvexMutation } from '@/lib/convexClient';
 
-jest.mock('@/lib/convexClient');
+// jest.mock('@/lib/convexClient'); // Already mocked in jest.setup.js
 jest.mock('@/lib/auth', () => ({
   hashPassword: jest.fn(() => Promise.resolve('hashed_password')),
   generateToken: jest.fn(() => 'mock_jwt_token'),
