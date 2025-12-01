@@ -6,6 +6,8 @@ import {
   prospectIntakeSchema,
 } from '@/lib/validation/prospectSchemas';
 
+export const dynamic = 'force-dynamic';
+
 const draftSchema = prospectIntakeSchema.partial();
 
 let apiLocal: typeof api = api;
@@ -41,12 +43,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const module = getProspectsModule();
+    const prospectsModule = getProspectsModule();
 
     const payload = draftSchema.parse(body);
 
     const prospectId = await callConvexMutation(
-      module.createProspect,
+      prospectsModule.createProspect,
       {
         ...payload,
         status: body.status ?? 'draft',
@@ -94,8 +96,8 @@ export async function PATCH(request: NextRequest) {
     const schema = markSubmitted ? prospectIntakeSchema : draftSchema;
     const data = schema.parse(rest);
 
-    const module = getProspectsModule();
-    await callConvexMutation(module.updateProspect, {
+    const prospectsModule = getProspectsModule();
+    await callConvexMutation(prospectsModule.updateProspect, {
       prospectId,
       ...data,
       status: markSubmitted ? 'initial_submitted' : undefined,
@@ -134,8 +136,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const module = getProspectsModule();
-    const record = await callConvexQuery(module.getProspect, {
+    const prospectsModule = getProspectsModule();
+    const record = await callConvexQuery(prospectsModule.getProspect, {
       prospectId: id,
     });
 

@@ -3,6 +3,8 @@ import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
 import { WordPressClient } from '@/lib/wordpress';
 import { ShopifyClient } from '@/lib/shopify';
 
+export const dynamic = 'force-dynamic';
+
 // Import api dynamically
 let api: any = null;
 if (typeof window === 'undefined') {

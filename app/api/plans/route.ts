@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+
+export const dynamic = 'force-dynamic';
 import { assertProjectId, assertPlanId } from '@/lib/typeGuards';
 
 // Import api dynamically for routes that need it

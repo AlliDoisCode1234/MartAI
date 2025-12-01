@@ -3,6 +3,8 @@ import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
 import { assertProjectId, assertUserId } from '@/lib/typeGuards';
 
+export const dynamic = 'force-dynamic';
+
 // Import api dynamically
 let apiLocal: typeof api = api;
 if (typeof window === 'undefined') {
@@ -109,4 +111,3 @@ export async function POST(request: NextRequest) {
     return secureResponse(response);
   }
 }
-

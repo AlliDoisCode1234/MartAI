@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { callConvexAction, api } from '@/lib/convexClient';
+
+export const dynamic = 'force-dynamic';
 import { assertProjectId, assertProspectId } from '@/lib/typeGuards';
 
 export async function POST(request: NextRequest) {

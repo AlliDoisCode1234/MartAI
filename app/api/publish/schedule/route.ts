@@ -3,6 +3,8 @@ import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
 import { assertDraftId, assertProjectId } from '@/lib/typeGuards';
 
+export const dynamic = 'force-dynamic';
+
 // Import api dynamically for routes that need it
 let apiLocal: typeof api = api;
 if (typeof window === 'undefined') {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { callConvexQuery, api } from '@/lib/convexClient';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const authUser = await requireAuth(request, {

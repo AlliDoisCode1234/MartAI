@@ -7,6 +7,8 @@ import {
   prospectDetailsDraftSchema,
 } from '@/lib/validation/prospectSchemas';
 
+export const dynamic = 'force-dynamic';
+
 let apiLocal: typeof api = api;
 if (typeof window === 'undefined') {
   if (!apiLocal) {
@@ -51,10 +53,10 @@ export async function POST(request: NextRequest) {
     const schema = markCompleted ? prospectDetailsSchema : prospectDetailsDraftSchema;
     const payload = schema.parse(rest);
 
-    const module = getProspectsModule();
+    const prospectsModule = getProspectsModule();
 
     if (markCompleted) {
-      const result = await callConvexMutation(module.completeProspectIntake, {
+      const result = await callConvexMutation(prospectsModule.completeProspectIntake, {
         prospectId,
         ...payload,
       });
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
       return secureResponse(NextResponse.json(result));
     }
 
-    await callConvexMutation(module.saveProspectDetails, {
+    await callConvexMutation(prospectsModule.saveProspectDetails, {
       prospectId,
       ...payload,
     });

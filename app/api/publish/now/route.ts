@@ -17,6 +17,8 @@ if (typeof window === 'undefined') {
   }
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     await requireAuth(request);

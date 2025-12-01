@@ -16,6 +16,8 @@ if (typeof window === 'undefined') {
   }
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Validate security (origin validation, no CSRF needed for public signup)

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
 
+export const dynamic = 'force-dynamic';
+
 // Import api dynamically
 let api: any = null;
 if (typeof window === 'undefined') {
@@ -141,4 +143,3 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
-

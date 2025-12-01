@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Container,
@@ -52,13 +52,9 @@ function AnalyticsPageContent() {
 
   const projectId = searchParams?.get('projectId') || localStorage.getItem('projectId');
 
-  useEffect(() => {
-    if (projectId) {
-      loadAnalytics();
-    }
-  }, [projectId, timeRange]);
 
-  const loadAnalytics = async () => {
+
+  const loadAnalytics = useCallback(async () => {
     if (!projectId) return;
 
     setLoading(true);
@@ -118,7 +114,13 @@ function AnalyticsPageContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, timeRange]);
+
+  useEffect(() => {
+    if (projectId) {
+      loadAnalytics();
+    }
+  }, [projectId, loadAnalytics]);
 
   const handleSync = async () => {
     if (!projectId) return;
