@@ -67,9 +67,9 @@
   - [ ] Add micro-animations (framer-motion).
   - [ ] Improve loading states.
 
-### [ ] Ticket-009: Infrastructure Hardening
+### [x] Ticket-009: Infrastructure Hardening
 - **Goal**: Ensure reliability.
 - **Tasks**:
-  - [ ] Add error boundaries.
+  - [x] Add error boundaries.
   - [ ] Set up Sentry (if requested).
-  - [ ] Finalize CI/CD.
+  - [x] Finalize CI/CD.
