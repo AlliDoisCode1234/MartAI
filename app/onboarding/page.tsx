@@ -8,7 +8,7 @@ import { authStorage } from '@/lib/storage';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -18,11 +18,13 @@ export default function OnboardingPage() {
 
   // Redirect to login if not authenticated
   useEffect(() => {
+    if (authLoading) return;
+
     if (!isAuthenticated) {
       router.replace('/auth/login');
       return;
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

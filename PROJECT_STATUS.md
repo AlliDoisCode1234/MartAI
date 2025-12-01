@@ -1,7 +1,7 @@
 # MartAI Project Status Report
-**Last Updated**: December 1, 2025 00:03 EST  
+**Last Updated**: December 1, 2025 14:37 EST  
 **Current Phase**: Phase 3 - Polish & Scale  
-**Active Ticket**: Ticket-009 (Infrastructure Hardening) - ✅ COMPLETE
+**Active Ticket**: Ticket-001 (Project Onboarding Verification) - IN PROGRESS
 
 ---
 
@@ -17,7 +17,37 @@ MartAI is an AI-driven SEO & Lead Generation Platform currently in active develo
 
 ---
 
-## Completed Work (Recent Session - Dec 1, 2025)
+## Recent Work (Current Session - Dec 1, 2025)
+
+### Ticket-001: Project Onboarding Verification
+**Status**: 🚧 In Progress (Testing & Bug Fixes)
+
+#### ✅ Completed Tasks
+1. **Onboarding Page Bug Fix** (`app/onboarding/page.tsx`)
+   - Fixed premature redirect to login during authentication check
+   - Added `authLoading` state check to prevent redirect while auth is loading
+   - Prevents race condition where page redirects before `useAuth` completes
+
+2. **Manual Testing Initiated**
+   - Started development servers (`convex dev` + `npm run dev`)
+   - Tested signup/login flow (user successfully authenticated)
+   - Accessed dashboard successfully
+   - Identified project creation flow issues
+
+#### 🚧 Current Issues
+1. **Project Creation API - CSRF Protection**
+   - `POST /api/projects` requires CSRF token (`requireCsrf: true`)
+   - Frontend form submission may be failing due to missing CSRF token
+   - Need to investigate if CSRF is appropriate for JWT-based auth
+
+2. **Form Submission Silent Failure**
+   - Onboarding form submission does not show error messages
+   - Project "MartAI Dogfood" not created in database
+   - Need to add better error handling/logging
+
+---
+
+## Previous Session Work (Dec 1, 2025 00:03 EST)
 
 ### Infrastructure Hardening (Ticket-009)
 **Status**: ✅ Complete
@@ -77,7 +107,7 @@ MartAI is an AI-driven SEO & Lead Generation Platform currently in active develo
 ## Ticket Status Overview
 
 ### Phase 1: Foundation & Dogfooding
-- ❌ **Ticket-001**: Project Onboarding Verification - NOT STARTED
+- 🔄 **Ticket-001**: Project Onboarding Verification - IN PROGRESS
 - ⏸️ **Ticket-002**: Keyword Intelligence - DEFERRED (requires OpenAI API key)
 - ❌ **Ticket-003**: Strategic Planning - NOT STARTED
 - ⏸️ **Ticket-004**: Content Engine - Briefs - DEFERRED (requires OpenAI API key)
@@ -188,11 +218,13 @@ MartAI/
 
 ## Next Steps (Priority Order)
 
-### Immediate (This Week)
-1. ✅ Complete build verification for API routes
-2. ✅ Verify CI/CD pipeline passes
-3. ✅ Update tickets.md to mark Ticket-009 as complete
-4. 🔄 Commit infrastructure improvements to GitHub (IN PROGRESS)
+### Immediate (Current Session)
+1. 🔄 **Ticket-001**: Complete Project Onboarding Verification (IN PROGRESS)
+   - ✅ Fixed onboarding page auth redirect bug
+   - 🚧 Debug CSRF protection in project creation API
+   - 🚧 Test end-to-end project creation flow
+   - ⏳ Verify project data in Convex Dashboard
+2. 🔄 Commit Ticket-001 fixes and updates to GitHub
 
 ### Short-term (Next Sprint)
 1. **Ticket-001**: Project Onboarding Verification
@@ -330,7 +362,9 @@ MartAI is in a solid state with core infrastructure in place. Infrastructure har
 2. **Test Coverage** - Expansion needed before production launch
 
 
-**Recommended Next Action**: Complete build verification, commit infrastructure improvements, then proceed with Ticket-001 (Project Onboarding Verification) to validate the end-to-end user flow.
+**Current Focus**: Completing Ticket-001 (Project Onboarding Verification) by resolving CSRF/project creation issues and validating the end-to-end onboarding flow.
+
+**Recommended Next Action**: Fix CSRF token handling in project creation API or remove CSRF requirement for JWT-based auth, then complete manual testing of the full onboarding wizard.
 
 ---
 

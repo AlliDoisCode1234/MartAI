@@ -4,7 +4,7 @@
 
 ## Phase 1: Foundation & Dogfooding (Immediate)
 
-### [ ] Ticket-001: Project Onboarding Verification
+### [/] Ticket-001: Project Onboarding Verification
 - **Goal**: Ensure we can create the "MartAI" project in the system.
 - **Tasks**:
   - [ ] Manual test of Signup/Login.
