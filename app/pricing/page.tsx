@@ -186,10 +186,13 @@ export default function PricingPage() {
       <Container maxW="container.xl">
         <VStack spacing={4} textAlign="center" mb={16}>
           <Heading size="2xl" fontWeight="bold">
-            Simple, Transparent Pricing
+            SEO + AI Content for $149/mo
           </Heading>
           <Text fontSize="xl" color="gray.500" maxW="2xl">
-            Stop guessing with your SEO. Get data-driven insights and AI-generated content that actually ranks.
+            Competitors charge $600+/mo for SEO tools alone. We give you keyword research, AI content generation, and WordPress publishing—all in one platform.
+          </Text>
+          <Text fontSize="md" color="blue.600" fontWeight="semibold">
+            Join 1,200+ businesses growing their organic traffic with MartAI
           </Text>
 
           <Flex align="center" mt={8}>
@@ -224,6 +227,46 @@ export default function PricingPage() {
             <PricingCard key={index} {...plan} />
           ))}
         </SimpleGrid>
+
+        <Box mt={20} bg={useColorModeValue("gray.50", "gray.900")} p={10} borderRadius="xl">
+          <Heading size="lg" mb={8} textAlign="center">
+            Frequently Asked Questions
+          </Heading>
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
+            <Box>
+              <Heading size="sm" mb={2}>
+                How do keyword limits work?
+              </Heading>
+              <Text color="gray.600" fontSize="sm">
+                Each plan includes monthly keyword analysis credits. For example, Growth gives you 500 keyword analyses per month—enough to research 5-10 content clusters. Unused credits don't roll over.
+              </Text>
+            </Box>
+            <Box>
+              <Heading size="sm" mb={2}>
+                What counts as an "AI Article"?
+              </Heading>
+              <Text color="gray.600" fontSize="sm">
+                Each AI article is a 1,500-2,500 word SEO-optimized blog post, complete with meta tags, headings, and internal linking suggestions. You can regenerate or edit before publishing.
+              </Text>
+            </Box>
+            <Box>
+              <Heading size="sm" mb={2}>
+                Can I upgrade or downgrade anytime?
+              </Heading>
+              <Text color="gray.600" fontSize="sm">
+                Yes! Upgrade instantly to unlock more features. Downgrades take effect at the end of your billing cycle. Annual plans can be upgraded mid-term with prorated pricing.
+              </Text>
+            </Box>
+            <Box>
+              <Heading size="sm" mb={2}>
+                Do you offer refunds?
+              </Heading>
+              <Text color="gray.600" fontSize="sm">
+                We offer a 14-day money-back guarantee on all plans. If you're not satisfied, email us within 14 days of your first payment for a full refund—no questions asked.
+              </Text>
+            </Box>
+          </SimpleGrid>
+        </Box>
 
         <Box mt={20} textAlign="center">
           <Heading size="lg" mb={4}>

@@ -171,7 +171,8 @@ export default function DashboardPage() {
       <VStack spacing={8} align="stretch">
         {/* Hero Section */}
         <MotionBox
-          bgGradient={heroGradient}
+          bg="brand.orange"
+          bgGradient="linear(to-r, #FF6B35, #F7931E)"
           borderRadius="2xl"
           p={8}
           color="white"
@@ -183,16 +184,16 @@ export default function DashboardPage() {
         >
           <HStack justify="space-between" align="center" wrap="wrap" spacing={4}>
             <Box>
-              <Heading size="lg" mb={2}>
+              <Heading size="lg" mb={2} color="white">
                 Welcome back, {user?.name || 'there'}! 👋
               </Heading>
-              <Text fontSize="lg" opacity={0.9}>
+              <Text fontSize="lg" color="whiteAlpha.900">
                 Here's what's happening with <b>{project.name}</b>
               </Text>
             </Box>
             <Button
-              bg="whiteAlpha.200"
-              _hover={{ bg: 'whiteAlpha.300' }}
+              bg="whiteAlpha.300"
+              _hover={{ bg: 'whiteAlpha.400' }}
               color="white"
               onClick={() => router.push('/strategy')}
               rightIcon={<ArrowForwardIcon />}

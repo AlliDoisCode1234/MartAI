@@ -5,22 +5,41 @@ import { Box, HStack, Text, Button } from '@chakra-ui/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
+import { UserDropdown } from './UserDropdown';
 
-const navItems = [
-  { label: 'Dashboard', path: '/' },
-  { label: 'Onboarding', path: '/onboarding' },
-  { label: 'Keywords', path: '/keywords' },
-  { label: 'Integrations', path: '/integrations' },
-  { label: 'Strategy', path: '/strategy' },
-  { label: 'Content', path: '/content' },
-  { label: 'Publish', path: '/publish' },
-  { label: 'Analytics', path: '/analytics' },
-  { label: 'Settings', path: '/settings' },
+// Public navigation (not logged in)
+const publicNavItems = [
+  { label: 'Home', path: '/' },
+  { label: 'Pricing', path: '/pricing' },
+];
+
+// User navigation (logged in, non-admin)
+const userNavItems = [
+  { label: 'Dashboard', path: '/dashboard' },
+  { label: 'Strategy', path: '/dashboard/strategy' },
+  { label: 'Content', path: '/dashboard/content' },
+  { label: 'Integrations', path: '/dashboard/integrations' },
+];
+
+// Admin navigation (logged in, admin)
+const adminNavItems = [
+  { label: 'Dashboard', path: '/dashboard' },
+  { label: 'Strategy', path: '/dashboard/strategy' },
+  { label: 'Content', path: '/dashboard/content' },
+  { label: 'Integrations', path: '/dashboard/integrations' },
+  { label: 'Admin', path: '/admin' },
 ];
 
 export const Navigation: FC = () => {
   const pathname = usePathname();
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+
+  // Determine which nav items to show
+  let navItems = publicNavItems;
+  if (isAuthenticated && user) {
+    const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+    navItems = isAdmin ? adminNavItems : userNavItems;
+  }
 
   return (
     <Box bg="white" shadow="sm" borderBottom="1px" borderColor="gray.200" position="sticky" top={0} zIndex={1000}>
@@ -32,29 +51,23 @@ export const Navigation: FC = () => {
             </Text>
           </Link>
           <HStack spacing={8}>
+            {navItems.map((item) => (
+              <Link key={item.path} href={item.path} style={{ textDecoration: 'none' }}>
+                <Box
+                  as="span"
+                  color={pathname === item.path ? 'brand.orange' : 'gray.600'}
+                  fontWeight={pathname === item.path ? 'semibold' : 'normal'}
+                  _hover={{ color: 'brand.orange' }}
+                  cursor="pointer"
+                  transition="color 0.2s"
+                  display={{ base: item.label === 'Home' || item.label === 'Dashboard' ? 'inline' : 'none', md: 'inline' }}
+                >
+                  {item.label}
+                </Box>
+              </Link>
+            ))}
             {isAuthenticated ? (
-              <>
-                {navItems.map((item) => (
-                  <Link key={item.path} href={item.path} style={{ textDecoration: 'none' }}>
-                    <Box
-                      as="span"
-                      color={pathname === item.path ? 'brand.orange' : 'gray.600'}
-                      fontWeight={pathname === item.path ? 'semibold' : 'normal'}
-                      _hover={{ color: 'brand.orange' }}
-                      cursor="pointer"
-                      transition="color 0.2s"
-                    >
-                      {item.label}
-                    </Box>
-                  </Link>
-                ))}
-                <HStack spacing={2}>
-                  <Text fontSize="sm" color="gray.600">{user?.username}</Text>
-                  <Button size="sm" variant="outline" onClick={logout}>
-                    Logout
-                  </Button>
-                </HStack>
-              </>
+              <UserDropdown />
             ) : (
               <HStack spacing={4}>
                 <Link href="/auth/login">

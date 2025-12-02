@@ -29,15 +29,15 @@ export function AdminSidebar() {
   return (
     <Box
       w="250px"
-      h="100vh"
+      h="calc(100vh - 64px)"
       pos="fixed"
       left="0"
-      top="0"
+      top="64px"
       bg={bg}
       borderRight="1px"
       borderColor={borderColor}
-      py={8}
-      px={4}
+      py={6}
+      overflowY="auto"
     >
       <VStack align="stretch" spacing={8}>
         <Box px={4}>
