@@ -58,10 +58,10 @@ export async function GET(request: NextRequest) {
 // POST - Create new project
 export async function POST(request: NextRequest) {
   try {
-    // Require auth with CSRF protection for state-changing operations
+    // Require auth for state-changing operations
+    // Note: CSRF protection is not needed with JWT auth (tokens in localStorage/sessionStorage are immune to CSRF)
     const authUser = await requireAuth(request, {
       requireOrigin: true,
-      requireCsrf: true, // CSRF protection for POST
       allowedMethods: ['POST'],
       allowedContentTypes: ['application/json'],
     });

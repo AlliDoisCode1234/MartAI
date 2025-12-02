@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, VStack, Heading, Text, Box, Input, Button, FormControl, FormLabel, Alert, AlertIcon, HStack } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
-import { authStorage } from '@/lib/storage';
+import { authStorage, getAuthHeaders } from '@/lib/storage';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -36,12 +36,6 @@ export default function OnboardingPage() {
         throw new Error('Please fill in all required fields');
       }
 
-      const token = authStorage.getToken();
-      if (!token) {
-        router.push('/auth/login');
-        return;
-      }
-
       // Normalize website URL
       let websiteUrl = formData.website.trim();
       if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
@@ -53,7 +47,7 @@ export default function OnboardingPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({
           name: formData.businessName || 'My Business',
@@ -63,6 +57,7 @@ export default function OnboardingPage() {
 
       if (!projectResponse.ok) {
         const errorData = await projectResponse.json();
+        console.error('Project creation failed:', errorData);
         throw new Error(errorData.error || 'Failed to create project');
       }
 
@@ -74,6 +69,7 @@ export default function OnboardingPage() {
       // Redirect to reveal page for cool onboarding journey
       router.push('/onboarding/reveal');
     } catch (err) {
+      console.error('Onboarding error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setLoading(false);
     }

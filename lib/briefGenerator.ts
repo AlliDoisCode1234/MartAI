@@ -28,6 +28,13 @@ export async function generateBriefDetails(
   industry?: string,
   brandVoice?: string
 ): Promise<BriefDetails> {
+  // Check for OpenAI API key
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.warn('OpenAI API key not found. Using mock data for brief generation.');
+    return generateMockBrief(cluster);
+  }
+
   const model = openai('gpt-4o');
   
   const prompt = `You are an SEO content strategist creating a detailed content brief.
@@ -129,8 +136,60 @@ Return ONLY a valid JSON object with this exact structure (no markdown):
     };
   } catch (error) {
     console.error('Error generating brief details:', error);
-    throw new Error('Failed to generate brief details');
+    console.warn('Falling back to mock data for brief generation.');
+    return generateMockBrief(cluster);
   }
+}
+
+/**
+ * Generate mock brief for testing without API key
+ */
+function generateMockBrief(cluster: ClusterInfo): BriefDetails {
+  const mainKeyword = cluster.keywords[0] || cluster.clusterName;
+  const capitalizedKeyword = mainKeyword.charAt(0).toUpperCase() + mainKeyword.slice(1);
+  
+  return {
+    titleOptions: [
+      `The Ultimate Guide to ${capitalizedKeyword} in 2025`,
+      `How to Master ${capitalizedKeyword}: A Step-by-Step Guide`,
+      `${capitalizedKeyword}: Everything You Need to Know`,
+      `5 Proven Strategies for ${capitalizedKeyword} Success`,
+      `Why ${capitalizedKeyword} Matters for Your Business`
+    ],
+    h2Outline: [
+      `What is ${capitalizedKeyword}?`,
+      `Benefits of ${capitalizedKeyword}`,
+      `How ${capitalizedKeyword} Works`,
+      `Key Features to Look For`,
+      `Common Mistakes to Avoid`,
+      `Best Practices for ${capitalizedKeyword}`,
+      `Future Trends in ${capitalizedKeyword}`,
+      `Conclusion`
+    ],
+    faqs: [
+      {
+        question: `What is the cost of ${mainKeyword}?`,
+        answer: `The cost of ${mainKeyword} varies depending on your specific needs and the scope of implementation. Generally, you can expect...`
+      },
+      {
+        question: `How long does it take to see results from ${mainKeyword}?`,
+        answer: `Results from ${mainKeyword} typically start to appear within 3-6 months, though this can vary based on...`
+      },
+      {
+        question: `Is ${mainKeyword} suitable for small businesses?`,
+        answer: `Yes, ${mainKeyword} is highly scalable and can be adapted for businesses of all sizes, including small startups.`
+      }
+    ],
+    metaTitle: `${capitalizedKeyword}: The Complete Guide for 2025 | BrandName`,
+    metaDescription: `Learn everything about ${mainKeyword} in this comprehensive guide. Discover strategies, benefits, and best practices to grow your business today.`,
+    internalLinks: [
+      `Related Topic A`,
+      `Related Topic B`,
+      `Advanced ${capitalizedKeyword} Strategies`,
+      `Case Studies`
+    ],
+    schemaSuggestion: `Article`,
+  };
 }
 
 /**

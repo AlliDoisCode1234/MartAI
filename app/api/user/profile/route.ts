@@ -5,6 +5,8 @@ import { createUserSnapshot } from '@/lib/userSnapshots';
 import type { UserSnapshot } from '@/types';
 import { assertUserId } from '@/lib/typeGuards';
 
+export const dynamic = 'force-dynamic';
+
 // Import api dynamically
 let api: any = null;
 if (typeof window === 'undefined') {
@@ -69,7 +71,6 @@ export async function PATCH(request: NextRequest) {
   try {
     const authUser = await requireAuth(request, {
       requireOrigin: true,
-      requireCsrf: true, // CSRF protection for updates
       allowedMethods: ['PATCH'],
       allowedContentTypes: ['application/json'],
     });

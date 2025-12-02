@@ -169,11 +169,6 @@ export function useAuth() {
       authStorage.setUser(data.user);
       setToken(data.token);
       setUser(data.user);
-      
-      // Fetch CSRF token after successful login
-      await fetchCsrfToken().catch(err => {
-        console.warn('Failed to fetch CSRF token:', err);
-      });
     }
 
     return data;

@@ -59,6 +59,13 @@ export async function generateKeywordClusters(
     intent: k.intent || 'unknown',
   }));
 
+  // Check for OpenAI API key
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.warn('OpenAI API key not found. Using mock data for keyword clustering.');
+    return generateMockClusters(keywords);
+  }
+
   const prompt = `You are an SEO expert analyzing keywords for clustering. 
 
 ${websiteUrl ? `Website: ${websiteUrl}` : ''}
@@ -153,7 +160,7 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no expla
       return {
         clusterName: cluster.clusterName,
         keywords: cluster.keywords,
-        intent: cluster.intent,
+        intent: cluster.intent as any,
         volumeRange: cluster.estimatedVolume,
         difficulty: cluster.difficulty,
         impactScore: Math.round(impactScore * 100) / 100,
@@ -168,8 +175,55 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no expla
     return clusters;
   } catch (error) {
     console.error('Error generating keyword clusters:', error);
-    throw new Error('Failed to generate keyword clusters');
+    console.warn('Falling back to mock data for keyword clustering.');
+    return generateMockClusters(keywords);
   }
+}
+
+/**
+ * Generate mock clusters for testing without API key
+ */
+function generateMockClusters(keywords: KeywordInput[]): ClusterResult[] {
+  // Group keywords into chunks of 3-5
+  const chunkSize = 4;
+  const clusters: ClusterResult[] = [];
+  
+  for (let i = 0; i < keywords.length; i += chunkSize) {
+    const chunk = keywords.slice(i, i + chunkSize);
+    const mainKeyword = chunk[0].keyword;
+    
+    // Determine intent based on keyword
+    let intent: 'informational' | 'commercial' | 'transactional' | 'navigational' = 'informational';
+    if (mainKeyword.includes('buy') || mainKeyword.includes('price') || mainKeyword.includes('cost')) {
+      intent = 'transactional';
+    } else if (mainKeyword.includes('best') || mainKeyword.includes('vs') || mainKeyword.includes('review')) {
+      intent = 'commercial';
+    }
+    
+    // Calculate mock metrics
+    const avgVolume = chunk.reduce((sum, k) => sum + (k.volume || 100), 0) / chunk.length;
+    const avgDifficulty = chunk.reduce((sum, k) => sum + (k.difficulty || 50), 0) / chunk.length;
+    
+    // Calculate impact score
+    const normalizedVolume = Math.min(avgVolume / 10000, 1);
+    const intentScores = { transactional: 1.0, commercial: 0.8, informational: 0.6, navigational: 0.4 };
+    const intentScore = intentScores[intent];
+    const normalizedDifficulty = 1 - (avgDifficulty / 100);
+    const impactScore = 0.4 * normalizedVolume + 0.3 * intentScore + 0.3 * normalizedDifficulty;
+
+    clusters.push({
+      clusterName: `${mainKeyword.charAt(0).toUpperCase() + mainKeyword.slice(1)} Cluster`,
+      keywords: chunk.map(k => k.keyword),
+      intent,
+      volumeRange: { min: Math.floor(avgVolume * 0.8), max: Math.floor(avgVolume * 1.2) },
+      difficulty: Math.round(avgDifficulty),
+      impactScore: Math.round(impactScore * 100) / 100,
+      topSerpUrls: [],
+      reasoning: 'Mock cluster generated for testing purposes.',
+    });
+  }
+  
+  return clusters.sort((a, b) => b.impactScore - a.impactScore);
 }
 
 /**

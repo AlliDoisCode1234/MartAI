@@ -16,6 +16,8 @@ import {
 import { useAuth } from '@/lib/useAuth';
 import { KeywordReveal } from '@/src/components/KeywordReveal';
 import type { KeywordCluster } from '@/types';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { assertProjectId } from '@/lib/typeGuards';
 
 export default function OnboardingRevealPage() {
@@ -25,6 +27,8 @@ export default function OnboardingRevealPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [revealComplete, setRevealComplete] = useState(false);
+
+  const createCluster = useMutation(api.seo.keywordClusters.createCluster);
 
   useEffect(() => {
     // Wait for auth to finish loading
@@ -102,22 +106,43 @@ export default function OnboardingRevealPage() {
             const demoData = await demoResponse.json();
             const demoClusters = demoData.demo?.keywordClusters || [];
             
-            // Transform demo format to KeywordCluster format
-            const transformedClusters: KeywordCluster[] = demoClusters
-              .slice(0, 6)
-              .map((demo: any) => ({
-                _id: demo._id || (`demo-${Date.now()}-${Math.random()}` as any),
-                projectId: projectIdTyped,
-                clusterName: demo.topic || demo.clusterName || 'Keyword Opportunity',
-                keywords: demo.keywords || (demo.primaryKeyword ? [demo.primaryKeyword, ...(demo.supportingKeywords || [])] : []),
-                intent: (demo.searchIntent || demo.intent || 'commercial') as KeywordCluster['intent'],
-                difficulty: demo.difficulty || 50,
-                volumeRange: demo.volumeRange || { min: 100, max: 1000 },
-                impactScore: demo.impactScore || 0.7,
-                topSerpUrls: [],
-                status: 'active' as const,
-                reasoning: demo.reasoning,
-              }));
+            // Transform demo format to KeywordCluster format AND save to DB
+            const transformedClusters: KeywordCluster[] = [];
+            
+            for (const demo of demoClusters.slice(0, 6)) {
+              // Save to Convex
+              try {
+                await createCluster({
+                  projectId: projectIdTyped as any,
+                  clusterName: demo.clusterName || demo.topic || 'Keyword Opportunity',
+                  keywords: demo.keywords || (demo.primaryKeyword ? [demo.primaryKeyword, ...(demo.supportingKeywords || [])] : []),
+                  intent: (demo.searchIntent || demo.intent || 'commercial') as any,
+                  difficulty: demo.difficulty || 50,
+                  volumeRange: demo.volumeRange || { min: 100, max: 1000 },
+                  impactScore: demo.impactScore || 0.7,
+                  topSerpUrls: [],
+                  status: 'active',
+                  createdAt: Date.now(),
+                });
+
+                // Add to local state for display
+                transformedClusters.push({
+                  _id: `temp-${Date.now()}-${Math.random()}` as any, // Temporary ID for display
+                  projectId: projectIdTyped,
+                  clusterName: demo.clusterName || demo.topic || 'Keyword Opportunity',
+                  keywords: demo.keywords || (demo.primaryKeyword ? [demo.primaryKeyword, ...(demo.supportingKeywords || [])] : []),
+                  intent: (demo.searchIntent || demo.intent || 'commercial') as KeywordCluster['intent'],
+                  difficulty: demo.difficulty || 50,
+                  volumeRange: demo.volumeRange || { min: 100, max: 1000 },
+                  impactScore: demo.impactScore || 0.7,
+                  topSerpUrls: [],
+                  status: 'active' as const,
+                  reasoning: demo.reasoning,
+                });
+              } catch (saveError) {
+                console.error('Failed to save demo cluster:', saveError);
+              }
+            }
 
             if (transformedClusters.length > 0) {
               setClusters(transformedClusters);
