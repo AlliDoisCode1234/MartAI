@@ -15,12 +15,10 @@ import {
   Stat,
   StatLabel,
   StatNumber,
-  StatHelpText,
   Button,
   Badge,
   Stack,
   Divider,
-  Icon,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
@@ -29,17 +27,31 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { motion } from 'framer-motion';
-import { 
-  ArrowForwardIcon, 
-  TimeIcon, 
-  ViewIcon, 
-  CopyIcon, 
-  ExternalLinkIcon 
-} from '@chakra-ui/icons';
+import { ArrowForwardIcon } from '@chakra-ui/icons';
+import { FiTrendingUp, FiTarget, FiZap, FiActivity } from 'react-icons/fi';
+import { StatCard, TrafficChart, KeywordGrowthChart, TopKeywordsTable } from '@/src/components/dashboard';
 
-const MotionGrid = motion(Grid);
-const MotionCard = motion(Card);
 const MotionBox = motion(Box);
+const MotionCard = motion(Card);
+const MotionGrid = motion(Grid);
+
+// Mock data for charts
+const trafficData = [
+  { name: 'Jan', traffic: 4000, keywords: 240 },
+  { name: 'Feb', traffic: 3000, keywords: 221 },
+  { name: 'Mar', traffic: 5000, keywords: 290 },
+  { name: 'Apr', traffic: 7800, keywords: 350 },
+  { name: 'May', traffic: 8900, keywords: 410 },
+  { name: 'Jun', traffic: 9500, keywords: 480 },
+];
+
+const keywordPerformanceData = [
+  { keyword: 'SEO automation', position: 3, volume: 2400, trend: 'up' as const },
+  { keyword: 'AI content writing', position: 7, volume: 1800, trend: 'up' as const },
+  { keyword: 'keyword research tool', position: 12, volume: 3200, trend: 'down' as const },
+  { keyword: 'content marketing', position: 5, volume: 5100, trend: 'up' as const },
+  { keyword: 'SEO strategy', position: 9, volume: 2900, trend: 'stable' as const },
+];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -102,7 +114,7 @@ export default function DashboardPage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('currentProjectId', nextId);
     }
-  }, [projects, authLoading, isAuthenticated, selectedProjectId]);
+  }, [projects, authLoading, isAuthenticated, selectedProjectId, projectList]);
 
   const project = useMemo(() => {
     if (!projectList || projectList.length === 0) return null;
@@ -211,93 +223,190 @@ export default function DashboardPage() {
           initial="hidden"
           animate="show"
         >
-          <MotionCard variants={itemVariants} variant="glass">
+          <StatCard
+            label="Organic Traffic"
+            value="9.5K"
+            trend="increase"
+            trendValue="23.5% vs last month"
+            icon={FiTrendingUp}
+            iconColor="orange.500"
+            iconBg="orange.50"
+          />
+          <StatCard
+            label="Ranking Keywords"
+            value="480"
+            trend="increase"
+            trendValue="70 new this month"
+            icon={FiTarget}
+            iconColor="blue.500"
+            iconBg="blue.50"
+          />
+          <StatCard
+            label="Content Published"
+            value={stats?.briefCount || 0}
+            helpText={stats?.planExists ? 'Plan active' : 'No plan'}
+            icon={FiZap}
+            iconColor="purple.500"
+            iconBg="purple.50"
+          />
+          <StatCard
+            label="Avg. Position"
+            value="7.2"
+            trend="increase"
+            trendValue="Improved 2.3 spots"
+            icon={FiActivity}
+            iconColor="green.500"
+            iconBg="green.50"
+          />
+        </MotionGrid>
+
+        {/* Charts Section */}
+        <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
+          {/* Traffic Trend Chart */}
+          <MotionCard
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            bg={cardBg}
+            boxShadow="lg"
+            borderRadius="xl"
+          >
             <CardBody>
-              <Stat>
-                <HStack mb={2} color="brand.orange">
-                  <Icon as={TimeIcon} boxSize={5} />
-                  <StatLabel fontWeight="bold">Active Projects</StatLabel>
-                </HStack>
-                <StatNumber fontSize="3xl">1</StatNumber>
-                <StatHelpText>
-                  <Badge colorScheme="green" borderRadius="full" px={2}>
-                    Active
-                  </Badge>
-                </StatHelpText>
-              </Stat>
+              <VStack align="stretch" spacing={4}>
+                <Box>
+                  <Heading size="md" mb={1}>Traffic Trend</Heading>
+                  <Text color="gray.500" fontSize="sm">
+                    Last 6 months organic traffic growth
+                  </Text>
+                </Box>
+                <Box h="250px">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={trafficData}>
+                      <defs>
+                        <linearGradient id="colorTraffic" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#FF6B35" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="name" stroke="#888" fontSize={12} />
+                      <YAxis stroke="#888" fontSize={12} />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="traffic" stroke="#FF6B35" fillOpacity={1} fill="url(#colorTraffic)" strokeWidth={3} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Box>
+              </VStack>
             </CardBody>
           </MotionCard>
 
-          {stats && (
-            <>
-              <MotionCard variants={itemVariants} variant="glass">
-                <CardBody>
-                  <Stat>
-                    <HStack mb={2} color="brand.teal">
-                      <Icon as={ViewIcon} boxSize={5} />
-                      <StatLabel fontWeight="bold">Keyword Clusters</StatLabel>
-                    </HStack>
-                    <StatNumber fontSize="3xl">{stats.clusterCount || 0}</StatNumber>
-                    <StatHelpText>{stats.activeClusterCount || 0} active</StatHelpText>
-                  </Stat>
-                </CardBody>
-              </MotionCard>
+          {/* Keyword Growth Chart */}
+          <MotionCard
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            bg={cardBg}
+            boxShadow="lg"
+            borderRadius="xl"
+          >
+            <CardBody>
+              <VStack align="stretch" spacing={4}>
+                <Box>
+                  <Heading size="md" mb={1}>Keyword Growth</Heading>
+                  <Text color="gray.500" fontSize="sm">
+                    Ranking keywords over time
+                  </Text>
+                </Box>
+                <Box h="250px">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={trafficData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="name" stroke="#888" fontSize={12} />
+                      <YAxis stroke="#888" fontSize={12} />
+                      <Tooltip />
+                      <Bar dataKey="keywords" fill="#4299E1" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Box>
+              </VStack>
+            </CardBody>
+          </MotionCard>
+        </Grid>
 
-              <MotionCard variants={itemVariants} variant="glass">
-                <CardBody>
-                  <Stat>
-                    <HStack mb={2} color="purple.500">
-                      <Icon as={CopyIcon} boxSize={5} />
-                      <StatLabel fontWeight="bold">Content Plan</StatLabel>
-                    </HStack>
-                    <StatNumber fontSize="3xl">{stats.planExists ? 'Active' : 'None'}</StatNumber>
-                    <StatHelpText>{stats.briefCount || 0} briefs scheduled</StatHelpText>
-                  </Stat>
-                </CardBody>
-              </MotionCard>
-
-              <MotionCard variants={itemVariants} variant="glass">
-                <CardBody>
-                  <Stat>
-                    <HStack mb={2} color="blue.500">
-                      <Icon as={ExternalLinkIcon} boxSize={5} />
-                      <StatLabel fontWeight="bold">Quick Actions</StatLabel>
-                    </HStack>
-                    <StatNumber>
-                      <HStack spacing={2} mt={1}>
-                        <Button
+        {/* Top Keywords Section */}
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          bg={cardBg}
+          boxShadow="lg"
+          borderRadius="xl"
+        >
+          <CardBody>
+            <HStack justify="space-between" mb={6}>
+              <Box>
+                <Heading size="md" mb={1}>Top Performing Keywords</Heading>
+                <Text color="gray.500" fontSize="sm">
+                  Your best ranking keywords and their performance
+                </Text>
+              </Box>
+              <Button size="sm" variant="outline" onClick={() => router.push('/keywords')}>
+                View All
+              </Button>
+            </HStack>
+            <Box overflowX="auto">
+              <Table variant="simple">
+                <Thead>
+                  <Tr>
+                    <Th>Keyword</Th>
+                    <Th isNumeric>Position</Th>
+                    <Th isNumeric>Search Volume</Th>
+                    <Th>Trend</Th>
+                    <Th>Performance</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {keywordPerformanceData.map((kw, index) => (
+                    <Tr key={index} _hover={{ bg: 'gray.50' }}>
+                      <Td fontWeight="medium">{kw.keyword}</Td>
+                      <Td isNumeric>
+                        <Badge colorScheme={kw.position <= 5 ? 'green' : kw.position <= 10 ? 'yellow' : 'gray'}>
+                          #{kw.position}
+                        </Badge>
+                      </Td>
+                      <Td isNumeric>{kw.volume.toLocaleString()}/mo</Td>
+                      <Td>
+                        <Badge colorScheme={kw.trend === 'up' ? 'green' : kw.trend === 'down' ? 'red' : 'gray'}>
+                          {kw.trend === 'up' ? '↑' : kw.trend === 'down' ? '↓' : '→'}
+                        </Badge>
+                      </Td>
+                      <Td>
+                        <Progress
+                          value={kw.position <= 3 ? 90 : kw.position <= 10 ? 60 : 30}
                           size="sm"
-                          colorScheme="brand"
-                          variant="solid"
-                          onClick={() => router.push('/content')}
-                        >
-                          Content
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push('/analytics')}
-                        >
-                          Analytics
-                        </Button>
-                      </HStack>
-                    </StatNumber>
-                  </Stat>
-                </CardBody>
-              </MotionCard>
-            </>
-          )}
-        </MotionGrid>
+                          colorScheme={kw.position <= 5 ? 'green' : kw.position <= 10 ? 'yellow' : 'gray'}
+                          borderRadius="full"
+                        />
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </Box>
+          </CardBody>
+        </MotionCard>
 
         {/* Intelligence Section */}
         <MotionCard
           variant="outline"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.5 }}
           bg={cardBg}
           borderColor="gray.100"
           overflow="hidden"
+          boxShadow="lg"
+          borderRadius="xl"
         >
           <Box h="4px" bgGradient="linear(to-r, brand.orange, brand.teal)" />
           <CardBody>
