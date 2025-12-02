@@ -18,7 +18,12 @@ if (typeof window === 'undefined' && !apiLocal) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth(request);
+    const authHeader = request.headers.get('authorization');
+    const isCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+
+    if (!isCron) {
+      await requireAuth(request);
+    }
     const body = await request.json();
     const { projectId, days = 30 } = body;
 

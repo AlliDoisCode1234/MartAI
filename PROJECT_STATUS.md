@@ -1,7 +1,7 @@
 # MartAI Project Status Report
 **Last Updated**: December 1, 2025 14:37 EST  
 **Current Phase**: Phase 3 - Polish & Scale  
-**Active Ticket**: Ticket-001 (Project Onboarding Verification) - IN PROGRESS
+**Active Ticket**: None - Ready for Next Task
 
 ---
 
@@ -14,11 +14,37 @@ MartAI is an AI-driven SEO & Lead Generation Platform currently in active develo
 - **Lint Status**: ✅ Passing (8 warnings, 0 errors)
 - **Test Coverage**: ~5% (auth and API security only)
 - **Deployment**: Vercel (production-ready infrastructure)
+
+### Analytics Data Ingestion (Ticket-007)
+**Status**: ✅ Complete
+
+#### ✅ Completed Tasks
+1. **Data Ingestion Pipeline**
+   - Implemented nightly sync for GA4 and GSC data
+   - Configured Convex Cron Jobs (`convex/crons.ts`)
+   - Secured sync API with `CRON_SECRET`
+   - Created scheduler action (`convex/analytics/scheduler.ts`)
+
+### Admin Portal Refactor (Ticket-010)
+**Status**: ✅ Complete
+
+#### ✅ Completed Tasks
+1. **Admin Portal Expansion**
+   - Refactored to CRM-style layout with Sidebar
+   - Added `super_admin` role and RBAC
+   - Created distinct pages for Dashboard, Prospects, Users, Keywords, and Analysis
+   - Implemented backend queries for comprehensive data views
+
 ### Infrastructure Hardening (Ticket-009)
 **Status**: ✅ Complete
 
 #### ✅ Completed Tasks
-1. **Premium 404 Page** (`app/not-found.tsx`)
+1. **Crawl Data Display** (`app/dashboard/intelligence/page.tsx`)
+   - Implemented display of raw crawl data (Title, Word Count, Headings)
+   - Updated database schema to persist crawl results
+   - Verified crawler works without OpenAI key
+
+2. **Premium 404 Page** (`app/not-found.tsx`)
    - Enhanced with full-screen centered layout
    - Added gradient text styling and smooth animations
    - Implemented hover effects on navigation button
@@ -247,27 +273,38 @@ MartAI/
 ## Configuration & Environment
 
 ### Required Environment Variables
-```bash
-# Convex
-NEXT_PUBLIC_CONVEX_URL=<convex-deployment-url>
-CONVEX_DEPLOY_KEY=<convex-deploy-key>
 
-# OpenAI (currently missing - blocks AI features)
-OPENAI_API_KEY=<openai-api-key>
+| Variable | Description | Location | Required For |
+| :--- | :--- | :--- | :--- |
+| `NEXT_PUBLIC_CONVEX_URL` | URL of the Convex deployment | **Vercel** (Env) | Frontend <-> Backend connection |
+| `CONVEX_DEPLOYMENT` | Convex deployment name | **Convex** (Dashboard) | Backend deployment |
+| `CONVEX_DEPLOY_KEY` | Secret key for deploying to Convex | **Vercel** (Env) | CI/CD (GitHub Actions) |
+| `NEXT_PUBLIC_APP_URL` | Base URL of the application | **Vercel** (Env) | OAuth redirects, Cron callbacks |
+| `JWT_SECRET` | Secret for signing/verifying auth tokens | **Vercel** (Env) | Authentication |
+| `CRON_SECRET` | Shared secret for securing cron jobs | **Vercel** (Env) & **Convex** (Env) | Nightly Analytics Sync |
+| `GOOGLE_CLIENT_ID` | OAuth Client ID for Google | **Vercel** (Env) | GA4/GSC Integration |
+| `GOOGLE_CLIENT_SECRET` | OAuth Client Secret for Google | **Vercel** (Env) | GA4/GSC Integration |
+| `GOOGLE_REDIRECT_URI` | OAuth callback URL | **Vercel** (Env) | GA4/GSC Integration |
+| `OPENAI_API_KEY` | API Key for OpenAI (GPT-4o) | **Vercel** (Env) | SEO Agent, Content Generation |
 
-# OAuth (for analytics integration)
-GOOGLE_CLIENT_ID=<google-oauth-client-id>
-GOOGLE_CLIENT_SECRET=<google-oauth-client-secret>
+### Setup Instructions
 
-# Security
-CRON_SECRET=<cron-job-secret>
-JWT_SECRET=<jwt-signing-secret>
-```
+#### 1. Vercel Project Settings
+Go to **Settings > Environment Variables** and add all the keys listed above marked as **Vercel**.
+
+#### 2. Convex Dashboard
+Go to **Settings > Environment Variables** in your Convex dashboard and add:
+- `CRON_SECRET` (Must match the one in Vercel)
+- `OPENAI_API_KEY` (If you plan to run AI actions directly in Convex, though currently most are in Next.js API routes)
+
+#### 3. Google Cloud Console
+- Create a project and enable **Google Analytics API** and **Google Search Console API**.
+- Create OAuth credentials.
+- Set Authorized Redirect URI to: `https://your-domain.com/api/oauth/google/callback` (and `http://localhost:3000/...` for dev).
 
 ### Missing Configurations
-- ⚠️ OpenAI API key (blocks Tickets 002, 004, 005)
-- ✅ Convex configured and operational
-- ✅ Google OAuth configured
+- ⚠️ `OPENAI_API_KEY` (Blocks AI features)
+- ✅ `CRON_SECRET` (Required for Ticket-007 completion)
 
 ---
 

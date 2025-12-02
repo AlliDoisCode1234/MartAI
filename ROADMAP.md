@@ -16,11 +16,12 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - [x] Basic Analytics Dashboard
 - [x] Convex Backend Schema & Queries
 - [x] Security Middleware & Rate Limiting
+- [x] **Admin Portal Refactor & RBAC** (Ticket-010)
 
 ### 🚧 In Progress
 - [ ] WordPress Publishing Integration (partial)
 - [ ] Analytics Data Ingestion Pipeline
-- [ ] AI Assistant Chat Interface
+
 - [ ] Content Calendar Drag & Drop
 
 ## Phase 1: MVP Completion (P0 - Q1 2025)

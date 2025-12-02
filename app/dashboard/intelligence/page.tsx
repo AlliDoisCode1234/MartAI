@@ -61,6 +61,14 @@ export default function IntelligencePage() {
     };
     confidence?: { score?: number };
     dataSources?: string[];
+    crawlData?: {
+      title?: string;
+      description?: string;
+      wordCount?: number;
+      headings?: string[];
+      loadTime?: number;
+      htmlSample?: string;
+    };
     createdAt: number;
   };
   const reportList = (recentReports ?? []) as AiReport[];
@@ -204,8 +212,40 @@ export default function IntelligencePage() {
                     <Text fontSize="sm" color="gray.500">
                       Sources: {latestReportData.dataSources.join(", ")}
                     </Text>
-                  ) : null}
+            ) : null}
                 </HStack>
+
+                {latestReportData.crawlData && (
+                  <>
+                    <Divider />
+                    <Box>
+                      <Heading size="md" mb={4}>Site Crawl Data</Heading>
+                      <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
+                        <Box>
+                          <Text fontWeight="bold" color="gray.600">Page Title</Text>
+                          <Text mb={2}>{latestReportData.crawlData.title || "—"}</Text>
+                          
+                          <Text fontWeight="bold" color="gray.600">Meta Description</Text>
+                          <Text mb={2}>{latestReportData.crawlData.description || "—"}</Text>
+                          
+                          <Text fontWeight="bold" color="gray.600">Word Count</Text>
+                          <Text mb={2}>{latestReportData.crawlData.wordCount?.toLocaleString() || "0"} words</Text>
+                        </Box>
+                        <Box>
+                          <Text fontWeight="bold" color="gray.600">Load Time</Text>
+                          <Text mb={2}>{latestReportData.crawlData.loadTime || "—"} ms</Text>
+
+                          <Text fontWeight="bold" color="gray.600">Headings ({latestReportData.crawlData.headings?.length || 0})</Text>
+                          <Box maxH="150px" overflowY="auto" border="1px solid" borderColor="gray.100" borderRadius="md" p={2}>
+                            {latestReportData.crawlData.headings?.map((h, i) => (
+                              <Text key={i} fontSize="sm" isTruncated>• {h}</Text>
+                            )) || <Text fontSize="sm" color="gray.500">No headings found</Text>}
+                          </Box>
+                        </Box>
+                      </Grid>
+                    </Box>
+                  </>
+                )}
               </Stack>
             ) : (
               <Stack spacing={3}>

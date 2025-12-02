@@ -113,6 +113,14 @@ export const runPipeline = action({
         },
         confidence,
         dataSources: fusion.sources,
+        crawlData: {
+          title: crawl.metadata.title,
+          description: crawl.metadata.description,
+          wordCount: crawl.wordCount,
+          headings: crawl.headings,
+          loadTime: crawl.loadTime,
+          htmlSample: crawl.htmlSample,
+        },
       });
 
       await persistKeywordIdeas(ctx, keywordCandidates, {

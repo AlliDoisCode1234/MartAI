@@ -24,6 +24,14 @@ export const createAiReport = mutation({
     metrics: v.optional(metricsInput),
     confidence: confidenceInput,
     dataSources: v.optional(v.array(v.string())),
+    crawlData: v.optional(v.object({
+      title: v.optional(v.string()),
+      description: v.optional(v.string()),
+      wordCount: v.optional(v.number()),
+      headings: v.optional(v.array(v.string())),
+      loadTime: v.optional(v.number()),
+      htmlSample: v.optional(v.string()),
+    })),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -36,6 +44,7 @@ export const createAiReport = mutation({
       metrics: args.metrics ?? {},
       confidence: args.confidence,
       dataSources: args.dataSources ?? [],
+      crawlData: args.crawlData,
       createdAt: now,
       updatedAt: now,
     });
@@ -50,6 +59,14 @@ export const updateAiReport = mutation({
     metrics: v.optional(metricsInput),
     confidence: v.optional(confidenceInput),
     dataSources: v.optional(v.array(v.string())),
+    crawlData: v.optional(v.object({
+      title: v.optional(v.string()),
+      description: v.optional(v.string()),
+      wordCount: v.optional(v.number()),
+      headings: v.optional(v.array(v.string())),
+      loadTime: v.optional(v.number()),
+      htmlSample: v.optional(v.string()),
+    })),
   },
   handler: async (ctx, args) => {
     const { reportId, ...rest } = args;

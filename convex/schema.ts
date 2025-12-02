@@ -143,7 +143,7 @@ export default defineSchema({
     email: v.string(),
     name: v.optional(v.string()),
     passwordHash: v.string(), // bcrypt hash
-    role: v.optional(v.union(v.literal("admin"), v.literal("user"), v.literal("viewer"))), // User role: admin, user, viewer
+    role: v.optional(v.union(v.literal("super_admin"), v.literal("admin"), v.literal("user"), v.literal("viewer"))), // User role: super_admin, admin, user, viewer
     avatarUrl: v.optional(v.string()), // User profile picture
     bio: v.optional(v.string()), // User bio/description
     preferences: v.optional(v.object({
@@ -230,6 +230,14 @@ export default defineSchema({
       sources: v.array(v.string()),
     }),
     dataSources: v.optional(v.array(v.string())),
+    crawlData: v.optional(v.object({
+      title: v.optional(v.string()),
+      description: v.optional(v.string()),
+      wordCount: v.optional(v.number()),
+      headings: v.optional(v.array(v.string())),
+      loadTime: v.optional(v.number()),
+      htmlSample: v.optional(v.string()),
+    })),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
