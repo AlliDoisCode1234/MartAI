@@ -13,6 +13,7 @@ export default defineSchema({
     emailVerified: v.optional(v.string()),
     // Custom fields
     role: v.optional(v.union(v.literal("super_admin"), v.literal("admin"), v.literal("user"), v.literal("viewer"))),
+    membershipTier: v.optional(v.union(v.literal("free"), v.literal("starter"), v.literal("growth"), v.literal("pro"))),
     bio: v.optional(v.string()),
     preferences: v.optional(v.object({
       theme: v.optional(v.union(v.literal("light"), v.literal("dark"), v.literal("auto"))),
