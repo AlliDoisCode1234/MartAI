@@ -1,34 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Container, VStack, Heading, Text, Box, Input, Button, FormControl, FormLabel, Alert, AlertIcon, Link } from '@chakra-ui/react';
-import { authStorage } from '@/lib/storage';
-import { useAuth } from '@/lib/useAuth';
+import { Container, VStack, Heading, Text, Box, Input, Button, FormControl, FormLabel, Alert, AlertIcon, Link, Divider, HStack } from '@chakra-ui/react';
+import { useAuthActions } from "@convex-dev/auth/react";
+import { FaGoogle } from "react-icons/fa";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { isAuthenticated, login, loading: authLoading } = useAuth();
+  const { signIn } = useAuthActions();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [justLoggedIn, setJustLoggedIn] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-
-  // Redirect if already authenticated (but only if user manually navigated here, not after login)
-  useEffect(() => {
-    if (authLoading) return; // Wait for auth to finish loading
-    
-    if (isAuthenticated && !loading && !justLoggedIn) {
-      // Check if user has projects, if so go to dashboard, otherwise onboarding
-      const projectId = localStorage.getItem('currentProjectId');
-      if (projectId) {
-        router.replace('/dashboard');
-      }
-    }
-  }, [isAuthenticated, loading, justLoggedIn, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,48 +22,23 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Use centralized login function from useAuth
-      await login(formData.email, formData.password);
-      setJustLoggedIn(true); // Prevent auto-redirect useEffect from firing
-
-      // Check if user has a project, if not redirect to onboarding
-      const token = authStorage.getToken();
-      if (token) {
-        try {
-          const projectsResponse = await fetch('/api/projects', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (projectsResponse.ok) {
-            const projectsData = await projectsResponse.json();
-            const projects = projectsData.projects || [];
-
-            if (projects.length > 0) {
-              // Persist the first project so dashboard/strategy know which one to load
-              const firstProject = projects[0];
-              const projectIdStr =
-                typeof firstProject._id === 'string'
-                  ? firstProject._id
-                  : firstProject._id.toString();
-              localStorage.setItem('currentProjectId', projectIdStr);
-            } else {
-              localStorage.removeItem('currentProjectId');
-            }
-          } else {
-            console.warn('Failed to load projects after login:', await projectsResponse.text());
-          }
-        } catch (err) {
-          console.warn('Project fetch error after login:', err);
-        }
-      } else {
-        console.warn('No auth token found after login. Falling back to dashboard.');
-      }
-
-      // Always send the user to the dashboard after login; dashboard handles empty-state/onboarding CTA
+      await signIn("password", { email: formData.email, password: formData.password, flow: "signIn" });
+      // Redirect is handled by the auth flow or we can redirect manually if needed
+      // But typically for password auth we might want to wait or check success
+      // signIn returns a promise that resolves when the action is complete
       router.replace('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
+      setError('Invalid email or password');
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      await signIn("google");
+    } catch (err) {
+      setError('Failed to sign in with Google');
       setLoading(false);
     }
   };
@@ -101,15 +62,35 @@ export default function LoginPage() {
               </Alert>
             )}
 
+            <Button
+              leftIcon={<FaGoogle />}
+              onClick={handleGoogleLogin}
+              size="lg"
+              variant="outline"
+              width="full"
+              isLoading={loading}
+              isDisabled={loading}
+            >
+              Sign in with Google
+            </Button>
+
+            <HStack>
+              <Divider />
+              <Text fontSize="sm" color="gray.500" whiteSpace="nowrap">
+                OR CONTINUE WITH EMAIL
+              </Text>
+              <Divider />
+            </HStack>
+
             <form onSubmit={handleSubmit}>
               <VStack spacing={4} align="stretch">
                 <FormControl isRequired>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <Input
                     type="email"
-                    placeholder="Enter your username (we use your email)"
+                    placeholder="Enter your email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase() })}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     disabled={loading}
                   />
                 </FormControl>

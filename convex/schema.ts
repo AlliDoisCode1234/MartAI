@@ -1,7 +1,30 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
+  ...authTables,
+
+  // Users - Extended for MartAI
+  users: defineTable({
+    name: v.optional(v.string()),
+    image: v.optional(v.string()),
+    email: v.optional(v.string()),
+    emailVerified: v.optional(v.string()),
+    // Custom fields
+    role: v.optional(v.union(v.literal("super_admin"), v.literal("admin"), v.literal("user"), v.literal("viewer"))),
+    bio: v.optional(v.string()),
+    preferences: v.optional(v.object({
+      theme: v.optional(v.union(v.literal("light"), v.literal("dark"), v.literal("auto"))),
+      notifications: v.optional(v.boolean()),
+      timezone: v.optional(v.string()),
+    })),
+    createdAt: v.optional(v.number()), // Auth doesn't enforce this but good to have
+    updatedAt: v.optional(v.number()),
+  })
+    .index("email", ["email"])
+    .index("by_role", ["role"]),
+
   // Client/Business information
   clients: defineTable({
     companyName: v.string(),
@@ -138,8 +161,8 @@ export default defineSchema({
     .index("by_client", ["clientId"])
     .index("by_period", ["periodStart", "periodEnd"]),
 
-  // Users (for auth)
-  users: defineTable({
+  // Users (legacy - migrating to Convex Auth)
+  legacyUsers: defineTable({
     email: v.string(),
     name: v.optional(v.string()),
     passwordHash: v.string(), // bcrypt hash
@@ -157,9 +180,9 @@ export default defineSchema({
     .index("by_email", ["email"])
     .index("by_role", ["role"]),
 
-  // Sessions (for auth)
-  sessions: defineTable({
-    userId: v.id("users"),
+  // Sessions (legacy - migrating to Convex Auth)
+  legacySessions: defineTable({
+    userId: v.id("legacyUsers"),
     token: v.string(),
     expiresAt: v.number(),
     createdAt: v.number(),

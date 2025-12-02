@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Container, VStack, Heading, Text, Box, Input, Button, FormControl, FormLabel, Alert, AlertIcon, Link } from '@chakra-ui/react';
-import { useAuth } from '@/lib/useAuth';
+import { Container, VStack, Heading, Text, Box, Input, Button, FormControl, FormLabel, Alert, AlertIcon, Link, Divider, HStack } from '@chakra-ui/react';
+import { useAuthActions } from "@convex-dev/auth/react";
+import { FaGoogle } from "react-icons/fa";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signup } = useAuth();
+  const { signIn } = useAuthActions();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -35,15 +36,27 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // Use centralized signup function from useAuth
-      await signup(formData.email, formData.password, formData.name);
-
+      await signIn("password", { 
+        email: formData.email, 
+        password: formData.password, 
+        name: formData.name,
+        flow: "signUp" 
+      });
+      
       // Redirect to onboarding (only for new signups)
       router.push('/onboarding');
-      router.refresh(); // Force refresh to update auth state
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
+      setError('Failed to create account. Email might be already in use.');
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      await signIn("google");
+    } catch (err) {
+      setError('Failed to sign in with Google');
       setLoading(false);
     }
   };
@@ -66,6 +79,26 @@ export default function SignupPage() {
                 {error}
               </Alert>
             )}
+
+            <Button
+              leftIcon={<FaGoogle />}
+              onClick={handleGoogleLogin}
+              size="lg"
+              variant="outline"
+              width="full"
+              isLoading={loading}
+              isDisabled={loading}
+            >
+              Sign up with Google
+            </Button>
+
+            <HStack>
+              <Divider />
+              <Text fontSize="sm" color="gray.500" whiteSpace="nowrap">
+                OR CONTINUE WITH EMAIL
+              </Text>
+              <Divider />
+            </HStack>
 
             <form onSubmit={handleSubmit}>
               <VStack spacing={4} align="stretch">

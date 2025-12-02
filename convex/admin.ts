@@ -17,6 +17,8 @@ export const getAllUsers = query({
           
         return {
           ...user,
+          // Use createdAt if available, otherwise use _creationTime
+          createdAt: user.createdAt ?? user._creationTime,
           subscription: subscription ? {
             planTier: subscription.planTier,
             status: subscription.status,

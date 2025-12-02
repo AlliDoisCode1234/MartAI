@@ -6,7 +6,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 ## Current Status (Q1 2025)
 
 ### ✅ Completed (MVP Foundation)
-- [x] Authentication & User Management
+- [x] Authentication & User Management (Custom JWT - being replaced)
 - [x] Project Creation & Onboarding Flow
 - [x] GA4 & GSC OAuth Integration
 - [x] Keyword Clustering Generation
@@ -15,14 +15,64 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - [x] Draft Generation from Briefs
 - [x] Basic Analytics Dashboard
 - [x] Convex Backend Schema & Queries
-- [x] Security Middleware & Rate Limiting
+- [x] Security Middleware & Rate Limiting (basic)
 - [x] **Admin Portal Refactor & RBAC** (Ticket-010)
+- [x] **Infrastructure Hardening** (Ticket-009)
 
 ### 🚧 In Progress
+- [/] **Convex Components Integration** (Phase 0 - 4 weeks)
+  - [/] Convex Auth migration (Week 1)
+  - [ ] Rate Limiter integration (Week 2)
+  - [ ] Action Cache integration (Week 3-4)
 - [ ] WordPress Publishing Integration (partial)
 - [ ] Analytics Data Ingestion Pipeline
 
-- [ ] Content Calendar Drag & Drop
+## Phase 0: Convex Components Integration (P0 - Current Sprint)
+**Timeline**: 4 weeks  
+**Goal**: Migrate to production-ready auth and add cost-saving components
+
+### Week 1: Convex Auth Migration 🔥
+- [ ] Install `@convex-dev/auth` package
+- [ ] Create `convex/auth.ts` with Password + Google providers
+- [ ] Update ConvexClientProvider to use Convex Auth
+- [ ] Migrate login/signup pages to use `useAuthActions`
+- [ ] Add Google OAuth button
+- [ ] Test authentication flows (email/password + Google)
+- [ ] Update protected routes and API routes
+- [ ] Remove old JWT code (242 lines)
+- [ ] **Benefits**: Production-ready auth, Google OAuth, -242 lines of code
+
+### Week 2: Rate Limiter Integration
+- [ ] Install `@convex-dev/rate-limiter` package
+- [ ] Create `convex/rateLimits.ts` configuration
+- [ ] Add rate limits:
+  - [ ] Keyword generation: 10/hour per user
+  - [ ] Brief generation: 5/hour per user
+  - [ ] Draft generation: 5/hour per user
+  - [ ] AI analysis: 3/day per user
+  - [ ] Quarterly planning: 2/day per user
+- [ ] Add user-friendly error messages
+- [ ] Test rate limiting scenarios
+- [ ] **Benefits**: Prevent API abuse, protect against runaway costs
+
+### Week 3-4: Action Cache Integration
+- [ ] Install `@convex-dev/action-cache` package
+- [ ] Create cached versions of AI operations:
+  - [ ] Keyword generation (7 day TTL)
+  - [ ] Brief generation (7 day TTL)
+  - [ ] SERP analysis (24 hour TTL)
+- [ ] Add cache invalidation logic
+- [ ] Monitor cache hit rates (target: 60-80%)
+- [ ] **Benefits**: $6,000+ annual savings, faster responses
+
+### Success Metrics
+- ✅ Convex Auth working with Google OAuth
+- ✅ Rate limits preventing abuse
+- ✅ 60-80% cache hit rate
+- ✅ 242 lines of auth code removed
+- ✅ $8,400+ projected annual savings
+
+---
 
 ## Phase 1: MVP Completion (P0 - Q1 2025)
 

@@ -20,10 +20,17 @@ import {
   Stack,
   Divider,
   useColorModeValue,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Progress,
 } from '@chakra-ui/react';
-import { useAuth } from '@/lib/useAuth';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { LoadingState } from '@/src/components/shared';
-import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { motion } from 'framer-motion';
@@ -55,13 +62,14 @@ const keywordPerformanceData = [
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { isAuthenticated, loading: authLoading, user } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
+  const user = useQuery(api.users.current);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const projects = useQuery(
     api.projects.projects.getProjectsByUser,
-    user?._id ? { userId: user._id as unknown as Id<'users'> } : 'skip',
+    user?._id ? { userId: user._id } : 'skip',
   );
   const projectList = (projects ?? []) as Array<{ _id: Id<'projects'>; name?: string }>;
 

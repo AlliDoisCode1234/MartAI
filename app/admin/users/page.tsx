@@ -52,7 +52,7 @@ export default function AdminUsersPage() {
                   <Tr key={user._id}>
                     <Td>
                       <HStack>
-                        <Avatar size="sm" name={user.name} src={user.avatarUrl} />
+                        <Avatar size="sm" name={user.name} src={user.image} />
                         <Box>
                           <Text fontWeight="semibold">{user.name || "Unnamed"}</Text>
                           <Text fontSize="sm" color="gray.500">{user.email}</Text>
