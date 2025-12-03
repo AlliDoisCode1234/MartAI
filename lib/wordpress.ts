@@ -29,35 +29,49 @@ export class WordPressClient {
 
   async testConnection(): Promise<{ valid: boolean; siteName?: string; error?: string }> {
     try {
-      const response = await axios.get(`${this.apiUrl}/`, {
-        auth: {
-          username: this.auth.username,
-          password: this.auth.password,
+      const response = await fetch(`${this.apiUrl}/`, {
+        headers: {
+          Authorization:
+            'Basic ' +
+            Buffer.from(`${this.auth.username}:${this.auth.password}`).toString('base64'),
         },
       });
-      return { valid: true, siteName: response.data?.name || 'WordPress Site' };
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
         return {
           valid: false,
-          error: error.response?.data?.message || error.message || 'Connection failed',
+          error: data.message || `HTTP error ${response.status}`,
         };
       }
-      return { valid: false, error: 'Connection failed' };
+
+      const data = await response.json();
+      return { valid: true, siteName: data.name || 'WordPress Site' };
+    } catch (error: any) {
+      return { valid: false, error: error.message || 'Connection failed' };
     }
   }
 
   async checkPublishingRights(): Promise<{ canPublish: boolean; error?: string }> {
     try {
-      // Try to get current user to check capabilities
-      const response = await axios.get(`${this.apiUrl}/users/me`, {
-        auth: {
-          username: this.auth.username,
-          password: this.auth.password,
+      const response = await fetch(`${this.apiUrl}/users/me`, {
+        headers: {
+          Authorization:
+            'Basic ' +
+            Buffer.from(`${this.auth.username}:${this.auth.password}`).toString('base64'),
         },
       });
 
-      const capabilities = response.data?.capabilities || {};
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        return {
+          canPublish: false,
+          error: data.message || `HTTP error ${response.status}`,
+        };
+      }
+
+      const data = await response.json();
+      const capabilities = data.capabilities || {};
       const canPublish =
         capabilities.publish_pages || capabilities.publish_posts || capabilities.edit_pages;
 
@@ -66,49 +80,43 @@ export class WordPressClient {
       }
 
       return { canPublish: true };
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return {
-          canPublish: false,
-          error: error.response?.data?.message || 'Failed to check permissions',
-        };
-      }
-      return { canPublish: false, error: 'Failed to check permissions' };
+    } catch (error: any) {
+      return { canPublish: false, error: error.message || 'Failed to check permissions' };
     }
   }
 
   async createPage(page: WordPressPage): Promise<{ id: number; link: string }> {
     try {
-      const response = await axios.post(
-        `${this.apiUrl}/pages`,
-        {
+      const response = await fetch(`${this.apiUrl}/pages`, {
+        method: 'POST',
+        headers: {
+          Authorization:
+            'Basic ' +
+            Buffer.from(`${this.auth.username}:${this.auth.password}`).toString('base64'),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           title: page.title,
           content: page.content,
           status: page.status || 'publish',
           slug: page.slug,
           excerpt: page.excerpt,
           meta: page.meta,
-        },
-        {
-          auth: {
-            username: this.auth.username,
-            password: this.auth.password,
-          },
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+        }),
+      });
 
-      return {
-        id: response.data.id,
-        link: response.data.link,
-      };
-    } catch (error) {
-      console.error('WordPress API Error:', error);
-      if (axios.isAxiosError(error)) {
-        throw new Error(`WordPress API error: ${error.response?.data?.message || error.message}`);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(`WordPress API error: ${data.message || response.statusText}`);
       }
+
+      const data = await response.json();
+      return {
+        id: data.id,
+        link: data.link,
+      };
+    } catch (error: any) {
+      console.error('WordPress API Error:', error);
       throw error;
     }
   }
@@ -118,52 +126,55 @@ export class WordPressClient {
     page: Partial<WordPressPage>
   ): Promise<{ id: number; link: string }> {
     try {
-      const response = await axios.post(
-        `${this.apiUrl}/pages/${pageId}`,
-        {
+      const response = await fetch(`${this.apiUrl}/pages/${pageId}`, {
+        method: 'POST',
+        headers: {
+          Authorization:
+            'Basic ' +
+            Buffer.from(`${this.auth.username}:${this.auth.password}`).toString('base64'),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           title: page.title,
           content: page.content,
           status: page.status,
           slug: page.slug,
           excerpt: page.excerpt,
           meta: page.meta,
-        },
-        {
-          auth: {
-            username: this.auth.username,
-            password: this.auth.password,
-          },
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+        }),
+      });
 
-      return {
-        id: response.data.id,
-        link: response.data.link,
-      };
-    } catch (error) {
-      console.error('WordPress API Error:', error);
-      if (axios.isAxiosError(error)) {
-        throw new Error(`WordPress API error: ${error.response?.data?.message || error.message}`);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(`WordPress API error: ${data.message || response.statusText}`);
       }
+
+      const data = await response.json();
+      return {
+        id: data.id,
+        link: data.link,
+      };
+    } catch (error: any) {
+      console.error('WordPress API Error:', error);
       throw error;
     }
   }
 
   async getPages(): Promise<any[]> {
     try {
-      const response = await axios.get(`${this.apiUrl}/pages`, {
-        auth: {
-          username: this.auth.username,
-          password: this.auth.password,
-        },
-        params: {
-          per_page: 100,
+      const response = await fetch(`${this.apiUrl}/pages?per_page=100`, {
+        headers: {
+          Authorization:
+            'Basic ' +
+            Buffer.from(`${this.auth.username}:${this.auth.password}`).toString('base64'),
         },
       });
-      return response.data;
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
       console.error('WordPress API Error:', error);
       throw error;

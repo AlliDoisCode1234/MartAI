@@ -92,7 +92,13 @@ export const contentPerformanceWorkflow = workflow.define({
   },
   returns: v.object({
     status: v.literal('analyzed'),
-    recommendations: v.array(v.any()),
+    recommendations: v.array(
+      v.object({
+        type: v.string(),
+        reason: v.string(),
+        action: v.string(),
+      })
+    ),
   }),
   handler: async (step, args) => {
     // Step 1: Get content metrics

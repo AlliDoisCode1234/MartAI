@@ -20,8 +20,59 @@ export async function generateKeywords(
   website: string,
   existingContent?: string[]
 ): Promise<KeywordSuggestion[]> {
+  // TODO: Add retrier for robust API calls (e.g. using convex-helpers/retrier)
+  // TODO: Add rate limiting (e.g. using @convex-dev/rate-limiter)
+  // TODO: Add caching for expensive API calls (e.g. using @convex-dev/action-cache)
+
+  // Skip OpenAI call if key is not available
+  if (!process.env.OPENAI_API_KEY && !process.env.VERCEL_AI_GATEWAY_KEY) {
+    console.warn('OpenAI API key not found, returning mock keywords');
+    return [
+      {
+        keyword: `${industry} services`,
+        intent: 'commercial',
+        priority: 'high',
+        reasoning: 'Primary service keyword (Mock Data)',
+        searchVolume: 1000,
+        difficulty: 45,
+      },
+      {
+        keyword: `best ${industry} for ${targetAudience}`,
+        intent: 'commercial',
+        priority: 'high',
+        reasoning: 'High intent long-tail keyword (Mock Data)',
+        searchVolume: 500,
+        difficulty: 30,
+      },
+      {
+        keyword: `${industry} trends 2025`,
+        intent: 'informational',
+        priority: 'medium',
+        reasoning: 'Trending topic for authority (Mock Data)',
+        searchVolume: 2000,
+        difficulty: 60,
+      },
+      {
+        keyword: `how to choose ${industry}`,
+        intent: 'informational',
+        priority: 'medium',
+        reasoning: 'Educational content for top of funnel (Mock Data)',
+        searchVolume: 800,
+        difficulty: 25,
+      },
+      {
+        keyword: `${industry} pricing`,
+        intent: 'transactional',
+        priority: 'high',
+        reasoning: 'Bottom of funnel intent (Mock Data)',
+        searchVolume: 300,
+        difficulty: 50,
+      },
+    ];
+  }
+
   const model = openai('gpt-4o');
-  
+
   const prompt = `You are an expert SEO keyword researcher. Generate a comprehensive list of 20-30 high-value keywords for ${companyName}, a ${industry} company targeting ${targetAudience}.
 
 Website: ${website}
@@ -50,18 +101,28 @@ Focus on keywords that would help improve their website's visibility and drive q
       generateKeywords: tool({
         description: 'Generate SEO keyword suggestions with intent, priority, and reasoning',
         inputSchema: z.object({
-          keywords: z.array(z.object({
-            keyword: z.string().describe('The keyword phrase'),
-            intent: z.enum(['informational', 'commercial', 'transactional', 'navigational']).describe('Search intent'),
-            priority: z.enum(['high', 'medium', 'low']).describe('Priority level'),
-            reasoning: z.string().describe('Why this keyword is valuable'),
-            relatedKeywords: z.array(z.string()).optional().describe('Related keyword variations'),
-            estimatedVolume: z.number().optional().describe('Estimated monthly search volume'),
-            estimatedDifficulty: z.number().optional().describe('Estimated keyword difficulty 0-100'),
-          })),
+          keywords: z.array(
+            z.object({
+              keyword: z.string().describe('The keyword phrase'),
+              intent: z
+                .enum(['informational', 'commercial', 'transactional', 'navigational'])
+                .describe('Search intent'),
+              priority: z.enum(['high', 'medium', 'low']).describe('Priority level'),
+              reasoning: z.string().describe('Why this keyword is valuable'),
+              relatedKeywords: z
+                .array(z.string())
+                .optional()
+                .describe('Related keyword variations'),
+              estimatedVolume: z.number().optional().describe('Estimated monthly search volume'),
+              estimatedDifficulty: z
+                .number()
+                .optional()
+                .describe('Estimated keyword difficulty 0-100'),
+            })
+          ),
         }),
         execute: async ({ keywords }) => {
-          return keywords.map(kw => ({
+          return keywords.map((kw) => ({
             keyword: kw.keyword,
             searchVolume: kw.estimatedVolume,
             difficulty: kw.estimatedDifficulty,
@@ -92,13 +153,13 @@ Focus on keywords that would help improve their website's visibility and drive q
 
 function parseKeywordsFromText(text: string): KeywordSuggestion[] {
   const keywords: KeywordSuggestion[] = [];
-  const lines = text.split('\n').filter(line => line.trim());
-  
+  const lines = text.split('\n').filter((line) => line.trim());
+
   let currentKeyword: Partial<KeywordSuggestion> | null = null;
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
-    
+
     // Check if line contains a keyword
     if (trimmed.match(/^\d+\.|^[-*]/) || trimmed.includes('keyword:')) {
       if (currentKeyword && currentKeyword.keyword) {
@@ -109,7 +170,7 @@ function parseKeywordsFromText(text: string): KeywordSuggestion[] {
           reasoning: currentKeyword.reasoning || '',
         } as KeywordSuggestion);
       }
-      
+
       const keywordMatch = trimmed.match(/(?:keyword:)?\s*([^:]+)/i);
       if (keywordMatch) {
         currentKeyword = {
@@ -130,14 +191,17 @@ function parseKeywordsFromText(text: string): KeywordSuggestion[] {
         if (priorityMatch) {
           currentKeyword.priority = priorityMatch[1].toLowerCase() as any;
         }
-      } else if (trimmed.toLowerCase().includes('reasoning:') || trimmed.toLowerCase().includes('why:')) {
+      } else if (
+        trimmed.toLowerCase().includes('reasoning:') ||
+        trimmed.toLowerCase().includes('why:')
+      ) {
         currentKeyword.reasoning = trimmed.split(':').slice(1).join(':').trim();
       } else if (!currentKeyword.reasoning) {
         currentKeyword.reasoning = trimmed;
       }
     }
   }
-  
+
   if (currentKeyword && currentKeyword.keyword) {
     keywords.push({
       keyword: currentKeyword.keyword,
@@ -146,7 +210,6 @@ function parseKeywordsFromText(text: string): KeywordSuggestion[] {
       reasoning: currentKeyword.reasoning || '',
     } as KeywordSuggestion);
   }
-  
+
   return keywords.slice(0, 30); // Limit to 30 keywords
 }
-

@@ -38,7 +38,7 @@ MartAI is an AI-driven SEO & Lead Generation Platform. We have successfully comp
 2. **Component Integration Planning**
    - **Retrier**: For robust OpenAI API calls.
    - **Neutral Cost**: For tracking AI and tool usage costs.
-   - **Subscriptions**: Evaluate Polar vs. Stripe.
+   - **Subscriptions**: Polar
    - **Crons**: Migrate any remaining scheduled tasks to Convex Crons.
 
 ### Short-term

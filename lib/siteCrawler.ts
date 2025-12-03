@@ -23,16 +23,21 @@ export interface SiteAnalysis {
 export async function crawlWebsite(url: string): Promise<SiteAnalysis> {
   try {
     const startTime = Date.now();
-    const response = await axios.get(url, {
-      timeout: 10000,
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(10000),
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
-      maxRedirects: 5,
+      redirect: 'follow',
     });
 
+    if (!response.ok) {
+      throw new Error(`HTTP error ${response.status}`);
+    }
+
+    const html = await response.text();
     const loadTime = Date.now() - startTime;
-    const $ = cheerio.load(response.data);
+    const $ = cheerio.load(html);
 
     const issues: string[] = [];
     const h1Tags: string[] = [];
