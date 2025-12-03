@@ -1,5 +1,5 @@
-import { ConvexHttpClient } from "convex/browser";
-import type { FunctionReference } from "convex/server";
+import { ConvexHttpClient } from 'convex/browser';
+import type { FunctionReference } from 'convex/server';
 import type {
   ProjectId,
   BriefId,
@@ -12,9 +12,9 @@ import type {
   CompetitorId,
   BriefVersionId,
   ScheduledPostId,
-} from "@/types";
+} from '@/types';
 
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "";
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || '';
 
 // Dynamically import api to avoid build errors when Convex not initialized
 // Use any for the dynamic import since it may not exist during build
@@ -23,7 +23,7 @@ let api: any = null;
 // Only try to import in Node.js environment (not during build)
 if (typeof window === 'undefined') {
   try {
-    const apiModule = require("../convex/_generated/api");
+    const apiModule = require('../convex/_generated/api');
     api = apiModule?.api || null;
   } catch (error) {
     // API not generated yet - this is expected until npx convex dev is run
@@ -32,7 +32,7 @@ if (typeof window === 'undefined') {
 }
 
 if (!convexUrl) {
-  console.warn("NEXT_PUBLIC_CONVEX_URL is not set. Convex features will not work.");
+  console.warn('NEXT_PUBLIC_CONVEX_URL is not set. Convex features will not work.');
 }
 
 export const convexClient = convexUrl ? new ConvexHttpClient(convexUrl) : null;
@@ -41,13 +41,17 @@ export const convexClient = convexUrl ? new ConvexHttpClient(convexUrl) : null;
 // Generic type preserves the mutation's argument and return types
 export async function callConvexMutation<Args = any, Return = any>(
   mutation: any,
-  args: Args
+  args: Args,
+  token?: string
 ): Promise<Return> {
   if (!convexUrl || !convexClient) {
-    throw new Error("Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL");
+    throw new Error('Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL');
   }
   if (!api) {
     throw new Error("Convex API not generated. Run 'npx convex dev'");
+  }
+  if (token) {
+    convexClient.setAuth(token);
   }
   return await convexClient.mutation(mutation, args);
 }
@@ -56,13 +60,17 @@ export async function callConvexMutation<Args = any, Return = any>(
 // Generic type preserves the query's argument and return types
 export async function callConvexQuery<Args = any, Return = any>(
   query: any,
-  args: Args
+  args: Args,
+  token?: string
 ): Promise<Return> {
   if (!convexUrl || !convexClient) {
-    throw new Error("Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL");
+    throw new Error('Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL');
   }
   if (!api) {
     throw new Error("Convex API not generated. Run 'npx convex dev'");
+  }
+  if (token) {
+    convexClient.setAuth(token);
   }
   return await convexClient.query(query, args);
 }
@@ -70,17 +78,20 @@ export async function callConvexQuery<Args = any, Return = any>(
 // Type-safe helper to call Convex actions from API routes
 export async function callConvexAction<Args = any, Return = any>(
   action: any,
-  args: Args
+  args: Args,
+  token?: string
 ): Promise<Return> {
   if (!convexUrl || !convexClient) {
-    throw new Error("Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL");
+    throw new Error('Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL');
   }
   if (!api) {
     throw new Error("Convex API not generated. Run 'npx convex dev'");
+  }
+  if (token) {
+    convexClient.setAuth(token);
   }
   return await convexClient.action(action, args);
 }
 
 // Export api for use in API routes
 export { api };
-

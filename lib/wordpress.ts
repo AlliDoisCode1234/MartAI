@@ -1,4 +1,4 @@
-import axios from 'axios';
+// Removed axios import
 
 export interface WordPressPage {
   id?: number;
@@ -38,9 +38,9 @@ export class WordPressClient {
       return { valid: true, siteName: response.data?.name || 'WordPress Site' };
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        return { 
-          valid: false, 
-          error: error.response?.data?.message || error.message || 'Connection failed' 
+        return {
+          valid: false,
+          error: error.response?.data?.message || error.message || 'Connection failed',
         };
       }
       return { valid: false, error: 'Connection failed' };
@@ -58,7 +58,8 @@ export class WordPressClient {
       });
 
       const capabilities = response.data?.capabilities || {};
-      const canPublish = capabilities.publish_pages || capabilities.publish_posts || capabilities.edit_pages;
+      const canPublish =
+        capabilities.publish_pages || capabilities.publish_posts || capabilities.edit_pages;
 
       if (!canPublish) {
         return { canPublish: false, error: 'User does not have publishing permissions' };
@@ -67,9 +68,9 @@ export class WordPressClient {
       return { canPublish: true };
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        return { 
-          canPublish: false, 
-          error: error.response?.data?.message || 'Failed to check permissions' 
+        return {
+          canPublish: false,
+          error: error.response?.data?.message || 'Failed to check permissions',
         };
       }
       return { canPublish: false, error: 'Failed to check permissions' };
@@ -112,7 +113,10 @@ export class WordPressClient {
     }
   }
 
-  async updatePage(pageId: number, page: Partial<WordPressPage>): Promise<{ id: number; link: string }> {
+  async updatePage(
+    pageId: number,
+    page: Partial<WordPressPage>
+  ): Promise<{ id: number; link: string }> {
     try {
       const response = await axios.post(
         `${this.apiUrl}/pages/${pageId}`,
@@ -165,11 +169,14 @@ export class WordPressClient {
       throw error;
     }
   }
-
 }
 
 // OAuth flow helpers
-export function getWordPressOAuthUrl(siteUrl: string, clientId: string, redirectUri: string): string {
+export function getWordPressOAuthUrl(
+  siteUrl: string,
+  clientId: string,
+  redirectUri: string
+): string {
   // WordPress OAuth 1.0a flow
   const params = new URLSearchParams({
     response_type: 'code',
@@ -177,7 +184,7 @@ export function getWordPressOAuthUrl(siteUrl: string, clientId: string, redirect
     redirect_uri: redirectUri,
     scope: 'write',
   });
-  
+
   return `${siteUrl}/wp-admin/admin.php?page=oauth1_authorize&${params.toString()}`;
 }
 
@@ -189,7 +196,7 @@ export function generateServicesPageContent(
 ): string {
   const primaryKeyword = keywords[0] || `${industry} services`;
   const secondaryKeywords = keywords.slice(1, 5).join(', ');
-  
+
   return `<!-- wp:heading {"level":1} -->
 <h1>${primaryKeyword.charAt(0).toUpperCase() + primaryKeyword.slice(1)}</h1>
 <!-- /wp:heading -->
@@ -204,7 +211,10 @@ export function generateServicesPageContent(
 
 <!-- wp:list -->
 <ul>
-${keywords.slice(0, 8).map(kw => `  <li>${kw.charAt(0).toUpperCase() + kw.slice(1)}</li>`).join('\n')}
+${keywords
+  .slice(0, 8)
+  .map((kw) => `  <li>${kw.charAt(0).toUpperCase() + kw.slice(1)}</li>`)
+  .join('\n')}
 </ul>
 <!-- /wp:list -->
 
@@ -224,4 +234,3 @@ ${keywords.slice(0, 8).map(kw => `  <li>${kw.charAt(0).toUpperCase() + kw.slice(
 <p>Ready to take your ${industry} strategy to the next level? Contact us today to discuss how we can help you achieve your goals.</p>
 <!-- /wp:paragraph -->`;
 }
-

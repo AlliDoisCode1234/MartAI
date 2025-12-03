@@ -1,31 +1,33 @@
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
 
-// Add keywords
-export const addKeywords = mutation({
+// Create keywords
+export const createKeywords = mutation({
   args: {
-    clientId: v.id("clients"),
-    keywords: v.array(v.object({
-      keyword: v.string(),
-      searchVolume: v.optional(v.number()),
-      difficulty: v.optional(v.number()),
-      cpc: v.optional(v.number()),
-      intent: v.optional(v.string()),
-      priority: v.optional(v.string()),
-    })),
+    projectId: v.id('projects'),
+    keywords: v.array(
+      v.object({
+        keyword: v.string(),
+        searchVolume: v.optional(v.number()),
+        difficulty: v.optional(v.number()),
+        cpc: v.optional(v.number()),
+        intent: v.optional(v.string()),
+        priority: v.optional(v.string()),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const keywordIds = [];
     for (const kw of args.keywords) {
-      const id = await ctx.db.insert("keywords", {
-        clientId: args.clientId,
+      const id = await ctx.db.insert('keywords', {
+        projectId: args.projectId,
         keyword: kw.keyword,
         searchVolume: kw.searchVolume,
         difficulty: kw.difficulty,
         cpc: kw.cpc,
         intent: kw.intent,
-        priority: kw.priority || "medium",
-        status: "suggested",
+        priority: kw.priority || 'medium',
+        status: 'suggested',
         createdAt: Date.now(),
       });
       keywordIds.push(id);
@@ -34,14 +36,14 @@ export const addKeywords = mutation({
   },
 });
 
-// Get keywords by client
-export const getKeywordsByClient = query({
-  args: { clientId: v.id("clients") },
+// Get keywords by project
+export const getKeywordsByProject = query({
+  args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("keywords")
-      .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
-      .order("desc")
+      .query('keywords')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .order('desc')
       .collect();
   },
 });
@@ -49,14 +51,14 @@ export const getKeywordsByClient = query({
 // Update keyword status
 export const updateKeywordStatus = mutation({
   args: {
-    keywordId: v.id("keywords"),
+    keywordId: v.id('keywords'),
     status: v.string(),
     priority: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const keyword = await ctx.db.get(args.keywordId);
     if (!keyword) return null;
-    
+
     return await ctx.db.patch(args.keywordId, {
       status: args.status,
       priority: args.priority || keyword.priority,
@@ -66,17 +68,16 @@ export const updateKeywordStatus = mutation({
 
 // Get keywords by status
 export const getKeywordsByStatus = query({
-  args: { 
-    clientId: v.id("clients"),
+  args: {
+    projectId: v.id('projects'),
     status: v.string(),
   },
   handler: async (ctx, args) => {
     const allKeywords = await ctx.db
-      .query("keywords")
-      .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
+      .query('keywords')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .collect();
-    
-    return allKeywords.filter(k => k.status === args.status);
+
+    return allKeywords.filter((k) => k.status === args.status);
   },
 });
-

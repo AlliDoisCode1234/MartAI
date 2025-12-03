@@ -1,10 +1,11 @@
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
+import { mutation, query, action } from '../_generated/server';
+import { v } from 'convex/values';
+import { api } from '../_generated/api';
 
 // Add ranking data
 export const addRanking = mutation({
   args: {
-    clientId: v.id("clients"),
+    projectId: v.id('projects'),
     keyword: v.string(),
     position: v.number(),
     url: v.string(),
@@ -12,8 +13,8 @@ export const addRanking = mutation({
     location: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("rankings", {
-      clientId: args.clientId,
+    return await ctx.db.insert('rankings', {
+      projectId: args.projectId,
       keyword: args.keyword,
       position: args.position,
       url: args.url,
@@ -27,29 +28,49 @@ export const addRanking = mutation({
 // Get rankings for keyword
 export const getRankingsByKeyword = query({
   args: {
-    clientId: v.id("clients"),
+    projectId: v.id('projects'),
     keyword: v.string(),
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("rankings")
-      .withIndex("by_client_keyword", (q) => 
-        q.eq("clientId", args.clientId).eq("keyword", args.keyword)
+      .query('rankings')
+      .withIndex('by_project_keyword', (q) =>
+        q.eq('projectId', args.projectId).eq('keyword', args.keyword)
       )
-      .order("desc")
+      .order('desc')
       .collect();
   },
 });
 
-// Get all rankings for client
-export const getRankingsByClient = query({
-  args: { clientId: v.id("clients") },
+// Get all rankings for project
+export const getRankingsByProject = query({
+  args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("rankings")
-      .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
-      .order("desc")
+      .query('rankings')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .order('desc')
       .take(100); // Latest 100 rankings
   },
 });
 
+export const updateRankings = action({
+  args: {
+    projectId: v.id('projects'),
+  },
+  handler: async (ctx, args) => {
+    // Placeholder: Fetch rankings from external API
+    // Then store them using internal mutation
+
+    // For now, just simulate an update
+    await ctx.runMutation(api.seo.rankings.addRanking, {
+      projectId: args.projectId,
+      keyword: 'example keyword',
+      position: Math.floor(Math.random() * 10) + 1,
+      url: 'https://example.com',
+      searchEngine: 'google',
+    });
+
+    return { updated: true };
+  },
+});

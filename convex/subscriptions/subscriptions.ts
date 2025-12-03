@@ -1,32 +1,32 @@
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
 
 const PLAN_LIMITS = {
   starter: {
-    priceMonthly: 249,
+    priceMonthly: 49,
     features: {
-      maxUrls: 1,
-      maxKeywordIdeas: 60,
-      maxAiReports: 4,
-      maxContentPieces: 4,
+      maxUrls: 5,
+      maxKeywordIdeas: 100,
+      maxAiReports: 2,
+      maxContentPieces: 2,
     },
   },
   growth: {
-    priceMonthly: 749,
+    priceMonthly: 149,
     features: {
-      maxUrls: 5,
-      maxKeywordIdeas: 200,
-      maxAiReports: 12,
-      maxContentPieces: 12,
+      maxUrls: 20,
+      maxKeywordIdeas: 500,
+      maxAiReports: 8,
+      maxContentPieces: 8,
     },
   },
   scale: {
-    priceMonthly: 1999,
+    priceMonthly: 399,
     features: {
-      maxUrls: 20,
-      maxKeywordIdeas: 800,
-      maxAiReports: 30,
-      maxContentPieces: 30,
+      maxUrls: 999999, // Unlimited
+      maxKeywordIdeas: 2000,
+      maxAiReports: 20,
+      maxContentPieces: 20,
     },
   },
 } as const;
@@ -47,17 +47,17 @@ function currentPeriodBounds(now: number) {
 
 async function getActiveSubscription(ctx: any, userId: string) {
   return await ctx.db
-    .query("subscriptions")
-    .withIndex("by_user", (q: any) => q.eq("userId", userId))
+    .query('subscriptions')
+    .withIndex('by_user', (q: any) => q.eq('userId', userId))
     .first();
 }
 
 async function getUsageDoc(ctx: any, userId: string, periodStart: number, periodEnd: number) {
   const existing =
     (await ctx.db
-      .query("usageLimits")
-      .withIndex("by_user_period", (q: any) =>
-        q.eq("userId", userId).eq("periodStart", periodStart)
+      .query('usageLimits')
+      .withIndex('by_user_period', (q: any) =>
+        q.eq('userId', userId).eq('periodStart', periodStart)
       )
       .first()) ?? null;
 
@@ -65,7 +65,7 @@ async function getUsageDoc(ctx: any, userId: string, periodStart: number, period
     return existing;
   }
 
-  const docId = await ctx.db.insert("usageLimits", {
+  const docId = await ctx.db.insert('usageLimits', {
     userId,
     periodStart,
     periodEnd,
@@ -79,31 +79,28 @@ async function getUsageDoc(ctx: any, userId: string, periodStart: number, period
 }
 
 type UsageField =
-  | "urlsAnalyzed"
-  | "keywordIdeasGenerated"
-  | "aiReportsGenerated"
-  | "contentPiecesPlanned";
+  | 'urlsAnalyzed'
+  | 'keywordIdeasGenerated'
+  | 'aiReportsGenerated'
+  | 'contentPiecesPlanned';
 
-const metricToField: Record<
-  "urls" | "keywordIdeas" | "aiReports" | "contentPieces",
-  UsageField
-> = {
-  urls: "urlsAnalyzed",
-  keywordIdeas: "keywordIdeasGenerated",
-  aiReports: "aiReportsGenerated",
-  contentPieces: "contentPiecesPlanned",
+const metricToField: Record<'urls' | 'keywordIdeas' | 'aiReports' | 'contentPieces', UsageField> = {
+  urls: 'urlsAnalyzed',
+  keywordIdeas: 'keywordIdeasGenerated',
+  aiReports: 'aiReportsGenerated',
+  contentPieces: 'contentPiecesPlanned',
 };
 
 const fieldToLimit: Record<UsageField, keyof typeof PLAN_LIMITS.starter.features> = {
-  urlsAnalyzed: "maxUrls",
-  keywordIdeasGenerated: "maxKeywordIdeas",
-  aiReportsGenerated: "maxAiReports",
-  contentPiecesPlanned: "maxContentPieces",
+  urlsAnalyzed: 'maxUrls',
+  keywordIdeasGenerated: 'maxKeywordIdeas',
+  aiReportsGenerated: 'maxAiReports',
+  contentPiecesPlanned: 'maxContentPieces',
 };
 
 export const upsertSubscription = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id('users'),
     planTier: v.string(),
     status: v.string(),
     startsAt: v.number(),
@@ -133,7 +130,7 @@ export const upsertSubscription = mutation({
       return existing._id;
     }
 
-    return await ctx.db.insert("subscriptions", {
+    return await ctx.db.insert('subscriptions', {
       userId: args.userId,
       ...payload,
       createdAt: now,
@@ -142,7 +139,7 @@ export const upsertSubscription = mutation({
 });
 
 export const getSubscriptionByUser = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id('users') },
   handler: async (ctx, args) => {
     const subscription = await getActiveSubscription(ctx, args.userId);
     if (!subscription) {
@@ -162,30 +159,30 @@ export const listSubscriptions = query({
   handler: async (ctx, args) => {
     if (args.status) {
       return await ctx.db
-        .query("subscriptions")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
-        .order("desc")
+        .query('subscriptions')
+        .withIndex('by_status', (q) => q.eq('status', args.status!))
+        .order('desc')
         .collect();
     }
-    return await ctx.db.query("subscriptions").order("desc").collect();
+    return await ctx.db.query('subscriptions').order('desc').collect();
   },
 });
 
 export const recordUsage = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id('users'),
     metric: v.union(
-      v.literal("urls"),
-      v.literal("keywordIdeas"),
-      v.literal("aiReports"),
-      v.literal("contentPieces")
+      v.literal('urls'),
+      v.literal('keywordIdeas'),
+      v.literal('aiReports'),
+      v.literal('contentPieces')
     ),
     amount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const subscription = await getActiveSubscription(ctx, args.userId);
-    if (!subscription || subscription.status !== "active") {
-      throw new Error("Active subscription required");
+    if (!subscription || subscription.status !== 'active') {
+      throw new Error('Active subscription required');
     }
 
     const config = planConfig(subscription.planTier);
@@ -209,4 +206,3 @@ export const recordUsage = mutation({
     return { success: true, remaining: config.features[limitField] - nextValue };
   },
 });
-

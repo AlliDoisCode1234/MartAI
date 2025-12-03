@@ -6,6 +6,8 @@
 
 We believe in radical transparency. Here's exactly what goes into each plan and what you're getting for your money.
 
+### TODO: Update convex/subscriptions/subscription.ts with the new plans
+
 #### Starter Plan ($49/mo)
 **What's Included:**
 - 5 Projects (URLs)

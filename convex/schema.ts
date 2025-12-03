@@ -1,6 +1,6 @@
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
+import { defineSchema, defineTable } from 'convex/server';
+import { v } from 'convex/values';
+import { authTables } from '@convex-dev/auth/server';
 
 export default defineSchema({
   ...authTables,
@@ -12,21 +12,27 @@ export default defineSchema({
     email: v.optional(v.string()),
     emailVerified: v.optional(v.string()),
     // Custom fields
-    role: v.optional(v.union(v.literal("super_admin"), v.literal("admin"), v.literal("user"), v.literal("viewer"))),
-    membershipTier: v.optional(v.union(v.literal("free"), v.literal("starter"), v.literal("growth"), v.literal("pro"))),
+    role: v.optional(
+      v.union(v.literal('super_admin'), v.literal('admin'), v.literal('user'), v.literal('viewer'))
+    ),
+    membershipTier: v.optional(
+      v.union(v.literal('free'), v.literal('starter'), v.literal('growth'), v.literal('pro'))
+    ),
     bio: v.optional(v.string()),
-    preferences: v.optional(v.object({
-      theme: v.optional(v.union(v.literal("light"), v.literal("dark"), v.literal("auto"))),
-      notifications: v.optional(v.boolean()),
-      timezone: v.optional(v.string()),
-    })),
+    preferences: v.optional(
+      v.object({
+        theme: v.optional(v.union(v.literal('light'), v.literal('dark'), v.literal('auto'))),
+        notifications: v.optional(v.boolean()),
+        timezone: v.optional(v.string()),
+      })
+    ),
     createdAt: v.optional(v.number()), // Auth doesn't enforce this but good to have
     updatedAt: v.optional(v.number()),
     // Legacy auth fields (for backward compatibility)
     passwordHash: v.optional(v.string()),
   })
-    .index("email", ["email"])
-    .index("by_role", ["role"]),
+    .index('email', ['email'])
+    .index('by_role', ['role']),
 
   // Client/Business information
   clients: defineTable({
@@ -39,12 +45,12 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_user", ["userId"])
-    .index("by_website", ["website"]),
+    .index('by_user', ['userId'])
+    .index('by_website', ['website']),
 
   // SEO Audits
   seoAudits: defineTable({
-    clientId: v.id("clients"),
+    clientId: v.id('clients'),
     website: v.string(),
     overallScore: v.number(),
     technicalSeo: v.object({
@@ -76,12 +82,12 @@ export default defineSchema({
     crawlErrors: v.optional(v.number()),
     createdAt: v.number(),
   })
-    .index("by_client", ["clientId"])
-    .index("by_website", ["website"]),
+    .index('by_client', ['clientId'])
+    .index('by_website', ['website']),
 
   // Keywords
   keywords: defineTable({
-    clientId: v.id("clients"),
+    projectId: v.id('projects'),
     keyword: v.string(),
     searchVolume: v.optional(v.number()),
     difficulty: v.optional(v.number()),
@@ -91,13 +97,13 @@ export default defineSchema({
     status: v.string(), // suggested, approved, implemented
     createdAt: v.number(),
   })
-    .index("by_client", ["clientId"])
-    .index("by_status", ["status"])
-    .index("by_keyword", ["keyword"]),
+    .index('by_project', ['projectId'])
+    .index('by_status', ['status'])
+    .index('by_keyword', ['keyword']),
 
   // OAuth tokens for WordPress/Shopify
   oauthTokens: defineTable({
-    clientId: v.id("clients"),
+    clientId: v.id('clients'),
     platform: v.string(), // wordpress, shopify
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
@@ -108,13 +114,13 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_client", ["clientId"])
-    .index("by_platform", ["platform"])
-    .index("by_client_platform", ["clientId", "platform"]),
+    .index('by_client', ['clientId'])
+    .index('by_platform', ['platform'])
+    .index('by_client_platform', ['clientId', 'platform']),
 
   // Generated pages (WordPress/Shopify)
   generatedPages: defineTable({
-    clientId: v.id("clients"),
+    clientId: v.id('clients'),
     platform: v.string(), // wordpress, shopify
     pageId: v.string(), // External page ID
     pageUrl: v.string(),
@@ -125,13 +131,13 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_client", ["clientId"])
-    .index("by_platform", ["platform"])
-    .index("by_status", ["status"]),
+    .index('by_client', ['clientId'])
+    .index('by_platform', ['platform'])
+    .index('by_status', ['status']),
 
   // Rank tracking
   rankings: defineTable({
-    clientId: v.id("clients"),
+    projectId: v.id('projects'),
     keyword: v.string(),
     position: v.number(),
     url: v.string(),
@@ -139,14 +145,14 @@ export default defineSchema({
     location: v.optional(v.string()),
     date: v.number(),
   })
-    .index("by_client", ["clientId"])
-    .index("by_keyword", ["keyword"])
-    .index("by_client_keyword", ["clientId", "keyword"])
-    .index("by_date", ["date"]),
+    .index('by_project', ['projectId'])
+    .index('by_keyword', ['keyword'])
+    .index('by_project_keyword', ['projectId', 'keyword'])
+    .index('by_date', ['date']),
 
   // SEO Statistics/Reports
   seoStatistics: defineTable({
-    clientId: v.id("clients"),
+    clientId: v.id('clients'),
     // Traffic metrics
     organicTraffic: v.optional(v.number()),
     organicKeywords: v.optional(v.number()),
@@ -161,37 +167,41 @@ export default defineSchema({
     periodEnd: v.number(),
     createdAt: v.number(),
   })
-    .index("by_client", ["clientId"])
-    .index("by_period", ["periodStart", "periodEnd"]),
+    .index('by_client', ['clientId'])
+    .index('by_period', ['periodStart', 'periodEnd']),
 
   // Users (legacy - migrating to Convex Auth)
   legacyUsers: defineTable({
     email: v.string(),
     name: v.optional(v.string()),
     passwordHash: v.string(), // bcrypt hash
-    role: v.optional(v.union(v.literal("super_admin"), v.literal("admin"), v.literal("user"), v.literal("viewer"))), // User role: super_admin, admin, user, viewer
+    role: v.optional(
+      v.union(v.literal('super_admin'), v.literal('admin'), v.literal('user'), v.literal('viewer'))
+    ), // User role: super_admin, admin, user, viewer
     avatarUrl: v.optional(v.string()), // User profile picture
     bio: v.optional(v.string()), // User bio/description
-    preferences: v.optional(v.object({
-      theme: v.optional(v.union(v.literal("light"), v.literal("dark"), v.literal("auto"))),
-      notifications: v.optional(v.boolean()),
-      timezone: v.optional(v.string()),
-    })),
+    preferences: v.optional(
+      v.object({
+        theme: v.optional(v.union(v.literal('light'), v.literal('dark'), v.literal('auto'))),
+        notifications: v.optional(v.boolean()),
+        timezone: v.optional(v.string()),
+      })
+    ),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
-    .index("by_email", ["email"])
-    .index("by_role", ["role"]),
+    .index('by_email', ['email'])
+    .index('by_role', ['role']),
 
   // Sessions (legacy - migrating to Convex Auth)
   legacySessions: defineTable({
-    userId: v.id("legacyUsers"),
+    userId: v.id('legacyUsers'),
     token: v.string(),
     expiresAt: v.number(),
     createdAt: v.number(),
   })
-    .index("by_user", ["userId"])
-    .index("by_token", ["token"]),
+    .index('by_user', ['userId'])
+    .index('by_token', ['token']),
 
   // Prospect intake (lead capture)
   prospects: defineTable({
@@ -206,16 +216,16 @@ export default defineSchema({
     timeline: v.optional(v.string()),
     source: v.optional(v.string()),
     status: v.string(), // draft, initial_submitted, details_submitted
-    userId: v.optional(v.id("users")),
+    userId: v.optional(v.id('users')),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_email", ["email"])
-    .index("by_status", ["status"])
-    .index("by_user", ["userId"]),
+    .index('by_email', ['email'])
+    .index('by_status', ['status'])
+    .index('by_user', ['userId']),
 
   prospectDetails: defineTable({
-    prospectId: v.id("prospects"),
+    prospectId: v.id('prospects'),
     businessName: v.optional(v.string()),
     topPriority: v.optional(v.string()),
     marketingTried: v.optional(v.string()),
@@ -227,20 +237,18 @@ export default defineSchema({
     sendSms: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_prospect", ["prospectId"]),
+  }).index('by_prospect', ['prospectId']),
 
   submittedUrls: defineTable({
-    prospectId: v.id("prospects"),
+    prospectId: v.id('prospects'),
     label: v.string(),
     url: v.string(),
     createdAt: v.number(),
-  })
-    .index("by_prospect", ["prospectId"]),
+  }).index('by_prospect', ['prospectId']),
 
   aiReports: defineTable({
-    prospectId: v.optional(v.id("prospects")),
-    projectId: v.optional(v.id("projects")),
+    prospectId: v.optional(v.id('prospects')),
+    projectId: v.optional(v.id('projects')),
     url: v.optional(v.string()),
     status: v.string(), // pending, completed, failed
     summary: v.optional(v.string()),
@@ -256,24 +264,26 @@ export default defineSchema({
       sources: v.array(v.string()),
     }),
     dataSources: v.optional(v.array(v.string())),
-    crawlData: v.optional(v.object({
-      title: v.optional(v.string()),
-      description: v.optional(v.string()),
-      wordCount: v.optional(v.number()),
-      headings: v.optional(v.array(v.string())),
-      loadTime: v.optional(v.number()),
-      htmlSample: v.optional(v.string()),
-    })),
+    crawlData: v.optional(
+      v.object({
+        title: v.optional(v.string()),
+        description: v.optional(v.string()),
+        wordCount: v.optional(v.number()),
+        headings: v.optional(v.array(v.string())),
+        loadTime: v.optional(v.number()),
+        htmlSample: v.optional(v.string()),
+      })
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_prospect", ["prospectId"])
-    .index("by_project", ["projectId"])
-    .index("by_status", ["status"]),
+    .index('by_prospect', ['prospectId'])
+    .index('by_project', ['projectId'])
+    .index('by_status', ['status']),
 
   keywordIdeas: defineTable({
-    prospectId: v.optional(v.id("prospects")),
-    projectId: v.optional(v.id("projects")),
+    prospectId: v.optional(v.id('prospects')),
+    projectId: v.optional(v.id('projects')),
     primaryKeyword: v.string(),
     supportingKeywords: v.optional(v.array(v.string())),
     intent: v.optional(v.string()),
@@ -287,13 +297,13 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_prospect", ["prospectId"])
-    .index("by_project", ["projectId"])
-    .index("by_keyword", ["primaryKeyword"]),
+    .index('by_prospect', ['prospectId'])
+    .index('by_project', ['projectId'])
+    .index('by_keyword', ['primaryKeyword']),
 
   contentCalendars: defineTable({
-    prospectId: v.optional(v.id("prospects")),
-    projectId: v.optional(v.id("projects")),
+    prospectId: v.optional(v.id('prospects')),
+    projectId: v.optional(v.id('projects')),
     title: v.string(),
     contentType: v.string(),
     primaryKeyword: v.optional(v.string()),
@@ -305,13 +315,13 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_project", ["projectId"])
-    .index("by_status", ["status"])
-    .index("by_prospect", ["prospectId"])
-    .index("by_publish_date", ["publishDate"]),
+    .index('by_project', ['projectId'])
+    .index('by_status', ['status'])
+    .index('by_prospect', ['prospectId'])
+    .index('by_publish_date', ['publishDate']),
 
   subscriptions: defineTable({
-    userId: v.id("users"),
+    userId: v.id('users'),
     planTier: v.string(), // starter, growth, scale
     status: v.string(), // active, past_due, cancelled
     features: v.object({
@@ -328,11 +338,11 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_user", ["userId"])
-    .index("by_status", ["status"]),
+    .index('by_user', ['userId'])
+    .index('by_status', ['status']),
 
   usageLimits: defineTable({
-    userId: v.id("users"),
+    userId: v.id('users'),
     periodStart: v.number(),
     periodEnd: v.number(),
     urlsAnalyzed: v.number(),
@@ -341,23 +351,22 @@ export default defineSchema({
     contentPiecesPlanned: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_user_period", ["userId", "periodStart"])
-    .index("by_user_period_end", ["userId", "periodEnd"]),
+    .index('by_user_period', ['userId', 'periodStart'])
+    .index('by_user_period_end', ['userId', 'periodEnd']),
 
   // Projects (user's SEO projects)
   projects: defineTable({
-    userId: v.id("users"),
+    userId: v.id('users'),
     name: v.string(),
     websiteUrl: v.string(),
     industry: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_user", ["userId"]),
+  }).index('by_user', ['userId']),
 
   // GA4 Connections
   ga4Connections: defineTable({
-    projectId: v.id("projects"),
+    projectId: v.id('projects'),
     propertyId: v.string(),
     propertyName: v.string(),
     accessToken: v.string(),
@@ -365,24 +374,22 @@ export default defineSchema({
     lastSync: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_project", ["projectId"]),
+  }).index('by_project', ['projectId']),
 
   // GSC Connections
   gscConnections: defineTable({
-    projectId: v.id("projects"),
+    projectId: v.id('projects'),
     siteUrl: v.string(),
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
     lastSync: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_project", ["projectId"]),
+  }).index('by_project', ['projectId']),
 
   // Keyword Clusters
   keywordClusters: defineTable({
-    projectId: v.id("projects"),
+    projectId: v.id('projects'),
     clusterName: v.string(),
     keywords: v.array(v.string()),
     intent: v.string(), // informational, commercial, transactional, navigational
@@ -397,12 +404,12 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_project", ["projectId"])
-    .index("by_status", ["status"]),
+    .index('by_project', ['projectId'])
+    .index('by_status', ['status']),
 
   // Quarterly Plans
   quarterlyPlans: defineTable({
-    projectId: v.id("projects"),
+    projectId: v.id('projects'),
     contentVelocity: v.number(), // posts per week
     startDate: v.number(), // timestamp
     goals: v.object({
@@ -413,24 +420,27 @@ export default defineSchema({
     assumptions: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_project", ["projectId"]),
+  }).index('by_project', ['projectId']),
 
   // Briefs
   briefs: defineTable({
-    planId: v.id("quarterlyPlans"),
-    projectId: v.id("projects"),
-    clusterId: v.optional(v.id("keywordClusters")),
+    planId: v.id('quarterlyPlans'),
+    projectId: v.id('projects'),
+    clusterId: v.optional(v.id('keywordClusters')),
     title: v.string(),
     scheduledDate: v.number(),
     status: v.string(), // planned, in_progress, approved, published
     // Brief details
     titleOptions: v.optional(v.array(v.string())),
     h2Outline: v.optional(v.array(v.string())),
-    faqs: v.optional(v.array(v.object({
-      question: v.string(),
-      answer: v.string(),
-    }))),
+    faqs: v.optional(
+      v.array(
+        v.object({
+          question: v.string(),
+          answer: v.string(),
+        })
+      )
+    ),
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
     internalLinks: v.optional(v.array(v.string())),
@@ -439,14 +449,14 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_plan", ["planId"])
-    .index("by_project", ["projectId"])
-    .index("by_status", ["status"]),
+    .index('by_plan', ['planId'])
+    .index('by_project', ['projectId'])
+    .index('by_status', ['status']),
 
   // Drafts
   drafts: defineTable({
-    briefId: v.id("briefs"),
-    projectId: v.id("projects"),
+    briefId: v.id('briefs'),
+    projectId: v.id('projects'),
     content: v.string(), // Markdown
     qualityScore: v.optional(v.number()), // 0-100
     toneScore: v.optional(v.number()), // 0-100
@@ -456,15 +466,15 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_brief", ["briefId"])
-    .index("by_project", ["projectId"])
-    .index("by_status", ["status"]),
+    .index('by_brief', ['briefId'])
+    .index('by_project', ['projectId'])
+    .index('by_status', ['status']),
 
   // Scheduled Posts
   scheduledPosts: defineTable({
-    draftId: v.id("drafts"),
-    projectId: v.id("projects"),
-    briefId: v.id("briefs"),
+    draftId: v.id('drafts'),
+    projectId: v.id('projects'),
+    briefId: v.id('briefs'),
     publishDate: v.number(), // timestamp
     timezone: v.string(),
     platform: v.string(), // wordpress, shopify
@@ -477,13 +487,13 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_project", ["projectId"])
-    .index("by_status", ["status"])
-    .index("by_publish_date", ["publishDate"]),
+    .index('by_project', ['projectId'])
+    .index('by_status', ['status'])
+    .index('by_publish_date', ['publishDate']),
 
   // Analytics Data
   analyticsData: defineTable({
-    projectId: v.id("projects"),
+    projectId: v.id('projects'),
     date: v.number(), // timestamp
     source: v.string(), // ga4, gsc
     sessions: v.optional(v.number()),
@@ -496,12 +506,12 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_project_date", ["projectId", "date"])
-    .index("by_project_date_source", ["projectId", "date", "source"]),
+    .index('by_project_date', ['projectId', 'date'])
+    .index('by_project_date_source', ['projectId', 'date', 'source']),
 
   // Insights
   insights: defineTable({
-    projectId: v.id("projects"),
+    projectId: v.id('projects'),
     type: v.string(), // top_gainer, underperformer, quick_win
     title: v.string(),
     description: v.string(),
@@ -511,30 +521,29 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_project", ["projectId"])
-    .index("by_type", ["type"]),
+    .index('by_project', ['projectId'])
+    .index('by_type', ['type']),
 
   // Brief Versions (version history)
   briefVersions: defineTable({
-    briefId: v.id("briefs"),
+    briefId: v.id('briefs'),
     versionNumber: v.number(),
     data: v.any(), // Snapshot of brief data
     notes: v.optional(v.string()),
     createdAt: v.number(),
   })
-    .index("by_brief", ["briefId"])
-    .index("by_brief_version", ["briefId", "versionNumber"]),
+    .index('by_brief', ['briefId'])
+    .index('by_brief_version', ['briefId', 'versionNumber']),
 
   // Competitors
   competitors: defineTable({
-    projectId: v.id("projects"),
+    projectId: v.id('projects'),
     domain: v.string(),
     priority: v.optional(v.number()), // 1-5
     notes: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_project", ["projectId"])
-    .index("by_priority", ["priority"]),
+    .index('by_project', ['projectId'])
+    .index('by_priority', ['priority']),
 });
-
