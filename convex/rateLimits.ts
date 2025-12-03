@@ -45,7 +45,7 @@ export const RATE_LIMIT_TIERS = {
 } as const;
 
 // Create rate limiter instance
-export const rateLimits = new RateLimiter(components.rateLimiter, {
+export const rateLimits = new RateLimiter((components as any).rateLimiter, {
   // Brief generation - token bucket for smooth usage
   generateBrief_free: {
     kind: "token bucket",

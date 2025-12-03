@@ -22,6 +22,8 @@ export default defineSchema({
     })),
     createdAt: v.optional(v.number()), // Auth doesn't enforce this but good to have
     updatedAt: v.optional(v.number()),
+    // Legacy auth fields (for backward compatibility)
+    passwordHash: v.optional(v.string()),
   })
     .index("email", ["email"])
     .index("by_role", ["role"]),

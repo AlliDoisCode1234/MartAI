@@ -16,12 +16,15 @@ import {
   AlertIcon,
   Link,
 } from "@chakra-ui/react";
-import { useAuth } from "@/lib/useAuth";
-import { authStorage } from "@/lib/storage";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { isAuthenticated, loading: authLoading, user, login } = useAuth();
+  const { signIn } = useAuthActions();
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
+  const user = useQuery((api as any).users?.current);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,20 +42,19 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const data = await login(formData.email, formData.password, {
-        endpoint: "/api/admin/login",
+      await signIn("password", {
+        email: formData.email,
+        password: formData.password,
+        flow: "signIn",
       });
-
-      if (data?.user?.role !== "admin") {
-        authStorage.clear();
-        setError("Admin access is required.");
-        return;
-      }
-
-      router.replace("/admin");
+      
+      // The redirect happens automatically or we can check user role in useEffect
+      // But for admin login we might want to verify role immediately? 
+      // Auth actions don't return user object directly usually.
+      // We rely on the router.replace in useEffect once user is loaded.
+      
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login");
-    } finally {
+      setError("Failed to login. Please check your credentials.");
       setLoading(false);
     }
   };

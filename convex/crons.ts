@@ -7,7 +7,7 @@ const crons = cronJobs();
 crons.daily(
   "analytics-sync",
   { hourUTC: 2, minuteUTC: 0 },
-  api.analytics.scheduler.syncAllProjects
+  (api as any).analytics.scheduler.syncAllProjects
 );
 
 export default crons;

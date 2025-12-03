@@ -37,7 +37,7 @@ async function dogfoodBriefs() {
 
     // 2. Create a Plan (to get briefs)
     console.log('\n2. Generating Plan...');
-    const planResult = await client.action(api.content.quarterlyPlans.generatePlan, {
+    const planResult = await client.action((api as any).content.quarterlyPlanActions.generatePlan, {
       projectId,
       contentVelocity: 3,
       startDate: Date.now(),

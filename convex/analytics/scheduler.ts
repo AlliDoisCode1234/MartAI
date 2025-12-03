@@ -5,7 +5,7 @@ import { api } from "../_generated/api";
 
 export const syncAllProjects = action({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<Array<{ projectId: any; status: string; data?: any; error?: string }>> => {
     // Get all projects
     // We need a query to get all projects. 
     // Assuming api.projects.projects.getAllProjects exists or similar.
@@ -21,14 +21,15 @@ export const syncAllProjects = action({
     // and then get projects for each user? No, that's inefficient.
     
     // Best practice: Create an internal query to get all projects for the cron.
-    const projects = await ctx.runQuery(api.analytics.scheduler.getAllProjectsInternal);
+    // Best practice: Create an internal query to get all projects for the cron.
+    const projects = await ctx.runQuery((api as any).analytics.queries.getAllProjectsInternal);
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret) {
       console.error("CRON_SECRET is not defined");
-      return;
+      return [];
     }
 
     const results = [];
@@ -62,11 +63,3 @@ export const syncAllProjects = action({
   },
 });
 
-import { internalQuery } from "../_generated/server";
-
-export const getAllProjectsInternal = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query("projects").collect();
-  },
-});

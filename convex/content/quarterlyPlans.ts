@@ -2,11 +2,7 @@ import { action, mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
-import {
-  generatePlanSummary,
-  estimateTraffic,
-  estimateLeads,
-} from "../../lib/quarterlyPlanning";
+// generatePlanSummary, estimateTraffic, estimateLeads moved to quarterlyPlanActions.ts
 
 // Create quarterly plan
 export const createQuarterlyPlan = mutation({
@@ -182,71 +178,5 @@ export const deletePlan = mutation({
   },
 });
 
-export const generatePlan = action({
-  args: {
-    projectId: v.id("projects"),
-    contentVelocity: v.number(),
-    startDate: v.optional(v.number()),
-    goals: v.optional(
-      v.object({
-        traffic: v.optional(v.number()),
-        leads: v.optional(v.number()),
-        revenue: v.optional(v.number()),
-      }),
-    ),
-  },
-  handler: async (ctx, args) => {
-    if (args.contentVelocity < 1 || args.contentVelocity > 7) {
-      throw new Error("contentVelocity must be between 1 and 7 posts per week");
-    }
-
-    const startDate = args.startDate ?? Date.now();
-
-    const project = await ctx.runQuery(api.projects.projects.getProjectById, {
-      projectId: args.projectId,
-    });
-    const clusters = await ctx.runQuery(api.seo.keywordClusters.getActiveClusters, {
-      projectId: args.projectId,
-    });
-
-    const fallbackTraffic = estimateTraffic(args.contentVelocity);
-    const trafficGoal = args.goals?.traffic ?? fallbackTraffic;
-    const leadsGoal = args.goals?.leads ?? estimateLeads(trafficGoal);
-    const revenueGoal = args.goals?.revenue;
-
-    const goals = {
-      traffic: trafficGoal,
-      leads: leadsGoal,
-      revenue: revenueGoal,
-    };
-
-    let assumptions = "";
-    try {
-      assumptions = await generatePlanSummary(
-        args.contentVelocity,
-        goals,
-        clusters.length,
-        project?.industry,
-      );
-    } catch (error) {
-      console.warn("Plan summary generation failed:", error);
-      assumptions = `Quarterly plan with ${args.contentVelocity} posts/week targeting ${clusters.length} keyword clusters.`;
-    }
-
-    const planId = await ctx.runMutation(api.content.quarterlyPlans.createQuarterlyPlan, {
-      projectId: args.projectId,
-      contentVelocity: args.contentVelocity,
-      startDate,
-      goals,
-      assumptions,
-    }) as Id<"quarterlyPlans">;
-
-    return {
-      success: true,
-      planId,
-      assumptions,
-      goals,
-    };
-  },
-});
+// generatePlan action moved to quarterlyPlanActions.ts
 

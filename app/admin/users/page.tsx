@@ -48,7 +48,7 @@ export default function AdminUsersPage() {
                 </Tr>
               </Thead>
               <Tbody>
-                {users.map((user) => (
+                {users.map((user: any) => (
                   <Tr key={user._id}>
                     <Td>
                       <HStack>

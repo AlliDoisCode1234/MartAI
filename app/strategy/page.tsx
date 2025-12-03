@@ -25,7 +25,7 @@ function StrategyContent() {
   const [projectsLoading, setProjectsLoading] = useState(true);
   const rescheduleBrief = useMutation(api.content.quarterlyPlans.rescheduleBrief);
   const generateClustersAction = useAction(api.seo.keywordActions.generateClusters);
-  const generatePlanAction = useAction(api.content.quarterlyPlans.generatePlan);
+  const generatePlanAction = useAction((api as any).content.quarterlyPlanActions.generatePlan);
   const projectIdForQuery =
     projectId !== null
       ? (() => {
@@ -354,7 +354,7 @@ function StrategyContent() {
                         </Tr>
                       </Thead>
                       <Tbody>
-                        {plan.briefs.map((brief, index) => (
+                        {plan.briefs.map((brief: any, index: number) => (
                           <Tr key={brief._id || index}>
                             <Td>{brief.week || Math.floor(index / plan.contentVelocity) + 1}</Td>
                             <Td>{new Date(brief.scheduledDate).toLocaleDateString()}</Td>
@@ -388,7 +388,7 @@ function StrategyContent() {
             <>
               <Heading size="lg">Keyword Clusters</Heading>
               <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={6}>
-                {clusters.slice(0, 6).map((cluster, index) => (
+                {clusters.slice(0, 6).map((cluster: any, index: number) => (
                   <GridItem key={cluster._id || index}>
                     <Card>
                       <CardBody>

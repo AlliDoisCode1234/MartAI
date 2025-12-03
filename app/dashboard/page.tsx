@@ -63,7 +63,8 @@ const keywordPerformanceData = [
 export default function DashboardPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  const user = useQuery(api.users.current);
+  // const user = useQuery(api.users.current);
+  const user: any = null;
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 

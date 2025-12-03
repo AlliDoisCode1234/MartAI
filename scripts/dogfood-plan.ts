@@ -44,7 +44,7 @@ async function dogfoodPlan() {
     // If it fails, it catches error and uses fallback string.
     // So it SHOULD succeed even without OpenAI key.
     
-    const result = await client.action(api.content.quarterlyPlans.generatePlan, {
+    const result = await client.action((api as any).content.quarterlyPlanActions.generatePlan, {
       projectId,
       contentVelocity: 3, // 3 posts/week
       startDate: Date.now(),

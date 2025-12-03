@@ -17,6 +17,10 @@ const keywordInputArg = v.object({
   intent: v.optional(v.string()),
 });
 
+import { auth } from "../auth";
+import { rateLimits, getRateLimitKey, type MembershipTier } from "../rateLimits";
+import { ConvexError } from "convex/values";
+
 export const generateClusters = action({
   args: {
     projectId: v.id("projects"),
@@ -24,6 +28,41 @@ export const generateClusters = action({
     importFromGSC: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    // Get authenticated user
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+
+    // Get user to check membership tier and role
+    const user = await ctx.runQuery((api as any).users.current);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Determine rate limit tier
+    let tier: MembershipTier;
+    if (user.role === "admin" || user.role === "super_admin") {
+      tier = "admin";
+    } else {
+      tier = (user.membershipTier as MembershipTier) || "free";
+    }
+
+    // Check rate limit
+    const rateLimitKey = getRateLimitKey("generateKeywordClusters", tier);
+    const { ok, retryAfter } = await rateLimits.limit(ctx, rateLimitKey as any, {
+      key: userId as string,
+    });
+
+    if (!ok) {
+      const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
+      throw new ConvexError({
+        kind: "RateLimitError",
+        message: `Rate limit exceeded. You can generate ${tier === "free" ? "5 clusters per day" : tier === "admin" ? "200 clusters per hour" : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? "s" : ""}.`,
+        retryAfter,
+      });
+    }
+
     const project = await ctx.runQuery(api.projects.projects.getProjectById, {
       projectId: args.projectId,
     });

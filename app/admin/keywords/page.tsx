@@ -47,7 +47,7 @@ export default function AdminKeywordsPage() {
                 </Tr>
               </Thead>
               <Tbody>
-                {keywords.map((kw) => (
+                {keywords.map((kw: any) => (
                   <Tr key={kw._id}>
                     <Td fontWeight="medium">{kw.keyword}</Td>
                     <Td>{kw.searchVolume?.toLocaleString() || "—"}</Td>

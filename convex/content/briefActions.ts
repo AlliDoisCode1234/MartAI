@@ -22,7 +22,7 @@ export const generateBrief = action({
     }
 
     // Get user to check membership tier and role
-    const user = await ctx.runQuery(api.users.current);
+    const user = await ctx.runQuery((api as any).users.current);
     if (!user) {
       throw new Error("User not found");
     }
@@ -76,7 +76,7 @@ export const generateBrief = action({
       const clusters = await ctx.runQuery(api.seo.keywordClusters.getClustersByProject, {
         projectId: args.projectId,
       });
-      const cluster = clusters.find(c => c._id === args.clusterId);
+      const cluster = clusters.find((c: any) => c._id === args.clusterId);
       
       if (cluster) {
         clusterInfo = {

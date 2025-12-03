@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Container, VStack, Heading, Text, Box, Button, HStack, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Input, Textarea, FormControl, FormLabel, Grid, GridItem, Tabs, TabList, TabPanels, Tab, TabPanel, Progress, Divider } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
+import { useAction } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { LexicalEditorComponent } from '@/src/components/LexicalEditor';
 import type { Brief, Draft } from '@/types';
 
@@ -67,30 +69,30 @@ function ContentContent() {
     }
   };
 
+  const generateBriefAction = useAction((api as any).content.briefActions.generateBrief);
+
   const handleGenerateBrief = async () => {
-    if (!briefId) return;
+    if (!briefId || !brief) return;
 
     setGenerating(true);
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/briefs/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ briefId }),
+      const result = await generateBriefAction({
+        briefId: briefId as any,
+        projectId: brief.projectId as any,
+        clusterId: brief.clusterId as any,
       });
 
-      const data = await response.json();
-      if (response.ok && data.success) {
+      if (result.success) {
         await loadBrief(briefId);
         alert('Brief details generated successfully!');
-      } else {
-        alert(data.error || 'Failed to generate brief');
       }
-    } catch (error) {
-      alert('Failed to generate brief');
+    } catch (error: any) {
+      console.error('Error generating brief:', error);
+      if (error.data?.kind === "RateLimitError") {
+         alert(error.data.message);
+      } else {
+         alert(error.message || 'Failed to generate brief');
+      }
     } finally {
       setGenerating(false);
     }
@@ -112,34 +114,30 @@ function ContentContent() {
     }
   };
 
+  const generateDraftAction = useAction((api as any).content.draftActions.generateDraft);
+
   const handleGenerateDraft = async () => {
     if (!briefId) return;
 
     setGeneratingDraft(true);
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/drafts/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          briefId,
-          regenerationNotes: regenerationNotes || undefined,
-        }),
+      const result = await generateDraftAction({
+        briefId: briefId as any, // Cast to ID
+        regenerationNotes: regenerationNotes || undefined,
       });
 
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setDraft(data.draft);
+      if (result.success) {
+        setDraft(result);
         setRegenerationNotes('');
         alert('Draft generated successfully!');
-      } else {
-        alert(data.error || 'Failed to generate draft');
       }
-    } catch (error) {
-      alert('Failed to generate draft');
+    } catch (error: any) {
+      console.error('Error generating draft:', error);
+      if (error.data?.kind === "RateLimitError") {
+         alert(error.data.message);
+      } else {
+         alert(error.message || 'Failed to generate draft');
+      }
     } finally {
       setGeneratingDraft(false);
     }

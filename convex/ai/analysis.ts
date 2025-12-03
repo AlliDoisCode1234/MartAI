@@ -52,6 +52,10 @@ interface KeywordIdeaCandidate {
   priority: string;
 }
 
+import { auth } from "../auth";
+import { rateLimits, getRateLimitKey, type MembershipTier } from "../rateLimits";
+import { ConvexError } from "convex/values";
+
 export const runPipeline = action({
   args: {
     prospectId: v.optional(v.id("prospects")),
@@ -64,6 +68,41 @@ export const runPipeline = action({
     metrics: FusionResult;
     keywordIdeasCreated: number;
   }> => {
+    // Get authenticated user
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+
+    // Get user to check membership tier and role
+    const user = await ctx.runQuery((api as any).users.current);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Determine rate limit tier
+    let tier: MembershipTier;
+    if (user.role === "admin" || user.role === "super_admin") {
+      tier = "admin";
+    } else {
+      tier = (user.membershipTier as MembershipTier) || "free";
+    }
+
+    // Check rate limit
+    const rateLimitKey = getRateLimitKey("aiAnalysis", tier);
+    const { ok, retryAfter } = await rateLimits.limit(ctx, rateLimitKey as any, {
+      key: userId as string,
+    });
+
+    if (!ok) {
+      const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
+      throw new ConvexError({
+        kind: "RateLimitError",
+        message: `Rate limit exceeded. You can generate ${tier === "free" ? "2 reports per day" : tier === "admin" ? "50 reports per day" : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? "s" : ""}.`,
+        retryAfter,
+      });
+    }
+
     if (!args.prospectId && !args.projectId && !args.url) {
       throw new Error("Provide a prospectId, projectId, or url to analyze.");
     }
