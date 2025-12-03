@@ -15,6 +15,7 @@ import type * as analytics_analytics from "../analytics/analytics.js";
 import type * as analytics_queries from "../analytics/queries.js";
 import type * as analytics_scheduler from "../analytics/scheduler.js";
 import type * as auth from "../auth.js";
+import type * as cache from "../cache.js";
 import type * as content_briefActions from "../content/briefActions.js";
 import type * as content_briefVersions from "../content/briefVersions.js";
 import type * as content_briefs from "../content/briefs.js";
@@ -67,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   "analytics/queries": typeof analytics_queries;
   "analytics/scheduler": typeof analytics_scheduler;
   auth: typeof auth;
+  cache: typeof cache;
   "content/briefActions": typeof content_briefActions;
   "content/briefVersions": typeof content_briefVersions;
   "content/briefs": typeof content_briefs;
@@ -265,6 +267,48 @@ export declare const components: {
     };
     time: {
       getServerTime: FunctionReference<"mutation", "internal", {}, number>;
+    };
+  };
+  actionCache: {
+    crons: {
+      purge: FunctionReference<
+        "mutation",
+        "internal",
+        { expiresAt?: number },
+        null
+      >;
+    };
+    lib: {
+      get: FunctionReference<
+        "query",
+        "internal",
+        { args: any; name: string; ttl: number | null },
+        { kind: "hit"; value: any } | { expiredEntry?: string; kind: "miss" }
+      >;
+      put: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          args: any;
+          expiredEntry?: string;
+          name: string;
+          ttl: number | null;
+          value: any;
+        },
+        { cacheHit: boolean; deletedExpiredEntry: boolean }
+      >;
+      remove: FunctionReference<
+        "mutation",
+        "internal",
+        { args: any; name: string },
+        null
+      >;
+      removeAll: FunctionReference<
+        "mutation",
+        "internal",
+        { batchSize?: number; before?: number; name?: string },
+        null
+      >;
     };
   };
 };

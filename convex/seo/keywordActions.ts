@@ -9,6 +9,7 @@ import {
   type KeywordInput,
 } from "../../lib/keywordClustering";
 import { getGSCData } from "../../lib/googleAuth";
+import { cache, getCacheKey, CACHE_TTL } from "../cache";
 
 const keywordInputArg = v.object({
   keyword: v.string(),
@@ -108,6 +109,30 @@ export const generateClusters = action({
       throw new Error("Unable to find keywords to cluster. Add keywords or connect GSC.");
     }
 
+    // Generate cache key based on keyword set
+    const keywordHash = keywordInputs
+      .map((k) => k.keyword)
+      .sort()
+      .join(",");
+
+    const cacheKey = getCacheKey("generateClusters", {
+      projectId: args.projectId,
+      keywordHash,
+    });
+
+    // Try cache
+    const cached = await cache.get(ctx, cacheKey);
+if (cached) {
+  console.log("Cache hit for keyword clustering");
+  // Create clusters from cached data
+  for (const cluster of cached.clusters) {
+    await ctx.runMutation((api as any).seo.keywordClusters.createCluster, cluster);
+  }
+  return { success: true, count: cached.clusters.length, cached: true };
+}
+
+console.log("Cache miss for keyword clustering");
+
     const clusters = await generateKeywordClusters(
       keywordInputs,
       project?.websiteUrl,
@@ -134,6 +159,9 @@ export const generateClusters = action({
         console.error("Failed to store cluster:", error);
       }
     }
+
+    // Cache the result
+await cache.set(ctx, cacheKey, { clusters }, CACHE_TTL.KEYWORD_CLUSTERING);
 
     return {
       success: true,

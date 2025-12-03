@@ -12,6 +12,7 @@ import {
 import { auth } from "../auth";
 import { rateLimits, getRateLimitKey, type MembershipTier } from "../rateLimits";
 import { ConvexError } from "convex/values";
+import { cache, getCacheKey, CACHE_TTL } from "../cache";
 
 export const generatePlan = action({
   args: {
@@ -26,7 +27,17 @@ export const generatePlan = action({
       }),
     ),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    planId: Id<"quarterlyPlans">;
+    assumptions: string;
+    goals: {
+      traffic: number;
+      leads: number;
+      revenue?: number;
+    };
+    cached?: boolean;
+  }> => {
     // Get authenticated user
     const userId = await auth.getUserId(ctx);
     if (!userId) {
@@ -74,6 +85,29 @@ export const generatePlan = action({
     const clusters = await ctx.runQuery(api.seo.keywordClusters.getActiveClusters, {
       projectId: args.projectId,
     });
+    // Generate cache key
+const cacheKey = getCacheKey("generatePlan", {
+  projectId: args.projectId,
+  contentVelocity: args.contentVelocity,
+  clusterCount: clusters.length,
+});
+
+// Try cache
+const cached = await cache.get(ctx, cacheKey);
+if (cached) {
+  console.log("Cache hit for quarterly planning");
+  const planId = await ctx.runMutation(
+    (api as any).content.quarterlyPlans.createQuarterlyPlan,
+    {
+      ...args,
+      assumptions: cached.assumptions,
+      goals: cached.goals,
+    }
+  );
+  return { success: true, planId, cached: true, ...cached };
+}
+
+console.log("Cache miss for quarterly planning");
 
     const fallbackTraffic = estimateTraffic(args.contentVelocity);
     const trafficGoal = args.goals?.traffic ?? fallbackTraffic;
@@ -98,6 +132,14 @@ export const generatePlan = action({
       console.warn("Plan summary generation failed:", error);
       assumptions = `Quarterly plan with ${args.contentVelocity} posts/week targeting ${clusters.length} keyword clusters.`;
     }
+
+    // Cache the result
+await cache.set(
+  ctx,
+  cacheKey,
+  { assumptions, goals },
+  CACHE_TTL.QUARTERLY_PLANNING
+);
 
     const planId = await ctx.runMutation(api.content.quarterlyPlans.createQuarterlyPlan, {
       projectId: args.projectId,

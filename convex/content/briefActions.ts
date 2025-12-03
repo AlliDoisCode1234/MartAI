@@ -7,6 +7,7 @@ import { generateBriefDetails, type ClusterInfo } from "../../lib/briefGenerator
 import { auth } from "../auth";
 import { rateLimits, getRateLimitKey, type MembershipTier } from "../rateLimits";
 import { ConvexError } from "convex/values";
+import { cache, getCacheKey, CACHE_TTL } from "../cache";
 
 export const generateBrief = action({
   args: {
@@ -49,6 +50,25 @@ export const generateBrief = action({
         retryAfter,
       });
     }
+
+    const cacheKey = getCacheKey("generateBrief", {
+  clusterId: args.clusterId,
+  projectId: args.projectId,
+});
+
+// Try to get from cache
+const cached = await cache.get(ctx, cacheKey);
+if (cached) {
+  console.log("Cache hit for brief generation");
+  await ctx.runMutation((api as any).content.briefs.updateBrief, {
+    briefId: args.briefId,
+    ...cached,
+    status: "in_progress",
+  });
+  return { success: true, cached: true };
+}
+
+console.log("Cache miss for brief generation");
 
     // Get project info
     const project = await ctx.runQuery(api.projects.projects.getProjectById, {
@@ -118,6 +138,9 @@ export const generateBrief = action({
       project.websiteUrl,
       project.industry
     );
+
+    // Store in cache
+await cache.set(ctx, cacheKey, details, CACHE_TTL.BRIEF_GENERATION);
 
     // Update brief with details
     await ctx.runMutation(api.content.briefs.updateBrief, {

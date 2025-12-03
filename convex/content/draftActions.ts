@@ -7,6 +7,7 @@ import { auth } from "../auth";
 import { rateLimits, getRateLimitKey, type MembershipTier } from "../rateLimits";
 import { ConvexError } from "convex/values";
 import { generateDraftFromBrief } from "../../lib/draftGenerator";
+import { cache, getCacheKey, CACHE_TTL } from "../cache";
 
 export const generateDraft = action({
   args: {
@@ -71,6 +72,48 @@ export const generateDraft = action({
       throw new Error("Brief details not generated. Please generate brief details first.");
     }
 
+    // Check if draft already exists
+    const existingDraft: any = await ctx.runQuery((api as any).content.drafts.getDraftByBrief, {
+      briefId: args.briefId,
+    });
+
+    // Generate cache key (include regeneration notes for cache busting)
+const cacheKey = getCacheKey("generateDraft", {
+  briefId: args.briefId,
+  h2Outline: brief.h2Outline,
+  regenerationNotes: args.regenerationNotes || "",
+});
+
+// Try cache (only if no regeneration notes)
+const cached = await cache.get(ctx, cacheKey);
+if (cached && !args.regenerationNotes) {
+  console.log("Cache hit for draft generation");
+  
+  // Update or create draft with cached content
+  if (existingDraft) {
+    await ctx.runMutation((api as any).content.drafts.updateDraft, {
+      draftId: existingDraft._id,
+      ...cached,
+      status: 'draft',
+    });
+  } else {
+    await ctx.runMutation((api as any).content.drafts.createDraft, {
+      briefId: args.briefId,
+      projectId: brief.projectId,
+      ...cached,
+      status: 'draft',
+    });
+  }
+  
+  return {
+    success: true,
+    cached: true,
+    ...cached,
+  };
+}
+
+console.log("Cache miss for draft generation");
+
     // Get cluster info
     let cluster = null;
     if (brief.clusterId) {
@@ -112,10 +155,7 @@ export const generateDraft = action({
       args.regenerationNotes
     );
 
-    // Check if draft already exists
-    const existingDraft: any = await ctx.runQuery((api as any).content.drafts.getDraftByBrief, {
-      briefId: args.briefId,
-    });
+
 
     let draftId;
     if (existingDraft) {
@@ -143,6 +183,9 @@ export const generateDraft = action({
         notes: args.regenerationNotes,
       });
     }
+
+    // Cache the result
+await cache.set(ctx, cacheKey, draftResult, CACHE_TTL.DRAFT_GENERATION);
 
     // Update brief status
     await ctx.runMutation((api as any).content.briefs.updateBrief, {
