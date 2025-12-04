@@ -7,6 +7,16 @@ import { api, internal } from '../_generated/api';
  *
  * Syncs data from GA4 and GSC, analyzes performance, and generates insights
  */
+type AnalyticsSyncWorkflowReturn = {
+  status: 'synced';
+  ga4Synced: boolean;
+  gscSynced: boolean;
+  insightsGenerated: number;
+  dateRange: {
+    startDate: string;
+    endDate: string;
+  };
+};
 export const analyticsSyncWorkflow = workflow.define({
   args: {
     projectId: v.id('projects'),
@@ -25,7 +35,7 @@ export const analyticsSyncWorkflow = workflow.define({
       endDate: v.string(),
     }),
   }),
-  handler: async (step, args) => {
+  handler: async (step, args): Promise<AnalyticsSyncWorkflowReturn> => {
     // ---- Step 1: GA4 Connection ----
     const ga4Connection = await step.runQuery(api.integrations.ga4Connections.getGA4Connection, {
       projectId: args.projectId,
@@ -85,6 +95,11 @@ export const analyticsSyncWorkflow = workflow.define({
  *
  * Analyzes individual content piece performance and suggests optimizations
  */
+
+type ContentPerformanceWorkflowReturn = {
+  status: 'analyzed';
+  recommendations: Array<{ type: string; reason: string; action: string }>;
+};
 export const contentPerformanceWorkflow = workflow.define({
   args: {
     briefId: v.id('briefs'),
@@ -100,7 +115,7 @@ export const contentPerformanceWorkflow = workflow.define({
       })
     ),
   }),
-  handler: async (step, args) => {
+  handler: async (step, args): Promise<ContentPerformanceWorkflowReturn> => {
     // Step 1: Get content metrics
     // We'll assume we can get metrics via a query or just pass empty for now
     // In a real app, we'd query analyticsData for the specific page/url
@@ -123,6 +138,11 @@ export const contentPerformanceWorkflow = workflow.define({
  *
  * Analyzes competitor content and identifies opportunities
  */
+type CompetitorAnalysisWorkflowReturn = {
+  status: 'completed';
+  competitorsAnalyzed: number;
+  opportunitiesFound: number;
+};
 export const competitorAnalysisWorkflow = workflow.define({
   args: {
     projectId: v.id('projects'),
@@ -133,7 +153,7 @@ export const competitorAnalysisWorkflow = workflow.define({
     competitorsAnalyzed: v.number(),
     opportunitiesFound: v.number(),
   }),
-  handler: async (step, args) => {
+  handler: async (step, args): Promise<CompetitorAnalysisWorkflowReturn> => {
     // Step 1: Analyze competitors
     const results = await step.runAction(internal.analytics.competitors.analyzeCompetitors, {
       projectId: args.projectId,
@@ -158,6 +178,10 @@ export const competitorAnalysisWorkflow = workflow.define({
  *
  * Tracks keyword rankings and detects significant changes
  */
+type RankTrackingWorkflowReturn = {
+  status: 'updated';
+  updated: boolean;
+};
 export const rankTrackingWorkflow = workflow.define({
   args: {
     projectId: v.id('projects'),
@@ -166,7 +190,7 @@ export const rankTrackingWorkflow = workflow.define({
     status: v.literal('updated'),
     updated: v.boolean(),
   }),
-  handler: async (step, args) => {
+  handler: async (step, args): Promise<RankTrackingWorkflowReturn> => {
     // Step 1: Update rankings
     const result = await step.runAction(internal.seo.rankings.updateRankings, {
       projectId: args.projectId,

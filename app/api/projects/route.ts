@@ -27,18 +27,18 @@ export async function GET(request: NextRequest) {
     });
 
     if (!apiLocal) {
-      const response = NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      const response = NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
       return secureResponse(response);
     }
 
     const userId = assertUserId(authUser.userId);
     // Use the path structure matching the generated API: projects/projects
-    const projects = await callConvexQuery((apiLocal as any)["projects/projects"].getProjectsByUser, {
-      userId: userId as any,
-    });
+    const projects = await callConvexQuery(
+      (apiLocal as any)['projects/projects'].getProjectsByUser,
+      {
+        userId: userId as any,
+      }
+    );
 
     const response = NextResponse.json({ projects: projects || [] });
     return secureResponse(response);
@@ -47,10 +47,7 @@ export async function GET(request: NextRequest) {
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    const response = NextResponse.json(
-      { error: 'Failed to get projects' },
-      { status: 500 }
-    );
+    const response = NextResponse.json({ error: 'Failed to get projects' }, { status: 500 });
     return secureResponse(response);
   }
 }
@@ -66,6 +63,11 @@ export async function POST(request: NextRequest) {
       allowedContentTypes: ['application/json'],
     });
 
+    console.log('📥 [API] /api/projects POST request received');
+    const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
+    console.log(`🔑 [API] OpenAI Key Present: ${hasOpenAIKey}`);
+    if (!hasOpenAIKey) console.warn('⚠️ [API] Warning: OPENAI_API_KEY is missing!');
+
     const body = await request.json();
     const { name, websiteUrl, industry } = body;
 
@@ -78,21 +80,21 @@ export async function POST(request: NextRequest) {
     }
 
     if (!apiLocal) {
-      const response = NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      const response = NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
       return secureResponse(response);
     }
 
     const userId = assertUserId(authUser.userId);
     // Use the path structure matching the generated API: projects/projects
-    const projectId = await callConvexMutation((apiLocal as any)["projects/projects"].createProject, {
-      userId: userId as any,
-      name,
-      websiteUrl,
-      industry: industry || undefined,
-    });
+    const projectId = await callConvexMutation(
+      (apiLocal as any)['projects/projects'].createProject,
+      {
+        userId: userId as any,
+        name,
+        websiteUrl,
+        industry: industry || undefined,
+      }
+    );
 
     const response = NextResponse.json({
       success: true,
@@ -104,10 +106,7 @@ export async function POST(request: NextRequest) {
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    const response = NextResponse.json(
-      { error: 'Failed to create project' },
-      { status: 500 }
-    );
+    const response = NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
     return secureResponse(response);
   }
 }

@@ -2,9 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Container, VStack, Heading, Text, Box, Input, Button, FormControl, FormLabel, Alert, AlertIcon, HStack } from '@chakra-ui/react';
+import {
+  Container,
+  VStack,
+  Heading,
+  Text,
+  Box,
+  Input,
+  Button,
+  FormControl,
+  FormLabel,
+  Alert,
+  AlertIcon,
+  HStack,
+} from '@chakra-ui/react';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/lib/useAuth';
-import { authStorage, getAuthHeaders } from '@/lib/storage';
+import { authStorage } from '@/lib/storage';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -18,18 +33,23 @@ export default function OnboardingPage() {
 
   // Redirect to login if not authenticated
   useEffect(() => {
+    console.log('🏁 OnboardingPage mounted. Auth:', { isAuthenticated, authLoading, user });
     if (authLoading) return;
 
     if (!isAuthenticated) {
+      console.log('🚫 Not authenticated, redirecting to login');
       router.replace('/auth/login');
       return;
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, router, user]);
+
+  const createProject = useMutation(api.projects.projects.createProject);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    console.log('🚀 Starting onboarding submission', formData);
 
     try {
       if (!user || !formData.website) {
@@ -42,32 +62,21 @@ export default function OnboardingPage() {
         websiteUrl = 'https://' + websiteUrl;
       }
 
-      // Create project (minimal setup)
-      const projectResponse = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({
-          name: formData.businessName || 'My Business',
-          websiteUrl: websiteUrl,
-        }),
+      // Create project directly via Convex mutation
+      const projectId = await createProject({
+        name: formData.businessName || 'My Business',
+        websiteUrl: websiteUrl,
       });
 
-      if (!projectResponse.ok) {
-        const errorData = await projectResponse.json();
-        console.error('Project creation failed:', errorData);
-        throw new Error(errorData.error || 'Failed to create project');
-      }
+      console.log('✅ Project created with ID:', projectId);
 
-      const projectData = await projectResponse.json();
-      if (projectData.projectId) {
-        localStorage.setItem('currentProjectId', projectData.projectId);
+      if (projectId) {
+        localStorage.setItem('currentProjectId', projectId);
+        // Redirect to reveal page for cool onboarding journey
+        router.push('/onboarding/reveal');
+      } else {
+        throw new Error('Failed to create project');
       }
-
-      // Redirect to reveal page for cool onboarding journey
-      router.push('/onboarding/reveal');
     } catch (err) {
       console.error('Onboarding error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -89,7 +98,8 @@ export default function OnboardingPage() {
                 Welcome to MartAI! 🎉
               </Heading>
               <Text color="gray.600" fontSize="lg">
-                Let's get your website ready to grow. We'll help you get found on Google - no SEO knowledge needed!
+                Let's get your website ready to grow. We'll help you get found on Google - no SEO
+                knowledge needed!
               </Text>
             </VStack>
 
@@ -148,7 +158,9 @@ export default function OnboardingPage() {
 
             <Box bg="gray.50" p={4} borderRadius="md" mt={4}>
               <Text fontSize="sm" color="gray.600" textAlign="center">
-                <strong>What happens next?</strong> We'll analyze your website and create a personalized plan to help you rank higher on Google. You can always add more details later!
+                <strong>What happens next?</strong> We'll analyze your website and create a
+                personalized plan to help you rank higher on Google. You can always add more details
+                later!
               </Text>
             </Box>
           </VStack>
@@ -157,4 +169,3 @@ export default function OnboardingPage() {
     </Box>
   );
 }
-

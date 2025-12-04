@@ -1,4 +1,3 @@
-
 import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
 import { mode } from '@chakra-ui/theme-tools';
 
@@ -39,8 +38,8 @@ const fonts = {
 const styles = {
   global: (props: any) => ({
     body: {
-      bg: mode('gray.50', 'gray.900')(props),
-      color: mode('gray.800', 'whiteAlpha.900')(props),
+      bg: props.colorMode === 'dark' ? '#1A202C' : '#F7FAFC', // gray.900 : gray.50
+      color: props.colorMode === 'dark' ? 'rgba(255, 255, 255, 0.92)' : '#1A202C', // whiteAlpha.900 : gray.800
     },
   }),
 };

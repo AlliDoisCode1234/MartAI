@@ -1,6 +1,7 @@
 import { workflow } from '../index';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
+import { Id } from '../_generated/dataModel';
 
 /**
  * Keyword Research Workflow
@@ -188,6 +189,11 @@ export const gscImportWorkflow = workflow.define({
  *
  * Re-clusters keywords based on user feedback
  */
+type ClusterRefinementWorkflowReturn = {
+  status: 'merged' | 'split' | 'reclustered';
+  clusterIds?: Id<'keywordClusters'>[];
+  clusterId?: Id<'keywordClusters'>;
+};
 export const clusterRefinementWorkflow = workflow.define({
   args: {
     projectId: v.id('projects'),
@@ -199,7 +205,7 @@ export const clusterRefinementWorkflow = workflow.define({
     clusterIds: v.optional(v.array(v.id('keywordClusters'))),
     clusterId: v.optional(v.id('keywordClusters')),
   }),
-  handler: async (step, args) => {
+  handler: async (step, args): Promise<ClusterRefinementWorkflowReturn> => {
     if (args.action === 'merge') {
       // Merge multiple clusters into one
       // We need a mutation for this. Let's assume it exists or use a placeholder.

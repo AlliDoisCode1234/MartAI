@@ -2,9 +2,24 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Container, VStack, Heading, Text, Box, Input, Button, FormControl, FormLabel, Alert, AlertIcon, Link, Divider, HStack } from '@chakra-ui/react';
-import { useAuthActions } from "@convex-dev/auth/react";
-import { FaGoogle } from "react-icons/fa";
+import {
+  Container,
+  VStack,
+  Heading,
+  Text,
+  Box,
+  Input,
+  Button,
+  FormControl,
+  FormLabel,
+  Alert,
+  AlertIcon,
+  Link,
+  Divider,
+  HStack,
+} from '@chakra-ui/react';
+import { useAuthActions } from '@convex-dev/auth/react';
+import { FaGoogle } from 'react-icons/fa';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -36,14 +51,15 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      await signIn("password", { 
-        email: formData.email, 
-        password: formData.password, 
+      await signIn('password', {
+        email: formData.email,
+        password: formData.password,
         name: formData.name,
-        flow: "signUp" 
+        flow: 'signUp',
       });
-      
+
       // Redirect to onboarding (only for new signups)
+      console.log('🚀 Signup successful, redirecting to /onboarding');
       router.push('/onboarding');
     } catch (err) {
       setError('Failed to create account. Email might be already in use.');
@@ -54,7 +70,7 @@ export default function SignupPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      await signIn("google");
+      await signIn('google');
     } catch (err) {
       setError('Failed to sign in with Google');
       setLoading(false);
@@ -66,7 +82,13 @@ export default function SignupPage() {
       <Container maxW="container.sm" py={12}>
         <Box bg="white" p={8} borderRadius="lg" shadow="md">
           <VStack spacing={6} align="stretch">
-            <Heading size="xl" fontWeight="bold" fontFamily="heading" color="gray.800" textAlign="center">
+            <Heading
+              size="xl"
+              fontWeight="bold"
+              fontFamily="heading"
+              color="gray.800"
+              textAlign="center"
+            >
               Get Started - It's Free! 🚀
             </Heading>
             <Text color="gray.600" textAlign="center">
@@ -120,7 +142,9 @@ export default function SignupPage() {
                     type="email"
                     placeholder="username (we use your email)"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase() })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value.toLowerCase() })
+                    }
                     disabled={loading}
                     size="lg"
                   />
@@ -183,4 +207,3 @@ export default function SignupPage() {
     </Box>
   );
 }
-
