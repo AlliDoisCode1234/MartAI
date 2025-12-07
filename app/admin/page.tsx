@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Box,
@@ -12,9 +12,12 @@ import {
   StatHelpText,
   Card,
   CardBody,
-} from "@chakra-ui/react";
+} from '@chakra-ui/react';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 export default function AdminDashboardPage() {
+  const metrics = useQuery(api.analytics.aggregations.getDashboardMetrics);
   return (
     <Container maxW="container.xl">
       <Box mb={8}>
@@ -35,9 +38,9 @@ export default function AdminDashboardPage() {
         <Card>
           <CardBody>
             <Stat>
-              <StatLabel>Reports Generated</StatLabel>
-              <StatNumber>--</StatNumber>
-              <StatHelpText>This month</StatHelpText>
+              <StatLabel>AI Generations</StatLabel>
+              <StatNumber>{metrics?.totalGenerations ?? 0}</StatNumber>
+              <StatHelpText>Total requests tracked</StatHelpText>
             </Stat>
           </CardBody>
         </Card>
@@ -54,7 +57,9 @@ export default function AdminDashboardPage() {
 
       <Card>
         <CardBody>
-          <Heading size="md" mb={4}>Recent Activity</Heading>
+          <Heading size="md" mb={4}>
+            Recent Activity
+          </Heading>
           <Text color="gray.500">No recent activity to display.</Text>
         </CardBody>
       </Card>

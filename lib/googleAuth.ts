@@ -46,10 +46,23 @@ export async function refreshAccessToken(refreshToken: string) {
 }
 
 // Get GA4 properties
-export async function getGA4Properties(accessToken: string) {
+export async function getGA4Properties(
+  accessToken: string,
+  refreshToken?: string,
+  onTokenRefresh?: (tokens: any) => Promise<void>
+) {
   try {
     const oauth2Client = createOAuth2Client();
-    oauth2Client.setCredentials({ access_token: accessToken });
+    oauth2Client.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (onTokenRefresh) {
+      oauth2Client.on('tokens', (tokens) => {
+        onTokenRefresh(tokens);
+      });
+    }
 
     // Use GA4 Admin API
     const analytics = google.analytics('v3');

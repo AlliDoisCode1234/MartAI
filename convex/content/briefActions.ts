@@ -182,3 +182,72 @@ export const generateBrief = action({
     return { success: true };
   },
 });
+
+export const optimizeCTR = action({
+  args: {
+    briefId: v.id('briefs'),
+    recommendations: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    const brief = await ctx.runQuery((api as any).content.briefs.getBriefById, {
+      briefId: args.briefId,
+    });
+    if (!brief) throw new Error('Brief not found');
+
+    const project = await ctx.runQuery(api.projects.projects.getProjectById, {
+      projectId: brief.projectId,
+    });
+    if (!project) throw new Error('Project not found');
+
+    const intelligence = new IntelligenceService(ctx);
+
+    const prompt = `You are an SEO expert specializing in Click-Through Rate (CTR) optimization.
+    
+    Current Metadata:
+    Title: ${brief.title}
+    Meta Title: ${brief.metaTitle}
+    Meta Description: ${brief.metaDescription}
+    
+    Recommendations for improvement:
+    ${args.recommendations.map((r) => `- ${r}`).join('\n')}
+    
+    Please provide:
+    1. A highly optimized Meta Title (max 60 chars)
+    2. A highly optimized Meta Description (max 160 chars)
+    3. 3 Alternative catchy Titles
+    
+    Return ONLY JSON format:
+    {
+      "metaTitle": "string",
+      "metaDescription": "string",
+      "titleOptions": ["string", "string", "string"]
+    }`;
+
+    const result = await intelligence.generate(prompt, '', {
+      temperature: 0.7,
+      userId,
+    });
+
+    let optimizedData;
+    try {
+      const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+      const jsonText = jsonMatch ? jsonMatch[0] : result.content;
+      optimizedData = JSON.parse(jsonText);
+    } catch (e) {
+      console.error('Failed to parse optimized CTR data', e);
+      throw new Error('Failed to generate optimized metadata');
+    }
+
+    await ctx.runMutation((api as any).content.briefs.updateBrief, {
+      briefId: args.briefId,
+      metaTitle: optimizedData.metaTitle,
+      metaDescription: optimizedData.metaDescription,
+      titleOptions: optimizedData.titleOptions,
+    });
+
+    return { success: true };
+  },
+});

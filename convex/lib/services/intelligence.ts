@@ -65,40 +65,78 @@ export class IntelligenceService {
     }
   }
 
-  /**
-   * Generate content using AI, optionally with reflection (Self-Correction).
-   */
   async generate(
     prompt: string,
     context: string = '',
-    options: GenerationOptions = {}
+    options: GenerationOptions & { userId?: string } = {}
   ): Promise<GenerationResult> {
+    // Dynamic import for api to avoid circular dependencies if needed, or simply use the top-level import
+    // In Convex actions, top level import of `api` is fine usually, but let's stick to the pattern if it was there for a reason.
+    // However, `api` is usually imported from `../../_generated/api`.
+    const { api } = require('../../_generated/api');
     const traceId = crypto.randomUUID();
     const modelName = options.model || 'gpt-4o';
     const temperature = options.temperature || 0.7;
 
-    const fullPrompt = `${options.persona ? `You are ${options.persona}.\n` : ''}
+    let systemInstruction = '';
+    if (options.persona) {
+      try {
+        const personaData = await this.ctx.runQuery(api.ai.personas.getPersona, {
+          name: options.persona,
+        });
+        if (personaData) {
+          systemInstruction = personaData.systemPrompt;
+        } else {
+          console.warn(
+            `[IntelligenceService] Persona '${options.persona}' not found. Using default.`
+          );
+          systemInstruction = `You are ${options.persona}.`;
+        }
+      } catch (e) {
+        console.error(`[IntelligenceService] Failed to load persona '${options.persona}'`, e);
+        systemInstruction = `You are ${options.persona}.`;
+      }
+    }
+
+    const fullPrompt = `${systemInstruction}
 ${context ? `\nCONTEXT:\n${context}\n` : ''}
 ${prompt}`;
 
     console.log(`[IntelligenceService] Generating (Trace: ${traceId})...`);
 
     // 1. Initial Draft
-    const draft = await this.callLLM(modelName, fullPrompt, temperature);
+    const { text: draft, usage: draftUsage } = await this.callLLM(
+      modelName,
+      fullPrompt,
+      temperature
+    );
+
+    // Log cost for draft
+    await this.logCost(draftUsage, modelName, traceId, options.userId);
 
     if (!options.useReflection) {
-      return { content: draft, traceId, cost: 0 }; // TODO: Calculate actual cost
+      return { content: draft, traceId, cost: 0 };
     }
 
-    // 2. Reflection Loop (The "Mart" Persona)
+    // 2. Reflection Loop
     console.log(`[IntelligenceService] Critiquing (Trace: ${traceId})...`);
-    const critique = await this.critiqueDraft(draft, options.persona || 'Senior Analyst');
+    const { text: critique, usage: critiqueUsage } = await this.critiqueDraft(
+      draft,
+      options.persona || 'Senior Analyst',
+      systemInstruction
+    );
+    await this.logCost(critiqueUsage, modelName, traceId, options.userId);
 
     // 3. Refinement
     console.log(`[IntelligenceService] Refining (Trace: ${traceId})...`);
-    const refined = await this.refineDraft(draft, critique, options.persona || 'Senior Analyst');
+    const { text: refined, usage: refinedUsage } = await this.refineDraft(
+      draft,
+      critique,
+      options.persona || 'Senior Analyst',
+      systemInstruction
+    );
+    await this.logCost(refinedUsage, modelName, traceId, options.userId);
 
-    // Log the chain of thought (Stub for future DB logging)
     console.log(
       `[IntelligenceService] Trace ${traceId} Complete. Critique: ${critique.substring(0, 100)}...`
     );
@@ -106,25 +144,52 @@ ${prompt}`;
     return {
       content: refined,
       traceId,
-      cost: 0, // Placeholder
+      cost: 0,
       issues: [critique],
     };
   }
 
-  // --- Internal Helpers ---
+  private async logCost(usage: any, modelId: string, traceId: string, userId?: string) {
+    if (!usage) return;
+    try {
+      await this.ctx.runAction((components as any).neutralCost.aiCosts.addAICost, {
+        messageId: crypto.randomUUID(),
+        threadId: traceId,
+        modelId,
+        providerId: 'openai',
+        usage: {
+          completionTokens: usage.completionTokens,
+          promptTokens: usage.promptTokens,
+          totalTokens: usage.totalTokens,
+        },
+        userId: userId,
+      });
+    } catch (e) {
+      console.error('[IntelligenceService] Failed to log cost:', e);
+    }
+  }
 
-  private async callLLM(modelName: string, prompt: string, temperature: number): Promise<string> {
+  private async callLLM(
+    modelName: string,
+    prompt: string,
+    temperature: number
+  ): Promise<{ text: string; usage: any }> {
     const model = openai(modelName as any);
     const result = await generateText({
       model,
       prompt,
       temperature,
     });
-    return result.text;
+    return { text: result.text, usage: result.usage };
   }
 
-  private async critiqueDraft(draft: string, persona: string): Promise<string> {
-    const critiquePrompt = `You are "Mart", a Senior SEO Analyst at MartAI. 
+  private async critiqueDraft(
+    draft: string,
+    personaName: string,
+    personaPrompt: string
+  ): Promise<{ text: string; usage: any }> {
+    const critiquePrompt = `${personaPrompt || `You are "${personaName}".`}
+    
 Your job is to bluntly but constructively critique this draft. 
 Focus on: 
 1. Search Intent mismatch. 
@@ -134,17 +199,23 @@ Focus on:
 Return a concise paragraph of feedback. If it's perfect, say "No changes needed."
 
 DRAFT:
-${draft.substring(0, 3000)}... (truncated)`; // Truncate to save tokens on critique
+${draft.substring(0, 3000)}... (truncated)`;
 
-    return this.callLLM('gpt-4o', critiquePrompt, 0.5); // Lower temp for critique
+    return this.callLLM('gpt-4o', critiquePrompt, 0.5);
   }
 
-  private async refineDraft(draft: string, critique: string, persona: string): Promise<string> {
-    if (critique.includes('No changes needed')) return draft;
+  private async refineDraft(
+    draft: string,
+    critique: string,
+    personaName: string,
+    personaPrompt: string
+  ): Promise<{ text: string; usage: any }> {
+    if (critique.includes('No changes needed'))
+      return { text: draft, usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
 
     const refinePrompt = `You are a professional content writer.
     
-Critique from Senior Analyst Mart:
+Critique from ${personaName}:
 "${critique}"
 
 Please rewrite the following draft to address this feedback. Keep what works, fix what doesn't.

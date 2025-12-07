@@ -583,4 +583,16 @@ export default defineSchema({
     .index('by_hash', ['inputHash'])
     .index('by_operation', ['operation'])
     .index('by_date', ['createdAt']),
+  // AI Personas
+  personas: defineTable({
+    name: v.string(), // Unique key e.g. "Mart"
+    role: v.string(), // e.g. "Senior SEO Analyst"
+    tone: v.string(), // e.g. "Direct, Professional"
+    systemPrompt: v.string(), // The core instructions
+    isDefault: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_name', ['name'])
+    .index('by_default', ['isDefault']),
 });

@@ -1,6 +1,7 @@
 import { generateText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
+import { withRetry } from './utils';
 
 export interface KeywordSuggestion {
   keyword: string;
@@ -94,47 +95,58 @@ For each keyword, provide:
 
 Focus on keywords that would help improve their website's visibility and drive qualified traffic.`;
 
-  const result = await generateText({
-    model,
-    prompt,
-    tools: {
-      generateKeywords: tool({
-        description: 'Generate SEO keyword suggestions with intent, priority, and reasoning',
-        inputSchema: z.object({
-          keywords: z.array(
-            z.object({
-              keyword: z.string().describe('The keyword phrase'),
-              intent: z
-                .enum(['informational', 'commercial', 'transactional', 'navigational'])
-                .describe('Search intent'),
-              priority: z.enum(['high', 'medium', 'low']).describe('Priority level'),
-              reasoning: z.string().describe('Why this keyword is valuable'),
-              relatedKeywords: z
-                .array(z.string())
-                .optional()
-                .describe('Related keyword variations'),
-              estimatedVolume: z.number().optional().describe('Estimated monthly search volume'),
-              estimatedDifficulty: z
-                .number()
-                .optional()
-                .describe('Estimated keyword difficulty 0-100'),
-            })
-          ),
-        }),
-        execute: async ({ keywords }) => {
-          return keywords.map((kw) => ({
-            keyword: kw.keyword,
-            searchVolume: kw.estimatedVolume,
-            difficulty: kw.estimatedDifficulty,
-            intent: kw.intent,
-            priority: kw.priority,
-            reasoning: kw.reasoning,
-            relatedKeywords: kw.relatedKeywords,
-          }));
+  const result = await withRetry(
+    async () => {
+      return await generateText({
+        model,
+        prompt,
+        tools: {
+          generateKeywords: tool({
+            description: 'Generate SEO keyword suggestions with intent, priority, and reasoning',
+            inputSchema: z.object({
+              keywords: z.array(
+                z.object({
+                  keyword: z.string().describe('The keyword phrase'),
+                  intent: z
+                    .enum(['informational', 'commercial', 'transactional', 'navigational'])
+                    .describe('Search intent'),
+                  priority: z.enum(['high', 'medium', 'low']).describe('Priority level'),
+                  reasoning: z.string().describe('Why this keyword is valuable'),
+                  relatedKeywords: z
+                    .array(z.string())
+                    .optional()
+                    .describe('Related keyword variations'),
+                  estimatedVolume: z
+                    .number()
+                    .optional()
+                    .describe('Estimated monthly search volume'),
+                  estimatedDifficulty: z
+                    .number()
+                    .optional()
+                    .describe('Estimated keyword difficulty 0-100'),
+                })
+              ),
+            }),
+            execute: async ({ keywords }) => {
+              return keywords.map((kw) => ({
+                keyword: kw.keyword,
+                searchVolume: kw.estimatedVolume,
+                difficulty: kw.estimatedDifficulty,
+                intent: kw.intent,
+                priority: kw.priority,
+                reasoning: kw.reasoning,
+                relatedKeywords: kw.relatedKeywords,
+              }));
+            },
+          }),
         },
-      }),
+      });
     },
-  });
+    {
+      onRetry: (err: any, attempt: number) =>
+        console.log(`Retry attempt ${attempt} for generateKeywords:`, err?.message || String(err)),
+    }
+  );
 
   // Extract keywords from tool results
   const toolResults = result.toolResults ?? [];

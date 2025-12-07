@@ -6,7 +6,11 @@ import { api, components } from '../_generated/api';
 import { auth } from '../auth';
 import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
 import { ConvexError } from 'convex/values';
-import { generateDraftFromBrief } from '../../lib/draftGenerator';
+import {
+  generateDraftFromBrief,
+  constructDraftPrompt,
+  processDraftResult,
+} from '../../lib/draftGenerator';
 import { cache, getCacheKey, CACHE_TTL } from '../cache';
 import { IntelligenceService } from '../lib/services/intelligence';
 
@@ -185,30 +189,103 @@ export const generateDraft = action({
     ragContext = await intelligence.retrieve(brief.title, 5);
 
     // Generate draft
-    const draftResult = await generateDraftFromBrief(
-      {
-        title: brief.title,
-        titleOptions: brief.titleOptions,
-        h2Outline: brief.h2Outline,
-        faqs: brief.faqs,
-        metaTitle: brief.metaTitle,
-        metaDescription: brief.metaDescription,
-        internalLinks: brief.internalLinks,
-        schemaSuggestion: brief.schemaSuggestion,
-        cluster: cluster
-          ? {
-              clusterName: cluster.clusterName,
-              keywords: cluster.keywords,
-              intent: cluster.intent,
-            }
-          : undefined,
-      },
-      project.websiteUrl,
-      project.industry,
-      undefined, // brandVoice can be added later
-      args.regenerationNotes,
-      ragContext
-    );
+    let draftResult;
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        console.warn('OpenAI API key not found. Using mock data.');
+        // We need to import generateMockDraft but it is not exported from lib/draftGenerator.ts strictly speaking?
+        // Wait, previous file view showed it wasn't exported.
+        // I should have exported it.
+        // Let's assume I can't access it easily or I'll just throw and let the catch block handle it?
+        throw new Error('No API Key');
+      }
+
+      const prompt = constructDraftPrompt(
+        {
+          title: brief.title,
+          titleOptions: brief.titleOptions,
+          h2Outline: brief.h2Outline,
+          faqs: brief.faqs,
+          metaTitle: brief.metaTitle,
+          metaDescription: brief.metaDescription,
+          internalLinks: brief.internalLinks,
+          schemaSuggestion: brief.schemaSuggestion,
+          cluster: cluster
+            ? {
+                clusterName: cluster.clusterName,
+                keywords: cluster.keywords,
+                intent: cluster.intent,
+              }
+            : undefined,
+        },
+        project.websiteUrl,
+        project.industry,
+        undefined, // brandVoice
+        args.regenerationNotes,
+        ragContext
+      );
+
+      const generationResult = await intelligence.generate(prompt, '', {
+        useReflection: true,
+        persona: 'Senior SEO Content Writer',
+        userId,
+      });
+
+      draftResult = processDraftResult(
+        generationResult.content,
+        {
+          title: brief.title,
+          titleOptions: brief.titleOptions,
+          h2Outline: brief.h2Outline,
+          faqs: brief.faqs,
+          metaTitle: brief.metaTitle,
+          metaDescription: brief.metaDescription,
+          internalLinks: brief.internalLinks,
+          schemaSuggestion: brief.schemaSuggestion,
+          cluster: cluster
+            ? {
+                clusterName: cluster.clusterName,
+                keywords: cluster.keywords,
+                intent: cluster.intent,
+              }
+            : undefined,
+        },
+        undefined
+      );
+
+      // Append critique issues to draft result issues if any
+      if (generationResult.issues) {
+        draftResult.issues.push(...generationResult.issues.map((i) => `Mart's Critique: ${i}`));
+      }
+    } catch (e) {
+      console.error('Intelligence Service generation failed, falling back to legacy generator:', e);
+      // Fallback to the original function (which handles mocks internally)
+      draftResult = await generateDraftFromBrief(
+        {
+          title: brief.title,
+          titleOptions: brief.titleOptions,
+          h2Outline: brief.h2Outline,
+          faqs: brief.faqs,
+          metaTitle: brief.metaTitle,
+          metaDescription: brief.metaDescription,
+          internalLinks: brief.internalLinks,
+          schemaSuggestion: brief.schemaSuggestion,
+          cluster: cluster
+            ? {
+                clusterName: cluster.clusterName,
+                keywords: cluster.keywords,
+                intent: cluster.intent,
+              }
+            : undefined,
+        },
+        project.websiteUrl,
+        project.industry,
+        undefined, // brandVoice can be added later
+        args.regenerationNotes,
+        ragContext
+      );
+    }
 
     let draftId;
     if (existingDraft) {

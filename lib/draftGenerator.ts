@@ -29,27 +29,21 @@ export interface DraftResult {
 /**
  * Generate content draft from brief
  */
-export async function generateDraftFromBrief(
+/**
+ * Construct the prompt for draft generation
+ */
+export function constructDraftPrompt(
   brief: BriefInfo,
   websiteUrl?: string,
   industry?: string,
   brandVoice?: string,
   regenerationNotes?: string,
   ragContext?: string
-): Promise<DraftResult> {
-  // Check for OpenAI API key
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    console.warn('OpenAI API key not found. Using mock data for draft generation.');
-    return generateMockDraft(brief);
-  }
-
-  const model = openai('gpt-4o');
-
+): string {
   const primaryTitle =
     brief.titleOptions && brief.titleOptions.length > 0 ? brief.titleOptions[0] : brief.title;
 
-  const prompt = `You are an expert SEO content writer creating a comprehensive, high-quality blog post.
+  return `You are an expert SEO content writer creating a comprehensive, high-quality blog post.
 
 ${websiteUrl ? `Website: ${websiteUrl}` : ''}
 ${industry ? `Industry: ${industry}` : ''}
@@ -101,6 +95,62 @@ Write a comprehensive, SEO-optimized blog post that:
    - Include schema-worthy content
 
 Return the content as clean markdown. Start with the H1 title, then proceed with the content.`;
+}
+
+/**
+ * Process the generated content to calculate scores and identify issues
+ */
+export function processDraftResult(
+  content: string,
+  brief: BriefInfo,
+  brandVoice?: string
+): DraftResult {
+  const wordCount = content.split(/\s+/).length;
+
+  // Calculate quality and tone scores
+  const qualityScore = calculateQualityScore(content, brief);
+  const toneScore = calculateToneScore(content, brandVoice);
+
+  // Identify issues and strengths
+  const { issues, strengths } = analyzeDraft(content, brief, wordCount);
+
+  return {
+    content,
+    qualityScore,
+    toneScore,
+    wordCount,
+    issues,
+    strengths,
+  };
+}
+
+/**
+ * Generate content draft from brief
+ */
+export async function generateDraftFromBrief(
+  brief: BriefInfo,
+  websiteUrl?: string,
+  industry?: string,
+  brandVoice?: string,
+  regenerationNotes?: string,
+  ragContext?: string
+): Promise<DraftResult> {
+  // Check for OpenAI API key
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.warn('OpenAI API key not found. Using mock data for draft generation.');
+    return generateMockDraft(brief);
+  }
+
+  const model = openai('gpt-4o');
+  const prompt = constructDraftPrompt(
+    brief,
+    websiteUrl,
+    industry,
+    brandVoice,
+    regenerationNotes,
+    ragContext
+  );
 
   try {
     const result = await generateText({
@@ -109,24 +159,7 @@ Return the content as clean markdown. Start with the H1 title, then proceed with
       temperature: 0.7,
     });
 
-    const content = result.text;
-    const wordCount = content.split(/\s+/).length;
-
-    // Calculate quality and tone scores
-    const qualityScore = calculateQualityScore(content, brief);
-    const toneScore = calculateToneScore(content, brandVoice);
-
-    // Identify issues and strengths
-    const { issues, strengths } = analyzeDraft(content, brief, wordCount);
-
-    return {
-      content,
-      qualityScore,
-      toneScore,
-      wordCount,
-      issues,
-      strengths,
-    };
+    return processDraftResult(result.text, brief, brandVoice);
   } catch (error) {
     console.error('Error generating draft:', error);
     console.warn('Falling back to mock data for draft generation.');

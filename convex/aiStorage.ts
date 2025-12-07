@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { internalMutation, internalQuery } from './_generated/server';
+import { api } from './_generated/api';
 
 export const getStored = internalQuery({
   args: {
@@ -45,5 +46,20 @@ export const store = internalMutation({
       ...args,
       createdAt: Date.now(),
     });
+
+    try {
+      await ctx.runMutation(api.analytics.aggregations.totalGenerations.insert, {
+        value: 1, // Count 1 generation
+      });
+
+      if (args.metadata && args.metadata.projectId && args.cost) {
+        await ctx.runMutation(api.analytics.aggregations.costPerProject.insert, {
+          value: args.cost,
+          key: args.metadata.projectId,
+        });
+      }
+    } catch (e) {
+      console.error('Failed to update aggregations', e);
+    }
   },
 });

@@ -1,6 +1,6 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
-import { getMonthBoundaries } from '../lib/dateUtils';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 const PLAN_LIMITS = {
   starter: {
@@ -144,7 +144,9 @@ export const getSubscriptionByUser = query({
     }
 
     const now = Date.now();
-    const { start, end } = getMonthBoundaries(now);
+    const dateObj = new Date(now);
+    const start = startOfMonth(dateObj).getTime();
+    const end = endOfMonth(dateObj).getTime();
     const usage = await getUsageDoc(ctx, args.userId, start, end);
 
     return { subscription, usage };
@@ -183,7 +185,9 @@ export const recordUsage = mutation({
     }
 
     const config = planConfig(subscription.planTier);
-    const { start, end } = getMonthBoundaries(Date.now());
+    const dateObj = new Date(Date.now());
+    const start = startOfMonth(dateObj).getTime();
+    const end = endOfMonth(dateObj).getTime();
     const usageDoc = await getUsageDoc(ctx, args.userId, start, end);
 
     const field = metricToField[args.metric];

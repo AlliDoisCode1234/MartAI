@@ -209,18 +209,14 @@ export const clusterRefinementWorkflow = workflow.define({
       // I'll add a TODO or use a placeholder mutation.
       // For now, I'll comment it out and throw error if not implemented.
 
-      // const mergedClusterId = await step.runMutation(api.seo.keywordClusters.mergeClusters, {
-      //   clusterIds: args.clusterIds,
-      // });
+      const mergedClusterId = await step.runMutation(api.seo.keywordClusters.mergeClusters, {
+        clusterIds: args.clusterIds,
+      });
 
-      throw new Error('Merge not implemented yet');
-
-      /*
       return {
         clusterId: mergedClusterId,
         status: 'merged',
       };
-      */
     } else if (args.action === 'split') {
       // Split a cluster into multiple clusters
       const newClusterIds = await step.runAction(api.seo.keywordActions.splitCluster, {

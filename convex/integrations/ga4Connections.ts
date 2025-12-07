@@ -1,10 +1,10 @@
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
 
 // Create or update GA4 connection
 export const upsertGA4Connection = mutation({
   args: {
-    projectId: v.id("projects"),
+    projectId: v.id('projects'),
     propertyId: v.string(),
     propertyName: v.string(),
     accessToken: v.string(),
@@ -13,8 +13,8 @@ export const upsertGA4Connection = mutation({
   handler: async (ctx, args) => {
     // Check if connection exists
     const existing = await ctx.db
-      .query("ga4Connections")
-      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .query('ga4Connections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .first();
 
     const connectionData = {
@@ -31,7 +31,7 @@ export const upsertGA4Connection = mutation({
       return await ctx.db.patch(existing._id, connectionData);
     }
 
-    return await ctx.db.insert("ga4Connections", {
+    return await ctx.db.insert('ga4Connections', {
       ...connectionData,
       createdAt: Date.now(),
     });
@@ -40,11 +40,11 @@ export const upsertGA4Connection = mutation({
 
 // Get GA4 connection by project
 export const getGA4Connection = query({
-  args: { projectId: v.id("projects") },
+  args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("ga4Connections")
-      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .query('ga4Connections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .first();
   },
 });
@@ -52,7 +52,7 @@ export const getGA4Connection = query({
 // Update last sync time
 export const updateLastSync = mutation({
   args: {
-    connectionId: v.id("ga4Connections"),
+    connectionId: v.id('ga4Connections'),
   },
   handler: async (ctx, args) => {
     return await ctx.db.patch(args.connectionId, {
@@ -65,10 +65,27 @@ export const updateLastSync = mutation({
 // Delete GA4 connection
 export const deleteGA4Connection = mutation({
   args: {
-    connectionId: v.id("ga4Connections"),
+    connectionId: v.id('ga4Connections'),
   },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.connectionId);
   },
 });
 
+export const updateTokens = mutation({
+  args: {
+    connectionId: v.id('ga4Connections'),
+    accessToken: v.string(),
+    refreshToken: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const updates: any = {
+      accessToken: args.accessToken,
+      updatedAt: Date.now(),
+    };
+    if (args.refreshToken) {
+      updates.refreshToken = args.refreshToken;
+    }
+    await ctx.db.patch(args.connectionId, updates);
+  },
+});

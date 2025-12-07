@@ -147,11 +147,10 @@ export const contentOptimizationWorkflow = workflow.define({
         regenerationNotes: `Expand content based on recommendations: ${JSON.stringify(recommendations)}`,
       });
     } else if (args.optimizationType === 'improve_ctr') {
-      // TODO: Implement optimizeCTR action
-      // await step.runAction(api.content.briefActions.optimizeCTR, {
-      //   briefId: args.briefId,
-      //   recommendations,
-      // });
+      await step.runAction(api.content.briefActions.optimizeCTR, {
+        briefId: args.briefId,
+        recommendations,
+      });
     }
 
     // Step 3: Re-publish to WordPress
