@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Box,
@@ -16,13 +16,16 @@ import {
   CardBody,
   Avatar,
   HStack,
-} from "@chakra-ui/react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { format } from "date-fns";
+  VStack,
+  Button,
+} from '@chakra-ui/react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { format } from 'date-fns';
 
 export default function AdminUsersPage() {
   const users = useQuery(api.admin.getAllUsers);
+  const resetOnboarding = useMutation(api.users.resetOnboarding);
 
   return (
     <Container maxW="container.xl">
@@ -54,34 +57,64 @@ export default function AdminUsersPage() {
                       <HStack>
                         <Avatar size="sm" name={user.name} src={user.image} />
                         <Box>
-                          <Text fontWeight="semibold">{user.name || "Unnamed"}</Text>
-                          <Text fontSize="sm" color="gray.500">{user.email}</Text>
+                          <Text fontWeight="semibold">{user.name || 'Unnamed'}</Text>
+                          <Text fontSize="sm" color="gray.500">
+                            {user.email}
+                          </Text>
                         </Box>
                       </HStack>
                     </Td>
                     <Td>
-                      <Badge 
+                      <Badge
                         colorScheme={
-                          user.role === "super_admin" ? "purple" : 
-                          user.role === "admin" ? "blue" : "gray"
+                          user.role === 'super_admin'
+                            ? 'purple'
+                            : user.role === 'admin'
+                              ? 'blue'
+                              : 'gray'
                         }
                       >
-                        {user.role || "user"}
+                        {user.role || 'user'}
                       </Badge>
                     </Td>
                     <Td>
                       {user.subscription ? (
-                        <Badge colorScheme={user.subscription.status === "active" ? "green" : "red"}>
+                        <Badge
+                          colorScheme={user.subscription.status === 'active' ? 'green' : 'red'}
+                        >
                           {user.subscription.planTier}
                         </Badge>
                       ) : (
-                        <Text fontSize="sm" color="gray.400">Free</Text>
+                        <Text fontSize="sm" color="gray.400">
+                          Free
+                        </Text>
                       )}
                     </Td>
                     <Td>
                       <Text fontSize="sm" color="gray.600">
-                        {format(user.createdAt, "MMM d, yyyy")}
+                        {format(user.createdAt, 'MMM d, yyyy')}
                       </Text>
+                    </Td>
+                    <Td>
+                      <VStack align="start" spacing={1}>
+                        <Badge
+                          colorScheme={user.onboardingStatus === 'completed' ? 'green' : 'yellow'}
+                        >
+                          {user.onboardingStatus || 'unknown'}
+                        </Badge>
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          colorScheme="red"
+                          onClick={async () => {
+                            if (confirm(`Reset onboarding for ${user.name}?`)) {
+                              await resetOnboarding({ userId: user._id });
+                            }
+                          }}
+                        >
+                          Reset
+                        </Button>
+                      </VStack>
                     </Td>
                   </Tr>
                 ))}

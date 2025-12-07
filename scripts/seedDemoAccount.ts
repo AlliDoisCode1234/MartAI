@@ -3,24 +3,24 @@
  * Run with: npx tsx scripts/seedDemoAccount.ts
  */
 
-import { ConvexHttpClient } from "convex/browser";
-import bcrypt from "bcryptjs";
-import { api } from "../convex/_generated/api";
-import { generateDemoData } from "../lib/demoData";
+import { ConvexHttpClient } from 'convex/browser';
+import bcrypt from 'bcryptjs';
+import { api } from '../convex/_generated/api';
+import { generateDemoData } from '../lib/demoData';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL ?? process.env.CONVEX_URL;
 
 if (!CONVEX_URL) {
-  throw new Error("Please set NEXT_PUBLIC_CONVEX_URL or CONVEX_URL before running this script.");
+  throw new Error('Please set NEXT_PUBLIC_CONVEX_URL or CONVEX_URL before running this script.');
 }
 
-const DEMO_EMAIL = process.env.DEMO_ADMIN_EMAIL || "demo+admin@martai.com";
-const DEMO_PASSWORD = process.env.DEMO_ADMIN_PASSWORD || "demo1234";
-const DEMO_NAME = process.env.DEMO_ADMIN_NAME || "Demo Admin";
-const DEMO_URL = process.env.DEMO_URL || "https://demo.martai.com";
-const DEMO_COMPANY = process.env.DEMO_COMPANY || "MartAI Demo Workspace";
-const DEMO_INDUSTRY = process.env.DEMO_INDUSTRY || "AI Marketing";
-const DEMO_AUDIENCE = process.env.DEMO_AUDIENCE || "growth teams";
+const DEMO_EMAIL = process.env.DEMO_ADMIN_EMAIL ?? 'demo+admin@martai.com';
+const DEMO_PASSWORD = process.env.DEMO_ADMIN_PASSWORD ?? 'demo1234';
+const DEMO_NAME = process.env.DEMO_ADMIN_NAME ?? 'Demo Admin';
+const DEMO_URL = process.env.DEMO_URL ?? 'https://demo.martai.com';
+const DEMO_COMPANY = process.env.DEMO_COMPANY ?? 'MartAI Demo Workspace';
+const DEMO_INDUSTRY = process.env.DEMO_INDUSTRY ?? 'AI Marketing';
+const DEMO_AUDIENCE = process.env.DEMO_AUDIENCE ?? 'growth teams';
 
 async function main() {
   const client = new ConvexHttpClient(CONVEX_URL);
@@ -34,7 +34,7 @@ async function main() {
   const userId = await ensureAdminUser(client);
   const projectId = await ensureProject(client, userId, demo);
   const clientId = await ensureClient(client, userId, demo);
-  
+
   await seedKeywordClusters(client, projectId, demo);
   const planId = await seedQuarterlyPlan(client, projectId);
   await seedBriefDetails(client, projectId, planId, demo);
@@ -45,7 +45,7 @@ async function main() {
   await seedIntegrations(client, projectId, demo);
   await seedKeywords(client, clientId, demo);
 
-  console.log("\n✅ Demo admin account fully seeded!");
+  console.log('\n✅ Demo admin account fully seeded!');
   console.log(`Email:    ${DEMO_EMAIL}`);
   console.log(`Password: ${DEMO_PASSWORD}`);
   console.log(`Project:  ${demo.site.companyName} (${demo.site.url})`);
@@ -53,13 +53,13 @@ async function main() {
 }
 
 async function ensureAdminUser(client: ConvexHttpClient) {
-  console.log("\n➡️  Ensuring demo admin user exists...");
+  console.log('\n➡️  Ensuring demo admin user exists...');
   const existing = await client.query(api.auth.users.getUserSnapshotByEmail, {
     email: DEMO_EMAIL,
   });
 
   if (existing?._id) {
-    console.log("   - Demo admin user already exists.");
+    console.log('   - Demo admin user already exists.');
     return existing._id;
   }
 
@@ -68,22 +68,26 @@ async function ensureAdminUser(client: ConvexHttpClient) {
     email: DEMO_EMAIL,
     name: DEMO_NAME,
     passwordHash,
-    role: "admin",
+    role: 'admin',
   });
 
-  console.log("   - Created new demo admin user.");
+  console.log('   - Created new demo admin user.');
   return userId;
 }
 
-async function ensureProject(client: ConvexHttpClient, userId: any, demo: ReturnType<typeof generateDemoData>) {
-  console.log("\n➡️  Ensuring demo project exists...");
+async function ensureProject(
+  client: ConvexHttpClient,
+  userId: any,
+  demo: ReturnType<typeof generateDemoData>
+) {
+  console.log('\n➡️  Ensuring demo project exists...');
   const existingProjects = await client.query(api.projects.projects.getProjectsByUser, {
     userId,
   });
 
   const existing = existingProjects.find((p: any) => p.websiteUrl === demo.site.url);
   if (existing?._id) {
-    console.log("   - Demo project already exists.");
+    console.log('   - Demo project already exists.');
     return existing._id;
   }
 
@@ -94,18 +98,22 @@ async function ensureProject(client: ConvexHttpClient, userId: any, demo: Return
     industry: demo.site.industry,
   });
 
-  console.log("   - Created new demo project.");
+  console.log('   - Created new demo project.');
   return projectId;
 }
 
-async function seedKeywordClusters(client: ConvexHttpClient, projectId: any, demo: ReturnType<typeof generateDemoData>) {
-  console.log("\n➡️  Seeding keyword clusters...");
+async function seedKeywordClusters(
+  client: ConvexHttpClient,
+  projectId: any,
+  demo: ReturnType<typeof generateDemoData>
+) {
+  console.log('\n➡️  Seeding keyword clusters...');
   const existing = await client.query(api.seo.keywordClusters.getClustersByProject, {
     projectId,
   });
 
   if (existing.length > 0) {
-    console.log("   - Keyword clusters already present.");
+    console.log('   - Keyword clusters already present.');
     return;
   }
 
@@ -116,37 +124,48 @@ async function seedKeywordClusters(client: ConvexHttpClient, projectId: any, dem
     {
       topic: `${demo.site.industry} best practices`,
       primaryKeyword: `${demo.site.industry} guide`,
-      supportingKeywords: [`${demo.site.industry} tips`, `${demo.site.industry} strategies`, `how to ${demo.site.industry}`],
+      supportingKeywords: [
+        `${demo.site.industry} tips`,
+        `${demo.site.industry} strategies`,
+        `how to ${demo.site.industry}`,
+      ],
       searchIntent: 'informational' as const,
       difficulty: 42,
     },
     {
       topic: `${demo.site.industry} tools comparison`,
       primaryKeyword: `best ${demo.site.industry} tools`,
-      supportingKeywords: [`${demo.site.industry} software`, `${demo.site.industry} platforms`, `${demo.site.industry} reviews`],
+      supportingKeywords: [
+        `${demo.site.industry} software`,
+        `${demo.site.industry} platforms`,
+        `${demo.site.industry} reviews`,
+      ],
       searchIntent: 'commercial' as const,
       difficulty: 58,
     },
     {
       topic: `${demo.site.industry} case studies`,
       primaryKeyword: `${demo.site.industry} success stories`,
-      supportingKeywords: [`${demo.site.industry} examples`, `${demo.site.industry} results`, `${demo.site.industry} ROI`],
+      supportingKeywords: [
+        `${demo.site.industry} examples`,
+        `${demo.site.industry} results`,
+        `${demo.site.industry} ROI`,
+      ],
       searchIntent: 'commercial' as const,
       difficulty: 48,
     },
   ];
 
   for (const [index, cluster] of demoClusters.entries()) {
-    const keywords = Array.from(new Set([
-      cluster.primaryKeyword || cluster.topic,
-      ...(cluster.supportingKeywords || [])
-    ]));
-    
+    const keywords = Array.from(
+      new Set([cluster.primaryKeyword ?? cluster.topic, ...(cluster.supportingKeywords ?? [])])
+    );
+
     await client.mutation(api.seo.keywordClusters.createCluster, {
       projectId,
-      clusterName: cluster.topic || `${demo.site.industry} opportunity ${index + 1}`,
+      clusterName: cluster.topic ?? `${demo.site.industry} opportunity ${index + 1}`,
       keywords: keywords.length > 0 ? keywords : [`${demo.site.industry} ${index + 1}`],
-      intent: cluster.searchIntent || 'commercial',
+      intent: cluster.searchIntent ?? 'commercial',
       difficulty: cluster.difficulty ?? 50,
       volumeRange: {
         min: 200 + index * 50,
@@ -154,10 +173,10 @@ async function seedKeywordClusters(client: ConvexHttpClient, projectId: any, dem
       },
       impactScore: Math.min(0.95, 0.65 + index * 0.05),
       topSerpUrls: [
-        `https://${demo.site.host}/blog/${slugify(cluster.topic || `topic-${index}`)}`,
-        `https://example.com/${slugify(cluster.topic || `topic-${index}`)}`,
+        `https://${demo.site.host}/blog/${slugify(cluster.topic ?? `topic-${index}`)}`,
+        `https://example.com/${slugify(cluster.topic ?? `topic-${index}`)}`,
       ],
-      status: "active",
+      status: 'active',
       createdAt: Date.now() - index * 86400000,
     });
   }
@@ -165,15 +184,19 @@ async function seedKeywordClusters(client: ConvexHttpClient, projectId: any, dem
   console.log(`   - Inserted ${demoClusters.length} clusters.`);
 }
 
-async function ensureClient(client: ConvexHttpClient, userId: any, demo: ReturnType<typeof generateDemoData>) {
-  console.log("\n➡️  Ensuring client exists...");
+async function ensureClient(
+  client: ConvexHttpClient,
+  userId: any,
+  demo: ReturnType<typeof generateDemoData>
+) {
+  console.log('\n➡️  Ensuring client exists...');
   const existingClients = await client.query(api.projects.clients.getClientsByUser, {
     userId: userId.toString(),
   });
 
   const existing = existingClients?.find((c: any) => c.website === demo.site.url);
   if (existing?._id) {
-    console.log("   - Client already exists.");
+    console.log('   - Client already exists.');
     return existing._id;
   }
 
@@ -185,18 +208,18 @@ async function ensureClient(client: ConvexHttpClient, userId: any, demo: ReturnT
     targetAudience: DEMO_AUDIENCE,
   });
 
-  console.log("   - Created client.");
+  console.log('   - Created client.');
   return clientId;
 }
 
 async function seedQuarterlyPlan(client: ConvexHttpClient, projectId: any) {
-  console.log("\n➡️  Ensuring quarterly plan exists...");
+  console.log('\n➡️  Ensuring quarterly plan exists...');
   const existingPlan = await client.query(api.content.quarterlyPlans.getPlanByProject, {
     projectId,
   });
 
   if (existingPlan) {
-    console.log("   - Plan and briefs already exist.");
+    console.log('   - Plan and briefs already exist.');
     return existingPlan._id;
   }
 
@@ -209,7 +232,7 @@ async function seedQuarterlyPlan(client: ConvexHttpClient, projectId: any) {
       leads: 150,
       revenue: 25000,
     },
-    assumptions: "Targets assume consistent publishing cadence and active distribution.",
+    assumptions: 'Targets assume consistent publishing cadence and active distribution.',
   });
 
   // Get plan ID to return
@@ -217,12 +240,16 @@ async function seedQuarterlyPlan(client: ConvexHttpClient, projectId: any) {
     projectId,
   });
 
-  console.log("   - Created quarterly plan with auto-generated briefs.");
+  console.log('   - Created quarterly plan with auto-generated briefs.');
   return plan?._id;
 }
 
-async function seedAnalytics(client: ConvexHttpClient, projectId: any, demo: ReturnType<typeof generateDemoData>) {
-  console.log("\n➡️  Seeding analytics data...");
+async function seedAnalytics(
+  client: ConvexHttpClient,
+  projectId: any,
+  demo: ReturnType<typeof generateDemoData>
+) {
+  console.log('\n➡️  Seeding analytics data...');
   const existing = await client.query(api.analytics.analytics.getAnalyticsData, {
     projectId,
     startDate: Date.now() - 120 * 24 * 60 * 60 * 1000,
@@ -230,20 +257,24 @@ async function seedAnalytics(client: ConvexHttpClient, projectId: any, demo: Ret
   });
 
   if (existing.length > 0) {
-    console.log("   - Analytics data already present.");
+    console.log('   - Analytics data already present.');
     return;
   }
 
   const now = new Date();
   demo.analytics.trafficTrend.forEach(async (point, idx) => {
-    const date = new Date(now.getFullYear(), now.getMonth() - (demo.analytics.trafficTrend.length - idx - 1), 15).getTime();
+    const date = new Date(
+      now.getFullYear(),
+      now.getMonth() - (demo.analytics.trafficTrend.length - idx - 1),
+      15
+    ).getTime();
     const sessions = point.visits;
     const leads = Math.round(sessions * demo.analytics.conversionRate);
 
     await client.mutation(api.analytics.analytics.storeAnalyticsData, {
       projectId,
       date,
-      source: "ga4",
+      source: 'ga4',
       sessions,
       leads,
       revenue: leads * 250,
@@ -252,7 +283,7 @@ async function seedAnalytics(client: ConvexHttpClient, projectId: any, demo: Ret
     await client.mutation(api.analytics.analytics.storeAnalyticsData, {
       projectId,
       date,
-      source: "gsc",
+      source: 'gsc',
       clicks: Math.round(sessions * 0.4),
       impressions: sessions * 20,
       ctr: 3.5,
@@ -260,38 +291,41 @@ async function seedAnalytics(client: ConvexHttpClient, projectId: any, demo: Ret
     });
   });
 
-  console.log("   - Inserted synthetic GA4 + GSC metrics.");
+  console.log('   - Inserted synthetic GA4 + GSC metrics.');
 }
 
 async function seedInsights(client: ConvexHttpClient, projectId: any) {
-  console.log("\n➡️  Seeding insights...");
+  console.log('\n➡️  Seeding insights...');
   const existing = await client.query(api.analytics.analytics.getInsights, {
     projectId,
   });
 
   if (existing.length > 0) {
-    console.log("   - Insights already present.");
+    console.log('   - Insights already present.');
     return;
   }
 
   const insights = [
     {
-      type: "quick_win",
-      title: "Repurpose high-performing guide into a webinar",
-      description: "The Automation Playbook post drove +22% MoM visits. Convert it into a webinar funnel for mid-funnel leads.",
-      action: "Create webinar landing page + nurture sequence",
+      type: 'quick_win',
+      title: 'Repurpose high-performing guide into a webinar',
+      description:
+        'The Automation Playbook post drove +22% MoM visits. Convert it into a webinar funnel for mid-funnel leads.',
+      action: 'Create webinar landing page + nurture sequence',
     },
     {
-      type: "top_gainer",
-      title: "Pricing page CTR up 14%",
-      description: "Recent copy tweak lifted CTR. Double down with testimonial carousel + in-line ROI calculator.",
-      action: "Add calculator widget + social proof module",
+      type: 'top_gainer',
+      title: 'Pricing page CTR up 14%',
+      description:
+        'Recent copy tweak lifted CTR. Double down with testimonial carousel + in-line ROI calculator.',
+      action: 'Add calculator widget + social proof module',
     },
     {
-      type: "underperformer",
-      title: "Case study hub needs refresh",
-      description: "Low dwell time suggests content skimmable but shallow. Add quantified outcomes and executive summaries.",
-      action: "Record 2 customer interviews + update hub",
+      type: 'underperformer',
+      title: 'Case study hub needs refresh',
+      description:
+        'Low dwell time suggests content skimmable but shallow. Add quantified outcomes and executive summaries.',
+      action: 'Record 2 customer interviews + update hub',
     },
   ];
 
@@ -302,18 +336,23 @@ async function seedInsights(client: ConvexHttpClient, projectId: any) {
       title: insight.title,
       description: insight.description,
       action: insight.action,
-      metadata: { severity: "medium" },
+      metadata: { severity: 'medium' },
     });
   }
 
-  console.log("   - Inserted demo insights.");
+  console.log('   - Inserted demo insights.');
 }
 
-async function seedBriefDetails(client: ConvexHttpClient, projectId: any, planId: any, demo: ReturnType<typeof generateDemoData>) {
-  console.log("\n➡️  Seeding brief details...");
-  
+async function seedBriefDetails(
+  client: ConvexHttpClient,
+  projectId: any,
+  planId: any,
+  demo: ReturnType<typeof generateDemoData>
+) {
+  console.log('\n➡️  Seeding brief details...');
+
   if (!planId) {
-    console.log("   - No plan found, skipping brief details.");
+    console.log('   - No plan found, skipping brief details.');
     return;
   }
 
@@ -322,7 +361,7 @@ async function seedBriefDetails(client: ConvexHttpClient, projectId: any, planId
   });
 
   if (!plan || !plan.briefs || plan.briefs.length === 0) {
-    console.log("   - No briefs found, skipping.");
+    console.log('   - No briefs found, skipping.');
     return;
   }
 
@@ -332,13 +371,14 @@ async function seedBriefDetails(client: ConvexHttpClient, projectId: any, planId
   });
 
   let updatedCount = 0;
-  for (const brief of plan.briefs.slice(0, 8)) { // Seed details for first 8 briefs
+  for (const brief of plan.briefs.slice(0, 8)) {
+    // Seed details for first 8 briefs
     if (brief.titleOptions && brief.titleOptions.length > 0) {
       continue; // Already has details
     }
 
     // Find cluster for this brief
-    const cluster = brief.clusterId 
+    const cluster = brief.clusterId
       ? clusters.find((c: any) => c._id === brief.clusterId)
       : clusters[updatedCount % clusters.length];
 
@@ -350,7 +390,7 @@ async function seedBriefDetails(client: ConvexHttpClient, projectId: any, planId
     await client.mutation(api.content.briefs.updateBrief, {
       briefId: brief._id,
       ...briefDetails,
-      status: updatedCount < 3 ? "in_progress" : "planned", // First 3 in progress
+      status: updatedCount < 3 ? 'in_progress' : 'planned', // First 3 in progress
     });
 
     updatedCount++;
@@ -360,9 +400,9 @@ async function seedBriefDetails(client: ConvexHttpClient, projectId: any, planId
 }
 
 function generateMockBriefDetails(cluster: any, demo: ReturnType<typeof generateDemoData>) {
-  const baseTitle = cluster.clusterName || cluster.topic || "SEO Guide";
-  const intent = cluster.intent || "informational";
-  
+  const baseTitle = cluster.clusterName ?? cluster.topic ?? 'SEO Guide';
+  const intent = cluster.intent ?? 'informational';
+
   const titleOptions = [
     `The Ultimate Guide to ${baseTitle}`,
     `How to Master ${baseTitle} in 2024`,
@@ -407,29 +447,34 @@ function generateMockBriefDetails(cluster: any, demo: ReturnType<typeof generate
       `${demo.site.industry} case studies`,
       `${demo.site.industry} tools`,
     ],
-    schemaSuggestion: intent === "commercial" ? "Product" : "Article",
+    schemaSuggestion: intent === 'commercial' ? 'Product' : 'Article',
   };
 }
 
-async function seedDrafts(client: ConvexHttpClient, projectId: any, demo: ReturnType<typeof generateDemoData>) {
-  console.log("\n➡️  Seeding drafts...");
-  
+async function seedDrafts(
+  client: ConvexHttpClient,
+  projectId: any,
+  demo: ReturnType<typeof generateDemoData>
+) {
+  console.log('\n➡️  Seeding drafts...');
+
   const plan = await client.query(api.content.quarterlyPlans.getPlanByProject, {
     projectId,
   });
 
   if (!plan || !plan.briefs || plan.briefs.length === 0) {
-    console.log("   - No briefs found, skipping drafts.");
+    console.log('   - No briefs found, skipping drafts.');
     return;
   }
 
   // Get briefs with details (in_progress status)
-  const briefsWithDetails = plan.briefs.filter((b: any) => 
-    b.status === "in_progress" && b.titleOptions && b.titleOptions.length > 0
+  const briefsWithDetails = plan.briefs.filter(
+    (b: any) => b.status === 'in_progress' && b.titleOptions && b.titleOptions.length > 0
   );
 
   let draftCount = 0;
-  for (const brief of briefsWithDetails.slice(0, 3)) { // Create drafts for first 3 in-progress briefs
+  for (const brief of briefsWithDetails.slice(0, 3)) {
+    // Create drafts for first 3 in-progress briefs
     const existingDraft = await client.query(api.content.drafts.getDraftByBrief, {
       briefId: brief._id,
     });
@@ -446,7 +491,7 @@ async function seedDrafts(client: ConvexHttpClient, projectId: any, demo: Return
       qualityScore: 85 + Math.floor(Math.random() * 10),
       toneScore: 82 + Math.floor(Math.random() * 8),
       wordCount,
-      status: "draft",
+      status: 'draft',
     });
 
     draftCount++;
@@ -456,9 +501,9 @@ async function seedDrafts(client: ConvexHttpClient, projectId: any, demo: Return
 }
 
 function generateMockDraftContent(brief: any) {
-  const title = brief.titleOptions?.[0] || brief.title;
-  const h2s = brief.h2Outline || [];
-  const faqs = brief.faqs || [];
+  const title = brief.titleOptions?.[0] ?? brief.title;
+  const h2s = brief.h2Outline ?? [];
+  const faqs = brief.faqs ?? [];
 
   let content = `# ${title}\n\n`;
   content += `This comprehensive guide covers everything you need to know about ${brief.title}.\n\n`;
@@ -469,7 +514,7 @@ function generateMockDraftContent(brief: any) {
     content += `This section explores ${h2.toLowerCase()}. `;
     content += `Understanding this concept is crucial for success. `;
     content += `Let's dive deeper into the key aspects.\n\n`;
-    
+
     if (idx < h2s.length - 1) {
       content += `### Key Points\n\n`;
       content += `- Important consideration #1\n`;
@@ -494,20 +539,25 @@ function generateMockDraftContent(brief: any) {
   return content;
 }
 
-async function seedScheduledPosts(client: ConvexHttpClient, projectId: any, demo: ReturnType<typeof generateDemoData>) {
-  console.log("\n➡️  Seeding scheduled posts...");
-  
+async function seedScheduledPosts(
+  client: ConvexHttpClient,
+  projectId: any,
+  demo: ReturnType<typeof generateDemoData>
+) {
+  console.log('\n➡️  Seeding scheduled posts...');
+
   const drafts = await client.query(api.content.drafts.getDraftsByProject, {
     projectId,
   });
 
   if (!drafts || drafts.length === 0) {
-    console.log("   - No drafts found, skipping scheduled posts.");
+    console.log('   - No drafts found, skipping scheduled posts.');
     return;
   }
 
   let scheduledCount = 0;
-  for (const draft of drafts.slice(0, 2)) { // Schedule first 2 drafts
+  for (const draft of drafts.slice(0, 2)) {
+    // Schedule first 2 drafts
     const brief = await client.query(api.content.briefs.getBriefById, {
       briefId: draft.briefId,
     });
@@ -531,11 +581,11 @@ async function seedScheduledPosts(client: ConvexHttpClient, projectId: any, demo
       briefId: brief._id,
       publishDate,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      platform: "wordpress",
-      tags: ["seo", "content-marketing", demo.site.industry.toLowerCase()],
-      categories: ["Blog"],
-      slug: slugify(brief.title || "post"),
-      status: "scheduled",
+      platform: 'wordpress',
+      tags: ['seo', 'content-marketing', demo.site.industry.toLowerCase()],
+      categories: ['Blog'],
+      slug: slugify(brief.title ?? 'post'),
+      status: 'scheduled',
     });
 
     scheduledCount++;
@@ -544,9 +594,13 @@ async function seedScheduledPosts(client: ConvexHttpClient, projectId: any, demo
   console.log(`   - Scheduled ${scheduledCount} posts.`);
 }
 
-async function seedIntegrations(client: ConvexHttpClient, projectId: any, demo: ReturnType<typeof generateDemoData>) {
-  console.log("\n➡️  Seeding integrations...");
-  
+async function seedIntegrations(
+  client: ConvexHttpClient,
+  projectId: any,
+  demo: ReturnType<typeof generateDemoData>
+) {
+  console.log('\n➡️  Seeding integrations...');
+
   // Check for existing GA4 connection
   const existingGA4 = await client.query(api.integrations.ga4Connections.getGA4Connection, {
     projectId,
@@ -555,14 +609,14 @@ async function seedIntegrations(client: ConvexHttpClient, projectId: any, demo: 
   if (!existingGA4) {
     await client.mutation(api.integrations.ga4Connections.upsertGA4Connection, {
       projectId,
-      propertyId: "demo-property-123",
+      propertyId: 'demo-property-123',
       propertyName: `${demo.site.companyName} (Demo)`,
-      accessToken: "demo-access-token-123",
-      refreshToken: "demo-refresh-token-123",
+      accessToken: 'demo-access-token-123',
+      refreshToken: 'demo-refresh-token-123',
     });
-    console.log("   - Created mock GA4 connection.");
+    console.log('   - Created mock GA4 connection.');
   } else {
-    console.log("   - GA4 connection already exists.");
+    console.log('   - GA4 connection already exists.');
   }
 
   // Check for existing GSC connection
@@ -574,36 +628,96 @@ async function seedIntegrations(client: ConvexHttpClient, projectId: any, demo: 
     await client.mutation(api.integrations.gscConnections.upsertGSCConnection, {
       projectId,
       siteUrl: demo.site.url,
-      accessToken: "demo-gsc-access-token-123",
-      refreshToken: "demo-gsc-refresh-token-123",
+      accessToken: 'demo-gsc-access-token-123',
+      refreshToken: 'demo-gsc-refresh-token-123',
     });
-    console.log("   - Created mock GSC connection.");
+    console.log('   - Created mock GSC connection.');
   } else {
-    console.log("   - GSC connection already exists.");
+    console.log('   - GSC connection already exists.');
   }
 }
 
-async function seedKeywords(client: ConvexHttpClient, clientId: any, demo: ReturnType<typeof generateDemoData>) {
-  console.log("\n➡️  Seeding keywords...");
-  
+async function seedKeywords(
+  client: ConvexHttpClient,
+  clientId: any,
+  demo: ReturnType<typeof generateDemoData>
+) {
+  console.log('\n➡️  Seeding keywords...');
+
   const existing = await client.query(api.seo.keywords.getKeywordsByClient, {
     clientId,
   });
 
   if (existing && existing.length > 0) {
-    console.log("   - Keywords already exist.");
+    console.log('   - Keywords already exist.');
     return;
   }
 
   const keywords = [
-    { keyword: `${demo.site.industry} services`, searchVolume: 2400, difficulty: 45, cpc: 3.50, intent: "commercial", priority: "high" },
-    { keyword: `best ${demo.site.industry} tools`, searchVolume: 1900, difficulty: 52, cpc: 4.20, intent: "commercial", priority: "high" },
-    { keyword: `${demo.site.industry} guide`, searchVolume: 1600, difficulty: 38, cpc: 2.80, intent: "informational", priority: "medium" },
-    { keyword: `${demo.site.industry} pricing`, searchVolume: 1200, difficulty: 48, cpc: 5.10, intent: "commercial", priority: "high" },
-    { keyword: `how to ${demo.site.industry.toLowerCase()}`, searchVolume: 980, difficulty: 35, cpc: 2.40, intent: "informational", priority: "medium" },
-    { keyword: `${demo.site.industry} case study`, searchVolume: 850, difficulty: 42, cpc: 3.90, intent: "commercial", priority: "medium" },
-    { keyword: `${demo.site.industry} software`, searchVolume: 2100, difficulty: 55, cpc: 4.60, intent: "commercial", priority: "high" },
-    { keyword: `${demo.site.industry} best practices`, searchVolume: 1100, difficulty: 40, cpc: 3.20, intent: "informational", priority: "medium" },
+    {
+      keyword: `${demo.site.industry} services`,
+      searchVolume: 2400,
+      difficulty: 45,
+      cpc: 3.5,
+      intent: 'commercial',
+      priority: 'high',
+    },
+    {
+      keyword: `best ${demo.site.industry} tools`,
+      searchVolume: 1900,
+      difficulty: 52,
+      cpc: 4.2,
+      intent: 'commercial',
+      priority: 'high',
+    },
+    {
+      keyword: `${demo.site.industry} guide`,
+      searchVolume: 1600,
+      difficulty: 38,
+      cpc: 2.8,
+      intent: 'informational',
+      priority: 'medium',
+    },
+    {
+      keyword: `${demo.site.industry} pricing`,
+      searchVolume: 1200,
+      difficulty: 48,
+      cpc: 5.1,
+      intent: 'commercial',
+      priority: 'high',
+    },
+    {
+      keyword: `how to ${demo.site.industry.toLowerCase()}`,
+      searchVolume: 980,
+      difficulty: 35,
+      cpc: 2.4,
+      intent: 'informational',
+      priority: 'medium',
+    },
+    {
+      keyword: `${demo.site.industry} case study`,
+      searchVolume: 850,
+      difficulty: 42,
+      cpc: 3.9,
+      intent: 'commercial',
+      priority: 'medium',
+    },
+    {
+      keyword: `${demo.site.industry} software`,
+      searchVolume: 2100,
+      difficulty: 55,
+      cpc: 4.6,
+      intent: 'commercial',
+      priority: 'high',
+    },
+    {
+      keyword: `${demo.site.industry} best practices`,
+      searchVolume: 1100,
+      difficulty: 40,
+      cpc: 3.2,
+      intent: 'informational',
+      priority: 'medium',
+    },
   ];
 
   await client.mutation(api.seo.keywords.addKeywords, {
@@ -615,12 +729,13 @@ async function seedKeywords(client: ConvexHttpClient, clientId: any, demo: Retur
 }
 
 function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
 main().catch((error) => {
-  console.error("❌ Demo seeding failed:", error);
+  console.error('❌ Demo seeding failed:', error);
   process.exit(1);
 });
-
-

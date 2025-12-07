@@ -1,28 +1,30 @@
-import { query } from "./_generated/server";
-import { v } from "convex/values";
+import { query } from './_generated/server';
+import { v } from 'convex/values';
 
 // Get all users with their subscription details
 export const getAllUsers = query({
   args: {},
   handler: async (ctx) => {
-    const users = await ctx.db.query("users").order("desc").collect();
-    
+    const users = await ctx.db.query('users').order('desc').collect();
+
     // Enrich with subscription info
     const usersWithDetails = await Promise.all(
       users.map(async (user) => {
         const subscription = await ctx.db
-          .query("subscriptions")
-          .withIndex("by_user", (q) => q.eq("userId", user._id))
+          .query('subscriptions')
+          .withIndex('by_user', (q) => q.eq('userId', user._id))
           .first();
-          
+
         return {
           ...user,
           // Use createdAt if available, otherwise use _creationTime
           createdAt: user.createdAt ?? user._creationTime,
-          subscription: subscription ? {
-            planTier: subscription.planTier,
-            status: subscription.status,
-          } : null,
+          subscription: subscription
+            ? {
+                planTier: subscription.planTier,
+                status: subscription.status,
+              }
+            : null,
         };
       })
     );
@@ -36,15 +38,15 @@ export const getAllKeywords = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 100;
-    const keywords = await ctx.db.query("keywords").order("desc").take(limit);
-    
+    const keywords = await ctx.db.query('keywords').order('desc').take(limit);
+
     // Enrich with client name
     const keywordsWithClient = await Promise.all(
       keywords.map(async (kw) => {
-        const client = await ctx.db.get(kw.clientId);
+        const project = kw.projectId ? await ctx.db.get(kw.projectId) : null;
         return {
           ...kw,
-          clientName: client?.companyName || "Unknown Client",
+          clientName: project?.name || 'Unknown Project',
         };
       })
     );

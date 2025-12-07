@@ -22,17 +22,11 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate') || 'today';
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: 'projectId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'projectId is required' }, { status: 400 });
     }
 
     if (!api) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
     }
 
     const connection = await callConvexQuery(api.integrations.ga4Connections.getGA4Connection, {
@@ -40,18 +34,31 @@ export async function GET(request: NextRequest) {
     });
 
     if (!connection || !connection.accessToken) {
-      return NextResponse.json(
-        { error: 'GA4 not connected' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'GA4 not connected' }, { status: 404 });
     }
 
     // Get GA4 data
     const data = await getGA4Data(
       connection.accessToken,
+      connection.refreshToken,
       connection.propertyId,
       startDate,
-      endDate
+      endDate,
+      async (newTokens: any) => {
+        if (api) {
+          try {
+            await callConvexMutation(api.integrations.ga4Connections.upsertGA4Connection, {
+              projectId: projectId as any,
+              propertyId: connection.propertyId,
+              propertyName: connection.propertyName ?? 'Unknown',
+              accessToken: newTokens.access_token,
+              refreshToken: newTokens.refresh_token || connection.refreshToken,
+            });
+          } catch (error) {
+            console.warn('Failed to update GA4 tokens:', error);
+          }
+        }
+      }
     );
 
     // Update last sync
@@ -68,10 +75,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data });
   } catch (error) {
     console.error('Get GA4 data error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get GA4 data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get GA4 data' }, { status: 500 });
   }
 }
-

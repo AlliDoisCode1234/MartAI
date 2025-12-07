@@ -1,56 +1,77 @@
-"use node";
+'use node';
 
-import { action } from "../_generated/server";
-import { v } from "convex/values";
-import { api } from "../_generated/api";
-import {
-  generateKeywordClusters,
-  importKeywordsFromGSC,
-  type KeywordInput,
-} from "../../lib/keywordClustering";
-import { getGSCData } from "../../lib/googleAuth";
-import { cache, getCacheKey, CACHE_TTL } from "../cache";
+import { action } from '../_generated/server';
+import { v } from 'convex/values';
+import { api } from '../_generated/api';
+import { auth } from '../auth';
+import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
+import { ConvexError } from 'convex/values';
+import { generateKeywordClusters } from '../../lib/keywordClustering';
+import { cache, getCacheKey, CACHE_TTL } from '../cache';
+import { getGSCData } from '../../lib/googleAuth';
+import * as crypto from 'node:crypto';
+
+function importKeywordsFromGSC(gscData: any): KeywordInput[] {
+  if (!gscData?.rows) return [];
+  return gscData.rows.map((row: any) => ({
+    keyword: row.keys[0],
+    volume: row.impressions || 0, // Use impressions as proxy for volume
+    difficulty: 50, // Default mid-range difficulty
+    intent: 'informational', // Default intent
+  }));
+}
+
+export interface KeywordInput {
+  keyword: string;
+  volume: number;
+  difficulty: number;
+  intent: string;
+}
 
 const keywordInputArg = v.object({
   keyword: v.string(),
-  volume: v.optional(v.number()),
-  difficulty: v.optional(v.number()),
-  intent: v.optional(v.string()),
+  volume: v.number(),
+  difficulty: v.number(),
+  intent: v.string(),
 });
-
-import { auth } from "../auth";
-import { rateLimits, getRateLimitKey, type MembershipTier } from "../rateLimits";
-import { ConvexError } from "convex/values";
 
 export const generateClusters = action({
   args: {
-    projectId: v.id("projects"),
+    projectId: v.id('projects'),
     keywords: v.optional(v.array(keywordInputArg)),
     importFromGSC: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    count: number;
+    cached?: boolean;
+    storage?: boolean;
+  }> => {
     // Get authenticated user
     const userId = await auth.getUserId(ctx);
     if (!userId) {
-      throw new Error("Unauthorized");
+      throw new Error('Unauthorized');
     }
 
     // Get user to check membership tier and role
     const user = await ctx.runQuery((api as any).users.current);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error('User not found');
     }
 
     // Determine rate limit tier
     let tier: MembershipTier;
-    if (user.role === "admin" || user.role === "super_admin") {
-      tier = "admin";
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      tier = 'admin';
     } else {
-      tier = (user.membershipTier as MembershipTier) || "free";
+      tier = (user.membershipTier as MembershipTier) || 'free';
     }
 
     // Check rate limit
-    const rateLimitKey = getRateLimitKey("generateKeywordClusters", tier);
+    const rateLimitKey = getRateLimitKey('generateKeywordClusters', tier);
     const { ok, retryAfter } = await rateLimits.limit(ctx, rateLimitKey as any, {
       key: userId as string,
     });
@@ -58,8 +79,8 @@ export const generateClusters = action({
     if (!ok) {
       const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
       throw new ConvexError({
-        kind: "RateLimitError",
-        message: `Rate limit exceeded. You can generate ${tier === "free" ? "5 clusters per day" : tier === "admin" ? "200 clusters per hour" : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? "s" : ""}.`,
+        kind: 'RateLimitError',
+        message: `Rate limit exceeded. You can generate ${tier === 'free' ? '5 clusters per day' : tier === 'admin' ? '200 clusters per hour' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
         retryAfter,
       });
     }
@@ -83,10 +104,11 @@ export const generateClusters = action({
         if (connection?.accessToken && connection?.siteUrl) {
           const gscData = await getGSCData(
             connection.accessToken,
+            connection.refreshToken,
             connection.siteUrl,
-            "30daysAgo",
-            "today",
-            150,
+            '30daysAgo',
+            'today',
+            150
           );
           const imported = importKeywordsFromGSC(gscData);
           if (imported.length > 0) {
@@ -97,7 +119,7 @@ export const generateClusters = action({
           }
         }
       } catch (error) {
-        console.warn("GSC import failed:", error);
+        console.warn('GSC import failed:', error);
       }
     }
 
@@ -106,37 +128,60 @@ export const generateClusters = action({
     }
 
     if (keywordInputs.length === 0) {
-      throw new Error("Unable to find keywords to cluster. Add keywords or connect GSC.");
+      throw new Error('Unable to find keywords to cluster. Add keywords or connect GSC.');
     }
 
     // Generate cache key based on keyword set
-    const keywordHash = keywordInputs
-      .map((k) => k.keyword)
-      .sort()
-      .join(",");
+    const sortedKeywords = keywordInputs.map((k) => k.keyword).sort();
+    const keywordHash = sortedKeywords.join(',');
 
-    const cacheKey = getCacheKey("generateClusters", {
+    const cacheKey = getCacheKey('generateClusters', {
       projectId: args.projectId,
       keywordHash,
     });
 
-    // Try cache
-    const cached = await cache.get(ctx, cacheKey);
-if (cached) {
-  console.log("Cache hit for keyword clustering");
-  // Create clusters from cached data
-  for (const cluster of cached.clusters) {
-    await ctx.runMutation((api as any).seo.keywordClusters.createCluster, cluster);
-  }
-  return { success: true, count: cached.clusters.length, cached: true };
-}
+    // 1. Check Persistent Storage (Audit Log/Infinite Cache)
+    const inputForHash = JSON.stringify({
+      keywords: sortedKeywords,
+      projectId: args.projectId,
+      website: project?.websiteUrl,
+    });
+    const fullInputHash: string = crypto.createHash('sha256').update(inputForHash).digest('hex');
 
-console.log("Cache miss for keyword clustering");
+    const stored = await ctx.runQuery((api as any).aiStorage.getStored, {
+      inputHash: fullInputHash,
+    });
+
+    if (stored) {
+      console.log('Persistent Storage Hit for keyword clustering');
+      const clusters = stored.output.clusters;
+
+      for (const cluster of clusters) {
+        await ctx.runMutation((api as any).seo.keywordClusters.createCluster, {
+          ...cluster,
+          projectId: args.projectId,
+        });
+      }
+
+      return { success: true, count: clusters.length, cached: true, storage: true };
+    }
+
+    // 2. Try ephemeral cache
+    const cached = await cache.get(ctx, cacheKey);
+    if (cached) {
+      console.log('Cache hit for keyword clustering');
+      for (const cluster of cached.clusters) {
+        await ctx.runMutation((api as any).seo.keywordClusters.createCluster, cluster);
+      }
+      return { success: true, count: cached.clusters.length, cached: true };
+    }
+
+    console.log('Cache miss for keyword clustering');
 
     const clusters = await generateKeywordClusters(
       keywordInputs,
       project?.websiteUrl,
-      project?.industry,
+      project?.industry
     );
 
     let createdCount = 0;
@@ -151,17 +196,34 @@ console.log("Cache miss for keyword clustering");
           volumeRange: cluster.volumeRange,
           impactScore: cluster.impactScore,
           topSerpUrls: cluster.topSerpUrls,
-          status: "active",
+          status: 'active',
           createdAt: Date.now(),
         });
         createdCount += 1;
       } catch (error) {
-        console.error("Failed to store cluster:", error);
+        console.error('Failed to store cluster:', error);
       }
     }
 
-    // Cache the result
-await cache.set(ctx, cacheKey, { clusters }, CACHE_TTL.KEYWORD_CLUSTERING);
+    // 3. Store in Persistence & Cache
+    const outputData = { clusters };
+
+    await cache.set(ctx, cacheKey, outputData, CACHE_TTL.KEYWORD_CLUSTERING);
+
+    await ctx.runMutation((api as any).aiStorage.store, {
+      inputHash: fullInputHash,
+      operation: 'generateKeywordClusters',
+      provider: 'openai',
+      model: 'gpt-4o',
+      inputArgs: {
+        keywords: sortedKeywords,
+        projectId: args.projectId,
+        website: project?.websiteUrl,
+      },
+      output: outputData,
+      tokensIn: 0,
+      tokensOut: 0,
+    });
 
     return {
       success: true,
@@ -171,7 +233,7 @@ await cache.set(ctx, cacheKey, { clusters }, CACHE_TTL.KEYWORD_CLUSTERING);
 });
 
 function buildFallbackKeywords(project?: { industry?: string; name?: string }): KeywordInput[] {
-  const base = (project?.industry || project?.name || "growth marketing").toLowerCase();
+  const base = (project?.industry || project?.name || 'growth marketing').toLowerCase();
   const topics = [
     `${base} strategy`,
     `${base} software`,
@@ -187,6 +249,24 @@ function buildFallbackKeywords(project?: { industry?: string; name?: string }): 
     keyword,
     volume: 500 - index * 30,
     difficulty: 35 + index * 3,
-    intent: index < 3 ? "commercial" : index < 5 ? "transactional" : "informational",
+    intent: index < 3 ? 'commercial' : index < 5 ? 'transactional' : 'informational',
   }));
 }
+
+export const splitCluster = action({
+  args: {
+    clusterId: v.id('keywordClusters'),
+  },
+  handler: async (ctx, args) => {
+    return [args.clusterId];
+  },
+});
+
+export const reclusterKeywords = action({
+  args: {
+    clusterIds: v.array(v.id('keywordClusters')),
+  },
+  handler: async (ctx, args) => {
+    return args.clusterIds;
+  },
+});

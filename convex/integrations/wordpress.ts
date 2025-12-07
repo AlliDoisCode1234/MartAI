@@ -7,12 +7,30 @@ export const getConnection = query({
   },
   handler: async (ctx, args) => {
     // In a real implementation, this would fetch from a table like 'wordpressConnections'
-    // For now, we'll check oauthTokens or return a mock
-    const token = await ctx.db
+    let token = await ctx.db
       .query('oauthTokens')
       .withIndex('by_platform', (q) => q.eq('platform', 'wordpress'))
-      .filter((q) => q.eq(q.field('clientId'), args.projectId)) // Assuming projectId maps to clientId here or we need to fix schema
       .first();
+
+    // If not found by platform, try to find via project -> user -> client
+    if (!token) {
+      const project = await ctx.db.get(args.projectId);
+      if (project) {
+        const client = await ctx.db
+          .query('clients')
+          .withIndex('by_user', (q) => q.eq('userId', project.userId))
+          .first();
+
+        if (client) {
+          token = await ctx.db
+            .query('oauthTokens')
+            .withIndex('by_client_platform', (q) =>
+              q.eq('clientId', client._id).eq('platform', 'wordpress')
+            )
+            .first();
+        }
+      }
+    }
 
     // Note: Schema has oauthTokens.clientId pointing to "clients".
     // But we are passing projectId.

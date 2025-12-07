@@ -1,4 +1,4 @@
-import { mutation, query, action } from '../_generated/server';
+import { mutation, query, internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
 
@@ -54,7 +54,7 @@ export const getRankingsByProject = query({
   },
 });
 
-export const updateRankings = action({
+export const updateRankings = internalAction({
   args: {
     projectId: v.id('projects'),
   },

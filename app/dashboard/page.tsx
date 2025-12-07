@@ -27,8 +27,19 @@ import {
   Th,
   Td,
   Progress,
+  useToast,
 } from '@chakra-ui/react';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+} from 'recharts';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { LoadingState } from '@/src/components/shared';
 import { api } from '@/convex/_generated/api';
@@ -36,7 +47,12 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { motion } from 'framer-motion';
 import { ArrowForwardIcon } from '@chakra-ui/icons';
 import { FiTrendingUp, FiTarget, FiZap, FiActivity } from 'react-icons/fi';
-import { StatCard, TrafficChart, KeywordGrowthChart, TopKeywordsTable } from '@/src/components/dashboard';
+import {
+  StatCard,
+  TrafficChart,
+  KeywordGrowthChart,
+  TopKeywordsTable,
+} from '@/src/components/dashboard';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Card);
@@ -62,25 +78,54 @@ const keywordPerformanceData = [
 
 export default function DashboardPage() {
   const router = useRouter();
+  const toast = useToast();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   // const user = useQuery(api.users.current);
   const user: any = null;
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
+  // Separate state for the create project modal or logic if it was here.
+  // Assuming the issue was in error handling which might be in a different component or handled globally?
+  // Wait, the previous edit (Step 574) was targeting `createProject` error handling.
+  // But this file `app/dashboard/page.tsx` seems to just be the Dashboard *view*.
+  // Does it contain the `createProject` logic?
+  // Looking at the file content in Step 577, it strictly renders the dashboard.
+  // It checks `if (!project)` and shows a "Create Your First Project" button that redirects to `/onboarding`.
+  // So the `createProject` logic is likely in `/onboarding` or a separate component.
+  // The error handling code I tried to insert in Step 574:
+  // `toast({ title: "Project created" ... })`
+  // `setIsNewProjectOpen(false)`
+  // This implies there is a `setIsNewProjectOpen` state and a `createProject` call IN THIS FILE.
+  // BUT the file content found in Step 577 DOES NOT show `setIsNewProjectOpen` or `createProject` call.
+  // It shows a "Create Your First Project" button that does `router.push('/onboarding')`.
+
+  // AHA! I might have been trying to edit the WRONG FILE in Step 574?
+  // Or the file content in 577 (Total Lines: 542) was missing the Modal part?
+  // Let's look closely at 577. It ends with the `Intelligence Section` card.
+  // It does NOT seem to have a "New Project" modal.
+
+  // If I inserted code into a file that didn't match the context (lines 157-167), that explains why it broke.
+  // In Step 577, line 157 is inside `heroGradient` definition.
+  // So my Step 574 edit was completely hallucinated context-wise or I assumed the file had different content.
+
+  // Corrective Action:
+  // 1. Restore this file to its clean state (from Step 577).
+  // 2. Find where `createProject` is ACTUALLY called. It might be in `app/onboarding/page.tsx` or a component like `AddProjectModal`.
+
   const projects = useQuery(
     api.projects.projects.getProjectsByUser,
-    user?._id ? { userId: user._id } : 'skip',
+    user?._id ? { userId: user._id } : 'skip'
   );
   const projectList = (projects ?? []) as Array<{ _id: Id<'projects'>; name?: string }>;
 
   const strategy = useQuery(
     api.seo.strategy.getStrategyByProject,
-    selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip',
+    selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip'
   );
   const latestAiReport = useQuery(
     api.ai.reports.getLatestAiReport,
-    selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip',
+    selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip'
   );
 
   useEffect(() => {
@@ -131,12 +176,10 @@ export default function DashboardPage() {
     return projectList.find((p) => (p._id as string) === selectedProjectId) ?? projectList[0];
   }, [projectList, selectedProjectId]);
 
-  const stats = strategy?.stats || null;
+  const stats = strategy?.stats ?? null;
   const aiReport = latestAiReport ?? null;
   const loadingDashboard =
-    authLoading ||
-    projectsLoading ||
-    (selectedProjectId !== null && strategy === undefined);
+    authLoading || projectsLoading || (selectedProjectId !== null && strategy === undefined);
 
   const cardBg = useColorModeValue('white', 'gray.800');
   const heroGradient = useColorModeValue(
@@ -156,7 +199,8 @@ export default function DashboardPage() {
             Welcome to MartAI
           </Heading>
           <Text fontSize="xl" color="gray.500" maxW="lg">
-            Automate your SEO strategy with AI-powered insights. Create your first project to get started.
+            Automate your SEO strategy with AI-powered insights. Create your first project to get
+            started.
           </Text>
           <Button
             size="lg"
@@ -206,7 +250,7 @@ export default function DashboardPage() {
           <HStack justify="space-between" align="center" wrap="wrap" spacing={4}>
             <Box>
               <Heading size="lg" mb={2} color="white">
-                Welcome back, {user?.name || 'there'}! 👋
+                Welcome back, {user?.name ?? 'there'}! 👋
               </Heading>
               <Text fontSize="lg" color="whiteAlpha.900">
                 Here's what's happening with <b>{project.name}</b>
@@ -283,7 +327,9 @@ export default function DashboardPage() {
             <CardBody>
               <VStack align="stretch" spacing={4}>
                 <Box>
-                  <Heading size="md" mb={1}>Traffic Trend</Heading>
+                  <Heading size="md" mb={1}>
+                    Traffic Trend
+                  </Heading>
                   <Text color="gray.500" fontSize="sm">
                     Last 6 months organic traffic growth
                   </Text>
@@ -293,15 +339,22 @@ export default function DashboardPage() {
                     <AreaChart data={trafficData}>
                       <defs>
                         <linearGradient id="colorTraffic" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#FF6B35" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#FF6B35" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis dataKey="name" stroke="#888" fontSize={12} />
                       <YAxis stroke="#888" fontSize={12} />
                       <Tooltip />
-                      <Area type="monotone" dataKey="traffic" stroke="#FF6B35" fillOpacity={1} fill="url(#colorTraffic)" strokeWidth={3} />
+                      <Area
+                        type="monotone"
+                        dataKey="traffic"
+                        stroke="#FF6B35"
+                        fillOpacity={1}
+                        fill="url(#colorTraffic)"
+                        strokeWidth={3}
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </Box>
@@ -321,7 +374,9 @@ export default function DashboardPage() {
             <CardBody>
               <VStack align="stretch" spacing={4}>
                 <Box>
-                  <Heading size="md" mb={1}>Keyword Growth</Heading>
+                  <Heading size="md" mb={1}>
+                    Keyword Growth
+                  </Heading>
                   <Text color="gray.500" fontSize="sm">
                     Ranking keywords over time
                   </Text>
@@ -354,7 +409,9 @@ export default function DashboardPage() {
           <CardBody>
             <HStack justify="space-between" mb={6}>
               <Box>
-                <Heading size="md" mb={1}>Top Performing Keywords</Heading>
+                <Heading size="md" mb={1}>
+                  Top Performing Keywords
+                </Heading>
                 <Text color="gray.500" fontSize="sm">
                   Your best ranking keywords and their performance
                 </Text>
@@ -379,13 +436,21 @@ export default function DashboardPage() {
                     <Tr key={index} _hover={{ bg: 'gray.50' }}>
                       <Td fontWeight="medium">{kw.keyword}</Td>
                       <Td isNumeric>
-                        <Badge colorScheme={kw.position <= 5 ? 'green' : kw.position <= 10 ? 'yellow' : 'gray'}>
+                        <Badge
+                          colorScheme={
+                            kw.position <= 5 ? 'green' : kw.position <= 10 ? 'yellow' : 'gray'
+                          }
+                        >
                           #{kw.position}
                         </Badge>
                       </Td>
                       <Td isNumeric>{kw.volume.toLocaleString()}/mo</Td>
                       <Td>
-                        <Badge colorScheme={kw.trend === 'up' ? 'green' : kw.trend === 'down' ? 'red' : 'gray'}>
+                        <Badge
+                          colorScheme={
+                            kw.trend === 'up' ? 'green' : kw.trend === 'down' ? 'red' : 'gray'
+                          }
+                        >
                           {kw.trend === 'up' ? '↑' : kw.trend === 'down' ? '↓' : '→'}
                         </Badge>
                       </Td>
@@ -393,7 +458,9 @@ export default function DashboardPage() {
                         <Progress
                           value={kw.position <= 3 ? 90 : kw.position <= 10 ? 60 : 30}
                           size="sm"
-                          colorScheme={kw.position <= 5 ? 'green' : kw.position <= 10 ? 'yellow' : 'gray'}
+                          colorScheme={
+                            kw.position <= 5 ? 'green' : kw.position <= 10 ? 'yellow' : 'gray'
+                          }
                           borderRadius="full"
                         />
                       </Td>
@@ -421,7 +488,9 @@ export default function DashboardPage() {
           <CardBody>
             <HStack justify="space-between" mb={6} align="flex-start">
               <Box>
-                <Heading size="md" mb={1}>MartAI Intelligence</Heading>
+                <Heading size="md" mb={1}>
+                  MartAI Intelligence
+                </Heading>
                 <Text color="gray.500" fontSize="sm">
                   Latest automated crawl & keyword intelligence for this project.
                 </Text>
@@ -448,11 +517,15 @@ export default function DashboardPage() {
                 <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={6}>
                   <Stat>
                     <StatLabel color="gray.500">Coverage Score</StatLabel>
-                    <StatNumber fontSize="2xl" fontWeight="bold">{aiReport.metrics?.coverageScore ?? '—'}</StatNumber>
+                    <StatNumber fontSize="2xl" fontWeight="bold">
+                      {aiReport.metrics?.coverageScore ?? '—'}
+                    </StatNumber>
                   </Stat>
                   <Stat>
                     <StatLabel color="gray.500">Organic Keywords</StatLabel>
-                    <StatNumber fontSize="2xl" fontWeight="bold">{aiReport.metrics?.organicKeywords ?? '—'}</StatNumber>
+                    <StatNumber fontSize="2xl" fontWeight="bold">
+                      {aiReport.metrics?.organicKeywords ?? '—'}
+                    </StatNumber>
                   </Stat>
                   <Stat>
                     <StatLabel color="gray.500">Traffic Estimate</StatLabel>
@@ -464,7 +537,9 @@ export default function DashboardPage() {
                   </Stat>
                   <Stat>
                     <StatLabel color="gray.500">Confidence</StatLabel>
-                    <StatNumber fontSize="2xl" fontWeight="bold">{aiReport.confidence?.score ?? '—'}%</StatNumber>
+                    <StatNumber fontSize="2xl" fontWeight="bold">
+                      {aiReport.confidence?.score ?? '—'}%
+                    </StatNumber>
                   </Stat>
                 </Grid>
                 {aiReport.dataSources?.length ? (

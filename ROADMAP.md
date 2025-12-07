@@ -1,82 +1,86 @@
 # MartAI Development Roadmap
 
 ## Overview
+
 This roadmap outlines the development priorities and milestones for MartAI, an AI-driven SEO & Lead Generation Platform.
 
 ## Current Status (Q1 2025)
 
 ### ✅ Completed (MVP Foundation)
-- [x] Authentication & User Management (Custom JWT - being replaced)
+
+- [x] Authentication & User Management (Convex Auth + Google OAuth)
 - [x] Project Creation & Onboarding Flow
-- [x] GA4 & GSC OAuth Integration
+- [x] GA4 & GSC OAuth Integration (Hardened with Token Refresh)
 - [x] Keyword Clustering Generation
 - [x] Quarterly Plan Generation (12-week calendar)
 - [x] Content Brief Generation
 - [x] Draft Generation from Briefs
 - [x] Basic Analytics Dashboard
 - [x] Convex Backend Schema & Queries
-- [x] Security Middleware & Rate Limiting (basic)
-- [x] **Admin Portal Refactor & RBAC** (Ticket-010)
-- [x] **Infrastructure Hardening** (Ticket-009)
+- [x] Security Middleware & Rate Limiting (Ticket-009)
+- [x] Persistent AI Data Storage & Audit Log (Infinite Retention)
 
-### 🚧 In Progress
-- [/] **Convex Components Integration** (Phase 0 - 4 weeks)
-  - [/] Convex Auth migration (Week 1)
-  - [ ] Rate Limiter integration (Week 2)
-  - [ ] Action Cache integration (Week 3-4)
-- [ ] WordPress Publishing Integration (partial)
-- [ ] Analytics Data Ingestion Pipeline
-
-## Phase 0: Convex Components Integration (P0 - Current Sprint)
 **Timeline**: 4 weeks  
 **Goal**: Migrate to production-ready auth and add cost-saving components
 
 ### Week 1: Convex Auth Migration 🔥
-- [ ] Install `@convex-dev/auth` package
-- [ ] Create `convex/auth.ts` with Password + Google providers
-- [ ] Update ConvexClientProvider to use Convex Auth
-- [ ] Migrate login/signup pages to use `useAuthActions`
-- [ ] Add Google OAuth button
-- [ ] Test authentication flows (email/password + Google)
-- [ ] Update protected routes and API routes
-- [ ] Remove old JWT code (242 lines)
-- [ ] **Benefits**: Production-ready auth, Google OAuth, -242 lines of code
+
+- [x] Install `@convex-dev/auth` package
+- [x] Create `convex/auth.ts` with Password + Google providers
+- [x] Update ConvexClientProvider to use Convex Auth
+- [x] Migrate login/signup pages to use `useAuthActions`
+- [x] Add Google OAuth button
+- [x] Test authentication flows (email/password + Google)
+- [x] Update protected routes and API routes
+- [x] Remove old JWT code (242 lines)
+- [x] **Benefits**: Production-ready auth, Google OAuth, -242 lines of code
 
 ### Week 2: Rate Limiter Integration
-- [ ] Install `@convex-dev/rate-limiter` package
-- [ ] Create `convex/rateLimits.ts` configuration
-- [ ] Add rate limits:
-  - [ ] Keyword generation: 10/hour per user
-  - [ ] Brief generation: 5/hour per user
-  - [ ] Draft generation: 5/hour per user
-  - [ ] AI analysis: 3/day per user
-  - [ ] Quarterly planning: 2/day per user
-- [ ] Add user-friendly error messages
-- [ ] Test rate limiting scenarios
-- [ ] **Benefits**: Prevent API abuse, protect against runaway costs
+
+- [x] Install `@convex-dev/rate-limiter` package
+- [x] Create `convex/rateLimits.ts` configuration
+- [x] Add rate limits:
+  - [x] Keyword generation: 10/hour per user
+  - [x] Brief generation: 5/hour per user
+  - [x] Draft generation: 5/hour per user
+  - [x] AI analysis: 3/day per user
+  - [x] Quarterly planning: 2/day per user
+- [x] Add user-friendly error messages
+- [x] Test rate limiting scenarios
+- [x] **Benefits**: Prevent API abuse, protect against runaway costs
 
 ### Week 3-4: Action Cache Integration
-- [ ] Install `@convex-dev/action-cache` package
-- [ ] Create cached versions of AI operations:
-  - [ ] Keyword generation (7 day TTL)
-  - [ ] Brief generation (7 day TTL)
-  - [ ] SERP analysis (24 hour TTL)
-- [ ] Add cache invalidation logic
+
+- [x] Install `@convex-dev/action-cache` package
+- [x] Create cached versions of AI operations:
+  - [x] Keyword generation (30 day TTL)
+  - [x] Brief generation (7 day TTL)
+  - [x] SERP analysis (24 hour TTL - via Keyword/Brief actions)
+- [x] Add cache invalidation logic (TTL + Input Hashing)
 - [ ] Monitor cache hit rates (target: 60-80%)
-- [ ] **Benefits**: $6,000+ annual savings, faster responses
+- [x] **Benefits**: $6,000+ annual savings, faster responses
+
+### Week 4: Persistent AI Storage & Audit Log
+
+- [x] Create `aiGenerations` table (Infinite Retention)
+- [x] Implement SHA-256 hash-based lookup
+- [x] Integrate with Keyword, Brief, Draft, and Plan actions
+- [x] **Benefits**: Zero-cost re-generations, complete audit trail
 
 ### Success Metrics
+
 - ✅ Convex Auth working with Google OAuth
 - ✅ Rate limits preventing abuse
-- ✅ 60-80% cache hit rate
+- ⬜ 60-80% cache hit rate
 - ✅ 242 lines of auth code removed
-- ✅ $8,400+ projected annual savings
+- ✅ $X,XXX projected annual savings
 
 ---
 
 ## Phase 1: MVP Completion (P0 - Q1 2025)
 
 ### Core Features
+
 - [ ] **Publishing Workflow**
   - [ ] WordPress adapter completion & testing
   - [ ] Webflow adapter implementation
@@ -100,6 +104,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
   - [ ] Re-generation with feedback
 
 ### Technical Debt
+
 - [ ] API route security audit completion
 - [ ] Type safety improvements (remove `as any`)
 - [ ] Error boundary implementation
@@ -109,11 +114,6 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 ## Phase 2: Enhanced Features (P1 - Q2 2025)
 
 ### AI & Automation
-- [ ] **AI Assistant**
-  - [ ] Context-aware chat (plan, clusters, briefs, KPIs)
-  - [ ] Action buttons (Use Draft, Add to Plan)
-  - [ ] Optimization suggestions
-  - [ ] Safe-response filtering
 
 - [ ] **Content Intelligence**
   - [ ] SERP analysis & competitor content review
@@ -121,7 +121,18 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
   - [ ] Content gap analysis
   - [ ] Topic cluster visualization
 
+- [ ] **Competitor / Ad-hoc URL Analytics** (New)
+  - [ ] URL input for non-project sites
+  - [ ] "Run Analysis" check against membership tier limits
+  - [ ] Upsell CTA/Tooltip when limit reached
+  - [ ] Basic SEO/Performance report similar to project dashboard
+  - [ ] SERP analysis & competitor content review
+  - [ ] Internal linking recommendations
+  - [ ] Content gap analysis
+  - [ ] Topic cluster visualization
+
 ### Planning & Strategy
+
 - [ ] **Advanced Planning**
   - [ ] Multi-quarter planning
   - [ ] Plan versioning & history
@@ -138,6 +149,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 ## Phase 3: Scale & Monetization (P2 - Q3 2025)
 
 ### Billing & Subscriptions
+
 - [ ] **Subscription Management**
   - [ ] Stripe integration
   - [ ] Plan tiers (Starter/Growth/Pro)
@@ -152,6 +164,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
   - [ ] Billing management
 
 ### Multi-tenancy & Collaboration
+
 - [ ] **Team Features**
   - [ ] Workspace/team creation
   - [ ] Role-based access control (RBAC)
@@ -160,6 +173,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
   - [ ] Comments & collaboration on briefs/drafts
 
 ### Advanced Analytics
+
 - [ ] **Reporting**
   - [ ] Custom report builder
   - [ ] Automated weekly/monthly reports
@@ -170,6 +184,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 ## Phase 4: Enterprise & Integrations (P3 - Q4 2025)
 
 ### Enterprise Features
+
 - [ ] **Advanced Workflows**
   - [ ] Custom approval workflows
   - [ ] Content templates library
@@ -184,6 +199,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
   - [ ] API for third-party tools
 
 ### Performance & Scale
+
 - [ ] **Infrastructure**
   - [ ] Caching layer optimization
   - [ ] Background job queue (if needed)
@@ -194,18 +210,25 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 ## Technical Priorities
 
 ### Immediate (Next Sprint)
-1. Complete WordPress publishing adapter
-2. Implement nightly analytics sync
-3. Add SEO checklist validation
-4. Fix any remaining type safety issues
+
+### Immediate (Next Sprint)
+
+1. **[URGENT] Staging Environment Setup** (Client Testing)
+2. **Analytics Data Ingestion Pipeline** (Nightly Sync)
+3. **Analytics Insights Generation** (Top gainers, etc.)
+4. **Ad-hoc URL Analytics** (with Tier Limits)
+5. **[URGENT] Rotate all secrets & .env vars before Launch**
+6. **WordPress Publishing Integration** (Deferred)
 
 ### Short-term (Next Month)
+
 1. Webflow adapter
-2. Insight generation & Apply workflow
-3. AI Assistant MVP
+2. Insight → Action workflow (Apply Suggestion)
+3. Test coverage for critical paths
 4. Test coverage for critical paths
 
 ### Medium-term (Next Quarter)
+
 1. Stripe billing integration
 2. Team/workspace features
 3. Advanced analytics
@@ -222,6 +245,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 ## Success Metrics
 
 ### MVP Launch Criteria
+
 - [ ] 100% of P0 features complete
 - [ ] < 600ms p95 API response time
 - [ ] 99.5% uptime
@@ -229,6 +253,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - [ ] Security audit passed
 
 ### Growth Metrics (Post-MVP)
+
 - User acquisition rate
 - Content pieces generated per user
 - Publishing success rate
@@ -240,21 +265,26 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 ### Critical Issues
 
 #### 1. **Timeline Unrealistic for Phase 1**
+
 **Issue**: Phase 1 (MVP Completion) is too aggressive for Q1 2025.
+
 - **Publishing Workflow**: 3 CMS adapters (WordPress, Webflow, Shopify) + scheduling + error handling = ~6-8 weeks for 1 engineer
 - **Analytics Pipeline**: Nightly sync + KPI calc + insights = ~4-6 weeks (includes testing edge cases)
 - **Content Quality**: 5 features including plagiarism detection (external API) = ~4-5 weeks
 - **Technical Debt**: 92 `as any` instances + test coverage = ~3-4 weeks
 - **Total**: ~17-23 weeks of work, but Q1 = ~13 weeks
 
-**Recommendation**: 
+**Recommendation**:
+
 - **MVP should be WordPress-only** (defer Webflow/Shopify to P1)
 - **Defer plagiarism detection** (use basic quality checks first)
 - **Split Phase 1 into Phase 1A (MVP) and Phase 1B (Polish)**
 - **Target realistic MVP launch: End of Q1/Early Q2**
 
 #### 2. **Missing Critical Infrastructure**
+
 **Issue**: No mention of DevOps, CI/CD, monitoring, or deployment strategy.
+
 - No CI/CD pipeline (how do we deploy safely?)
 - No observability (how do we debug production issues?)
 - No performance testing (how do we validate <600ms p95?)
@@ -262,6 +292,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - No database migration strategy
 
 **Recommendation**: Add **Phase 0: Infrastructure Foundation** (2-3 weeks):
+
 - [ ] CI/CD pipeline (GitHub Actions/Vercel)
 - [ ] Error tracking (Sentry/LogRocket)
 - [ ] APM/Monitoring (Vercel Analytics + custom metrics)
@@ -270,58 +301,73 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - [ ] Load testing setup
 
 #### 3. **Technical Debt Underestimated**
+
 **Issue**: "Fix any remaining type safety issues" is vague. 92 `as any` instances is significant.
+
 - Current estimate: 1 sprint item
 - Reality: This is 2-3 weeks of focused work + regression testing
 - Risk: Type errors will surface during refactoring, causing delays
 
 **Recommendation**:
+
 - **Break into phases**: Fix critical paths first (auth, publishing, analytics)
 - **Add to Phase 1A**: Type safety for auth + publishing (1 week)
 - **Phase 1B**: Remaining type safety (1-2 weeks)
 - **Use automated tooling**: Scripts exist (`replace-as-any.ps1`) but need validation
 
 #### 4. **Test Coverage Gap**
+
 **Issue**: Only 3 test files exist. "Test coverage expansion" is too vague.
+
 - Current: ~5% coverage (auth, API security only)
 - Target for MVP: 60%+ for critical paths
 - Missing: Integration tests for publishing, analytics sync, content generation
 
 **Recommendation**:
+
 - **Phase 1A**: Unit tests for publishing adapters, analytics calculations (2 weeks)
 - **Phase 1B**: Integration tests for end-to-end workflows (2 weeks)
 - **Define coverage targets**: 60% overall, 80% for critical paths (auth, publishing, payments)
 
 #### 5. **Dependencies Not Clearly Sequenced**
+
 **Issue**: Some features depend on others but aren't ordered correctly.
+
 - **Analytics Insights** requires **Analytics Sync** to be complete first
 - **AI Assistant** requires **Content Quality** metrics for context
 - **Team Features** (Phase 3) should come before **Billing** (also Phase 3) - you can't bill teams without teams
 
 **Recommendation**: Reorder Phase 3:
+
 1. Team/Workspace features first (foundation for billing)
 2. Billing/Subscriptions (depends on teams)
 3. Advanced Analytics (can run in parallel)
 
 #### 6. **Resource Planning Missing**
+
 **Issue**: No team size, skill requirements, or capacity assumptions.
+
 - How many engineers?
 - Full-stack or specialized?
 - Do we need DevOps/QA?
 - What about design/UX support?
 
 **Recommendation**: Add **Resource Assumptions** section:
+
 - **Phase 1**: 2-3 full-stack engineers + 0.5 DevOps + 0.5 QA
 - **Phase 2**: 3-4 engineers + 1 DevOps + 1 QA
 - **Phase 3**: 4-5 engineers + 1.5 DevOps + 1.5 QA + 0.5 PM
 
 #### 7. **Success Metrics Not Measurable**
+
 **Issue**: Metrics lack baselines and measurement methods.
+
 - "99.5% uptime" - how do we measure? What's current uptime?
 - "WCAG AA compliance" - who audits? When?
 - "Security audit passed" - internal or external? What scope?
 
 **Recommendation**: Add **Measurement Plan**:
+
 - [ ] Set up uptime monitoring (UptimeRobot/Pingdom) before MVP
 - [ ] Baseline current performance metrics (p50, p95, p99)
 - [ ] Define WCAG audit process (automated tools + manual review)
@@ -363,9 +409,11 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 ### Revised Phase Structure
 
 **Phase 0: Infrastructure (Weeks 1-3)**
+
 - CI/CD, monitoring, staging, load testing setup
 
 **Phase 1A: MVP Core (Weeks 4-10)**
+
 - WordPress publishing only
 - Basic analytics sync
 - SEO checklist (basic)
@@ -373,6 +421,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - Unit tests (critical paths)
 
 **Phase 1B: MVP Polish (Weeks 11-13)**
+
 - Error handling & retry logic
 - Content quality metrics (basic)
 - Type safety (remaining)
@@ -380,17 +429,20 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - Performance optimization
 
 **Phase 2: Enhanced Features (Q2)**
+
 - Webflow/Shopify adapters
 - AI Assistant MVP
 - Advanced analytics
 - Content intelligence
 
 **Phase 3: Scale (Q3)**
+
 - Teams/Workspaces (first)
 - Billing/Subscriptions (second)
 - Advanced analytics (parallel)
 
 **Phase 4: Enterprise (Q4)**
+
 - Workflows, integrations, performance
 
 ## Notes
@@ -404,4 +456,3 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - **Next review**: After Phase 1A completion
 
 Last updated: 2025-01-XX
-

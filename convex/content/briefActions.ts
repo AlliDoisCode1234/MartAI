@@ -1,43 +1,43 @@
-"use node";
+'use node';
 
-import { action } from "../_generated/server";
-import { v } from "convex/values";
-import { api } from "../_generated/api";
-import { generateBriefDetails, type ClusterInfo } from "../../lib/briefGenerator";
-import { auth } from "../auth";
-import { rateLimits, getRateLimitKey, type MembershipTier } from "../rateLimits";
-import { ConvexError } from "convex/values";
-import { cache, getCacheKey, CACHE_TTL } from "../cache";
+import { action } from '../_generated/server';
+import { v } from 'convex/values';
+import { api } from '../_generated/api';
+import { generateBriefDetails, type ClusterInfo } from '../../lib/briefGenerator';
+import { auth } from '../auth';
+import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
+import { ConvexError } from 'convex/values';
+import { cache, getCacheKey, CACHE_TTL } from '../cache';
 
 export const generateBrief = action({
   args: {
-    briefId: v.id("briefs"),
-    projectId: v.id("projects"),
-    clusterId: v.optional(v.id("keywordClusters")),
+    briefId: v.id('briefs'),
+    projectId: v.id('projects'),
+    clusterId: v.optional(v.id('keywordClusters')),
   },
   handler: async (ctx, args) => {
     // Get authenticated user
     const userId = await auth.getUserId(ctx);
     if (!userId) {
-      throw new Error("Unauthorized");
+      throw new Error('Unauthorized');
     }
 
     // Get user to check membership tier and role
     const user = await ctx.runQuery((api as any).users.current);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error('User not found');
     }
 
-    // Determine rate limit tier (admins get admin tier, others use membership tier)
+    // Determine rate limit tier
     let tier: MembershipTier;
-    if (user.role === "admin" || user.role === "super_admin") {
-      tier = "admin";
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      tier = 'admin';
     } else {
-      tier = (user.membershipTier as MembershipTier) || "free";
+      tier = (user.membershipTier as MembershipTier) || 'free';
     }
 
     // Check rate limit
-    const rateLimitKey = getRateLimitKey("generateBrief", tier);
+    const rateLimitKey = getRateLimitKey('generateBrief', tier);
     const { ok, retryAfter } = await rateLimits.limit(ctx, rateLimitKey as any, {
       key: userId as string,
     });
@@ -45,30 +45,20 @@ export const generateBrief = action({
     if (!ok) {
       const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
       throw new ConvexError({
-        kind: "RateLimitError",
-        message: `Rate limit exceeded. You can generate ${tier === "free" ? "3 briefs per day" : tier === "admin" ? "100 briefs per hour" : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? "s" : ""}.`,
+        kind: 'RateLimitError',
+        message: `Rate limit exceeded. You can generate ${tier === 'free' ? '3 briefs per day' : tier === 'admin' ? '100 briefs per hour' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
         retryAfter,
       });
     }
 
-    const cacheKey = getCacheKey("generateBrief", {
-  clusterId: args.clusterId,
-  projectId: args.projectId,
-});
+    const cacheKey = getCacheKey('generateBrief', {
+      clusterId: args.clusterId,
+      projectId: args.projectId,
+    });
 
-// Try to get from cache
-const cached = await cache.get(ctx, cacheKey);
-if (cached) {
-  console.log("Cache hit for brief generation");
-  await ctx.runMutation((api as any).content.briefs.updateBrief, {
-    briefId: args.briefId,
-    ...cached,
-    status: "in_progress",
-  });
-  return { success: true, cached: true };
-}
-
-console.log("Cache miss for brief generation");
+    // 1. Check Persistent Storage
+    // We need 'inputs' logic first.
+    // So logic flow: Get Project -> Get Cluster -> Build Inputs -> Check Persistence -> Check Cache -> Generate -> Store.
 
     // Get project info
     const project = await ctx.runQuery(api.projects.projects.getProjectById, {
@@ -76,28 +66,18 @@ console.log("Cache miss for brief generation");
     });
 
     if (!project) {
-      throw new Error("Project not found");
+      throw new Error('Project not found');
     }
 
     // Get cluster info if available
     let clusterInfo: ClusterInfo;
-    
+
     if (args.clusterId) {
-      // We need a query to get cluster by ID. 
-      // convex/seo/keywordClusters.ts has getClustersByProject but not getClusterById?
-      // Let's check if we can get it. 
-      // Actually, we can use internal query or just pass the data if we had it.
-      // But action should fetch it.
-      // If getClusterById is missing, we might need to add it or use internal query.
-      // Let's assume we can fetch it via a new query or filter.
-      // For now, I'll use a placeholder if cluster is missing or if I can't fetch it easily.
-      
-      // Wait, I can use `ctx.runQuery(api.seo.keywordClusters.getClustersByProject, ...)` and find it.
-      const clusters = await ctx.runQuery(api.seo.keywordClusters.getClustersByProject, {
+      const clusters = await ctx.runQuery((api as any).seo.keywordClusters.getClustersByProject, {
         projectId: args.projectId,
       });
       const cluster = clusters.find((c: any) => c._id === args.clusterId);
-      
+
       if (cluster) {
         clusterInfo = {
           clusterName: cluster.clusterName,
@@ -106,47 +86,85 @@ console.log("Cache miss for brief generation");
           volumeRange: cluster.volumeRange,
         };
       } else {
-        // Fallback if ID provided but not found
         clusterInfo = {
-          clusterName: "General Topic",
-          keywords: [project.industry || "Business"],
-          intent: "informational",
+          clusterName: 'General Topic',
+          keywords: [project.industry || 'Business'],
+          intent: 'informational',
           volumeRange: { min: 100, max: 1000 },
         };
       }
     } else {
-      // Fallback if no cluster ID
-      // We need the brief title to know what to generate?
-      // The brief should already exist (we passed briefId).
-      const brief = await ctx.runQuery(api.content.briefs.getBriefById, {
+      const brief = await ctx.runQuery((api as any).content.briefs.getBriefById, {
         briefId: args.briefId,
       });
-      
-      if (!brief) throw new Error("Brief not found");
+      if (!brief) throw new Error('Brief not found');
 
       clusterInfo = {
         clusterName: brief.title,
         keywords: [brief.title],
-        intent: "informational",
+        intent: 'informational',
         volumeRange: { min: 0, max: 0 },
       };
     }
 
-    // Generate details
-    const details = await generateBriefDetails(
+    const inputs = {
       clusterInfo,
-      project.websiteUrl,
-      project.industry
-    );
+      website: project.websiteUrl,
+      industry: project.industry,
+    };
+
+    // Check Persistence
+    const crypto = await import('node:crypto');
+    const inputHash = crypto.createHash('sha256').update(JSON.stringify(inputs)).digest('hex');
+
+    const stored = await ctx.runQuery((api as any).aiStorage.getStored, { inputHash });
+
+    if (stored) {
+      console.log('Persistent Storage Hit for brief generation');
+      await ctx.runMutation((api as any).content.briefs.updateBrief, {
+        briefId: args.briefId,
+        ...stored.output,
+        status: 'in_progress',
+      });
+      return { success: true, cached: true, storage: true };
+    }
+
+    // Check Cache
+    const cached = await cache.get(ctx, cacheKey);
+    if (cached) {
+      console.log('Cache hit for brief generation');
+      await ctx.runMutation((api as any).content.briefs.updateBrief, {
+        briefId: args.briefId,
+        ...cached,
+        status: 'in_progress',
+      });
+      return { success: true, cached: true };
+    }
+
+    console.log('Cache miss for brief generation');
+
+    const details = await generateBriefDetails(clusterInfo, project.websiteUrl, project.industry);
+
+    // Store in Persistent Storage
+    await ctx.runMutation((api as any).aiStorage.store, {
+      inputHash,
+      operation: 'generateBrief',
+      provider: 'openai',
+      model: 'gpt-4o',
+      inputArgs: inputs,
+      output: details,
+      tokensIn: 0,
+      tokensOut: 0,
+    });
 
     // Store in cache
-await cache.set(ctx, cacheKey, details, CACHE_TTL.BRIEF_GENERATION);
+    await cache.set(ctx, cacheKey, details, CACHE_TTL.BRIEF_GENERATION);
 
     // Update brief with details
-    await ctx.runMutation(api.content.briefs.updateBrief, {
+    await ctx.runMutation((api as any).content.briefs.updateBrief, {
       briefId: args.briefId,
       ...details,
-      status: "in_progress",
+      status: 'in_progress',
     });
 
     return { success: true };

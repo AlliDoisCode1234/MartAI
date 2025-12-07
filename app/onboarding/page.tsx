@@ -31,7 +31,7 @@ export default function OnboardingPage() {
     website: '',
   });
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated or dashboard if already onboarded
   useEffect(() => {
     console.log('🏁 OnboardingPage mounted. Auth:', { isAuthenticated, authLoading, user });
     if (authLoading) return;
@@ -41,9 +41,15 @@ export default function OnboardingPage() {
       router.replace('/auth/login');
       return;
     }
+
+    if (user && user.onboardingStatus === 'completed') {
+      console.log('✅ User already onboarded, redirecting to dashboard');
+      router.replace('/dashboard');
+    }
   }, [isAuthenticated, authLoading, router, user]);
 
   const createProject = useMutation(api.projects.projects.createProject);
+  const completeOnboarding = useMutation(api.users.completeOnboarding);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,15 +77,25 @@ export default function OnboardingPage() {
       console.log('✅ Project created with ID:', projectId);
 
       if (projectId) {
+        // Mark onboarding as complete for the user
+        await completeOnboarding();
+
         localStorage.setItem('currentProjectId', projectId);
         // Redirect to reveal page for cool onboarding journey
         router.push('/onboarding/reveal');
       } else {
         throw new Error('Failed to create project');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Onboarding error:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      let msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+
+      // Better error message for limits
+      if (msg.includes('LIMIT_REACHED')) {
+        msg = msg.replace('LIMIT_REACHED:', '').trim();
+      }
+
+      setError(msg);
       setLoading(false);
     }
   };

@@ -106,6 +106,16 @@ export async function POST(request: NextRequest) {
     if (error.status === 401 && error.response) {
       return error.response;
     }
+
+    const msg = error.message || '';
+    if (msg.includes('LIMIT_REACHED')) {
+      const response = NextResponse.json(
+        { error: msg.replace('LIMIT_REACHED:', '').trim() },
+        { status: 403 }
+      );
+      return secureResponse(response);
+    }
+
     const response = NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
     return secureResponse(response);
   }

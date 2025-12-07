@@ -23,20 +23,45 @@ import {
   Icon,
   Flex,
 } from '@chakra-ui/react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import { useAuth } from '@/lib/useAuth';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+
+import AdhocAnalyzer from '@/src/components/analytics/AdhocAnalyzer';
 
 // Icons
 const TrendingUpIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M5 15L15 5M15 5H9M15 5V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path
+      d="M5 15L15 5M15 5H9M15 5V11"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
 const TrendingDownIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M5 5L15 15M15 15H9M15 15V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path
+      d="M5 5L15 15M15 15H9M15 15V9"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
@@ -52,8 +77,6 @@ function AnalyticsPageContent() {
 
   const projectId = searchParams?.get('projectId') || localStorage.getItem('projectId');
 
-
-
   const loadAnalytics = useCallback(async () => {
     if (!projectId) return;
 
@@ -67,7 +90,7 @@ function AnalyticsPageContent() {
       // Load KPIs
       const kpisResponse = await fetch(
         `/api/analytics/kpis?projectId=${projectId}&startDate=${startDate}&endDate=${endDate}`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (kpisResponse.ok) {
@@ -78,7 +101,7 @@ function AnalyticsPageContent() {
       // Load chart data
       const dataResponse = await fetch(
         `/api/analytics/data?projectId=${projectId}&startDate=${startDate}&endDate=${endDate}`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (dataResponse.ok) {
@@ -100,10 +123,9 @@ function AnalyticsPageContent() {
       }
 
       // Load insights
-      const insightsResponse = await fetch(
-        `/api/analytics/insights?projectId=${projectId}`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
+      const insightsResponse = await fetch(`/api/analytics/insights?projectId=${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (insightsResponse.ok) {
         const insightsData = await insightsResponse.json();
@@ -132,7 +154,7 @@ function AnalyticsPageContent() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           projectId,
@@ -157,7 +179,7 @@ function AnalyticsPageContent() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ insightId }),
       });
@@ -292,11 +314,7 @@ function AnalyticsPageContent() {
       <Container maxW="7xl">
         <VStack spacing={6} align="stretch">
           {/* Header - Vibrant */}
-          <Card
-            bgGradient="linear(135deg, #F7941E 0%, #40DEC7 100%)"
-            shadow="xl"
-            border="none"
-          >
+          <Card bgGradient="linear(135deg, #F7941E 0%, #40DEC7 100%)" shadow="xl" border="none">
             <CardBody>
               <HStack justify="space-between" flexWrap="wrap" gap={4}>
                 <VStack align="start" spacing={2}>
@@ -347,6 +365,9 @@ function AnalyticsPageContent() {
             </CardBody>
           </Card>
 
+          {/* Ad-hoc Analysis Section */}
+          <AdhocAnalyzer />
+
           {loading ? (
             <Flex justify="center" py={20}>
               <Spinner size="xl" color="brand.orange" />
@@ -354,7 +375,10 @@ function AnalyticsPageContent() {
           ) : (
             <>
               {/* KPI Cards - Vibrant & User-Friendly */}
-              <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={6}>
+              <Grid
+                templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }}
+                gap={6}
+              >
                 {kpiCards.map((kpi, i) => (
                   <Card
                     key={i}
@@ -382,7 +406,14 @@ function AnalyticsPageContent() {
                       <VStack align="start" spacing={3}>
                         <HStack justify="space-between" w="full">
                           <VStack align="start" spacing={0}>
-                            <Text fontSize="xs" fontWeight="bold" color="white" opacity={0.9} textTransform="uppercase" letterSpacing="wide">
+                            <Text
+                              fontSize="xs"
+                              fontWeight="bold"
+                              color="white"
+                              opacity={0.9}
+                              textTransform="uppercase"
+                              letterSpacing="wide"
+                            >
                               {kpi.label}
                             </Text>
                             {kpi.description && (
@@ -391,13 +422,7 @@ function AnalyticsPageContent() {
                               </Text>
                             )}
                           </VStack>
-                          <Box
-                            bg="white"
-                            opacity="0.2"
-                            borderRadius="full"
-                            p={3}
-                            fontSize="2xl"
-                          >
+                          <Box bg="white" opacity="0.2" borderRadius="full" p={3} fontSize="2xl">
                             {kpi.icon}
                           </Box>
                         </HStack>
@@ -429,7 +454,8 @@ function AnalyticsPageContent() {
                               <TrendingDownIcon />
                             ) : null}
                             <Text fontSize="sm" fontWeight="bold" color="white">
-                              {kpi.change > 0 ? '+' : ''}{kpi.change.toFixed(1)}%
+                              {kpi.change > 0 ? '+' : ''}
+                              {kpi.change.toFixed(1)}%
                             </Text>
                             <Text fontSize="xs" color="white" opacity={0.8}>
                               vs previous
@@ -470,15 +496,18 @@ function AnalyticsPageContent() {
                       </HStack>
                       {chartData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={320}>
-                          <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                          <LineChart
+                            data={chartData}
+                            margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                          >
                             <defs>
                               <linearGradient id="sessionsGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#F7941E" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#F7941E" stopOpacity={0}/>
+                                <stop offset="5%" stopColor="#F7941E" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#F7941E" stopOpacity={0} />
                               </linearGradient>
                               <linearGradient id="clicksGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#40DEC7" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#40DEC7" stopOpacity={0}/>
+                                <stop offset="5%" stopColor="#40DEC7" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#40DEC7" stopOpacity={0} />
                               </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.5} />
@@ -504,10 +533,7 @@ function AnalyticsPageContent() {
                               }}
                               cursor={{ stroke: '#F7941E', strokeWidth: 2 }}
                             />
-                            <Legend
-                              wrapperStyle={{ paddingTop: '20px' }}
-                              iconType="line"
-                            />
+                            <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="line" />
                             <Line
                               type="monotone"
                               dataKey="sessions"
@@ -542,7 +568,9 @@ function AnalyticsPageContent() {
                           <VStack spacing={4}>
                             <Text fontSize="4xl">📊</Text>
                             <VStack spacing={2}>
-                              <Text fontWeight="semibold" color="gray.700">No data available</Text>
+                              <Text fontWeight="semibold" color="gray.700">
+                                No data available
+                              </Text>
                               <Text fontSize="sm" color="gray.600" textAlign="center">
                                 Sync your GA4 and GSC data to see traffic trends
                               </Text>
@@ -589,11 +617,14 @@ function AnalyticsPageContent() {
                       </HStack>
                       {chartData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={320}>
-                          <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                          <BarChart
+                            data={chartData}
+                            margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                          >
                             <defs>
                               <linearGradient id="leadsGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#40DEC7" stopOpacity={1}/>
-                                <stop offset="95%" stopColor="#38B2AC" stopOpacity={1}/>
+                                <stop offset="5%" stopColor="#40DEC7" stopOpacity={1} />
+                                <stop offset="95%" stopColor="#38B2AC" stopOpacity={1} />
                               </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.5} />
@@ -642,7 +673,9 @@ function AnalyticsPageContent() {
                           <VStack spacing={4}>
                             <Text fontSize="4xl">🎯</Text>
                             <VStack spacing={2}>
-                              <Text fontWeight="semibold" color="gray.700">No leads data</Text>
+                              <Text fontWeight="semibold" color="gray.700">
+                                No leads data
+                              </Text>
                               <Text fontSize="sm" color="gray.600" textAlign="center">
                                 Connect GA4 to track conversions and revenue
                               </Text>
@@ -665,12 +698,7 @@ function AnalyticsPageContent() {
               </Grid>
 
               {/* Insights - Vibrant Cards */}
-              <Card
-                shadow="xl"
-                bg="white"
-                border="1px"
-                borderColor="gray.200"
-              >
+              <Card shadow="xl" bg="white" border="1px" borderColor="gray.200">
                 <CardBody>
                   <VStack align="stretch" spacing={6}>
                     <HStack justify="space-between">
@@ -726,7 +754,14 @@ function AnalyticsPageContent() {
                         </VStack>
                       </Box>
                     ) : (
-                      <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={5}>
+                      <Grid
+                        templateColumns={{
+                          base: '1fr',
+                          md: 'repeat(2, 1fr)',
+                          lg: 'repeat(3, 1fr)',
+                        }}
+                        gap={5}
+                      >
                         {insights.map((insight, i) => {
                           const colors = getInsightColor(insight.type);
                           return (
@@ -823,11 +858,19 @@ function AnalyticsPageContent() {
 
 export default function AnalyticsPage() {
   return (
-    <Suspense fallback={
-      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
-        <Spinner size="xl" color="brand.orange" />
-      </Box>
-    }>
+    <Suspense
+      fallback={
+        <Box
+          minH="calc(100vh - 64px)"
+          bg="brand.light"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Spinner size="xl" color="brand.orange" />
+        </Box>
+      }
+    >
       <AnalyticsPageContent />
     </Suspense>
   );

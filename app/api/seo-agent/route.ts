@@ -112,7 +112,7 @@ Perform a comprehensive SEO audit and provide actionable recommendations based o
           }),
           execute: async ({ website, industry, companyName, siteAnalysis }) => {
             // Calculate scores based on real analysis
-            const issues = siteAnalysis?.issues || [];
+            const issues = siteAnalysis?.issues ?? [];
             const technicalScore = Math.max(0, 100 - issues.length * 10);
             const onPageScore = siteAnalysis
               ? Math.max(
@@ -137,7 +137,7 @@ Perform a comprehensive SEO audit and provide actionable recommendations based o
                     i.includes('mobile') ||
                     i.includes('speed') ||
                     i.includes('canonical')
-                ) || [
+                ) ?? [
                   'Missing meta descriptions on 40% of pages',
                   'Page load speed could be improved',
                   'Mobile responsiveness needs optimization',
@@ -156,7 +156,7 @@ Perform a comprehensive SEO audit and provide actionable recommendations based o
                 score: Math.max(0, Math.min(100, onPageScore)),
                 issues: siteAnalysis?.issues.filter(
                   (i: string) => i.includes('H1') || i.includes('heading') || i.includes('title')
-                ) || [
+                ) ?? [
                   'H1 tags missing or duplicated on key pages',
                   'Internal linking structure needs improvement',
                   'Keyword density optimization required',
@@ -214,7 +214,7 @@ Perform a comprehensive SEO audit and provide actionable recommendations based o
               mobileFriendly: siteAnalysis?.mobileFriendly,
               sslEnabled: siteAnalysis?.hasSSL,
               indexedPages: undefined,
-              crawlErrors: siteAnalysis?.issues.length || 0,
+              crawlErrors: siteAnalysis?.issues.length ?? 0,
             };
           },
         }),
@@ -316,7 +316,7 @@ Perform a comprehensive SEO audit and provide actionable recommendations based o
             contentTopic: z.string().optional(),
           }),
           execute: async ({ companyName, industry, targetAudience, contentTopic }) => {
-            const topic = contentTopic || `${industry} insights`;
+            const topic = contentTopic ?? `${industry} insights`;
             return {
               linkedin: [
                 {

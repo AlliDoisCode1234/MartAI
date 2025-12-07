@@ -28,34 +28,34 @@ export async function POST(request: NextRequest) {
     const { projectId, days = 30 } = body;
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: 'projectId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'projectId is required' }, { status: 400 });
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
     }
 
     // Validate required field - type guaranteed after assertion
     const projectIdTyped = assertProjectId(projectId);
 
     // Get GA4 connection by project
-    const ga4Connection = await callConvexQuery(apiLocal.ga4Connections.getGA4Connection, {
-      projectId: projectIdTyped,
-    });
+    const ga4Connection = await callConvexQuery(
+      (apiLocal as any).integrations.ga4Connections.getGA4Connection,
+      {
+        projectId: projectIdTyped,
+      }
+    );
 
     // Get GSC connection by project
-    const gscConnection = await callConvexQuery(apiLocal.gscConnections.getGSCConnection, {
-      projectId: projectIdTyped,
-    });
+    const gscConnection = await callConvexQuery(
+      (apiLocal as any).integrations.gscConnections.getGSCConnection,
+      {
+        projectId: projectIdTyped,
+      }
+    );
 
     const endDate = Date.now();
-    const startDate = endDate - (days * 24 * 60 * 60 * 1000);
+    const startDate = endDate - days * 24 * 60 * 60 * 1000;
     const syncedDates: number[] = [];
 
     // Sync GA4 data
@@ -64,12 +64,31 @@ export async function POST(request: NextRequest) {
         // Format dates for GA4 API (YYYY-MM-DD or '30daysAgo')
         const startDateStr = format(new Date(startDate), 'yyyy-MM-dd');
         const endDateStr = format(new Date(endDate), 'yyyy-MM-dd');
-        
+
         const ga4Data = await getGA4Data(
           ga4Connection.accessToken,
+          ga4Connection.refreshToken,
           ga4Connection.propertyId,
           startDateStr,
-          endDateStr
+          endDateStr,
+          async (newTokens: any) => {
+            if (apiLocal) {
+              try {
+                await callConvexMutation(
+                  (apiLocal as any).integrations.ga4Connections.upsertGA4Connection,
+                  {
+                    projectId: projectIdTyped,
+                    propertyId: ga4Connection.propertyId,
+                    propertyName: ga4Connection.propertyName ?? 'Unknown',
+                    accessToken: newTokens.access_token,
+                    refreshToken: newTokens.refresh_token || ga4Connection.refreshToken,
+                  }
+                );
+              } catch (error) {
+                console.warn('Failed to update GA4 tokens in sync:', error);
+              }
+            }
+          }
         );
 
         // Parse GA4 response and store data points
@@ -77,9 +96,11 @@ export async function POST(request: NextRequest) {
         for (const row of rows) {
           const dateStr = row.dimensionValues?.[0]?.value;
           const sessions = parseInt(row.metricValues?.[0]?.value || '0');
-          const date = dateStr ? new Date(dateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')).getTime() : Date.now();
-          
-          await callConvexMutation(apiLocal.analytics.storeAnalyticsData, {
+          const date = dateStr
+            ? new Date(dateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')).getTime()
+            : Date.now();
+
+          await callConvexMutation((apiLocal as any).analytics.analytics.storeAnalyticsData, {
             projectId: projectIdTyped,
             date,
             source: 'ga4',
@@ -98,12 +119,31 @@ export async function POST(request: NextRequest) {
         // Format dates for GSC API
         const startDateStr = format(new Date(startDate), 'yyyy-MM-dd');
         const endDateStr = format(new Date(endDate), 'yyyy-MM-dd');
-        
+
         const gscData = await getGSCData(
           gscConnection.accessToken,
+          gscConnection.refreshToken,
           gscConnection.siteUrl,
           startDateStr,
-          endDateStr
+          endDateStr,
+          100, // rowLimit default
+          async (newTokens: any) => {
+            if (apiLocal) {
+              try {
+                await callConvexMutation(
+                  (apiLocal as any).integrations.gscConnections.upsertGSCConnection,
+                  {
+                    projectId: projectIdTyped,
+                    siteUrl: gscConnection.siteUrl,
+                    accessToken: newTokens.access_token,
+                    refreshToken: newTokens.refresh_token || gscConnection.refreshToken,
+                  }
+                );
+              } catch (error) {
+                console.warn('Failed to update GSC tokens in sync:', error);
+              }
+            }
+          }
         );
 
         // Parse GSC response - it returns aggregated data, not daily
@@ -111,12 +151,20 @@ export async function POST(request: NextRequest) {
         const rows = gscData.rows || [];
         if (rows.length > 0) {
           // GSC typically returns aggregated data, store as end date
-          const totalClicks = rows.reduce((sum: number, r: any) => sum + (parseInt(r.clicks) || 0), 0);
-          const totalImpressions = rows.reduce((sum: number, r: any) => sum + (parseInt(r.impressions) || 0), 0);
+          const totalClicks = rows.reduce(
+            (sum: number, r: any) => sum + (parseInt(r.clicks) || 0),
+            0
+          );
+          const totalImpressions = rows.reduce(
+            (sum: number, r: any) => sum + (parseInt(r.impressions) || 0),
+            0
+          );
           const avgCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
-          const avgPos = rows.reduce((sum: number, r: any) => sum + (parseFloat(r.position) || 0), 0) / rows.length;
-          
-          await callConvexMutation(apiLocal.analytics.storeAnalyticsData, {
+          const avgPos =
+            rows.reduce((sum: number, r: any) => sum + (parseFloat(r.position) || 0), 0) /
+            rows.length;
+
+          await callConvexMutation((apiLocal as any).analytics.analytics.storeAnalyticsData, {
             projectId: projectIdTyped,
             date: endDate,
             source: 'gsc',
@@ -152,7 +200,7 @@ async function generateInsights(projectId: ProjectId, startDate: number, endDate
   if (!apiLocal) return;
 
   try {
-    const data = await callConvexQuery(apiLocal.analytics.getAnalyticsData, {
+    const data = await callConvexQuery((apiLocal as any).analytics.analytics.getAnalyticsData, {
       projectId,
       startDate,
       endDate,
@@ -164,9 +212,10 @@ async function generateInsights(projectId: ProjectId, startDate: number, endDate
 
     // Top gainers - pages with most traffic growth
     if (ga4Data.length > 0) {
-      const avgSessions = ga4Data.reduce((sum: number, d: any) => sum + (d.sessions || 0), 0) / ga4Data.length;
+      const avgSessions =
+        ga4Data.reduce((sum: number, d: any) => sum + (d.sessions || 0), 0) / ga4Data.length;
       if (avgSessions > 1000) {
-        await callConvexMutation(apiLocal.analytics.storeInsight, {
+        await callConvexMutation((apiLocal as any).analytics.analytics.storeInsight, {
           projectId,
           type: 'top_gainer',
           title: 'Strong Traffic Growth',
@@ -178,9 +227,10 @@ async function generateInsights(projectId: ProjectId, startDate: number, endDate
 
     // Underperformers - low CTR
     if (gscData.length > 0) {
-      const avgCTR = gscData.reduce((sum: number, d: any) => sum + (d.ctr || 0), 0) / gscData.length;
+      const avgCTR =
+        gscData.reduce((sum: number, d: any) => sum + (d.ctr || 0), 0) / gscData.length;
       if (avgCTR < 2) {
-        await callConvexMutation(apiLocal.analytics.storeInsight, {
+        await callConvexMutation((apiLocal as any).analytics.analytics.storeInsight, {
           projectId,
           type: 'underperformer',
           title: 'Low Click-Through Rate',
@@ -191,9 +241,11 @@ async function generateInsights(projectId: ProjectId, startDate: number, endDate
     }
 
     // Quick wins - high impressions, low clicks
-    const highImpressions = gscData.filter((d: any) => (d.impressions || 0) > 1000 && (d.clicks || 0) < 50);
+    const highImpressions = gscData.filter(
+      (d: any) => (d.impressions || 0) > 1000 && (d.clicks || 0) < 50
+    );
     if (highImpressions.length > 0) {
-      await callConvexMutation(apiLocal.analytics.storeInsight, {
+      await callConvexMutation((apiLocal as any).analytics.analytics.storeInsight, {
         projectId,
         type: 'quick_win',
         title: 'Quick Win Opportunity',
@@ -205,4 +257,3 @@ async function generateInsights(projectId: ProjectId, startDate: number, endDate
     console.error('Generate insights error:', error);
   }
 }
-

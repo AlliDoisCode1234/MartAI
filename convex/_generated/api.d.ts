@@ -39,6 +39,7 @@ import type * as integrations_integrations from "../integrations/integrations.js
 import type * as integrations_oauth from "../integrations/oauth.js";
 import type * as integrations_pages from "../integrations/pages.js";
 import type * as integrations_wordpress from "../integrations/wordpress.js";
+import type * as migrations from "../migrations.js";
 import type * as projects_clients from "../projects/clients.js";
 import type * as projects_projects from "../projects/projects.js";
 import type * as prospects_prospects from "../prospects/prospects.js";
@@ -102,6 +103,7 @@ declare const fullApi: ApiFromModules<{
   "integrations/oauth": typeof integrations_oauth;
   "integrations/pages": typeof integrations_pages;
   "integrations/wordpress": typeof integrations_wordpress;
+  migrations: typeof migrations;
   "projects/clients": typeof projects_clients;
   "projects/projects": typeof projects_projects;
   "prospects/prospects": typeof prospects_prospects;

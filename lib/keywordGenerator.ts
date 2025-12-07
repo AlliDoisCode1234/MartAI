@@ -137,11 +137,11 @@ Focus on keywords that would help improve their website's visibility and drive q
   });
 
   // Extract keywords from tool results
-  const toolResults = result.toolResults || [];
+  const toolResults = result.toolResults ?? [];
   if (toolResults.length > 0) {
     const firstResult = toolResults[0] as any;
     // Check for 'output' or 'result' property
-    const output = firstResult?.output || firstResult?.result;
+    const output = firstResult?.output ?? firstResult?.result;
     if (output && Array.isArray(output)) {
       return output as KeywordSuggestion[];
     }
@@ -165,9 +165,9 @@ function parseKeywordsFromText(text: string): KeywordSuggestion[] {
       if (currentKeyword && currentKeyword.keyword) {
         keywords.push({
           keyword: currentKeyword.keyword,
-          intent: currentKeyword.intent || 'informational',
-          priority: currentKeyword.priority || 'medium',
-          reasoning: currentKeyword.reasoning || '',
+          intent: currentKeyword.intent ?? 'informational',
+          priority: currentKeyword.priority ?? 'medium',
+          reasoning: currentKeyword.reasoning ?? '',
         } as KeywordSuggestion);
       }
 
@@ -205,9 +205,9 @@ function parseKeywordsFromText(text: string): KeywordSuggestion[] {
   if (currentKeyword && currentKeyword.keyword) {
     keywords.push({
       keyword: currentKeyword.keyword,
-      intent: currentKeyword.intent || 'informational',
-      priority: currentKeyword.priority || 'medium',
-      reasoning: currentKeyword.reasoning || '',
+      intent: currentKeyword.intent ?? 'informational',
+      priority: currentKeyword.priority ?? 'medium',
+      reasoning: currentKeyword.reasoning ?? '',
     } as KeywordSuggestion);
   }
 

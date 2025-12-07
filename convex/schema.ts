@@ -28,6 +28,7 @@ export default defineSchema({
     ),
     createdAt: v.optional(v.number()), // Auth doesn't enforce this but good to have
     updatedAt: v.optional(v.number()),
+    onboardingStatus: v.optional(v.string()), // 'in_progress', 'completed'
     // Legacy auth fields (for backward compatibility)
     passwordHash: v.optional(v.string()),
   })
@@ -546,4 +547,40 @@ export default defineSchema({
   })
     .index('by_project', ['projectId'])
     .index('by_priority', ['priority']),
+
+  // Competitor / Ad-hoc Analytics
+  competitorAnalytics: defineTable({
+    userId: v.id('users'),
+    url: v.string(),
+    metrics: v.object({
+      traffic: v.optional(v.number()),
+      keywords: v.optional(v.number()),
+      domainAuthority: v.optional(v.number()),
+    }),
+    status: v.string(), // pending, completed, failed
+    metadata: v.optional(v.any()), // Extended data (technologies, social, etc.)
+    cost: v.optional(v.number()), // tracked via neutral-cost
+    createdAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_url', ['url'])
+    .index('by_user_url', ['userId', 'url']),
+
+  // AI Generations (Persistent Cache & Audit Log)
+  aiGenerations: defineTable({
+    inputHash: v.string(), // SHA-256 of sorted input args
+    operation: v.string(), // e.g. generateKeywordClusters
+    provider: v.optional(v.string()), // e.g. openai
+    model: v.optional(v.string()), // e.g. gpt-4o
+    inputArgs: v.any(), // Full input arguments
+    output: v.any(), // Full output response
+    tokensIn: v.optional(v.number()),
+    tokensOut: v.optional(v.number()),
+    cost: v.optional(v.number()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index('by_hash', ['inputHash'])
+    .index('by_operation', ['operation'])
+    .index('by_date', ['createdAt']),
 });

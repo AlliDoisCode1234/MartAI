@@ -1,7 +1,7 @@
-import { action } from '../_generated/server';
+import { internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 
-export const analyzeCompetitors = action({
+export const analyzeCompetitors = internalAction({
   args: {
     projectId: v.id('projects'),
     competitorDomains: v.array(v.string()),

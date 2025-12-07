@@ -40,15 +40,10 @@ export const keywordResearchWorkflow = workflow.define({
     message: string;
   }> => {
     // Step 1: Import keywords
-    const keywordIds = [];
-    for (const keyword of args.keywords) {
-      // We use runMutation for creating keywords
-      const keywordId = await step.runMutation(api.seo.keywords.addKeywords, {
-        projectId: args.projectId,
-        ...keyword,
-      });
-      keywordIds.push(keywordId);
-    }
+    const keywordIds = await step.runMutation(api.seo.keywords.createKeywords, {
+      projectId: args.projectId,
+      keywords: args.keywords,
+    });
 
     // Step 2: Generate AI clusters
     // Note: We rely on workflow retries if rate limited

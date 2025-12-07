@@ -23,17 +23,11 @@ export async function GET(request: NextRequest) {
     const rowLimit = parseInt(searchParams.get('rowLimit') || '100');
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: 'projectId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'projectId is required' }, { status: 400 });
     }
 
     if (!api) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
     }
 
     const connection = await callConvexQuery(api.integrations.gscConnections.getGSCConnection, {
@@ -41,19 +35,31 @@ export async function GET(request: NextRequest) {
     });
 
     if (!connection || !connection.accessToken) {
-      return NextResponse.json(
-        { error: 'GSC not connected' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'GSC not connected' }, { status: 404 });
     }
 
     // Get GSC data (top queries)
     const data = await getGSCData(
       connection.accessToken,
+      connection.refreshToken,
       connection.siteUrl,
       startDate,
       endDate,
-      rowLimit
+      rowLimit,
+      async (newTokens: any) => {
+        if (api) {
+          try {
+            await callConvexMutation(api.integrations.gscConnections.upsertGSCConnection, {
+              projectId: projectId as any,
+              siteUrl: connection.siteUrl,
+              accessToken: newTokens.access_token,
+              refreshToken: newTokens.refresh_token || connection.refreshToken,
+            });
+          } catch (error) {
+            console.warn('Failed to update GSC tokens:', error);
+          }
+        }
+      }
     );
 
     // Update last sync
@@ -70,10 +76,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data });
   } catch (error) {
     console.error('Get GSC data error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get GSC data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get GSC data' }, { status: 500 });
   }
 }
-

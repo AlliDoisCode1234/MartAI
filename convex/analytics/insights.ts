@@ -1,7 +1,7 @@
-import { action } from '../_generated/server';
+import { internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 
-export const generateInsights = action({
+export const generateInsights = internalAction({
   args: {
     projectId: v.id('projects'),
     ga4Data: v.optional(v.any()),
@@ -37,7 +37,7 @@ export const generateInsights = action({
   },
 });
 
-export const generateContentInsights = action({
+export const generateContentInsights = internalAction({
   args: {
     briefId: v.id('briefs'),
     metrics: v.any(),

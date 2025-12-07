@@ -36,7 +36,7 @@ export async function generateBriefDetails(
   }
 
   const model = openai('gpt-4o');
-  
+
   const prompt = `You are an SEO content strategist creating a detailed content brief.
 
 ${websiteUrl ? `Website: ${websiteUrl}` : ''}
@@ -109,10 +109,11 @@ Return ONLY a valid JSON object with this exact structure (no markdown):
     // Parse the JSON response
     let briefData;
     try {
-      const jsonMatch = result.text.match(/```json\n([\s\S]*?)\n```/) || 
-                       result.text.match(/```\n([\s\S]*?)\n```/) ||
-                       result.text.match(/\{[\s\S]*\}/);
-      const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : result.text;
+      const jsonMatch =
+        result.text.match(/```json\n([\s\S]*?)\n```/) ||
+        result.text.match(/```\n([\s\S]*?)\n```/) ||
+        result.text.match(/\{[\s\S]*\}/);
+      const jsonText = jsonMatch ? jsonMatch[1] || jsonMatch[0] : result.text;
       briefData = JSON.parse(jsonText);
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError, result.text);
@@ -121,18 +122,18 @@ Return ONLY a valid JSON object with this exact structure (no markdown):
 
     // Validate and format
     return {
-      titleOptions: briefData.titleOptions || [],
-      h2Outline: briefData.h2Outline || [],
-      faqs: Array.isArray(briefData.faqs) 
+      titleOptions: briefData.titleOptions ?? [],
+      h2Outline: briefData.h2Outline ?? [],
+      faqs: Array.isArray(briefData.faqs)
         ? briefData.faqs.map((f: any) => ({
-            question: f.question || f.q || '',
-            answer: f.answer || f.a || '',
+            question: f.question ?? f.q ?? '',
+            answer: f.answer ?? f.a ?? '',
           }))
         : [],
-      metaTitle: briefData.metaTitle || '',
-      metaDescription: briefData.metaDescription || '',
-      internalLinks: briefData.internalLinks || [],
-      schemaSuggestion: briefData.schemaSuggestion || 'Article',
+      metaTitle: briefData.metaTitle ?? '',
+      metaDescription: briefData.metaDescription ?? '',
+      internalLinks: briefData.internalLinks ?? [],
+      schemaSuggestion: briefData.schemaSuggestion ?? 'Article',
     };
   } catch (error) {
     console.error('Error generating brief details:', error);
@@ -145,16 +146,16 @@ Return ONLY a valid JSON object with this exact structure (no markdown):
  * Generate mock brief for testing without API key
  */
 function generateMockBrief(cluster: ClusterInfo): BriefDetails {
-  const mainKeyword = cluster.keywords[0] || cluster.clusterName;
+  const mainKeyword = cluster.keywords[0] ?? cluster.clusterName;
   const capitalizedKeyword = mainKeyword.charAt(0).toUpperCase() + mainKeyword.slice(1);
-  
+
   return {
     titleOptions: [
       `The Ultimate Guide to ${capitalizedKeyword} in 2025`,
       `How to Master ${capitalizedKeyword}: A Step-by-Step Guide`,
       `${capitalizedKeyword}: Everything You Need to Know`,
       `5 Proven Strategies for ${capitalizedKeyword} Success`,
-      `Why ${capitalizedKeyword} Matters for Your Business`
+      `Why ${capitalizedKeyword} Matters for Your Business`,
     ],
     h2Outline: [
       `What is ${capitalizedKeyword}?`,
@@ -164,21 +165,21 @@ function generateMockBrief(cluster: ClusterInfo): BriefDetails {
       `Common Mistakes to Avoid`,
       `Best Practices for ${capitalizedKeyword}`,
       `Future Trends in ${capitalizedKeyword}`,
-      `Conclusion`
+      `Conclusion`,
     ],
     faqs: [
       {
         question: `What is the cost of ${mainKeyword}?`,
-        answer: `The cost of ${mainKeyword} varies depending on your specific needs and the scope of implementation. Generally, you can expect...`
+        answer: `The cost of ${mainKeyword} varies depending on your specific needs and the scope of implementation. Generally, you can expect...`,
       },
       {
         question: `How long does it take to see results from ${mainKeyword}?`,
-        answer: `Results from ${mainKeyword} typically start to appear within 3-6 months, though this can vary based on...`
+        answer: `Results from ${mainKeyword} typically start to appear within 3-6 months, though this can vary based on...`,
       },
       {
         question: `Is ${mainKeyword} suitable for small businesses?`,
-        answer: `Yes, ${mainKeyword} is highly scalable and can be adapted for businesses of all sizes, including small startups.`
-      }
+        answer: `Yes, ${mainKeyword} is highly scalable and can be adapted for businesses of all sizes, including small startups.`,
+      },
     ],
     metaTitle: `${capitalizedKeyword}: The Complete Guide for 2025 | BrandName`,
     metaDescription: `Learn everything about ${mainKeyword} in this comprehensive guide. Discover strategies, benefits, and best practices to grow your business today.`,
@@ -186,7 +187,7 @@ function generateMockBrief(cluster: ClusterInfo): BriefDetails {
       `Related Topic A`,
       `Related Topic B`,
       `Advanced ${capitalizedKeyword} Strategies`,
-      `Case Studies`
+      `Case Studies`,
     ],
     schemaSuggestion: `Article`,
   };
@@ -242,4 +243,3 @@ export function validateSEOChecklist(brief: BriefDetails): {
     issues,
   };
 }
-

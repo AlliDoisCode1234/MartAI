@@ -16,6 +16,34 @@ export const createProject = mutation({
       throw new Error('Unauthorized: User must be logged in to create a project');
     }
 
+    // Check membership limits
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const projects = await ctx.db
+      .query('projects')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect();
+
+    const tier = user.membershipTier ?? 'free';
+    const limits = {
+      free: 0,
+      starter: 1,
+      growth: 3,
+      pro: 999, // Enterprise/Scale
+    };
+
+    // Handle string matching properly if schema allows other values
+    const limit = limits[tier as keyof typeof limits] ?? 0;
+
+    if (projects.length >= limit) {
+      let msg = `Upgrade to create more projects. ${tier.charAt(0).toUpperCase() + tier.slice(1)} plan limit is ${limit}.`;
+      if (limit === 0) msg = 'Free plan cannot create projects. Please upgrade to Starter.';
+      throw new Error(`LIMIT_REACHED: ${msg}`);
+    }
+
     console.log('🏗️ [Convex] createProject mutation called with:', args);
     const projectId = await ctx.db.insert('projects', {
       userId,

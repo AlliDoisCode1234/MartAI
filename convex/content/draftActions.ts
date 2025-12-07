@@ -1,20 +1,23 @@
-"use node";
+'use node';
 
-import { action } from "../_generated/server";
-import { v } from "convex/values";
-import { api } from "../_generated/api";
-import { auth } from "../auth";
-import { rateLimits, getRateLimitKey, type MembershipTier } from "../rateLimits";
-import { ConvexError } from "convex/values";
-import { generateDraftFromBrief } from "../../lib/draftGenerator";
-import { cache, getCacheKey, CACHE_TTL } from "../cache";
+import { action } from '../_generated/server';
+import { v } from 'convex/values';
+import { api } from '../_generated/api';
+import { auth } from '../auth';
+import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
+import { ConvexError } from 'convex/values';
+import { generateDraftFromBrief } from '../../lib/draftGenerator';
+import { cache, getCacheKey, CACHE_TTL } from '../cache';
 
 export const generateDraft = action({
   args: {
-    briefId: v.id("briefs"),
+    briefId: v.id('briefs'),
     regenerationNotes: v.optional(v.string()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
     success: boolean;
     draftId: any;
     content: string;
@@ -22,29 +25,31 @@ export const generateDraft = action({
     toneScore: number;
     wordCount: number;
     status: string;
+    cached?: boolean;
+    storage?: boolean;
   }> => {
     // Get authenticated user
     const userId = await auth.getUserId(ctx);
     if (!userId) {
-      throw new Error("Unauthorized");
+      throw new Error('Unauthorized');
     }
 
     // Get user to check membership tier and role
     const user = await ctx.runQuery((api as any).users.current);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error('User not found');
     }
 
     // Determine rate limit tier
     let tier: MembershipTier;
-    if (user.role === "admin" || user.role === "super_admin") {
-      tier = "admin";
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      tier = 'admin';
     } else {
-      tier = (user.membershipTier as MembershipTier) || "free";
+      tier = (user.membershipTier as MembershipTier) || 'free';
     }
 
     // Check rate limit
-    const rateLimitKey = getRateLimitKey("generateDraft", tier);
+    const rateLimitKey = getRateLimitKey('generateDraft', tier);
     const { ok, retryAfter } = await rateLimits.limit(ctx, rateLimitKey as any, {
       key: userId as string,
     });
@@ -52,8 +57,8 @@ export const generateDraft = action({
     if (!ok) {
       const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
       throw new ConvexError({
-        kind: "RateLimitError",
-        message: `Rate limit exceeded. You can generate ${tier === "free" ? "3 drafts per day" : tier === "admin" ? "100 drafts per hour" : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? "s" : ""}.`,
+        kind: 'RateLimitError',
+        message: `Rate limit exceeded. You can generate ${tier === 'free' ? '3 drafts per day' : tier === 'admin' ? '100 drafts per hour' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
         retryAfter,
       });
     }
@@ -64,12 +69,12 @@ export const generateDraft = action({
     });
 
     if (!brief) {
-      throw new Error("Brief not found");
+      throw new Error('Brief not found');
     }
 
     // Check if brief has required details
     if (!brief.h2Outline || brief.h2Outline.length === 0) {
-      throw new Error("Brief details not generated. Please generate brief details first.");
+      throw new Error('Brief details not generated. Please generate brief details first.');
     }
 
     // Check if draft already exists
@@ -77,42 +82,83 @@ export const generateDraft = action({
       briefId: args.briefId,
     });
 
-    // Generate cache key (include regeneration notes for cache busting)
-const cacheKey = getCacheKey("generateDraft", {
-  briefId: args.briefId,
-  h2Outline: brief.h2Outline,
-  regenerationNotes: args.regenerationNotes || "",
-});
-
-// Try cache (only if no regeneration notes)
-const cached = await cache.get(ctx, cacheKey);
-if (cached && !args.regenerationNotes) {
-  console.log("Cache hit for draft generation");
-  
-  // Update or create draft with cached content
-  if (existingDraft) {
-    await ctx.runMutation((api as any).content.drafts.updateDraft, {
-      draftId: existingDraft._id,
-      ...cached,
-      status: 'draft',
-    });
-  } else {
-    await ctx.runMutation((api as any).content.drafts.createDraft, {
+    // Generate cache key
+    const cacheKey = getCacheKey('generateDraft', {
       briefId: args.briefId,
-      projectId: brief.projectId,
-      ...cached,
-      status: 'draft',
+      h2Outline: brief.h2Outline,
+      regenerationNotes: args.regenerationNotes || '',
     });
-  }
-  
-  return {
-    success: true,
-    cached: true,
-    ...cached,
-  };
-}
 
-console.log("Cache miss for draft generation");
+    // 1. Check Persistent Storage
+    const crypto = await import('node:crypto');
+    const inputForHash = JSON.stringify({
+      briefId: args.briefId,
+      h2Outline: brief.h2Outline,
+      regenerationNotes: args.regenerationNotes || '',
+    });
+    const inputHash: string = crypto.createHash('sha256').update(inputForHash).digest('hex');
+
+    const stored = await ctx.runQuery((api as any).aiStorage.getStored, { inputHash });
+
+    if (stored) {
+      console.log('Persistent Storage Hit for draft generation');
+      const cachedContent = stored.output;
+
+      let draftId;
+      if (existingDraft) {
+        await ctx.runMutation((api as any).content.drafts.updateDraft, {
+          draftId: existingDraft._id,
+          ...cachedContent,
+          status: 'draft',
+          notes: args.regenerationNotes,
+        });
+        draftId = existingDraft._id;
+      } else {
+        draftId = await ctx.runMutation((api as any).content.drafts.createDraft, {
+          briefId: args.briefId,
+          projectId: brief.projectId,
+          ...cachedContent,
+          status: 'draft',
+          notes: args.regenerationNotes,
+        });
+      }
+
+      return {
+        success: true,
+        draftId,
+        ...cachedContent,
+        status: 'draft',
+        cached: true,
+        storage: true,
+      };
+    }
+
+    // 2. Try ephemeral cache
+    const cached = await cache.get(ctx, cacheKey);
+    if (cached && !args.regenerationNotes) {
+      console.log('Cache hit for draft generation');
+      if (existingDraft) {
+        await ctx.runMutation((api as any).content.drafts.updateDraft, {
+          draftId: existingDraft._id,
+          ...cached,
+          status: 'draft',
+        });
+      } else {
+        await ctx.runMutation((api as any).content.drafts.createDraft, {
+          briefId: args.briefId,
+          projectId: brief.projectId,
+          ...cached,
+          status: 'draft',
+        });
+      }
+      return {
+        success: true,
+        cached: true,
+        ...cached,
+      };
+    }
+
+    console.log('Cache miss for draft generation');
 
     // Get cluster info
     let cluster = null;
@@ -129,7 +175,7 @@ console.log("Cache miss for draft generation");
     });
 
     if (!project) {
-      throw new Error("Project not found");
+      throw new Error('Project not found');
     }
 
     // Generate draft
@@ -143,19 +189,19 @@ console.log("Cache miss for draft generation");
         metaDescription: brief.metaDescription,
         internalLinks: brief.internalLinks,
         schemaSuggestion: brief.schemaSuggestion,
-        cluster: cluster ? {
-          clusterName: cluster.clusterName,
-          keywords: cluster.keywords,
-          intent: cluster.intent,
-        } : undefined,
+        cluster: cluster
+          ? {
+              clusterName: cluster.clusterName,
+              keywords: cluster.keywords,
+              intent: cluster.intent,
+            }
+          : undefined,
       },
       project.websiteUrl,
       project.industry,
       undefined, // brandVoice can be added later
       args.regenerationNotes
     );
-
-
 
     let draftId;
     if (existingDraft) {
@@ -184,8 +230,23 @@ console.log("Cache miss for draft generation");
       });
     }
 
-    // Cache the result
-await cache.set(ctx, cacheKey, draftResult, CACHE_TTL.DRAFT_GENERATION);
+    // 3. Store in Persistence & Cache
+    await cache.set(ctx, cacheKey, draftResult, CACHE_TTL.DRAFT_GENERATION);
+
+    await ctx.runMutation((api as any).aiStorage.store, {
+      inputHash,
+      operation: 'generateDraft',
+      provider: 'openai',
+      model: 'gpt-4o',
+      inputArgs: {
+        briefId: args.briefId,
+        h2Outline: brief.h2Outline,
+        regenerationNotes: args.regenerationNotes || '',
+      },
+      output: draftResult,
+      tokensIn: 0,
+      tokensOut: 0,
+    });
 
     // Update brief status
     await ctx.runMutation((api as any).content.briefs.updateBrief, {
