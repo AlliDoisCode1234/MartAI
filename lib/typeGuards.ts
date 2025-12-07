@@ -18,15 +18,17 @@ import type {
   ScheduledPostId,
   ProspectId,
   Id,
-} from "@/types";
+} from '@/types';
 
 /**
  * Validate Convex ID format
  * Convex IDs follow pattern: tableName_xxxxx
  */
-function isValidConvexId(id: string | null | undefined, expectedPrefix: string): id is string {
+function isValidConvexId(id: string | null | undefined, _expectedPrefix: string): id is string {
   if (!id || typeof id !== 'string') return false;
-  return id.startsWith(`${expectedPrefix}_`);
+  // Convex v1+ IDs are opaque strings and may not have prefixes
+  // We only check for non-empty string to avoid false negatives
+  return id.length > 0;
 }
 
 /**
@@ -138,4 +140,3 @@ export function parseId<T extends string>(
 ): Id<T> | null {
   return isValidConvexId(id, expectedPrefix) ? (id as Id<T>) : null;
 }
-

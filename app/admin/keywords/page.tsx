@@ -28,7 +28,8 @@ import {
 import { SearchIcon, ArrowForwardIcon } from '@chakra-ui/icons';
 import { useQuery, usePaginatedQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { Link } from '@chakra-ui/next-js';
+import { Link } from '@chakra-ui/react';
+import NextLink from 'next/link';
 
 export default function AdminKeywordsPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,11 +40,7 @@ export default function AdminKeywordsPage() {
     status,
     loadMore,
     isLoading,
-  } = usePaginatedQuery(
-    api.seo.library.listKeywords,
-    { paginationOpts: { numItems: 20 } },
-    { initialNumItems: 20 }
-  );
+  } = usePaginatedQuery(api.seo.library.listKeywords, {}, { initialNumItems: 20 });
 
   // Search Action
   const performSearch = useAction(api.seo.library.searchLibrary);
@@ -143,7 +140,12 @@ export default function AdminKeywordsPage() {
                 {displayKeywords.map((kw: any) => (
                   <Tr key={kw._id} _hover={{ bg: 'gray.50' }}>
                     <Td fontWeight="medium">
-                      <Link href={`/admin/keywords/${kw._id}`} fontWeight="bold" color="blue.600">
+                      <Link
+                        as={NextLink}
+                        href={`/admin/keywords/${kw._id}`}
+                        fontWeight="bold"
+                        color="blue.600"
+                      >
                         {kw.keyword}
                       </Link>
                     </Td>
@@ -169,7 +171,7 @@ export default function AdminKeywordsPage() {
                       )}
                     </Td>
                     <Td>
-                      <Link href={`/admin/keywords/${kw._id}`}>
+                      <Link as={NextLink} href={`/admin/keywords/${kw._id}`}>
                         <IconButton
                           aria-label="View details"
                           icon={<ArrowForwardIcon />}
@@ -185,13 +187,14 @@ export default function AdminKeywordsPage() {
           )}
 
           {/* Pagination for Default List */}
-          {!searchResults && status === 'CanLoadMore' && (
+          {!searchResults && status !== 'Exhausted' && (
             <Button
               mt={4}
               w="full"
               variant="outline"
               onClick={() => loadMore(20)}
               isLoading={status === 'LoadingMore'}
+              disabled={status === 'LoadingMore'}
             >
               Load More Keywords
             </Button>

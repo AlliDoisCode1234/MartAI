@@ -23,7 +23,8 @@ import { ArrowBackIcon } from '@chakra-ui/icons';
 import { useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useParams } from 'next/navigation';
-import { Link } from '@chakra-ui/next-js';
+import { Link } from '@chakra-ui/react';
+import NextLink from 'next/link';
 import { Id } from '@/convex/_generated/dataModel';
 
 export default function AdminKeywordDetailPage() {
@@ -54,6 +55,7 @@ export default function AdminKeywordDetailPage() {
   return (
     <Container maxW="container.xl" py={8}>
       <Link
+        as={NextLink}
         href="/admin/keywords"
         mb={4}
         display="inline-flex"
@@ -126,7 +128,7 @@ export default function AdminKeywordDetailPage() {
             transition="all 0.2s"
           >
             <CardBody>
-              <Link href={`/admin/keywords/${related._id}`}>
+              <Link as={NextLink} href={`/admin/keywords/${related._id}`}>
                 <Heading size="md" mb={2}>
                   {related.keyword}
                 </Heading>

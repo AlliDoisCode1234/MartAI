@@ -16,17 +16,17 @@ const publicNavItems = [
 // User navigation (logged in, non-admin)
 const userNavItems = [
   { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Strategy', path: '/dashboard/strategy' },
-  { label: 'Content', path: '/dashboard/content' },
-  { label: 'Integrations', path: '/dashboard/integrations' },
+  { label: 'Strategy', path: '/strategy' },
+  { label: 'Content', path: '/content' },
+  { label: 'Integrations', path: '/integrations' },
 ];
 
 // Admin navigation (logged in, admin)
 const adminNavItems = [
   { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Strategy', path: '/dashboard/strategy' },
-  { label: 'Content', path: '/dashboard/content' },
-  { label: 'Integrations', path: '/dashboard/integrations' },
+  { label: 'Strategy', path: '/strategy' },
+  { label: 'Content', path: '/content' },
+  { label: 'Integrations', path: '/integrations' },
   { label: 'Admin', path: '/admin' },
 ];
 
@@ -42,7 +42,15 @@ export const Navigation: FC = () => {
   }
 
   return (
-    <Box bg="white" shadow="sm" borderBottom="1px" borderColor="gray.200" position="sticky" top={0} zIndex={1000}>
+    <Box
+      bg="white"
+      shadow="sm"
+      borderBottom="1px"
+      borderColor="gray.200"
+      position="sticky"
+      top={0}
+      zIndex={1000}
+    >
       <Box maxW="container.xl" mx="auto" px={{ base: 4, md: 8 }}>
         <HStack justify="space-between" h={16}>
           <Link href="/" style={{ textDecoration: 'none' }}>
@@ -60,7 +68,10 @@ export const Navigation: FC = () => {
                   _hover={{ color: 'brand.orange' }}
                   cursor="pointer"
                   transition="color 0.2s"
-                  display={{ base: item.label === 'Home' || item.label === 'Dashboard' ? 'inline' : 'none', md: 'inline' }}
+                  display={{
+                    base: item.label === 'Home' || item.label === 'Dashboard' ? 'inline' : 'none',
+                    md: 'inline',
+                  }}
                 >
                   {item.label}
                 </Box>
@@ -71,7 +82,9 @@ export const Navigation: FC = () => {
             ) : (
               <HStack spacing={4}>
                 <Link href="/auth/login">
-                  <Button variant="ghost" size="sm">Sign In</Button>
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
                 </Link>
                 <Link href="/auth/signup">
                   <Button bg="brand.orange" color="white" size="sm" _hover={{ bg: '#E8851A' }}>
@@ -86,4 +99,3 @@ export const Navigation: FC = () => {
     </Box>
   );
 };
-

@@ -14,7 +14,7 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { ArrowForwardIcon, CheckCircleIcon, StarIcon } from '@chakra-ui/icons';
+import { ArrowForwardIcon, CheckCircleIcon, StarIcon, SettingsIcon } from '@chakra-ui/icons';
 import { useRouter } from 'next/navigation';
 
 const MotionBox = motion(Box);
@@ -47,7 +47,7 @@ export const HomePage: FC = () => {
       />
 
       <Container maxW="container.xl" pt={{ base: 20, md: 32 }} pb={{ base: 20, md: 24 }}>
-        <VStack spacing={8} textAlign="center" maxW="3xl" mx="auto">
+        <VStack spacing={8} textAlign="center" maxW="4xl" mx="auto">
           <MotionBox
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -62,13 +62,24 @@ export const HomePage: FC = () => {
               letterSpacing="tight"
               mb={4}
             >
-              Automate Your SEO <br />
+              Your Autonomous <br />
               <Text as="span" bgGradient={heroGradient} bgClip="text">
-                Accelerate Growth
+                SEO & Marketing Agent
               </Text>
             </Heading>
-            <Text fontSize={{ base: 'lg', md: 'xl' }} color="gray.500" maxW="2xl" mx="auto">
-              MartAI uses advanced AI to analyze your niche, generate keyword clusters, and create high-ranking content briefs in seconds.
+            <Text
+              fontSize={{ base: 'lg', md: 'xl' }}
+              color="gray.600"
+              maxW="2xl"
+              mx="auto"
+              lineHeight="1.6"
+            >
+              Stop drowning in data dashboards. MartAI is an intelligent agent that audits your
+              site, builds your strategy, writes your content, and publishes it for you.
+              <br />
+              <Text as="span" fontWeight="bold">
+                Outcomes, not just analytics.
+              </Text>
             </Text>
           </MotionBox>
 
@@ -92,7 +103,7 @@ export const HomePage: FC = () => {
               boxShadow="xl"
               _hover={{ transform: 'translateY(-2px)', boxShadow: '2xl' }}
             >
-              Get Started for Free
+              Hire MartAI
             </Button>
             <Button
               size="lg"
@@ -100,9 +111,9 @@ export const HomePage: FC = () => {
               px={8}
               fontSize="lg"
               variant="outline"
-              onClick={() => router.push('/auth/login')}
+              onClick={() => router.push('/pricing')}
             >
-              Sign In
+              See Pricing
             </Button>
           </MotionStack>
         </VStack>
@@ -111,21 +122,21 @@ export const HomePage: FC = () => {
         <Box mt={24}>
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10}>
             <FeatureCard
-              icon={StarIcon}
-              title="AI Keyword Clusters"
-              description="Automatically group thousands of keywords into topical clusters to dominate your niche."
+              icon={SettingsIcon}
+              title="Autonomous Strategy"
+              description="Mart analyzes 10,000+ keywords and builds a 12-week content calendar focused on 'Easy Wins' and revenue."
               delay={0.4}
             />
             <FeatureCard
-              icon={CheckCircleIcon}
-              title="Content Briefs"
-              description="Generate detailed content briefs with H2s, FAQs, and meta tags optimized for search intent."
+              icon={StarIcon}
+              title="Agentic Writing"
+              description="From cluster to published post in minutes. Mart writes high-ranking content in your brand voice."
               delay={0.5}
             />
             <FeatureCard
-              icon={ArrowForwardIcon}
-              title="Auto-Publishing"
-              description="Seamlessly integrate with WordPress to publish content directly from your dashboard."
+              icon={CheckCircleIcon}
+              title="Done-For-You Growth"
+              description="Integrated directly with WordPress & Shopify. You approve, Mart publishes. No more copy-pasting."
               delay={0.6}
             />
           </SimpleGrid>
@@ -135,7 +146,17 @@ export const HomePage: FC = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, description, delay }: { icon: any; title: string; description: string; delay: number }) => {
+const FeatureCard = ({
+  icon,
+  title,
+  description,
+  delay,
+}: {
+  icon: any;
+  title: string;
+  description: string;
+  delay: number;
+}) => {
   return (
     <MotionBox
       initial={{ opacity: 0, y: 20 }}
@@ -170,4 +191,3 @@ const FeatureCard = ({ icon, title, description, delay }: { icon: any; title: st
     </MotionBox>
   );
 };
-

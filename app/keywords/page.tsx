@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 
-import { Link } from '@chakra-ui/next-js';
+import { Link } from '@chakra-ui/react';
+import NextLink from 'next/link';
 import {
   Container,
   VStack,
@@ -224,6 +225,7 @@ export default function KeywordsPage() {
                         </Td>
                         <Td>
                           <Link
+                            as={NextLink}
                             href={`/keywords/${keyword._id}`}
                             _hover={{ textDecor: 'underline', color: 'brand.orange' }}
                           >
@@ -252,12 +254,13 @@ export default function KeywordsPage() {
                   </Tbody>
                 </Table>
 
-                {status === 'CanLoadMore' && (
+                {status !== 'Exhausted' && (
                   <Button
                     mt={4}
                     w="full"
                     onClick={() => loadMore(50)}
                     isLoading={status === 'LoadingMore'}
+                    disabled={status === 'LoadingMore'}
                   >
                     Load More Keywords
                   </Button>

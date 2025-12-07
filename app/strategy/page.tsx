@@ -2,7 +2,51 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Container, VStack, Heading, Text, Box, Button, HStack, Grid, GridItem, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, ModalFooter, useDisclosure, useToast, FormControl, FormLabel, Input, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper, Select, Table, Thead, Tbody, Tr, Th, Td, Stat, StatLabel, StatNumber, StatHelpText } from '@chakra-ui/react';
+import {
+  Container,
+  VStack,
+  Heading,
+  Text,
+  Box,
+  Button,
+  HStack,
+  Grid,
+  GridItem,
+  Card,
+  CardBody,
+  Badge,
+  Alert,
+  AlertIcon,
+  Spinner,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  ModalFooter,
+  useDisclosure,
+  useToast,
+  FormControl,
+  FormLabel,
+  Input,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Select,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+} from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -16,7 +60,7 @@ function StrategyContent() {
   const toast = useToast();
   const projects = useQuery(
     api.projects.projects.getProjectsByUser,
-    user?._id ? { userId: user._id as unknown as Id<'users'> } : 'skip',
+    user?._id ? { userId: user._id as unknown as Id<'users'> } : 'skip'
   );
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -39,16 +83,24 @@ function StrategyContent() {
       : null;
   const strategyData = useQuery(
     api.seo.strategy.getStrategyByProject,
-    projectIdForQuery ? { projectId: projectIdForQuery } : "skip",
+    projectIdForQuery ? { projectId: projectIdForQuery } : 'skip'
   );
   const clusters = strategyData?.clusters ?? [];
   const plan = strategyData?.plan ?? null;
   const strategyLoading = projectIdForQuery ? strategyData === undefined : false;
-  
+
   // Modals
-  const { isOpen: isClusterModalOpen, onOpen: onClusterModalOpen, onClose: onClusterModalClose } = useDisclosure();
-  const { isOpen: isPlanModalOpen, onOpen: onPlanModalOpen, onClose: onPlanModalClose } = useDisclosure();
-  
+  const {
+    isOpen: isClusterModalOpen,
+    onOpen: onClusterModalOpen,
+    onClose: onClusterModalClose,
+  } = useDisclosure();
+  const {
+    isOpen: isPlanModalOpen,
+    onOpen: onPlanModalOpen,
+    onClose: onPlanModalClose,
+  } = useDisclosure();
+
   const [planFormData, setPlanFormData] = useState({
     contentVelocity: 2,
     startDate: new Date().toISOString().split('T')[0],
@@ -112,7 +164,13 @@ function StrategyContent() {
   // Don't try to use projectId before it's loaded
   if ((projectsLoading && !projectId) || strategyLoading) {
     return (
-      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
+      <Box
+        minH="calc(100vh - 64px)"
+        bg="brand.light"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
         <VStack spacing={4}>
           <Spinner size="xl" color="brand.orange" />
           <Text color="gray.600">Loading your strategy...</Text>
@@ -256,17 +314,28 @@ function StrategyContent() {
 
   const getIntentColor = (intent: string) => {
     switch (intent) {
-      case 'transactional': return 'red';
-      case 'commercial': return 'orange';
-      case 'informational': return 'blue';
-      case 'navigational': return 'gray';
-      default: return 'gray';
+      case 'transactional':
+        return 'red';
+      case 'commercial':
+        return 'orange';
+      case 'informational':
+        return 'blue';
+      case 'navigational':
+        return 'gray';
+      default:
+        return 'gray';
     }
   };
 
   if (!isAuthenticated) {
     return (
-      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
+      <Box
+        minH="calc(100vh - 64px)"
+        bg="brand.light"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
         <Alert status="warning" maxW="md">
           <AlertIcon />
           Please sign in to view strategy
@@ -277,7 +346,11 @@ function StrategyContent() {
 
   return (
     <Box minH="calc(100vh - 64px)" bg="brand.light">
-      <Container maxW="container.xl" py={{ base: 8, md: 12 }} px={{ base: 4, sm: 6, md: 8, lg: 12 }}>
+      <Container
+        maxW="container.xl"
+        py={{ base: 8, md: 12 }}
+        px={{ base: 4, sm: 6, md: 8, lg: 12 }}
+      >
         <VStack spacing={8} align="stretch">
           <HStack justify="space-between">
             <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="gray.800">
@@ -285,7 +358,7 @@ function StrategyContent() {
             </Heading>
             <HStack>
               <Button onClick={onClusterModalOpen} variant="outline">
-                Generate Clusters
+                Generate Topic Clusters
               </Button>
               <Button
                 bg="brand.orange"
@@ -309,7 +382,9 @@ function StrategyContent() {
                     <Stat>
                       <StatLabel>Content Velocity</StatLabel>
                       <StatNumber>{plan.contentVelocity} posts/week</StatNumber>
-                      <StatHelpText>12 weeks = {plan.contentVelocity * 12} total posts</StatHelpText>
+                      <StatHelpText>
+                        12 weeks = {plan.contentVelocity * 12} total posts
+                      </StatHelpText>
                     </Stat>
                     {plan.goals.traffic && (
                       <Stat>
@@ -348,7 +423,7 @@ function StrategyContent() {
                         <Tr>
                           <Th>Week</Th>
                           <Th>Date</Th>
-                          <Th>Brief Title</Th>
+                          <Th>Article Topic</Th>
                           <Th>Status</Th>
                           <Th>Actions</Th>
                         </Tr>
@@ -365,12 +440,14 @@ function StrategyContent() {
                               </Badge>
                             </Td>
                             <Td>
-                              <Button 
-                                size="xs" 
+                              <Button
+                                size="xs"
                                 variant="outline"
-                                onClick={() => window.location.href = `/content?briefId=${brief._id}`}
+                                onClick={() =>
+                                  (window.location.href = `/content?briefId=${brief._id}`)
+                                }
                               >
-                                Edit Brief
+                                View Outline
                               </Button>
                             </Td>
                           </Tr>
@@ -386,19 +463,27 @@ function StrategyContent() {
           {/* Clusters Grid */}
           {clusters.length > 0 && (
             <>
-              <Heading size="lg">Keyword Clusters</Heading>
-              <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={6}>
+              <Heading size="lg">Target Topics (Keyword Clusters)</Heading>
+              <Grid
+                templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }}
+                gap={6}
+              >
                 {clusters.slice(0, 6).map((cluster: any, index: number) => (
                   <GridItem key={cluster._id || index}>
                     <Card>
                       <CardBody>
                         <VStack align="stretch" spacing={2}>
                           <HStack justify="space-between">
-                            <Heading size="sm" noOfLines={2}>{cluster.clusterName}</Heading>
-                            <Badge colorScheme={getIntentColor(cluster.intent)}>{cluster.intent}</Badge>
+                            <Heading size="sm" noOfLines={2}>
+                              {cluster.clusterName}
+                            </Heading>
+                            <Badge colorScheme={getIntentColor(cluster.intent)}>
+                              {cluster.intent}
+                            </Badge>
                           </HStack>
                           <Text fontSize="xs" color="gray.500">
-                            Impact: {cluster.impactScore.toFixed(2)} | {cluster.keywords.length} keywords
+                            Impact: {cluster.impactScore.toFixed(2)} | {cluster.keywords.length}{' '}
+                            keywords
                           </Text>
                         </VStack>
                       </CardBody>
@@ -423,7 +508,9 @@ function StrategyContent() {
                       value={planFormData.contentVelocity}
                       min={1}
                       max={7}
-                      onChange={(_, val) => setPlanFormData({ ...planFormData, contentVelocity: val })}
+                      onChange={(_, val) =>
+                        setPlanFormData({ ...planFormData, contentVelocity: val })
+                      }
                     >
                       <NumberInputField />
                       <NumberInputStepper>
@@ -437,7 +524,9 @@ function StrategyContent() {
                     <Input
                       type="date"
                       value={planFormData.startDate}
-                      onChange={(e) => setPlanFormData({ ...planFormData, startDate: e.target.value })}
+                      onChange={(e) =>
+                        setPlanFormData({ ...planFormData, startDate: e.target.value })
+                      }
                     />
                   </FormControl>
                   <FormControl>
@@ -446,7 +535,9 @@ function StrategyContent() {
                       type="number"
                       placeholder="e.g., 10000"
                       value={planFormData.trafficGoal}
-                      onChange={(e) => setPlanFormData({ ...planFormData, trafficGoal: e.target.value })}
+                      onChange={(e) =>
+                        setPlanFormData({ ...planFormData, trafficGoal: e.target.value })
+                      }
                     />
                   </FormControl>
                   <FormControl>
@@ -455,12 +546,16 @@ function StrategyContent() {
                       type="number"
                       placeholder="e.g., 100"
                       value={planFormData.leadsGoal}
-                      onChange={(e) => setPlanFormData({ ...planFormData, leadsGoal: e.target.value })}
+                      onChange={(e) =>
+                        setPlanFormData({ ...planFormData, leadsGoal: e.target.value })
+                      }
                     />
                   </FormControl>
                   <Alert status="info" fontSize="sm">
                     <AlertIcon />
-                    This will generate a 12-week calendar with {planFormData.contentVelocity * 12} content briefs based on your keyword clusters.
+                    This will generate a 12-week calendar with {planFormData.contentVelocity *
+                      12}{' '}
+                    content briefs based on your keyword clusters.
                   </Alert>
                 </VStack>
               </ModalBody>
@@ -468,7 +563,12 @@ function StrategyContent() {
                 <Button variant="ghost" mr={3} onClick={onPlanModalClose}>
                   Cancel
                 </Button>
-                <Button bg="brand.orange" color="white" onClick={handleGeneratePlan} isLoading={generating}>
+                <Button
+                  bg="brand.orange"
+                  color="white"
+                  onClick={handleGeneratePlan}
+                  isLoading={generating}
+                >
                   Generate Plan
                 </Button>
               </ModalFooter>
@@ -479,17 +579,34 @@ function StrategyContent() {
           <Modal isOpen={isClusterModalOpen} onClose={onClusterModalClose}>
             <ModalOverlay />
             <ModalContent>
-              <ModalHeader>Generate Keyword Clusters</ModalHeader>
+              <ModalHeader>Generate Topic Clusters</ModalHeader>
               <ModalCloseButton />
               <ModalBody>
-                <Text>Generate AI-powered keyword clusters from your keywords and GSC data.</Text>
+                <VStack align="stretch" spacing={3}>
+                  <Text fontWeight="bold">What are Topic Clusters?</Text>
+                  <Text>
+                    MartAI analyzes your keyword data to find groups of related terms that should
+                    cover a single topic. This helps you build authority by covering a subject in
+                    depth rather than targeting isolated keywords.
+                  </Text>
+                  <Alert status="info">
+                    <AlertIcon />
+                    This uses your current keywords and optionally imports fresh data from Google
+                    Search Console.
+                  </Alert>
+                </VStack>
               </ModalBody>
               <ModalFooter>
                 <Button variant="ghost" mr={3} onClick={onClusterModalClose}>
                   Cancel
                 </Button>
-                <Button bg="brand.orange" color="white" onClick={handleGenerateClusters} isLoading={generating}>
-                  Generate
+                <Button
+                  bg="brand.orange"
+                  color="white"
+                  onClick={handleGenerateClusters}
+                  isLoading={generating}
+                >
+                  Generate Topics
                 </Button>
               </ModalFooter>
             </ModalContent>
@@ -502,11 +619,19 @@ function StrategyContent() {
 
 export default function StrategyPage() {
   return (
-    <Suspense fallback={
-      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
-        <Spinner size="xl" color="brand.orange" />
-      </Box>
-    }>
+    <Suspense
+      fallback={
+        <Box
+          minH="calc(100vh - 64px)"
+          bg="brand.light"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Spinner size="xl" color="brand.orange" />
+        </Box>
+      }
+    >
       <StrategyContent />
     </Suspense>
   );

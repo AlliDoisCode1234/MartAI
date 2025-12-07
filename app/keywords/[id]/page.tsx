@@ -27,7 +27,8 @@ import {
   AccordionIcon,
 } from '@chakra-ui/react';
 import { ArrowBackIcon } from '@chakra-ui/icons';
-import { Link } from '@chakra-ui/next-js';
+import { Link } from '@chakra-ui/react';
+import NextLink from 'next/link';
 
 export default function KeywordDetailPage() {
   const params = useParams();
@@ -53,7 +54,7 @@ export default function KeywordDetailPage() {
     return (
       <Container maxW="container.md" py={12}>
         <Heading>Keyword Not Found</Heading>
-        <Link href="/keywords" color="brand.orange">
+        <Link as={NextLink} href="/keywords" color="brand.orange">
           Back to Keywords
         </Link>
       </Container>
@@ -67,7 +68,7 @@ export default function KeywordDetailPage() {
           {/* Header */}
           <VStack align="start" spacing={4}>
             <Button
-              as={Link}
+              as={NextLink}
               href="/keywords"
               variant="ghost"
               leftIcon={<ArrowBackIcon />}
