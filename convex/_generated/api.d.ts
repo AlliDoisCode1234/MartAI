@@ -61,6 +61,7 @@ import type * as seo_keywordClusters from "../seo/keywordClusters.js";
 import type * as seo_keywordIdeas from "../seo/keywordIdeas.js";
 import type * as seo_keywords from "../seo/keywords.js";
 import type * as seo_keywordsData from "../seo/keywordsData.js";
+import type * as seo_library from "../seo/library.js";
 import type * as seo_rankings from "../seo/rankings.js";
 import type * as seo_seoAudits from "../seo/seoAudits.js";
 import type * as seo_statistics from "../seo/statistics.js";
@@ -133,6 +134,7 @@ declare const fullApi: ApiFromModules<{
   "seo/keywordIdeas": typeof seo_keywordIdeas;
   "seo/keywords": typeof seo_keywords;
   "seo/keywordsData": typeof seo_keywordsData;
+  "seo/library": typeof seo_library;
   "seo/rankings": typeof seo_rankings;
   "seo/seoAudits": typeof seo_seoAudits;
   "seo/statistics": typeof seo_statistics;

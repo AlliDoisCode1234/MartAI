@@ -81,3 +81,26 @@ export const getKeywordsByStatus = query({
     return allKeywords.filter((k) => k.status === args.status);
   },
 });
+
+// Paginated keywords
+export const getKeywords = query({
+  args: {
+    projectId: v.id('projects'),
+    paginationOpts: v.any(), // pagination options (cursor, numItems)
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('keywords')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .order('desc')
+      .paginate(args.paginationOpts);
+  },
+});
+
+// Get single keyword
+export const getKeyword = query({
+  args: { keywordId: v.id('keywords') },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.keywordId);
+  },
+});

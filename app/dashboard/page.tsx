@@ -80,8 +80,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const toast = useToast();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  // const user = useQuery(api.users.current);
-  const user: any = null;
+  const user = useQuery(api.users.current);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 

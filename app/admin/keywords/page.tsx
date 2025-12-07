@@ -1,5 +1,6 @@
-"use client";
+'use client';
 
+import { useState } from 'react';
 import {
   Box,
   Container,
@@ -14,79 +15,186 @@ import {
   Badge,
   Card,
   CardBody,
-} from "@chakra-ui/react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+  Input,
+  Button,
+  InputGroup,
+  InputLeftElement,
+  Stack,
+  Flex,
+  Spacer,
+  IconButton,
+  Tooltip,
+} from '@chakra-ui/react';
+import { SearchIcon, ArrowForwardIcon } from '@chakra-ui/icons';
+import { useQuery, usePaginatedQuery, useAction } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { Link } from '@chakra-ui/next-js';
 
 export default function AdminKeywordsPage() {
-  const keywords = useQuery(api.admin.getAllKeywords, { limit: 100 });
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Default List (Paginated)
+  const {
+    results: defaultKeywords,
+    status,
+    loadMore,
+    isLoading,
+  } = usePaginatedQuery(
+    api.seo.library.listKeywords,
+    { paginationOpts: { numItems: 20 } },
+    { initialNumItems: 20 }
+  );
+
+  // Search Action
+  const performSearch = useAction(api.seo.library.searchLibrary);
+  const [searchResults, setSearchResults] = useState<any[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const results = await performSearch({ query: searchQuery });
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Search failed:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  const displayKeywords = searchResults || defaultKeywords || [];
 
   return (
-    <Container maxW="container.xl">
-      <Box mb={8}>
-        <Heading size="lg">Keywords</Heading>
-        <Text color="gray.600">Master list of keywords across all projects.</Text>
-      </Box>
+    <Container maxW="container.xl" py={8}>
+      <Flex mb={8} align="center">
+        <Box>
+          <Heading size="lg">Global Keyword Library</Heading>
+          <Text color="gray.600">Master database with AI-powered Deep Search.</Text>
+        </Box>
+        <Spacer />
+        {/* Placeholder for Seed Button */}
+      </Flex>
+
+      <Card mb={8}>
+        <CardBody>
+          <Flex gap={4}>
+            <InputGroup size="lg">
+              <InputLeftElement pointerEvents="none">
+                <SearchIcon color="gray.300" />
+              </InputLeftElement>
+              <Input
+                placeholder="Search by concept (e.g. 'high intent marketing software')..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+            </InputGroup>
+            <Button size="lg" colorScheme="blue" onClick={handleSearch} isLoading={isSearching}>
+              Deep Search
+            </Button>
+          </Flex>
+          {searchResults && (
+            <Text mt={2} fontSize="sm" color="gray.500">
+              Showing vector search results for "{searchQuery}"
+              <Button
+                size="xs"
+                variant="ghost"
+                ml={2}
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchResults(null);
+                }}
+              >
+                Clear
+              </Button>
+            </Text>
+          )}
+        </CardBody>
+      </Card>
 
       <Card>
         <CardBody>
-          {!keywords ? (
-            <Text color="gray.500">Loading keywords…</Text>
-          ) : keywords.length === 0 ? (
-            <Text color="gray.500">No keywords found.</Text>
+          {isLoading && !displayKeywords.length ? (
+            <Text color="gray.500">Loading library...</Text>
+          ) : displayKeywords.length === 0 ? (
+            <Text color="gray.500">No keywords found in the library.</Text>
           ) : (
-            <Table>
+            <Table variant="simple">
               <Thead>
                 <Tr>
                   <Th>Keyword</Th>
-                  <Th>Volume</Th>
-                  <Th>Difficulty</Th>
+                  <Th isNumeric>Volume</Th>
+                  <Th isNumeric>Difficulty</Th>
                   <Th>Intent</Th>
-                  <Th>Status</Th>
-                  <Th>Client</Th>
+                  <Th>Actions</Th>
                 </Tr>
               </Thead>
               <Tbody>
-                {keywords.map((kw: any) => (
-                  <Tr key={kw._id}>
-                    <Td fontWeight="medium">{kw.keyword}</Td>
-                    <Td>{kw.searchVolume?.toLocaleString() || "—"}</Td>
-                    <Td>
+                {displayKeywords.map((kw: any) => (
+                  <Tr key={kw._id} _hover={{ bg: 'gray.50' }}>
+                    <Td fontWeight="medium">
+                      <Link href={`/admin/keywords/${kw._id}`} fontWeight="bold" color="blue.600">
+                        {kw.keyword}
+                      </Link>
+                    </Td>
+                    <Td isNumeric>{kw.searchVolume?.toLocaleString() || '—'}</Td>
+                    <Td isNumeric>
                       {kw.difficulty !== undefined ? (
                         <Badge
                           colorScheme={
-                            kw.difficulty > 70 ? "red" :
-                            kw.difficulty > 40 ? "orange" : "green"
+                            kw.difficulty > 70 ? 'red' : kw.difficulty > 40 ? 'orange' : 'green'
                           }
                         >
                           {kw.difficulty}
                         </Badge>
-                      ) : "—"}
+                      ) : (
+                        '—'
+                      )}
                     </Td>
                     <Td>
                       {kw.intent && (
-                        <Badge variant="outline" colorScheme="blue">
+                        <Badge variant="subtle" colorScheme="purple">
                           {kw.intent}
                         </Badge>
                       )}
                     </Td>
                     <Td>
-                      <Badge
-                        colorScheme={
-                          kw.status === "implemented" ? "green" :
-                          kw.status === "approved" ? "blue" : "gray"
-                        }
-                      >
-                        {kw.status}
-                      </Badge>
-                    </Td>
-                    <Td fontSize="sm" color="gray.600">
-                      {kw.clientName}
+                      <Link href={`/admin/keywords/${kw._id}`}>
+                        <IconButton
+                          aria-label="View details"
+                          icon={<ArrowForwardIcon />}
+                          size="sm"
+                          variant="ghost"
+                        />
+                      </Link>
                     </Td>
                   </Tr>
                 ))}
               </Tbody>
             </Table>
+          )}
+
+          {/* Pagination for Default List */}
+          {!searchResults && status === 'CanLoadMore' && (
+            <Button
+              mt={4}
+              w="full"
+              variant="outline"
+              onClick={() => loadMore(20)}
+              isLoading={status === 'LoadingMore'}
+            >
+              Load More Keywords
+            </Button>
           )}
         </CardBody>
       </Card>

@@ -603,4 +603,23 @@ export default defineSchema({
   })
     .index('by_name', ['name'])
     .index('by_default', ['isDefault']),
+  // Global Keyword Library (Admin Managed)
+  keywordLibrary: defineTable({
+    keyword: v.string(),
+    searchVolume: v.number(),
+    difficulty: v.number(),
+    cpc: v.optional(v.number()),
+    intent: v.string(), // e.g. informational
+    // The embedding vector (1536 dimensions for text-embedding-3-small)
+    embedding: v.array(v.float64()),
+    // Metadata
+    category: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_keyword', ['keyword'])
+    .vectorIndex('by_embedding', {
+      vectorField: 'embedding',
+      dimensions: 1536,
+    }),
 });

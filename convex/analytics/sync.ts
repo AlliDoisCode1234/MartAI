@@ -28,7 +28,7 @@ export const syncProjectData = internalAction({
     // 2. Fetch GA4 Data
     if (ga4Connection) {
       try {
-        const raw = await ctx.runAction(internal.integrations.google.fetchGA4Metrics, {
+        const raw = (await ctx.runAction(internal.integrations.google.fetchGA4Metrics, {
           connectionId: ga4Connection._id,
           projectId,
           propertyId: ga4Connection.propertyId,
@@ -36,10 +36,9 @@ export const syncProjectData = internalAction({
           refreshToken: ga4Connection.refreshToken,
           startDate,
           endDate,
-        });
+        })) as { rows?: Array<{ metricValues: Array<{ value: string }> }> }; // Cast recursive type
+
         // Parse GA4 Response structure
-        // Response has "rows": [ { metricValues: [ { value: "123" }, ... ] } ]
-        // We asked for sessions, totalUsers, userEngagementDuration
         if (raw.rows && raw.rows.length > 0) {
           const row = raw.rows[0];
           ga4Data = {
@@ -59,14 +58,17 @@ export const syncProjectData = internalAction({
     if (gscConnection) {
       try {
         // GSC aggregate query usually returns rows
-        const raw = await ctx.runAction(internal.integrations.google.fetchGSCMetrics, {
+        const raw = (await ctx.runAction(internal.integrations.google.fetchGSCMetrics, {
           connectionId: gscConnection._id,
           siteUrl: gscConnection.siteUrl,
           accessToken: gscConnection.accessToken,
           refreshToken: gscConnection.refreshToken,
           startDate,
           endDate,
-        });
+        })) as {
+          rows?: Array<{ clicks?: number; impressions?: number; ctr?: number; position?: number }>;
+        }; // Cast recursive type
+
         // Parse GSC Response
         // { rows: [ { clicks, impressions, ctr, position } ] }
         if (raw.rows && raw.rows.length > 0) {
