@@ -22,6 +22,7 @@ import {
   Progress,
   Icon,
   Flex,
+  useToast,
 } from '@chakra-ui/react';
 import {
   LineChart,
@@ -68,12 +69,14 @@ const TrendingDownIcon = () => (
 function AnalyticsPageContent() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [timeRange, setTimeRange] = useState('30');
   const [kpis, setKpis] = useState<any>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [insights, setInsights] = useState<any[]>([]);
+  const [filterType, setFilterType] = useState<string>('all');
 
   const projectId = searchParams?.get('projectId') || localStorage.getItem('projectId');
 
@@ -721,6 +724,45 @@ function AnalyticsPageContent() {
                         {insights.length} {insights.length === 1 ? 'insight' : 'insights'}
                       </Badge>
                     </HStack>
+
+                    {/* Insight Filters */}
+                    {insights.length > 0 && (
+                      <HStack spacing={2} pb={2}>
+                        <Button
+                          size="xs"
+                          variant={filterType === 'all' ? 'solid' : 'outline'}
+                          colorScheme="gray"
+                          onClick={() => setFilterType('all')}
+                        >
+                          All Matches
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant={filterType === 'top_gainer' ? 'solid' : 'outline'}
+                          colorScheme="green"
+                          onClick={() => setFilterType('top_gainer')}
+                        >
+                          Gains
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant={filterType === 'underperformer' ? 'solid' : 'outline'}
+                          colorScheme="red"
+                          onClick={() => setFilterType('underperformer')}
+                        >
+                          Issues
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant={filterType === 'quick_win' ? 'solid' : 'outline'}
+                          colorScheme="orange"
+                          onClick={() => setFilterType('quick_win')}
+                        >
+                          Quick Wins
+                        </Button>
+                      </HStack>
+                    )}
+
                     {insights.length === 0 ? (
                       <Box
                         bgGradient="linear(to-br, brand.lavender, brand.teal)"
@@ -762,87 +804,108 @@ function AnalyticsPageContent() {
                         }}
                         gap={5}
                       >
-                        {insights.map((insight, i) => {
-                          const colors = getInsightColor(insight.type);
-                          return (
-                            <Card
-                              key={i}
-                              bgGradient={colors.bg}
-                              border="2px"
-                              borderColor={colors.border}
-                              shadow="xl"
-                              _hover={{ shadow: '2xl', transform: 'translateY(-4px) scale(1.02)' }}
-                              transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-                              overflow="hidden"
-                              position="relative"
-                            >
-                              {/* Decorative element */}
-                              <Box
-                                position="absolute"
-                                top={-20}
-                                right={-20}
-                                w="100px"
-                                h="100px"
-                                bg="white"
-                                opacity="0.1"
-                                borderRadius="full"
-                              />
-                              <CardBody position="relative" zIndex={1}>
-                                <VStack align="start" spacing={4}>
-                                  <HStack justify="space-between" w="full">
-                                    <Box
+                        {insights
+                          .filter((i) => filterType === 'all' || i.type === filterType)
+                          .map((insight, i) => {
+                            const colors = getInsightColor(insight.type);
+                            return (
+                              <Card
+                                key={i}
+                                bgGradient={colors.bg}
+                                border="2px"
+                                borderColor={colors.border}
+                                shadow="xl"
+                                _hover={{
+                                  shadow: '2xl',
+                                  transform: 'translateY(-4px) scale(1.02)',
+                                }}
+                                transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                                overflow="hidden"
+                                position="relative"
+                              >
+                                {/* Decorative element */}
+                                <Box
+                                  position="absolute"
+                                  top={-20}
+                                  right={-20}
+                                  w="100px"
+                                  h="100px"
+                                  bg="white"
+                                  opacity="0.1"
+                                  borderRadius="full"
+                                />
+                                <CardBody position="relative" zIndex={1}>
+                                  <VStack align="start" spacing={4}>
+                                    <HStack justify="space-between" w="full">
+                                      <Box
+                                        bg="white"
+                                        opacity="0.25"
+                                        borderRadius="full"
+                                        p={3}
+                                        fontSize="2xl"
+                                      >
+                                        {colors.icon}
+                                      </Box>
+                                      <Badge
+                                        colorScheme={colors.badgeColor}
+                                        fontSize="xs"
+                                        px={3}
+                                        py={1}
+                                        fontWeight="bold"
+                                        textTransform="capitalize"
+                                      >
+                                        {insight.type.replace('_', ' ')}
+                                      </Badge>
+                                    </HStack>
+                                    <Heading
+                                      size="md"
+                                      fontFamily="heading"
+                                      color={colors.textColor}
+                                      lineHeight="1.2"
+                                    >
+                                      {insight.title}
+                                    </Heading>
+                                    <Text
+                                      fontSize="sm"
+                                      color={colors.textColor}
+                                      opacity={0.9}
+                                      lineHeight="1.6"
+                                    >
+                                      {insight.description}
+                                    </Text>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        if (insight.action === 'improve_meta') {
+                                          toast({
+                                            title: 'Opening AI Generator...',
+                                            status: 'info',
+                                          });
+                                        } else if (insight.action === 'optimize_keywords') {
+                                          toast({
+                                            title: 'Redirecting to Keywords...',
+                                            status: 'info',
+                                          });
+                                        } else {
+                                          handleApplyInsight(insight._id);
+                                        }
+                                      }}
                                       bg="white"
-                                      opacity="0.25"
-                                      borderRadius="full"
-                                      p={3}
-                                      fontSize="2xl"
+                                      color={colors.border}
+                                      _hover={{ bg: 'gray.50', transform: 'scale(1.05)' }}
+                                      w="full"
                                     >
-                                      {colors.icon}
-                                    </Box>
-                                    <Badge
-                                      colorScheme={colors.badgeColor}
-                                      fontSize="xs"
-                                      px={3}
-                                      py={1}
-                                      fontWeight="bold"
-                                      textTransform="capitalize"
-                                    >
-                                      {insight.type.replace('_', ' ')}
-                                    </Badge>
-                                  </HStack>
-                                  <Heading
-                                    size="md"
-                                    fontFamily="heading"
-                                    color={colors.textColor}
-                                    lineHeight="1.2"
-                                  >
-                                    {insight.title}
-                                  </Heading>
-                                  <Text
-                                    fontSize="sm"
-                                    color={colors.textColor}
-                                    opacity={0.9}
-                                    lineHeight="1.6"
-                                  >
-                                    {insight.description}
-                                  </Text>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleApplyInsight(insight._id)}
-                                    bg="white"
-                                    color={colors.border}
-                                    _hover={{ bg: 'gray.50', transform: 'scale(1.05)' }}
-                                    w="full"
-                                    fontWeight="bold"
-                                    transition="all 0.2s"
-                                  >
-                                    Apply Suggestion →
-                                  </Button>
-                                </VStack>
-                              </CardBody>
-                            </Card>
-                          );
-                        })}
+                                      {insight.action === 'improve_meta'
+                                        ? 'Auto-Fix Meta Tags'
+                                        : insight.action === 'optimize_keywords'
+                                          ? 'Research Keywords'
+                                          : 'Mark as Resolved'}
+                                    </Button>
+                                  </VStack>
+                                </CardBody>
+                              </Card>
+                            );
+                          })}
                       </Grid>
                     )}
                   </VStack>
