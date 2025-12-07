@@ -2,12 +2,13 @@
 
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
-import { api } from '../_generated/api';
+import { api, components } from '../_generated/api';
 import { auth } from '../auth';
 import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
 import { ConvexError } from 'convex/values';
 import { generateDraftFromBrief } from '../../lib/draftGenerator';
 import { cache, getCacheKey, CACHE_TTL } from '../cache';
+import { IntelligenceService } from '../lib/services/intelligence';
 
 export const generateDraft = action({
   args: {
@@ -178,6 +179,11 @@ export const generateDraft = action({
       throw new Error('Project not found');
     }
 
+    // Fetch RAG Context (via IntelligenceService)
+    let ragContext = '';
+    const intelligence = new IntelligenceService(ctx);
+    ragContext = await intelligence.retrieve(brief.title, 5);
+
     // Generate draft
     const draftResult = await generateDraftFromBrief(
       {
@@ -200,7 +206,8 @@ export const generateDraft = action({
       project.websiteUrl,
       project.industry,
       undefined, // brandVoice can be added later
-      args.regenerationNotes
+      args.regenerationNotes,
+      ragContext
     );
 
     let draftId;

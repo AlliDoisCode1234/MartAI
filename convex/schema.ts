@@ -425,7 +425,7 @@ export default defineSchema({
 
   // Briefs
   briefs: defineTable({
-    planId: v.id('quarterlyPlans'),
+    planId: v.optional(v.id('quarterlyPlans')),
     projectId: v.id('projects'),
     clusterId: v.optional(v.id('keywordClusters')),
     title: v.string(),

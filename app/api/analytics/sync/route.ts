@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
 import { getGA4Data, getGSCData } from '@/lib/googleAuth';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/dateUtils';
 import { assertProjectId } from '@/lib/typeGuards';
 import type { ProjectId } from '@/types';
 
@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
     if (ga4Connection && ga4Connection.accessToken && ga4Connection.propertyId) {
       try {
         // Format dates for GA4 API (YYYY-MM-DD or '30daysAgo')
-        const startDateStr = format(new Date(startDate), 'yyyy-MM-dd');
-        const endDateStr = format(new Date(endDate), 'yyyy-MM-dd');
+        const startDateStr = formatDate(startDate, 'yyyy-MM-dd');
+        const endDateStr = formatDate(endDate, 'yyyy-MM-dd');
 
         const ga4Data = await getGA4Data(
           ga4Connection.accessToken,
@@ -117,8 +117,8 @@ export async function POST(request: NextRequest) {
     if (gscConnection && gscConnection.accessToken && gscConnection.siteUrl) {
       try {
         // Format dates for GSC API
-        const startDateStr = format(new Date(startDate), 'yyyy-MM-dd');
-        const endDateStr = format(new Date(endDate), 'yyyy-MM-dd');
+        const startDateStr = formatDate(startDate, 'yyyy-MM-dd');
+        const endDateStr = formatDate(endDate, 'yyyy-MM-dd');
 
         const gscData = await getGSCData(
           gscConnection.accessToken,

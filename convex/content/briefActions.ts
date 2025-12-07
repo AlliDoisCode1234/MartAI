@@ -2,12 +2,13 @@
 
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
-import { api } from '../_generated/api';
+import { api, components } from '../_generated/api';
 import { generateBriefDetails, type ClusterInfo } from '../../lib/briefGenerator';
 import { auth } from '../auth';
 import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
 import { ConvexError } from 'convex/values';
 import { cache, getCacheKey, CACHE_TTL } from '../cache';
+import { IntelligenceService } from '../lib/services/intelligence';
 
 export const generateBrief = action({
   args: {
@@ -143,7 +144,18 @@ export const generateBrief = action({
 
     console.log('Cache miss for brief generation');
 
-    const details = await generateBriefDetails(clusterInfo, project.websiteUrl, project.industry);
+    // Fetch RAG Context (via IntelligenceService)
+    let ragContext = '';
+    const intelligence = new IntelligenceService(ctx);
+    ragContext = await intelligence.retrieve(clusterInfo.clusterName, 3);
+
+    const details = await generateBriefDetails(
+      clusterInfo,
+      project.websiteUrl,
+      project.industry,
+      undefined,
+      ragContext
+    );
 
     // Store in Persistent Storage
     await ctx.runMutation((api as any).aiStorage.store, {

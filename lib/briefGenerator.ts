@@ -26,7 +26,8 @@ export async function generateBriefDetails(
   cluster: ClusterInfo,
   websiteUrl?: string,
   industry?: string,
-  brandVoice?: string
+  brandVoice?: string,
+  ragContext?: string
 ): Promise<BriefDetails> {
   // Check for OpenAI API key
   const apiKey = process.env.OPENAI_API_KEY;
@@ -42,6 +43,7 @@ export async function generateBriefDetails(
 ${websiteUrl ? `Website: ${websiteUrl}` : ''}
 ${industry ? `Industry: ${industry}` : ''}
 ${brandVoice ? `Brand Voice: ${brandVoice}` : ''}
+${ragContext ? `\nCOMPETITOR CONTEXT (Use this to ensure comprehensive coverage):\n${ragContext}\n` : ''}
 
 Keyword Cluster: ${cluster.clusterName}
 Keywords: ${cluster.keywords.join(', ')}

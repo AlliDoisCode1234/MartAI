@@ -16,11 +16,10 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Box, VStack, HStack, Text, Badge } from '@chakra-ui/react';
+import { formatDate, getRelativeWeek } from '@/lib/dateUtils';
 import type { Brief, BriefId } from '@/types';
 
 // Pass whole brief object to maintain type inference
@@ -41,15 +40,10 @@ function toBriefIdString(briefId: BriefId): string {
 
 function SortableBriefItem({ brief, onReschedule }: SortableBriefItemProps) {
   const briefId = toBriefIdString(brief._id);
-  
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: briefId });
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: briefId,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -57,8 +51,8 @@ function SortableBriefItem({ brief, onReschedule }: SortableBriefItemProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const date = new Date(brief.scheduledDate);
-  const week = brief.week || Math.floor((brief.scheduledDate - Date.now()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+  const date = formatDate(brief.scheduledDate);
+  const week = brief.week || getRelativeWeek(brief.scheduledDate);
 
   return (
     <Box
@@ -86,7 +80,7 @@ function SortableBriefItem({ brief, onReschedule }: SortableBriefItemProps) {
               Week {week}
             </Badge>
             <Text fontSize="xs" color="gray.600">
-              {date.toLocaleDateString()}
+              {date}
             </Text>
             <Badge colorScheme={brief.status === 'draft' ? 'gray' : 'green'} fontSize="xs">
               {brief.status}
@@ -119,9 +113,9 @@ export function DraggableBriefList({ briefs, onReorder, onReschedule }: Draggabl
         const getBriefId = (brief: Brief) => toBriefIdString(brief._id);
         const oldIndex = currentItems.findIndex((item) => getBriefId(item) === active.id);
         const newIndex = currentItems.findIndex((item) => getBriefId(item) === over.id);
-        
+
         if (oldIndex === -1 || newIndex === -1) return currentItems;
-        
+
         const newItems = arrayMove(currentItems, oldIndex, newIndex);
         onReorder(newItems);
         return newItems;
@@ -132,29 +126,15 @@ export function DraggableBriefList({ briefs, onReorder, onReschedule }: Draggabl
   const getBriefId = (brief: Brief): string => toBriefIdString(brief._id);
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
-    >
-      <SortableContext
-        items={items.map(getBriefId)}
-        strategy={verticalListSortingStrategy}
-      >
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={items.map(getBriefId)} strategy={verticalListSortingStrategy}>
         <VStack spacing={3} align="stretch">
           {items.map((brief) => {
             const id = getBriefId(brief);
-            return (
-              <SortableBriefItem
-                key={id}
-                brief={brief}
-                onReschedule={onReschedule}
-              />
-            );
+            return <SortableBriefItem key={id} brief={brief} onReschedule={onReschedule} />;
           })}
         </VStack>
       </SortableContext>
     </DndContext>
   );
 }
-

@@ -1,9 +1,10 @@
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
-import { api } from '../_generated/api';
+import { api, components } from '../_generated/api';
 import { auth } from '../auth';
 import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
 import { ConvexError } from 'convex/values';
+import { IntelligenceService } from '../lib/services/intelligence';
 
 export const analyzeCompetitor = action({
   args: {
@@ -68,9 +69,9 @@ export const analyzeCompetitor = action({
         .map((i, el) => $(el).text())
         .get();
       const keywords = $('meta[name="keywords"]').attr('content')?.split(',') || [];
+      const bodyText = $('body').text().replace(/\s+/g, ' ').trim();
 
-      // 2. Simulate "Advanced" Metrics (Since we don't have Ahrefs/SEMRush connected yet)
-      // In a real app, this would call an external SEO API.
+      // 2. Simulate "Advanced" Metrics
       const simulatedTraffic = Math.floor(Math.random() * 5000) + 100;
       const simulatedDA = Math.floor(Math.random() * 90) + 10;
 
@@ -85,20 +86,30 @@ export const analyzeCompetitor = action({
         description,
         h1Count: h1s.length,
         server: response.headers.get('server') || 'Unknown',
-        loadTime: Math.floor(Math.random() * 200) + 50, // simulated ms
+        loadTime: Math.floor(Math.random() * 200) + 50,
       };
 
       // 3. Store Results
-      const analysisId = await ctx.runMutation(
-        (api as any).analytics.adhoc.storeCompetitorAnalysis,
-        {
-          url: targetUrl,
-          metrics,
-          status: 'completed',
-          metadata,
-          cost: 0, // Placeholder for neutral-cost
-        }
-      );
+      await ctx.runMutation((api as any).analytics.adhoc.storeCompetitorAnalysis, {
+        url: targetUrl,
+        metrics,
+        status: 'completed',
+        metadata,
+        cost: 0,
+      });
+
+      // 4. Ingest into RAG (via IntelligenceService)
+      try {
+        const intelligence = new IntelligenceService(ctx);
+        await intelligence.ingest(targetUrl, bodyText, {
+          title,
+          type: 'competitor_scan',
+          crawledAt: new Date().toISOString(),
+        });
+      } catch (ragError) {
+        console.error('Failed to ingest into RAG:', ragError);
+        // Don't fail the whole analysis if RAG fails
+      }
 
       return {
         success: true,
@@ -145,5 +156,21 @@ export const storeCompetitorAnalysis = mutation({
       ...args,
       createdAt: Date.now(),
     });
+  },
+});
+
+import { query } from '../_generated/server';
+
+export const getCompetitorHistory = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return [];
+
+    return await ctx.db
+      .query('competitorAnalytics')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .order('desc')
+      .collect();
   },
 });

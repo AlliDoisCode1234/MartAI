@@ -9,8 +9,10 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as aiStorage from "../aiStorage.js";
 import type * as ai_analysis from "../ai/analysis.js";
 import type * as ai_reports from "../ai/reports.js";
+import type * as analytics_adhoc from "../analytics/adhoc.js";
 import type * as analytics_analytics from "../analytics/analytics.js";
 import type * as analytics_competitors from "../analytics/competitors.js";
 import type * as analytics_insights from "../analytics/insights.js";
@@ -39,6 +41,8 @@ import type * as integrations_integrations from "../integrations/integrations.js
 import type * as integrations_oauth from "../integrations/oauth.js";
 import type * as integrations_pages from "../integrations/pages.js";
 import type * as integrations_wordpress from "../integrations/wordpress.js";
+import type * as lib_dateUtils from "../lib/dateUtils.js";
+import type * as lib_services_intelligence from "../lib/services/intelligence.js";
 import type * as migrations from "../migrations.js";
 import type * as projects_clients from "../projects/clients.js";
 import type * as projects_projects from "../projects/projects.js";
@@ -73,8 +77,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  aiStorage: typeof aiStorage;
   "ai/analysis": typeof ai_analysis;
   "ai/reports": typeof ai_reports;
+  "analytics/adhoc": typeof analytics_adhoc;
   "analytics/analytics": typeof analytics_analytics;
   "analytics/competitors": typeof analytics_competitors;
   "analytics/insights": typeof analytics_insights;
@@ -103,6 +109,8 @@ declare const fullApi: ApiFromModules<{
   "integrations/oauth": typeof integrations_oauth;
   "integrations/pages": typeof integrations_pages;
   "integrations/wordpress": typeof integrations_wordpress;
+  "lib/dateUtils": typeof lib_dateUtils;
+  "lib/services/intelligence": typeof lib_services_intelligence;
   migrations: typeof migrations;
   "projects/clients": typeof projects_clients;
   "projects/projects": typeof projects_projects;
@@ -721,6 +729,1176 @@ export declare const components: {
           pageStatus?: "SplitRecommended" | "SplitRequired" | null;
           splitCursor?: string | null;
         }
+      >;
+    };
+  };
+  rag: {
+    chunks: {
+      insert: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          chunks: Array<{
+            content: { metadata?: Record<string, any>; text: string };
+            embedding: Array<number>;
+            searchableText?: string;
+          }>;
+          entryId: string;
+          startOrder: number;
+        },
+        { status: "pending" | "ready" | "replaced" }
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        {
+          entryId: string;
+          order: "desc" | "asc";
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            metadata?: Record<string, any>;
+            order: number;
+            state: "pending" | "ready" | "replaced";
+            text: string;
+          }>;
+          pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+          splitCursor?: string | null;
+        }
+      >;
+      replaceChunksPage: FunctionReference<
+        "mutation",
+        "internal",
+        { entryId: string; startOrder: number },
+        { nextStartOrder: number; status: "pending" | "ready" | "replaced" }
+      >;
+    };
+    entries: {
+      add: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          allChunks?: Array<{
+            content: { metadata?: Record<string, any>; text: string };
+            embedding: Array<number>;
+            searchableText?: string;
+          }>;
+          entry: {
+            contentHash?: string;
+            filterValues: Array<{ name: string; value: any }>;
+            importance: number;
+            key?: string;
+            metadata?: Record<string, any>;
+            namespaceId: string;
+            title?: string;
+          };
+          onComplete?: string;
+        },
+        {
+          created: boolean;
+          entryId: string;
+          status: "pending" | "ready" | "replaced";
+        }
+      >;
+      addAsync: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          chunker: string;
+          entry: {
+            contentHash?: string;
+            filterValues: Array<{ name: string; value: any }>;
+            importance: number;
+            key?: string;
+            metadata?: Record<string, any>;
+            namespaceId: string;
+            title?: string;
+          };
+          onComplete?: string;
+        },
+        { created: boolean; entryId: string; status: "pending" | "ready" }
+      >;
+      deleteAsync: FunctionReference<
+        "mutation",
+        "internal",
+        { entryId: string; startOrder: number },
+        null
+      >;
+      deleteByKeyAsync: FunctionReference<
+        "mutation",
+        "internal",
+        { beforeVersion?: number; key: string; namespaceId: string },
+        null
+      >;
+      deleteByKeySync: FunctionReference<
+        "action",
+        "internal",
+        { key: string; namespaceId: string },
+        null
+      >;
+      deleteSync: FunctionReference<
+        "action",
+        "internal",
+        { entryId: string },
+        null
+      >;
+      findByContentHash: FunctionReference<
+        "query",
+        "internal",
+        {
+          contentHash: string;
+          dimension: number;
+          filterNames: Array<string>;
+          key: string;
+          modelId: string;
+          namespace: string;
+        },
+        {
+          contentHash?: string;
+          entryId: string;
+          filterValues: Array<{ name: string; value: any }>;
+          importance: number;
+          key?: string;
+          metadata?: Record<string, any>;
+          replacedAt?: number;
+          status: "pending" | "ready" | "replaced";
+          title?: string;
+        } | null
+      >;
+      get: FunctionReference<
+        "query",
+        "internal",
+        { entryId: string },
+        {
+          contentHash?: string;
+          entryId: string;
+          filterValues: Array<{ name: string; value: any }>;
+          importance: number;
+          key?: string;
+          metadata?: Record<string, any>;
+          replacedAt?: number;
+          status: "pending" | "ready" | "replaced";
+          title?: string;
+        } | null
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        {
+          namespaceId?: string;
+          order?: "desc" | "asc";
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+          status: "pending" | "ready" | "replaced";
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            contentHash?: string;
+            entryId: string;
+            filterValues: Array<{ name: string; value: any }>;
+            importance: number;
+            key?: string;
+            metadata?: Record<string, any>;
+            replacedAt?: number;
+            status: "pending" | "ready" | "replaced";
+            title?: string;
+          }>;
+          pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+          splitCursor?: string | null;
+        }
+      >;
+      promoteToReady: FunctionReference<
+        "mutation",
+        "internal",
+        { entryId: string },
+        {
+          replacedEntry: {
+            contentHash?: string;
+            entryId: string;
+            filterValues: Array<{ name: string; value: any }>;
+            importance: number;
+            key?: string;
+            metadata?: Record<string, any>;
+            replacedAt?: number;
+            status: "pending" | "ready" | "replaced";
+            title?: string;
+          } | null;
+        }
+      >;
+    };
+    namespaces: {
+      deleteNamespace: FunctionReference<
+        "mutation",
+        "internal",
+        { namespaceId: string },
+        {
+          deletedNamespace: null | {
+            createdAt: number;
+            dimension: number;
+            filterNames: Array<string>;
+            modelId: string;
+            namespace: string;
+            namespaceId: string;
+            status: "pending" | "ready" | "replaced";
+            version: number;
+          };
+        }
+      >;
+      deleteNamespaceSync: FunctionReference<
+        "action",
+        "internal",
+        { namespaceId: string },
+        null
+      >;
+      get: FunctionReference<
+        "query",
+        "internal",
+        {
+          dimension: number;
+          filterNames: Array<string>;
+          modelId: string;
+          namespace: string;
+        },
+        null | {
+          createdAt: number;
+          dimension: number;
+          filterNames: Array<string>;
+          modelId: string;
+          namespace: string;
+          namespaceId: string;
+          status: "pending" | "ready" | "replaced";
+          version: number;
+        }
+      >;
+      getOrCreate: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          dimension: number;
+          filterNames: Array<string>;
+          modelId: string;
+          namespace: string;
+          onComplete?: string;
+          status: "pending" | "ready";
+        },
+        { namespaceId: string; status: "pending" | "ready" }
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        {
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+          status: "pending" | "ready" | "replaced";
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            createdAt: number;
+            dimension: number;
+            filterNames: Array<string>;
+            modelId: string;
+            namespace: string;
+            namespaceId: string;
+            status: "pending" | "ready" | "replaced";
+            version: number;
+          }>;
+          pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+          splitCursor?: string | null;
+        }
+      >;
+      listNamespaceVersions: FunctionReference<
+        "query",
+        "internal",
+        {
+          namespace: string;
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            createdAt: number;
+            dimension: number;
+            filterNames: Array<string>;
+            modelId: string;
+            namespace: string;
+            namespaceId: string;
+            status: "pending" | "ready" | "replaced";
+            version: number;
+          }>;
+          pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+          splitCursor?: string | null;
+        }
+      >;
+      lookup: FunctionReference<
+        "query",
+        "internal",
+        {
+          dimension: number;
+          filterNames: Array<string>;
+          modelId: string;
+          namespace: string;
+        },
+        null | string
+      >;
+      promoteToReady: FunctionReference<
+        "mutation",
+        "internal",
+        { namespaceId: string },
+        {
+          replacedNamespace: null | {
+            createdAt: number;
+            dimension: number;
+            filterNames: Array<string>;
+            modelId: string;
+            namespace: string;
+            namespaceId: string;
+            status: "pending" | "ready" | "replaced";
+            version: number;
+          };
+        }
+      >;
+    };
+    search: {
+      search: FunctionReference<
+        "action",
+        "internal",
+        {
+          chunkContext?: { after: number; before: number };
+          embedding: Array<number>;
+          filters: Array<{ name: string; value: any }>;
+          limit: number;
+          modelId: string;
+          namespace: string;
+          vectorScoreThreshold?: number;
+        },
+        {
+          entries: Array<{
+            contentHash?: string;
+            entryId: string;
+            filterValues: Array<{ name: string; value: any }>;
+            importance: number;
+            key?: string;
+            metadata?: Record<string, any>;
+            replacedAt?: number;
+            status: "pending" | "ready" | "replaced";
+            title?: string;
+          }>;
+          results: Array<{
+            content: Array<{ metadata?: Record<string, any>; text: string }>;
+            entryId: string;
+            order: number;
+            score: number;
+            startOrder: number;
+          }>;
+        }
+      >;
+    };
+  };
+  neutralCost: {
+    aiCosts: {
+      addAICost: FunctionReference<
+        "action",
+        "internal",
+        {
+          markupMultiplier?: number;
+          messageId: string;
+          modelId: string;
+          providerId: string;
+          threadId: string;
+          usage: {
+            cachedInputTokens?: number;
+            completionTokens: number;
+            promptTokens: number;
+            reasoningTokens?: number;
+            totalTokens: number;
+          };
+          userId?: string;
+        },
+        any
+      >;
+      getAICostByMessageId: FunctionReference<
+        "query",
+        "internal",
+        { messageId: string },
+        any
+      >;
+      getAICostsByThread: FunctionReference<
+        "query",
+        "internal",
+        { threadId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          cost: {
+            cachedInputTokensCost?: number;
+            completionTokensCost: number;
+            promptTokensCost: number;
+            reasoningTokensCost?: number;
+            totalCost: number;
+          };
+          costForUser: {
+            cachedInputTokensCost?: number;
+            completionTokensCost: number;
+            promptTokensCost: number;
+            reasoningTokensCost?: number;
+            totalCost: number;
+          };
+          messageId: string;
+          threadId: string;
+          usage: {
+            cachedInputTokens?: number;
+            completionTokens: number;
+            promptTokens: number;
+            reasoningTokens?: number;
+            totalTokens: number;
+          };
+          userId?: string;
+        }>
+      >;
+      getAICostsByUser: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          cost: {
+            cachedInputTokensCost?: number;
+            completionTokensCost: number;
+            promptTokensCost: number;
+            reasoningTokensCost?: number;
+            totalCost: number;
+          };
+          costForUser: {
+            cachedInputTokensCost?: number;
+            completionTokensCost: number;
+            promptTokensCost: number;
+            reasoningTokensCost?: number;
+            totalCost: number;
+          };
+          messageId: string;
+          threadId: string;
+          usage: {
+            cachedInputTokens?: number;
+            completionTokens: number;
+            promptTokens: number;
+            reasoningTokens?: number;
+            totalTokens: number;
+          };
+          userId?: string;
+        }>
+      >;
+      getTotalAICostsByThread: FunctionReference<
+        "query",
+        "internal",
+        { threadId: string },
+        any
+      >;
+      getTotalAICostsByUser: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+    };
+    markup: {
+      deleteMarkup: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          modelId?: string;
+          providerId: string;
+          scope: "provider" | "model" | "tool";
+          toolId?: string;
+        },
+        boolean
+      >;
+      getMarkupMultiplier: FunctionReference<
+        "query",
+        "internal",
+        { modelId?: string; providerId: string; toolId?: string },
+        number
+      >;
+      getMarkupMultiplierById: FunctionReference<
+        "query",
+        "internal",
+        { markupMultiplierId: string },
+        any
+      >;
+      getMarkupMultipliers: FunctionReference<
+        "query",
+        "internal",
+        {},
+        {
+          modelMarkupMultipliers: Array<{
+            markupMultiplier: number;
+            modelId: string;
+            providerId: string;
+          }>;
+          providerMultipliers: Array<{
+            markupMultiplier: number;
+            providerId: string;
+          }>;
+          toolMarkupMultipliers: Array<{
+            markupMultiplier: number;
+            providerId: string;
+            toolId: string;
+          }>;
+        }
+      >;
+      upsertModelMarkup: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          markupMultiplier: number;
+          modelId: string;
+          providerId: string;
+          scope: "model";
+        },
+        string
+      >;
+      upsertProviderMarkup: FunctionReference<
+        "mutation",
+        "internal",
+        { markupMultiplier: number; providerId: string; scope: "provider" },
+        string
+      >;
+      upsertToolMarkup: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          markupMultiplier: number;
+          providerId: string;
+          scope: "tool";
+          toolId: string;
+        },
+        string
+      >;
+    };
+    pricing: {
+      deleteToolPricing: FunctionReference<
+        "mutation",
+        "internal",
+        { modelId?: string; providerId: string },
+        any
+      >;
+      getAllPricing: FunctionReference<"query", "internal", {}, any>;
+      getAllToolPricing: FunctionReference<"query", "internal", {}, any>;
+      getPricing: FunctionReference<
+        "query",
+        "internal",
+        { modelId: string; providerId: string },
+        any
+      >;
+      getPricingByProvider: FunctionReference<
+        "query",
+        "internal",
+        { providerId: string },
+        any
+      >;
+      getToolPricing: FunctionReference<
+        "query",
+        "internal",
+        { providerId: string; toolId: string },
+        any
+      >;
+      getToolPricingByProvider: FunctionReference<
+        "query",
+        "internal",
+        { providerId: string },
+        any
+      >;
+      searchPricingByModelName: FunctionReference<
+        "query",
+        "internal",
+        { searchTerm: string },
+        any
+      >;
+      updatePricingData: FunctionReference<
+        "action",
+        "internal",
+        { envKeys?: Record<string, string> },
+        any
+      >;
+      updatePricingTable: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          pricingData: Array<{
+            lastUpdated: number;
+            limits: { context: number; output: number };
+            modelId: string;
+            modelName: string;
+            pricing: {
+              cache_read?: number;
+              cache_write?: number;
+              input: number;
+              output: number;
+              reasoning?: number;
+            };
+            providerId: string;
+            providerName: string;
+          }>;
+        },
+        any
+      >;
+      upsertToolPricing: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          limits?: {
+            maxBytesPerRequest?: number;
+            maxConcurrentRequests?: number;
+            maxRequestsPerDay?: number;
+            maxRequestsPerHour?: number;
+            maxRequestsPerMinute?: number;
+            maxRequestsPerMonth?: number;
+            maxRequestsPerSecond?: number;
+            maxTokensPerRequest?: number;
+          };
+          modelId?: string;
+          modelName?: string;
+          pricing:
+            | {
+                costPerCredit: number;
+                creditTypes?: Record<string, number>;
+                currency: string;
+                type: "credits";
+              }
+            | {
+                cache_read?: number;
+                cache_write?: number;
+                currency: string;
+                input: number;
+                output: number;
+                reasoning?: number;
+                type: "tokens";
+              }
+            | {
+                costPerRequest: number;
+                currency: string;
+                requestTypes?: Record<string, number>;
+                type: "requests";
+              }
+            | {
+                computeTypes?: Record<string, number>;
+                costPerMs: number;
+                currency: string;
+                tiers?: Record<string, number>;
+                type: "compute";
+              }
+            | {
+                costPerByteSecond: number;
+                currency: string;
+                storageClasses?: Record<string, number>;
+                type: "storage";
+              }
+            | {
+                costPerByteIn?: number;
+                costPerByteOut?: number;
+                currency: string;
+                regions?: Record<string, number>;
+                type: "bandwidth";
+              }
+            | {
+                costPerUnit: number;
+                currency: string;
+                type: "units";
+                unitType: string;
+              }
+            | {
+                currency: string;
+                tiers: Array<{ from: number; rate: number; to?: number }>;
+                type: "tiered";
+                unitType: string;
+              }
+            | {
+                components: Array<{
+                  costPerUnit: number;
+                  name: string;
+                  unitType: string;
+                }>;
+                currency: string;
+                type: "composite";
+              }
+            | {
+                currency: string;
+                data: any;
+                description?: string;
+                type: "custom";
+              };
+          providerId: string;
+          providerName: string;
+        },
+        any
+      >;
+    };
+    toolCosts: {
+      addToolCost: FunctionReference<
+        "action",
+        "internal",
+        {
+          markupMultiplier?: number;
+          messageId: string;
+          providerId: string;
+          threadId: string;
+          toolId: string;
+          usage:
+            | { creditType?: string; credits: number; type: "credits" }
+            | {
+                cacheReadTokens?: number;
+                cacheWriteTokens?: number;
+                inputTokens: number;
+                outputTokens: number;
+                reasoningTokens?: number;
+                type: "tokens";
+              }
+            | { requestType?: string; requests: number; type: "requests" }
+            | {
+                computeType?: string;
+                durationMs: number;
+                tier?: string;
+                type: "compute";
+              }
+            | {
+                bytes: number;
+                durationSeconds?: number;
+                storageClass?: string;
+                type: "storage";
+              }
+            | {
+                bytesIn?: number;
+                bytesOut?: number;
+                region?: string;
+                type: "bandwidth";
+              }
+            | {
+                metadata?: Record<string, any>;
+                type: "units";
+                unitType: string;
+                units: number;
+              }
+            | {
+                quantity: number;
+                tierName?: string;
+                type: "tiered";
+                unitType: string;
+              }
+            | {
+                components: Array<{
+                  cost?: number;
+                  name: string;
+                  quantity: number;
+                  unitType: string;
+                }>;
+                type: "composite";
+              }
+            | { data: any; description?: string; type: "custom" };
+          userId?: string;
+        },
+        any
+      >;
+      getToolCostsByProviderAndTool: FunctionReference<
+        "query",
+        "internal",
+        { providerId: string; toolId?: string },
+        any
+      >;
+      getToolCostsByThread: FunctionReference<
+        "query",
+        "internal",
+        { threadId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          cost: {
+            amount: number;
+            breakdown?:
+              | { costPerCredit: number; credits: number; type: "credits" }
+              | {
+                  cacheReadTokensCost?: number;
+                  cacheWriteTokensCost?: number;
+                  inputTokensCost?: number;
+                  outputTokensCost?: number;
+                  reasoningTokensCost?: number;
+                  type: "tokens";
+                }
+              | { costPerRequest: number; requests: number; type: "requests" }
+              | {
+                  computeType?: string;
+                  costPerMs: number;
+                  durationMs: number;
+                  type: "compute";
+                }
+              | {
+                  bytes: number;
+                  costPerByteSecond: number;
+                  durationSeconds: number;
+                  type: "storage";
+                }
+              | {
+                  bytesInCost?: number;
+                  bytesOutCost?: number;
+                  type: "bandwidth";
+                }
+              | {
+                  costPerUnit: number;
+                  type: "units";
+                  unitType: string;
+                  units: number;
+                }
+              | {
+                  effectiveRate: number;
+                  quantity: number;
+                  tierApplied: string;
+                  type: "tiered";
+                }
+              | {
+                  components: Array<{
+                    name: string;
+                    quantity: number;
+                    totalCost: number;
+                    unitCost: number;
+                  }>;
+                  type: "composite";
+                }
+              | { data: any; type: "custom" };
+            currency: string;
+          };
+          costForUser: {
+            amount: number;
+            breakdown?:
+              | { costPerCredit: number; credits: number; type: "credits" }
+              | {
+                  cacheReadTokensCost?: number;
+                  cacheWriteTokensCost?: number;
+                  inputTokensCost?: number;
+                  outputTokensCost?: number;
+                  reasoningTokensCost?: number;
+                  type: "tokens";
+                }
+              | { costPerRequest: number; requests: number; type: "requests" }
+              | {
+                  computeType?: string;
+                  costPerMs: number;
+                  durationMs: number;
+                  type: "compute";
+                }
+              | {
+                  bytes: number;
+                  costPerByteSecond: number;
+                  durationSeconds: number;
+                  type: "storage";
+                }
+              | {
+                  bytesInCost?: number;
+                  bytesOutCost?: number;
+                  type: "bandwidth";
+                }
+              | {
+                  costPerUnit: number;
+                  type: "units";
+                  unitType: string;
+                  units: number;
+                }
+              | {
+                  effectiveRate: number;
+                  quantity: number;
+                  tierApplied: string;
+                  type: "tiered";
+                }
+              | {
+                  components: Array<{
+                    name: string;
+                    quantity: number;
+                    totalCost: number;
+                    unitCost: number;
+                  }>;
+                  type: "composite";
+                }
+              | { data: any; type: "custom" };
+            currency: string;
+            markupMultiplier?: number;
+          };
+          messageId: string;
+          providerId: string;
+          threadId: string;
+          timestamp: number;
+          toolId: string;
+          usage:
+            | { creditType?: string; credits: number; type: "credits" }
+            | {
+                cacheReadTokens?: number;
+                cacheWriteTokens?: number;
+                inputTokens: number;
+                outputTokens: number;
+                reasoningTokens?: number;
+                type: "tokens";
+              }
+            | { requestType?: string; requests: number; type: "requests" }
+            | {
+                computeType?: string;
+                durationMs: number;
+                tier?: string;
+                type: "compute";
+              }
+            | {
+                bytes: number;
+                durationSeconds?: number;
+                storageClass?: string;
+                type: "storage";
+              }
+            | {
+                bytesIn?: number;
+                bytesOut?: number;
+                region?: string;
+                type: "bandwidth";
+              }
+            | {
+                metadata?: Record<string, any>;
+                type: "units";
+                unitType: string;
+                units: number;
+              }
+            | {
+                quantity: number;
+                tierName?: string;
+                type: "tiered";
+                unitType: string;
+              }
+            | {
+                components: Array<{
+                  cost?: number;
+                  name: string;
+                  quantity: number;
+                  unitType: string;
+                }>;
+                type: "composite";
+              }
+            | { data: any; description?: string; type: "custom" };
+          userId?: string;
+        }>
+      >;
+      getToolCostsByUser: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          cost: {
+            amount: number;
+            breakdown?:
+              | { costPerCredit: number; credits: number; type: "credits" }
+              | {
+                  cacheReadTokensCost?: number;
+                  cacheWriteTokensCost?: number;
+                  inputTokensCost?: number;
+                  outputTokensCost?: number;
+                  reasoningTokensCost?: number;
+                  type: "tokens";
+                }
+              | { costPerRequest: number; requests: number; type: "requests" }
+              | {
+                  computeType?: string;
+                  costPerMs: number;
+                  durationMs: number;
+                  type: "compute";
+                }
+              | {
+                  bytes: number;
+                  costPerByteSecond: number;
+                  durationSeconds: number;
+                  type: "storage";
+                }
+              | {
+                  bytesInCost?: number;
+                  bytesOutCost?: number;
+                  type: "bandwidth";
+                }
+              | {
+                  costPerUnit: number;
+                  type: "units";
+                  unitType: string;
+                  units: number;
+                }
+              | {
+                  effectiveRate: number;
+                  quantity: number;
+                  tierApplied: string;
+                  type: "tiered";
+                }
+              | {
+                  components: Array<{
+                    name: string;
+                    quantity: number;
+                    totalCost: number;
+                    unitCost: number;
+                  }>;
+                  type: "composite";
+                }
+              | { data: any; type: "custom" };
+            currency: string;
+          };
+          costForUser: {
+            amount: number;
+            breakdown?:
+              | { costPerCredit: number; credits: number; type: "credits" }
+              | {
+                  cacheReadTokensCost?: number;
+                  cacheWriteTokensCost?: number;
+                  inputTokensCost?: number;
+                  outputTokensCost?: number;
+                  reasoningTokensCost?: number;
+                  type: "tokens";
+                }
+              | { costPerRequest: number; requests: number; type: "requests" }
+              | {
+                  computeType?: string;
+                  costPerMs: number;
+                  durationMs: number;
+                  type: "compute";
+                }
+              | {
+                  bytes: number;
+                  costPerByteSecond: number;
+                  durationSeconds: number;
+                  type: "storage";
+                }
+              | {
+                  bytesInCost?: number;
+                  bytesOutCost?: number;
+                  type: "bandwidth";
+                }
+              | {
+                  costPerUnit: number;
+                  type: "units";
+                  unitType: string;
+                  units: number;
+                }
+              | {
+                  effectiveRate: number;
+                  quantity: number;
+                  tierApplied: string;
+                  type: "tiered";
+                }
+              | {
+                  components: Array<{
+                    name: string;
+                    quantity: number;
+                    totalCost: number;
+                    unitCost: number;
+                  }>;
+                  type: "composite";
+                }
+              | { data: any; type: "custom" };
+            currency: string;
+            markupMultiplier?: number;
+          };
+          messageId: string;
+          providerId: string;
+          threadId: string;
+          timestamp: number;
+          toolId: string;
+          usage:
+            | { creditType?: string; credits: number; type: "credits" }
+            | {
+                cacheReadTokens?: number;
+                cacheWriteTokens?: number;
+                inputTokens: number;
+                outputTokens: number;
+                reasoningTokens?: number;
+                type: "tokens";
+              }
+            | { requestType?: string; requests: number; type: "requests" }
+            | {
+                computeType?: string;
+                durationMs: number;
+                tier?: string;
+                type: "compute";
+              }
+            | {
+                bytes: number;
+                durationSeconds?: number;
+                storageClass?: string;
+                type: "storage";
+              }
+            | {
+                bytesIn?: number;
+                bytesOut?: number;
+                region?: string;
+                type: "bandwidth";
+              }
+            | {
+                metadata?: Record<string, any>;
+                type: "units";
+                unitType: string;
+                units: number;
+              }
+            | {
+                quantity: number;
+                tierName?: string;
+                type: "tiered";
+                unitType: string;
+              }
+            | {
+                components: Array<{
+                  cost?: number;
+                  name: string;
+                  quantity: number;
+                  unitType: string;
+                }>;
+                type: "composite";
+              }
+            | { data: any; description?: string; type: "custom" };
+          userId?: string;
+        }>
+      >;
+      getTotalToolCostsByThread: FunctionReference<
+        "query",
+        "internal",
+        { threadId: string },
+        any
+      >;
+      getTotalToolCostsByUser: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
       >;
     };
   };

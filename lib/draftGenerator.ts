@@ -34,7 +34,8 @@ export async function generateDraftFromBrief(
   websiteUrl?: string,
   industry?: string,
   brandVoice?: string,
-  regenerationNotes?: string
+  regenerationNotes?: string,
+  ragContext?: string
 ): Promise<DraftResult> {
   // Check for OpenAI API key
   const apiKey = process.env.OPENAI_API_KEY;
@@ -54,6 +55,7 @@ ${websiteUrl ? `Website: ${websiteUrl}` : ''}
 ${industry ? `Industry: ${industry}` : ''}
 ${brandVoice ? `Brand Voice: ${brandVoice}` : ''}
 ${regenerationNotes ? `Previous feedback: ${regenerationNotes}` : ''}
+${ragContext ? `\nRELEVANT CONTEXT (Use this to add depth, examples, and competitive nuance):\n${ragContext}\n` : ''}
 
 **Content Brief:**
 Title: ${primaryTitle}

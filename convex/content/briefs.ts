@@ -1,21 +1,25 @@
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
 
 // Create brief
 export const createBrief = mutation({
   args: {
-    planId: v.id("quarterlyPlans"),
-    projectId: v.id("projects"),
-    clusterId: v.optional(v.id("keywordClusters")),
+    planId: v.optional(v.id('quarterlyPlans')),
+    projectId: v.id('projects'),
+    clusterId: v.optional(v.id('keywordClusters')),
     title: v.string(),
     scheduledDate: v.number(),
     status: v.optional(v.string()), // planned, in_progress, approved, published
     titleOptions: v.optional(v.array(v.string())),
     h2Outline: v.optional(v.array(v.string())),
-    faqs: v.optional(v.array(v.object({
-      question: v.string(),
-      answer: v.string(),
-    }))),
+    faqs: v.optional(
+      v.array(
+        v.object({
+          question: v.string(),
+          answer: v.string(),
+        })
+      )
+    ),
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
     internalLinks: v.optional(v.array(v.string())),
@@ -23,13 +27,13 @@ export const createBrief = mutation({
   },
   handler: async (ctx, args) => {
     const { planId, projectId, clusterId, title, scheduledDate, status, ...details } = args;
-    return await ctx.db.insert("briefs", {
+    return await ctx.db.insert('briefs', {
       planId,
       projectId,
       clusterId,
       title,
       scheduledDate,
-      status: status || "planned",
+      status: status || 'planned',
       ...details,
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -39,7 +43,7 @@ export const createBrief = mutation({
 
 // Get brief by ID
 export const getBriefById = query({
-  args: { briefId: v.id("briefs") },
+  args: { briefId: v.id('briefs') },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.briefId);
   },
@@ -47,11 +51,11 @@ export const getBriefById = query({
 
 // Get briefs by plan
 export const getBriefsByPlan = query({
-  args: { planId: v.id("quarterlyPlans") },
+  args: { planId: v.id('quarterlyPlans') },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("briefs")
-      .withIndex("by_plan", (q) => q.eq("planId", args.planId))
+      .query('briefs')
+      .withIndex('by_plan', (q) => q.eq('planId', args.planId))
       .collect();
   },
 });
@@ -59,14 +63,18 @@ export const getBriefsByPlan = query({
 // Update brief
 export const updateBrief = mutation({
   args: {
-    briefId: v.id("briefs"),
+    briefId: v.id('briefs'),
     title: v.optional(v.string()),
     titleOptions: v.optional(v.array(v.string())),
     h2Outline: v.optional(v.array(v.string())),
-    faqs: v.optional(v.array(v.object({
-      question: v.string(),
-      answer: v.string(),
-    }))),
+    faqs: v.optional(
+      v.array(
+        v.object({
+          question: v.string(),
+          answer: v.string(),
+        })
+      )
+    ),
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
     internalLinks: v.optional(v.array(v.string())),
@@ -77,22 +85,21 @@ export const updateBrief = mutation({
   handler: async (ctx, args) => {
     const { briefId, ...updates } = args;
     const cleanUpdates: Record<string, any> = { updatedAt: Date.now() };
-    
+
     for (const [key, value] of Object.entries(updates)) {
       if (value !== undefined) {
         cleanUpdates[key] = value;
       }
     }
-    
+
     return await ctx.db.patch(briefId, cleanUpdates);
   },
 });
 
 // Delete brief
 export const deleteBrief = mutation({
-  args: { briefId: v.id("briefs") },
+  args: { briefId: v.id('briefs') },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.briefId);
   },
 });
-

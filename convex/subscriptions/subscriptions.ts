@@ -1,5 +1,6 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
+import { getMonthBoundaries } from '../lib/dateUtils';
 
 const PLAN_LIMITS = {
   starter: {
@@ -38,12 +39,8 @@ function planConfig(planTier: string) {
   return PLAN_LIMITS[tier] ?? PLAN_LIMITS.starter;
 }
 
-function currentPeriodBounds(now: number) {
-  const current = new Date(now);
-  const start = new Date(current.getFullYear(), current.getMonth(), 1).getTime();
-  const end = new Date(current.getFullYear(), current.getMonth() + 1, 1).getTime();
-  return { start, end };
-}
+// function removed in favor of import if possible, or just fixing logic
+// actually I need better context on project structure first.
 
 async function getActiveSubscription(ctx: any, userId: string) {
   return await ctx.db
@@ -147,7 +144,7 @@ export const getSubscriptionByUser = query({
     }
 
     const now = Date.now();
-    const { start, end } = currentPeriodBounds(now);
+    const { start, end } = getMonthBoundaries(now);
     const usage = await getUsageDoc(ctx, args.userId, start, end);
 
     return { subscription, usage };
@@ -186,7 +183,7 @@ export const recordUsage = mutation({
     }
 
     const config = planConfig(subscription.planTier);
-    const { start, end } = currentPeriodBounds(Date.now());
+    const { start, end } = getMonthBoundaries(Date.now());
     const usageDoc = await getUsageDoc(ctx, args.userId, start, end);
 
     const field = metricToField[args.metric];

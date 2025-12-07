@@ -2,21 +2,55 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Container, VStack, Heading, Text, Box, Button, HStack, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Input, FormControl, FormLabel, Select, Table, Thead, Tbody, Tr, Th, Td, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, useDisclosure, useToast } from '@chakra-ui/react';
+import {
+  Container,
+  VStack,
+  Heading,
+  Text,
+  Box,
+  Button,
+  HStack,
+  Card,
+  CardBody,
+  Badge,
+  Alert,
+  AlertIcon,
+  Spinner,
+  Input,
+  FormControl,
+  FormLabel,
+  Select,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
+  useToast,
+} from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
+import { formatDate, getCurrentDate } from '@/lib/dateUtils';
 
 function PublishPageContent() {
   const searchParams = useSearchParams();
   const draftId = searchParams?.get('draftId');
   const { user } = useAuth();
   const toast = useToast();
-  
+
   const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  
+
   const [scheduleForm, setScheduleForm] = useState({
     publishDate: '',
     publishTime: '',
@@ -37,12 +71,12 @@ function PublishPageContent() {
     // Get projectId from localStorage or user
     const projectId = localStorage.getItem('projectId') || (user as any)?.projectId;
     if (!projectId) return;
-    
+
     setLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/publish?projectId=${projectId}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -66,7 +100,7 @@ function PublishPageContent() {
     }
 
     const { publishDate, publishTime, timezone, platform, tags, categories, slug } = scheduleForm;
-    
+
     if (!publishDate || !publishTime) {
       toast({
         title: 'Please select date and time',
@@ -94,15 +128,15 @@ function PublishPageContent() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           draftId,
           publishDate: publishTimestamp,
           timezone,
           platform,
-          tags: tags ? tags.split(',').map(t => t.trim()) : [],
-          categories: categories ? categories.split(',').map(c => c.trim()) : [],
+          tags: tags ? tags.split(',').map((t) => t.trim()) : [],
+          categories: categories ? categories.split(',').map((c) => c.trim()) : [],
           slug: slug || undefined,
         }),
       });
@@ -132,8 +166,8 @@ function PublishPageContent() {
   };
 
   const handlePublishNow = async (postId?: string) => {
-    const targetDraftId = postId ? scheduledPosts.find(p => p._id === postId)?.draftId : draftId;
-    
+    const targetDraftId = postId ? scheduledPosts.find((p) => p._id === postId)?.draftId : draftId;
+
     if (!targetDraftId) {
       toast({
         title: 'No draft selected',
@@ -149,7 +183,7 @@ function PublishPageContent() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           draftId: targetDraftId,
@@ -189,7 +223,7 @@ function PublishPageContent() {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/publish?postId=${postId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -209,12 +243,18 @@ function PublishPageContent() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'blue';
-      case 'publishing': return 'yellow';
-      case 'published': return 'green';
-      case 'failed': return 'red';
-      case 'cancelled': return 'gray';
-      default: return 'gray';
+      case 'scheduled':
+        return 'blue';
+      case 'publishing':
+        return 'yellow';
+      case 'published':
+        return 'green';
+      case 'failed':
+        return 'red';
+      case 'cancelled':
+        return 'gray';
+      default:
+        return 'gray';
     }
   };
 
@@ -227,27 +267,16 @@ function PublishPageContent() {
               <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="gray.800">
                 Publishing & Scheduling
               </Heading>
-              <Text color="gray.600">
-                Schedule or publish approved content to your CMS
-              </Text>
+              <Text color="gray.600">Schedule or publish approved content to your CMS</Text>
             </VStack>
             <HStack>
               {draftId && (
-                <Button
-                  onClick={onOpen}
-                  bg="brand.orange"
-                  color="white"
-                  _hover={{ bg: '#E8851A' }}
-                >
+                <Button onClick={onOpen} bg="brand.orange" color="white" _hover={{ bg: '#E8851A' }}>
                   Schedule Publish
                 </Button>
               )}
               {draftId && (
-                <Button
-                  onClick={() => handlePublishNow()}
-                  isLoading={publishing}
-                  variant="outline"
-                >
+                <Button onClick={() => handlePublishNow()} isLoading={publishing} variant="outline">
                   Publish Now
                 </Button>
               )}
@@ -285,23 +314,16 @@ function PublishPageContent() {
                           <Td>
                             <Badge>{post.platform}</Badge>
                           </Td>
-                          <Td>
-                            {new Date(post.publishDate).toLocaleString()}
-                          </Td>
+                          <Td>{formatDate(post.publishDate, 'PP p')}</Td>
                           <Td>{post.timezone}</Td>
                           <Td>
-                            <Badge colorScheme={getStatusColor(post.status)}>
-                              {post.status}
-                            </Badge>
+                            <Badge colorScheme={getStatusColor(post.status)}>{post.status}</Badge>
                           </Td>
                           <Td>
                             <HStack spacing={2}>
                               {post.status === 'scheduled' && (
                                 <>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handlePublishNow(post._id)}
-                                  >
+                                  <Button size="sm" onClick={() => handlePublishNow(post._id)}>
                                     Publish Now
                                   </Button>
                                   <Button
@@ -350,20 +372,24 @@ function PublishPageContent() {
                 <Input
                   type="date"
                   value={scheduleForm.publishDate}
-                  onChange={(e) => setScheduleForm({ ...scheduleForm, publishDate: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) =>
+                    setScheduleForm({ ...scheduleForm, publishDate: e.target.value })
+                  }
+                  min={formatDate(getCurrentDate(), 'yyyy-MM-dd')}
                 />
               </FormControl>
-              
+
               <FormControl>
                 <FormLabel>Publish Time</FormLabel>
                 <Input
                   type="time"
                   value={scheduleForm.publishTime}
-                  onChange={(e) => setScheduleForm({ ...scheduleForm, publishTime: e.target.value })}
+                  onChange={(e) =>
+                    setScheduleForm({ ...scheduleForm, publishTime: e.target.value })
+                  }
                 />
               </FormControl>
-              
+
               <FormControl>
                 <FormLabel>Timezone</FormLabel>
                 <Select
@@ -377,7 +403,7 @@ function PublishPageContent() {
                   <option value="UTC">UTC</option>
                 </Select>
               </FormControl>
-              
+
               <FormControl>
                 <FormLabel>Platform</FormLabel>
                 <Select
@@ -388,7 +414,7 @@ function PublishPageContent() {
                   <option value="shopify">Shopify</option>
                 </Select>
               </FormControl>
-              
+
               <FormControl>
                 <FormLabel>Slug (optional)</FormLabel>
                 <Input
@@ -397,7 +423,7 @@ function PublishPageContent() {
                   placeholder="post-url-slug"
                 />
               </FormControl>
-              
+
               <FormControl>
                 <FormLabel>Tags (comma-separated)</FormLabel>
                 <Input
@@ -406,7 +432,7 @@ function PublishPageContent() {
                   placeholder="tag1, tag2, tag3"
                 />
               </FormControl>
-              
+
               <FormControl>
                 <FormLabel>Categories (comma-separated)</FormLabel>
                 <Input
@@ -438,13 +464,20 @@ function PublishPageContent() {
 
 export default function PublishPage() {
   return (
-    <Suspense fallback={
-      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
-        <Spinner size="xl" />
-      </Box>
-    }>
+    <Suspense
+      fallback={
+        <Box
+          minH="calc(100vh - 64px)"
+          bg="brand.light"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Spinner size="xl" />
+        </Box>
+      }
+    >
       <PublishPageContent />
     </Suspense>
   );
 }
-
