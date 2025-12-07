@@ -3,6 +3,7 @@
 import { type FC, type ReactNode } from 'react';
 import { Box } from '@chakra-ui/react';
 import { Navigation } from '../Navigation';
+import { GoogleOneTap } from '../auth/GoogleOneTap';
 
 type Props = {
   children: ReactNode;
@@ -11,7 +12,7 @@ type Props = {
 export const Layout: FC<Props> = ({ children }) => (
   <Box minH="100vh" w="100%" bg="brand.light">
     <Navigation />
+    <GoogleOneTap />
     {children}
   </Box>
 );
-

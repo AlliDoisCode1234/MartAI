@@ -1,10 +1,12 @@
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
 
+// Create SEO audit
 // Create SEO audit
 export const createAudit = mutation({
   args: {
-    clientId: v.id("clients"),
+    clientId: v.optional(v.id('clients')),
+    projectId: v.optional(v.id('projects')),
     website: v.string(),
     overallScore: v.number(),
     technicalSeo: v.object({
@@ -35,8 +37,13 @@ export const createAudit = mutation({
     crawlErrors: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("seoAudits", {
+    if (!args.clientId && !args.projectId) {
+      throw new Error('Either clientId or projectId must be provided.');
+    }
+
+    return await ctx.db.insert('seoAudits', {
       clientId: args.clientId,
+      projectId: args.projectId,
       website: args.website,
       overallScore: args.overallScore,
       technicalSeo: args.technicalSeo,
@@ -54,14 +61,28 @@ export const createAudit = mutation({
   },
 });
 
-// Get latest audit for client
+// Get latest audit for client or project
+// keeping getLatestAudit for client backward compatibility
 export const getLatestAudit = query({
-  args: { clientId: v.id("clients") },
+  args: { clientId: v.id('clients') },
   handler: async (ctx, args) => {
     const audits = await ctx.db
-      .query("seoAudits")
-      .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
-      .order("desc")
+      .query('seoAudits')
+      .withIndex('by_client', (q) => q.eq('clientId', args.clientId))
+      .order('desc')
+      .take(1);
+    return audits[0] || null;
+  },
+});
+
+// New Query: getLatestAuditByProject
+export const getLatestAuditByProject = query({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const audits = await ctx.db
+      .query('seoAudits')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .order('desc')
       .take(1);
     return audits[0] || null;
   },
@@ -69,13 +90,12 @@ export const getLatestAudit = query({
 
 // Get all audits for client
 export const getAuditsByClient = query({
-  args: { clientId: v.id("clients") },
+  args: { clientId: v.id('clients') },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("seoAudits")
-      .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
-      .order("desc")
+      .query('seoAudits')
+      .withIndex('by_client', (q) => q.eq('clientId', args.clientId))
+      .order('desc')
       .collect();
   },
 });
-

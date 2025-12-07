@@ -2,8 +2,37 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Container, VStack, Heading, Text, Box, Button, HStack, Grid, GridItem, Card, CardBody, Alert, AlertIcon, Badge, Spinner, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, ModalFooter, FormControl, FormLabel, Input, useDisclosure } from '@chakra-ui/react';
+import {
+  Container,
+  VStack,
+  Heading,
+  Text,
+  Box,
+  Button,
+  HStack,
+  Grid,
+  GridItem,
+  Card,
+  CardBody,
+  Alert,
+  AlertIcon,
+  Badge,
+  Spinner,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  ModalFooter,
+  FormControl,
+  FormLabel,
+  Input,
+  useDisclosure,
+} from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
+import { useAction } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 
 type Integration = {
   platform: string;
@@ -34,19 +63,17 @@ function IntegrationsContent() {
     const site = searchParams?.get('site');
 
     if (success === 'ga4' && property) {
-      setIntegrations(prev => prev.map(i => 
-        i.platform === 'ga4' 
-          ? { ...i, connected: true, propertyName: property }
-          : i
-      ));
+      setIntegrations((prev) =>
+        prev.map((i) =>
+          i.platform === 'ga4' ? { ...i, connected: true, propertyName: property } : i
+        )
+      );
     }
 
     if (success === 'gsc' && site) {
-      setIntegrations(prev => prev.map(i => 
-        i.platform === 'gsc' 
-          ? { ...i, connected: true, siteUrl: site }
-          : i
-      ));
+      setIntegrations((prev) =>
+        prev.map((i) => (i.platform === 'gsc' ? { ...i, connected: true, siteUrl: site } : i))
+      );
     }
 
     if (error) {
@@ -65,6 +92,8 @@ function IntegrationsContent() {
     }
   }, [searchParams]);
 
+  const generateAuthUrl = useAction(api.integrations.google.generateAuthUrl);
+
   const handleConnectGA4 = async () => {
     if (!projectId || !isAuthenticated) {
       alert('Please complete onboarding first');
@@ -73,20 +102,14 @@ function IntegrationsContent() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/oauth/google?type=ga4&projectId=${projectId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      if (data.authUrl) {
-        window.location.href = data.authUrl;
+      const authUrl = await generateAuthUrl({ projectId: projectId as any });
+      if (authUrl) {
+        window.location.href = authUrl;
       } else {
         alert('Failed to initiate GA4 connection');
       }
     } catch (error) {
+      console.error(error);
       alert('Failed to connect GA4');
     } finally {
       setLoading(false);
@@ -98,31 +121,20 @@ function IntegrationsContent() {
       alert('Please complete onboarding first');
       return;
     }
-
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/oauth/google?type=gsc&projectId=${projectId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      if (data.authUrl) {
-        window.location.href = data.authUrl;
-      } else {
-        alert('Failed to initiate GSC connection');
-      }
-    } catch (error) {
-      alert('Failed to connect GSC');
-    } finally {
-      setLoading(false);
-    }
+    // GSC uses same Google Auth flow
+    handleConnectGA4();
   };
 
-  const [testResult, setTestResult] = useState<{ valid: boolean; error?: string; canPublish?: boolean } | null>(null);
-  const { isOpen: isCMSModalOpen, onOpen: onCMSModalOpen, onClose: onCMSModalClose } = useDisclosure();
+  const [testResult, setTestResult] = useState<{
+    valid: boolean;
+    error?: string;
+    canPublish?: boolean;
+  } | null>(null);
+  const {
+    isOpen: isCMSModalOpen,
+    onOpen: onCMSModalOpen,
+    onClose: onCMSModalClose,
+  } = useDisclosure();
   const [cmsPlatform, setCmsPlatform] = useState<'wordpress' | 'shopify' | 'webflow' | null>(null);
   const [cmsCredentials, setCmsCredentials] = useState<any>({});
 
@@ -145,7 +157,7 @@ function IntegrationsContent() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           platform: cmsPlatform,
@@ -158,11 +170,17 @@ function IntegrationsContent() {
       setTestResult(result);
 
       if (result.valid && result.canPublish) {
-        setIntegrations(prev => prev.map(i => 
-          i.platform === cmsPlatform 
-            ? { ...i, connected: true, siteUrl: cmsCredentials.siteUrl || cmsCredentials.shopDomain }
-            : i
-        ));
+        setIntegrations((prev) =>
+          prev.map((i) =>
+            i.platform === cmsPlatform
+              ? {
+                  ...i,
+                  connected: true,
+                  siteUrl: cmsCredentials.siteUrl || cmsCredentials.shopDomain,
+                }
+              : i
+          )
+        );
         setTimeout(() => onCMSModalClose(), 2000);
       }
     } catch (error) {
@@ -215,7 +233,13 @@ function IntegrationsContent() {
 
   if (!isAuthenticated) {
     return (
-      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
+      <Box
+        minH="calc(100vh - 64px)"
+        bg="brand.light"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
         <Alert status="warning" maxW="md">
           <AlertIcon />
           Please sign in to connect integrations
@@ -226,14 +250,19 @@ function IntegrationsContent() {
 
   return (
     <Box minH="calc(100vh - 64px)" bg="brand.light">
-      <Container maxW="container.xl" py={{ base: 8, md: 12 }} px={{ base: 4, sm: 6, md: 8, lg: 12 }}>
+      <Container
+        maxW="container.xl"
+        py={{ base: 8, md: 12 }}
+        px={{ base: 4, sm: 6, md: 8, lg: 12 }}
+      >
         <VStack spacing={8} align="stretch">
           <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="gray.800">
             Data Connections
           </Heading>
 
           <Text color="gray.600">
-            Connect your analytics and CMS platforms to enable automated SEO insights and content publishing.
+            Connect your analytics and CMS platforms to enable automated SEO insights and content
+            publishing.
           </Text>
 
           <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
@@ -299,7 +328,12 @@ function IntegrationsContent() {
             <ModalOverlay />
             <ModalContent>
               <ModalHeader>
-                Connect {cmsPlatform === 'wordpress' ? 'WordPress' : cmsPlatform === 'shopify' ? 'Shopify' : 'Webflow'}
+                Connect{' '}
+                {cmsPlatform === 'wordpress'
+                  ? 'WordPress'
+                  : cmsPlatform === 'shopify'
+                    ? 'Shopify'
+                    : 'Webflow'}
               </ModalHeader>
               <ModalCloseButton />
               <ModalBody>
@@ -311,7 +345,9 @@ function IntegrationsContent() {
                         <Input
                           placeholder="https://yoursite.com"
                           value={cmsCredentials.siteUrl || ''}
-                          onChange={(e) => setCmsCredentials({ ...cmsCredentials, siteUrl: e.target.value })}
+                          onChange={(e) =>
+                            setCmsCredentials({ ...cmsCredentials, siteUrl: e.target.value })
+                          }
                         />
                       </FormControl>
                       <FormControl>
@@ -319,7 +355,9 @@ function IntegrationsContent() {
                         <Input
                           placeholder="WordPress username"
                           value={cmsCredentials.username || ''}
-                          onChange={(e) => setCmsCredentials({ ...cmsCredentials, username: e.target.value })}
+                          onChange={(e) =>
+                            setCmsCredentials({ ...cmsCredentials, username: e.target.value })
+                          }
                         />
                       </FormControl>
                       <FormControl>
@@ -328,7 +366,9 @@ function IntegrationsContent() {
                           type="password"
                           placeholder="WordPress application password"
                           value={cmsCredentials.password || ''}
-                          onChange={(e) => setCmsCredentials({ ...cmsCredentials, password: e.target.value })}
+                          onChange={(e) =>
+                            setCmsCredentials({ ...cmsCredentials, password: e.target.value })
+                          }
                         />
                       </FormControl>
                     </>
@@ -340,7 +380,9 @@ function IntegrationsContent() {
                         <Input
                           placeholder="your-shop"
                           value={cmsCredentials.shopDomain || ''}
-                          onChange={(e) => setCmsCredentials({ ...cmsCredentials, shopDomain: e.target.value })}
+                          onChange={(e) =>
+                            setCmsCredentials({ ...cmsCredentials, shopDomain: e.target.value })
+                          }
                         />
                         <Text fontSize="xs" color="gray.500" mt={1}>
                           Enter your shop name without .myshopify.com
@@ -352,7 +394,9 @@ function IntegrationsContent() {
                           type="password"
                           placeholder="Shopify admin API access token"
                           value={cmsCredentials.accessToken || ''}
-                          onChange={(e) => setCmsCredentials({ ...cmsCredentials, accessToken: e.target.value })}
+                          onChange={(e) =>
+                            setCmsCredentials({ ...cmsCredentials, accessToken: e.target.value })
+                          }
                         />
                       </FormControl>
                     </>
@@ -364,7 +408,9 @@ function IntegrationsContent() {
                         <Input
                           placeholder="Webflow site ID"
                           value={cmsCredentials.siteId || ''}
-                          onChange={(e) => setCmsCredentials({ ...cmsCredentials, siteId: e.target.value })}
+                          onChange={(e) =>
+                            setCmsCredentials({ ...cmsCredentials, siteId: e.target.value })
+                          }
                         />
                       </FormControl>
                       <FormControl>
@@ -373,7 +419,9 @@ function IntegrationsContent() {
                           type="password"
                           placeholder="Webflow API access token"
                           value={cmsCredentials.accessToken || ''}
-                          onChange={(e) => setCmsCredentials({ ...cmsCredentials, accessToken: e.target.value })}
+                          onChange={(e) =>
+                            setCmsCredentials({ ...cmsCredentials, accessToken: e.target.value })
+                          }
                         />
                       </FormControl>
                       <FormControl>
@@ -381,7 +429,9 @@ function IntegrationsContent() {
                         <Input
                           placeholder="CMS collection ID for pages"
                           value={cmsCredentials.collectionId || ''}
-                          onChange={(e) => setCmsCredentials({ ...cmsCredentials, collectionId: e.target.value })}
+                          onChange={(e) =>
+                            setCmsCredentials({ ...cmsCredentials, collectionId: e.target.value })
+                          }
                         />
                       </FormControl>
                     </>
@@ -416,15 +466,20 @@ function IntegrationsContent() {
           <Alert status="info" borderRadius="md">
             <AlertIcon />
             <VStack align="start" spacing={2}>
-              <Text fontSize="sm" fontWeight="semibold">Setup Instructions:</Text>
-              <Text fontSize="sm">
-                <strong>GA4/GSC:</strong> Click connect to authorize with Google. You'll be redirected to Google to grant permissions.
+              <Text fontSize="sm" fontWeight="semibold">
+                Setup Instructions:
               </Text>
               <Text fontSize="sm">
-                <strong>WordPress:</strong> Create an Application Password in WordPress (Users → Your Profile → Application Passwords).
+                <strong>GA4/GSC:</strong> Click connect to authorize with Google. You'll be
+                redirected to Google to grant permissions.
               </Text>
               <Text fontSize="sm">
-                <strong>Shopify:</strong> Create a Private App with content write permissions and get the access token.
+                <strong>WordPress:</strong> Create an Application Password in WordPress (Users →
+                Your Profile → Application Passwords).
+              </Text>
+              <Text fontSize="sm">
+                <strong>Shopify:</strong> Create a Private App with content write permissions and
+                get the access token.
               </Text>
             </VStack>
           </Alert>
@@ -436,11 +491,19 @@ function IntegrationsContent() {
 
 export default function IntegrationsPage() {
   return (
-    <Suspense fallback={
-      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
-        <Spinner size="xl" color="brand.orange" />
-      </Box>
-    }>
+    <Suspense
+      fallback={
+        <Box
+          minH="calc(100vh - 64px)"
+          bg="brand.light"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Spinner size="xl" color="brand.orange" />
+        </Box>
+      }
+    >
       <IntegrationsContent />
     </Suspense>
   );

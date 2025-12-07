@@ -1,7 +1,7 @@
 'use node';
 
 import { v } from 'convex/values';
-import { action } from '../_generated/server';
+import { action, mutation } from '../_generated/server';
 import { crawlWebsite } from '../../lib/siteCrawler';
 import { generateKeywords } from '../../lib/keywordGenerator';
 import { IntelligenceService } from '../lib/services/intelligence';
@@ -86,11 +86,11 @@ export const runSEOAgent = action({
             {
               title: siteAnalysis.title,
               metaDescription: siteAnalysis.metaDescription,
-              h1Tags: siteAnalysis.h1Tags,
+              h1Tags: (siteAnalysis.h1Tags || []).slice(0, 10), // Limit to 10 headers
               wordCount: siteAnalysis.wordCount,
               loadTime: siteAnalysis.loadTime,
               mobileFriendly: siteAnalysis.mobileFriendly,
-              issues: siteAnalysis.issues,
+              issues: (siteAnalysis.issues || []).slice(0, 10), // Limit to 10 issues
             },
             null,
             2
@@ -99,7 +99,10 @@ export const runSEOAgent = action({
     }
 
     Generated Keywords:
-    ${keywords.map((k) => `- ${k.keyword} (${k.intent})`).join('\n')}
+    ${keywords
+      .slice(0, 20)
+      .map((k) => `- ${k.keyword} (${k.intent})`)
+      .join('\n')}
 
     Computed Scores:
     Technical: ${technicalScore}

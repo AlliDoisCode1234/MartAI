@@ -111,11 +111,11 @@ export default function OnboardingPage() {
           <VStack spacing={6} align="stretch">
             <VStack spacing={2} align="stretch" textAlign="center">
               <Heading size="xl" fontWeight="bold" fontFamily="heading" color="gray.800">
-                Welcome to MartAI! 🎉
+                Hi, I'm Mart! 👋
               </Heading>
               <Text color="gray.600" fontSize="lg">
-                Let's get your website ready to grow. We'll help you get found on Google - no SEO
-                knowledge needed!
+                I'm your new AI Marketing Manager. Give me your website, and I'll build your entire
+                SEO strategy in seconds.
               </Text>
             </VStack>
 
@@ -143,7 +143,7 @@ export default function OnboardingPage() {
                 </FormControl>
 
                 <FormControl isRequired>
-                  <FormLabel fontWeight="semibold">What's your website address?</FormLabel>
+                  <FormLabel fontWeight="semibold">What website should I analyze?</FormLabel>
                   <Input
                     placeholder="yourwebsite.com"
                     type="url"
@@ -153,7 +153,7 @@ export default function OnboardingPage() {
                     size="lg"
                   />
                   <Text fontSize="xs" color="gray.500" mt={1}>
-                    Don't worry about adding "https://" - we'll add that for you
+                    Paste your homepage URL here.
                   </Text>
                 </FormControl>
 
@@ -165,18 +165,17 @@ export default function OnboardingPage() {
                   _hover={{ bg: '#E8851A' }}
                   disabled={loading || !formData.website}
                   isLoading={loading}
-                  loadingText="Getting everything ready..."
+                  loadingText="Mart is analyzing..."
                 >
-                  {loading ? 'Setting things up...' : 'Get Started →'}
+                  {loading ? 'Analyzing...' : 'Analyze My Site →'}
                 </Button>
               </VStack>
             </form>
 
             <Box bg="gray.50" p={4} borderRadius="md" mt={4}>
               <Text fontSize="sm" color="gray.600" textAlign="center">
-                <strong>What happens next?</strong> We'll analyze your website and create a
-                personalized plan to help you rank higher on Google. You can always add more details
-                later!
+                <strong>What happens next?</strong> I'll crawl your site, find your best keywords,
+                and create a quarterly content plan to hit your revenue goals.
               </Text>
             </Box>
           </VStack>

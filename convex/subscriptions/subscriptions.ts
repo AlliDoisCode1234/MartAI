@@ -2,29 +2,41 @@ import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
-const PLAN_LIMITS = {
+export const PLAN_LIMITS = {
   starter: {
     priceMonthly: 49,
     features: {
-      maxUrls: 5,
-      maxKeywordIdeas: 100,
-      maxAiReports: 2,
-      maxContentPieces: 2,
+      maxUrls: 1,
+      maxKeywordIdeas: 250,
+      maxAiReports: 4,
+      maxContentPieces: 4,
     },
   },
   growth: {
     priceMonthly: 149,
     features: {
-      maxUrls: 20,
-      maxKeywordIdeas: 500,
-      maxAiReports: 8,
-      maxContentPieces: 8,
+      maxUrls: 3,
+      maxKeywordIdeas: 1000,
+      maxAiReports: 12,
+      maxContentPieces: 12,
     },
   },
+  enterprise: {
+    priceMonthly: 0, // Custom/Contact Us
+    features: {
+      maxUrls: 999999, // Unlimited
+      maxKeywordIdeas: 10000,
+      maxAiReports: 100,
+      maxContentPieces: 100,
+    },
+  },
+  // Legacy 'scale' kept for backward compatibility if needed, or we can just remove it.
+  // Assuming strict migration to new tiers, 'scale' users might need handling.
+  // For now, I'll map 'scale' to 'growth' logic or leave it as a fallback.
   scale: {
     priceMonthly: 399,
     features: {
-      maxUrls: 999999, // Unlimited
+      maxUrls: 10,
       maxKeywordIdeas: 2000,
       maxAiReports: 20,
       maxContentPieces: 20,
@@ -32,11 +44,11 @@ const PLAN_LIMITS = {
   },
 } as const;
 
-type PlanName = keyof typeof PLAN_LIMITS;
+export type PlanName = keyof typeof PLAN_LIMITS;
 
-function planConfig(planTier: string) {
+export function planConfig(planTier: string) {
   const tier = planTier.toLowerCase() as PlanName;
-  return PLAN_LIMITS[tier] ?? PLAN_LIMITS.starter;
+  return PLAN_LIMITS[tier] ?? null;
 }
 
 // function removed in favor of import if possible, or just fixing logic

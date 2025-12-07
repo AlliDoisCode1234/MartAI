@@ -64,42 +64,83 @@ VERCEL_AI_GATEWAY_KEY=your_vercel_gateway_key
 1. Go to [platform.openai.com](https://platform.openai.com)
 2. Navigate to API Keys
 3. Create a new secret key
+
+# MartAI Environment Variables Guide
+
+Complete reference for all environment variables needed for the MartAI platform.
+
+---
+
+## Quick Start - Minimal Setup
+
+For local development, you need these **essential** variables in your `.env.local`:
+
+```bash
+# === REQUIRED FOR BASIC FUNCTIONALITY ===
+
+# Convex Backend
+NEXT_PUBLIC_CONVEX_URL=https://gregarious-lemming-409.convex.cloud
+CONVEX_DEPLOYMENT=dev:gregarious-lemming-409
+
+# OpenAI API (Required for AI features)
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+---
+
+## Complete Environment Variables Reference
+
+### 1. Convex Backend (REQUIRED)
+
+```bash
+# Public Convex URL - Used by client-side code
+NEXT_PUBLIC_CONVEX_URL=https://gregarious-lemming-409.convex.cloud
+
+# Deployment identifier - Used by `npx convex dev`
+CONVEX_DEPLOYMENT=dev:gregarious-lemming-409
+
+# Convex Site URL - Used for OAuth callbacks
+CONVEX_SITE_URL=https://your-domain.com
+
+# Google Frontend Client ID - For One Tap & Sign In
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
+```
+
+**Where to add**: `.env.local` (root directory)
+
+**How to get**:
+
+1. Sign up at [convex.dev](https://convex.dev)
+2. Create a project
+3. Copy the deployment URL from your dashboard
+4. Run `npx convex dev` to get your deployment name
+
+---
+
+### 2. OpenAI API (REQUIRED for AI features)
+
+```bash
+# OpenAI API Key - Used for content generation, keyword clustering, etc.
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Optional: Vercel AI Gateway (alternative to direct OpenAI)
+VERCEL_AI_GATEWAY_KEY=your_vercel_gateway_key
+```
+
+**Where to add**: `.env.local` (root directory)
+
+**How to get**:
+
+1. Go to [platform.openai.com](https://platform.openai.com)
+2. Navigate to API Keys
+3. Create a new secret key
 4. Copy and paste into `.env.local`
 
 **Cost**: ~$0.16-$1.80/month depending on usage (see PRICING.md)
 
 ---
 
-### 3. Authentication & Security (REQUIRED for production)
-
-```bash
-# JWT Secrets - Used for session management
-JWT_SECRET=your-super-secret-jwt-key-min-32-chars
-JWT_REFRESH_SECRET=your-super-secret-refresh-key-min-32-chars
-
-# API Security
-API_SECRET_KEY=your-api-secret-key-change-in-production
-CSRF_SECRET=your-csrf-secret-change-in-production
-API_KEY_HASH=your-api-key-hash
-
-# Allowed Origins (comma-separated)
-ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
-```
-
-**Where to add**: `.env.local` (root) and Vercel/production environment
-
-**How to generate**:
-
-```bash
-# Generate random secrets (Node.js)
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-**Development defaults**: These have fallback values for local dev, but MUST be set in production.
-
----
-
-### 4. Cron Jobs & Scheduled Tasks (REQUIRED for publishing)
+### 3. Cron Jobs & Scheduled Tasks (REQUIRED for publishing)
 
 ```bash
 # Cron Secret - Used to authenticate scheduled job triggers
@@ -122,7 +163,7 @@ VERCEL_URL=your-app.vercel.app
 
 ---
 
-### 5. WordPress Integration (OPTIONAL)
+### 4. WordPress Integration (OPTIONAL)
 
 ```bash
 # WordPress OAuth (if using WordPress.com OAuth)
@@ -144,7 +185,7 @@ WORDPRESS_REDIRECT_URI=https://yourdomain.com/api/oauth/wordpress/callback
 
 ---
 
-### 6. Shopify Integration (OPTIONAL)
+### 5. Shopify Integration (OPTIONAL)
 
 ```bash
 # Shopify OAuth
@@ -164,32 +205,40 @@ SHOPIFY_REDIRECT_URI=https://yourdomain.com/api/oauth/shopify/callback
 
 ---
 
-### 7. Google Analytics & Search Console (OPTIONAL)
+### 6. Google Analytics & Search Console (OPTIONAL)
 
 ```bash
 # Google OAuth (for GA4 and GSC integration)
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_REDIRECT_URI=https://yourdomain.com/api/oauth/google/callback
-
-# Google Service Account (alternative to OAuth)
-GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@project.iam.gserviceaccount.com
-GOOGLE_SERVICE_ACCOUNT_KEY=your_service_account_private_key
 ```
 
 **Where to add**: `.env.local` (root)
 
-**How to get**:
+**How to get Google ID & Secret**:
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create a new project
-3. Enable Google Analytics Data API and Search Console API
-4. Create OAuth 2.0 credentials
-5. Copy client ID and secret
+1.  **Create Project**: Go to [Google Cloud Console](https://console.cloud.google.com/), create a new project (e.g., "MartAI-Analytics").
+2.  **Enable APIs**:
+    - Search for "Google Analytics Data API" -> Enable.
+    - Search for "Google Search Console API" -> Enable.
+3.  **Configure OAuth Consent**:
+    - Go to "APIs & Services" > "OAuth consent screen".
+    - Select "External".
+    - Fill in app name (MartAI) and support email.
+    - Add your domain (`http://localhost:3000` for dev) to "Authorized domains".
+    - Save.
+4.  **Create Credentials**:
+    - Go to "Credentials" > "Create Credentials" > "OAuth client ID".
+    - Application type: "Web application".
+    - **Authorized redirect URIs**: Add `http://localhost:3000/api/oauth/google/callback`.
+    - Click Create. **Copy the Client ID and Client Secret.**
+
+_(Note: The codebase currently uses User OAuth, not Service Accounts, so you do not need to generate a JSON key file.)_
 
 ---
 
-### 8. Admin Seeding (OPTIONAL - for initial setup)
+### 7. Admin Seeding (OPTIONAL - for initial setup)
 
 ```bash
 # Admin Account Details (for scripts/seedAdmin.ts)
@@ -208,7 +257,7 @@ DEMO_ADMIN_PASSWORD=demo_password
 
 ---
 
-### 9. Development & Testing
+### 8. Development & Testing
 
 ```bash
 # Node Environment
@@ -256,13 +305,6 @@ CONVEX_SITE_URL=http://localhost:3000
 # === OPENAI API (REQUIRED) ===
 OPENAI_API_KEY=sk-proj-your-key-here
 
-# === AUTHENTICATION & SECURITY (REQUIRED for production) ===
-JWT_SECRET=dev-jwt-secret-change-in-production-min-32-chars
-JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production-min-32-chars
-API_SECRET_KEY=dev-api-secret-key-change-in-production
-CSRF_SECRET=dev-csrf-secret-change-in-production
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
-
 # === CRON & SCHEDULED TASKS ===
 CRON_SECRET=dev-cron-secret-change-in-production
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -300,24 +342,17 @@ When deploying to Vercel, add these environment variables in your project settin
 
 ### Required for Production:
 
-1. **Convex**:
-   - `NEXT_PUBLIC_CONVEX_URL` (from Convex dashboard)
-   - `CONVEX_DEPLOYMENT` (production deployment name)
-   - `CONVEX_SITE_URL` (your production domain)
+1.  **Convex**:
+    - `NEXT_PUBLIC_CONVEX_URL` (from Convex dashboard)
+    - `CONVEX_DEPLOYMENT` (production deployment name)
+    - `CONVEX_SITE_URL` (your production domain)
 
-2. **OpenAI**:
-   - `OPENAI_API_KEY` (your OpenAI API key)
+2.  **OpenAI**:
+    - `OPENAI_API_KEY` (your OpenAI API key)
 
-3. **Security**:
-   - `JWT_SECRET` (generate with crypto.randomBytes)
-   - `JWT_REFRESH_SECRET` (generate with crypto.randomBytes)
-   - `API_SECRET_KEY` (generate with crypto.randomBytes)
-   - `CSRF_SECRET` (generate with crypto.randomBytes)
-   - `ALLOWED_ORIGINS` (your production domain)
-
-4. **Cron**:
-   - `CRON_SECRET` (generate with crypto.randomBytes)
-   - `NEXT_PUBLIC_APP_URL` (your production domain)
+3.  **Cron**:
+    - `CRON_SECRET` (generate with crypto.randomBytes)
+    - `NEXT_PUBLIC_APP_URL` (your production domain)
 
 ### Optional (based on features):
 
@@ -329,12 +364,11 @@ When deploying to Vercel, add these environment variables in your project settin
 
 ## Security Best Practices
 
-1. **Never commit `.env.local`** - It's in `.gitignore` by default
-2. **Use different secrets for dev/production** - Never reuse secrets
-3. **Rotate secrets regularly** - Especially after team changes
-4. **Use Vercel's encrypted storage** - For production secrets
-5. **Minimum 32 characters** - For all secret keys
-6. **Use environment-specific values** - Different keys for dev/staging/prod
+1.  **Never commit `.env.local`** - It's in `.gitignore` by default
+2.  **Use different secrets for dev/production** - Never reuse secrets
+3.  **Rotate secrets regularly** - Especially after team changes
+4.  **Use Vercel's encrypted storage** - For production secrets
+5.  **Use environment-specific values** - Different keys for dev/staging/prod
 
 ---
 
@@ -350,11 +384,6 @@ When deploying to Vercel, add these environment variables in your project settin
 - Check that `OPENAI_API_KEY` is set
 - Verify the key starts with `sk-proj-` or `sk-`
 - Check for extra spaces or quotes
-
-### "JWT_SECRET is required in production"
-
-- Set `JWT_SECRET` in Vercel environment variables
-- Generate a secure random string (min 32 chars)
 
 ### Environment variables not updating
 
@@ -376,43 +405,38 @@ NEXT_PUBLIC_CONVEX_URL=https://gregarious-lemming-409.convex.cloud  # ✅ Correc
 
 ### Issues to Fix:
 
-1. **Remove trailing quote** from `OPENAI_API_KEY`
-2. **Add security secrets** for production readiness
-3. **Add CRON_SECRET** for scheduled publishing
-4. **Add CONVEX_SITE_URL** for OAuth callbacks
+1.  **Remove trailing quote** from `OPENAI_API_KEY`
+2.  **Add CRON_SECRET** for scheduled publishing
+3.  **Add CONVEX_SITE_URL** for OAuth callbacks
 
 ---
 
 ## Next Steps
 
-1. **Fix your `.env.local`**:
+1.  **Fix your `.env.local`**:
 
-   ```bash
-   OPENAI_API_KEY=your-actual-key-without-quotes
-   CONVEX_DEPLOYMENT=dev:gregarious-lemming-409
-   NEXT_PUBLIC_CONVEX_URL=https://gregarious-lemming-409.convex.cloud
-   CONVEX_SITE_URL=http://localhost:3000
-   CRON_SECRET=dev-cron-secret
-   NEXT_PUBLIC_APP_URL=http://localhost:3000
-   ```
+    ```bash
+    OPENAI_API_KEY=your-actual-key-without-quotes
+    CONVEX_DEPLOYMENT=dev:gregarious-lemming-409
+    NEXT_PUBLIC_CONVEX_URL=https://gregarious-lemming-409.convex.cloud
+    CONVEX_SITE_URL=http://localhost:3000
+    CRON_SECRET=dev-cron-secret
+    NEXT_PUBLIC_APP_URL=http://localhost:3000
+    ```
 
-2. **Generate production secrets** (when ready to deploy):
+2.  **Generate production secrets** (when ready to deploy):
 
-   ```bash
-   node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
-   node -e "console.log('JWT_REFRESH_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
-   node -e "console.log('API_SECRET_KEY=' + require('crypto').randomBytes(32).toString('hex'))"
-   node -e "console.log('CSRF_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
-   node -e "console.log('CRON_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
-   ```
+    ```bash
+    node -e "console.log('CRON_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
+    ```
 
-3. **Test locally**:
+3.  **Test locally**:
 
-   ```bash
-   npm run dev
-   ```
+    ```bash
+    npm run dev
+    ```
 
-4. **Deploy to Vercel** and add all production env vars
+4.  **Deploy to Vercel** and add all production env vars
 
 ---
 

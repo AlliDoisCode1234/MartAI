@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { ChakraProviderWrapper } from '@/src/providers/ChakraProvider';
 import { SecurityProvider } from '@/src/providers/SecurityProvider';
 import { ConvexProviderWrapper } from '@/src/providers/ConvexProvider';
+import { GoogleAuthProvider } from '@/src/providers/GoogleAuthProvider';
 import { Layout } from '@/src/components/Layout';
 import { ErrorBoundary } from '@/src/components/shared/ErrorBoundary';
 import '@/src/index.css';
@@ -44,11 +45,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body suppressHydrationWarning>
         <ErrorBoundary>
           <ConvexProviderWrapper>
-            <SecurityProvider>
-              <ChakraProviderWrapper>
-                <Layout>{children}</Layout>
-              </ChakraProviderWrapper>
-            </SecurityProvider>
+            <GoogleAuthProvider>
+              <SecurityProvider>
+                <ChakraProviderWrapper>
+                  <Layout>{children}</Layout>
+                </ChakraProviderWrapper>
+              </SecurityProvider>
+            </GoogleAuthProvider>
           </ConvexProviderWrapper>
         </ErrorBoundary>
       </body>

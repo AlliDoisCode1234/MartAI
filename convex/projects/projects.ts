@@ -1,6 +1,7 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 
+import { planConfig } from '../subscriptions/subscriptions';
 import { auth } from '../auth';
 
 // Create project
@@ -27,22 +28,23 @@ export const createProject = mutation({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .collect();
 
-    const tier = user.membershipTier ?? 'free';
-    const limits = {
-      free: 0,
-      starter: 1,
-      growth: 3,
-      pro: 999, // Enterprise/Scale
-    };
+    const tier = user.membershipTier ?? 'none';
+    const config = planConfig(tier);
 
-    // Handle string matching properly if schema allows other values
-    const limit = limits[tier as keyof typeof limits] ?? 0;
+    // Strict enforcement: No config means no paid plan = 0 limit
+    const limit: number = config?.features.maxUrls ?? 0;
 
-    if (projects.length >= limit) {
-      let msg = `Upgrade to create more projects. ${tier.charAt(0).toUpperCase() + tier.slice(1)} plan limit is ${limit}.`;
-      if (limit === 0) msg = 'Free plan cannot create projects. Please upgrade to Starter.';
-      throw new Error(`LIMIT_REACHED: ${msg}`);
-    }
+    // TODO: Uncomment this before launch - temporarily disabled for testing/dogfooding
+    // if (projects.length >= limit) {
+    //   if (limit === 0) {
+    //     throw new Error(
+    //       'LIMIT_REACHED: Payment required. Please subscribe to a plan to start MartAI.'
+    //     );
+    //   }
+    //   throw new Error(
+    //     `LIMIT_REACHED: Upgrade your plan to manage more websites. Current limit: ${limit}`
+    //   );
+    // }
 
     console.log('🏗️ [Convex] createProject mutation called with:', args);
     const projectId = await ctx.db.insert('projects', {
@@ -100,5 +102,46 @@ export const deleteProject = mutation({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.projectId);
+  },
+});
+
+export const createTestProject = mutation({
+  args: {
+    name: v.string(),
+    websiteUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // 1. Create a dummy user if not exists
+    const email = 'test-dogfood@martai.com';
+    let user = await ctx.db
+      .query('users')
+      .withIndex('email', (q) => q.eq('email', email))
+      .first();
+
+    if (!user) {
+      const userId = await ctx.db.insert('users', {
+        email,
+        name: 'Dogfood Tester',
+        role: 'admin',
+        membershipTier: 'enterprise', // Startup with high limits
+        onboardingStatus: 'completed',
+        createdAt: Date.now(),
+      });
+      user = await ctx.db.get(userId);
+    }
+
+    if (!user) throw new Error('Failed to create test user');
+
+    // 2. Create Project
+    const projectId = await ctx.db.insert('projects', {
+      userId: user._id,
+      name: args.name,
+      websiteUrl: args.websiteUrl,
+      industry: 'Testing',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    return projectId;
   },
 });

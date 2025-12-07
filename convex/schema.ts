@@ -16,7 +16,13 @@ export default defineSchema({
       v.union(v.literal('super_admin'), v.literal('admin'), v.literal('user'), v.literal('viewer'))
     ),
     membershipTier: v.optional(
-      v.union(v.literal('free'), v.literal('starter'), v.literal('growth'), v.literal('pro'))
+      v.union(
+        v.literal('free'),
+        v.literal('starter'),
+        v.literal('growth'),
+        v.literal('pro'),
+        v.literal('enterprise')
+      )
     ),
     bio: v.optional(v.string()),
     preferences: v.optional(
@@ -51,7 +57,8 @@ export default defineSchema({
 
   // SEO Audits
   seoAudits: defineTable({
-    clientId: v.id('clients'),
+    clientId: v.optional(v.id('clients')), // Optional for backwards compatibility
+    projectId: v.optional(v.id('projects')), // New SaaS link
     website: v.string(),
     overallScore: v.number(),
     technicalSeo: v.object({
@@ -84,6 +91,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index('by_client', ['clientId'])
+    .index('by_project', ['projectId'])
     .index('by_website', ['website']),
 
   // Keywords

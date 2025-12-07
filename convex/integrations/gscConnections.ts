@@ -1,10 +1,10 @@
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
 
 // Create or update GSC connection
 export const upsertGSCConnection = mutation({
   args: {
-    projectId: v.id("projects"),
+    projectId: v.id('projects'),
     siteUrl: v.string(),
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
@@ -12,8 +12,8 @@ export const upsertGSCConnection = mutation({
   handler: async (ctx, args) => {
     // Check if connection exists
     const existing = await ctx.db
-      .query("gscConnections")
-      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .query('gscConnections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .first();
 
     const connectionData = {
@@ -29,7 +29,7 @@ export const upsertGSCConnection = mutation({
       return await ctx.db.patch(existing._id, connectionData);
     }
 
-    return await ctx.db.insert("gscConnections", {
+    return await ctx.db.insert('gscConnections', {
       ...connectionData,
       createdAt: Date.now(),
     });
@@ -38,11 +38,11 @@ export const upsertGSCConnection = mutation({
 
 // Get GSC connection by project
 export const getGSCConnection = query({
-  args: { projectId: v.id("projects") },
+  args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("gscConnections")
-      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .query('gscConnections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .first();
   },
 });
@@ -50,7 +50,7 @@ export const getGSCConnection = query({
 // Update last sync time
 export const updateLastSync = mutation({
   args: {
-    connectionId: v.id("gscConnections"),
+    connectionId: v.id('gscConnections'),
   },
   handler: async (ctx, args) => {
     return await ctx.db.patch(args.connectionId, {
@@ -63,10 +63,27 @@ export const updateLastSync = mutation({
 // Delete GSC connection
 export const deleteGSCConnection = mutation({
   args: {
-    connectionId: v.id("gscConnections"),
+    connectionId: v.id('gscConnections'),
   },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.connectionId);
   },
 });
 
+export const updateTokens = mutation({
+  args: {
+    connectionId: v.id('gscConnections'),
+    accessToken: v.string(),
+    refreshToken: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const updates: any = {
+      accessToken: args.accessToken,
+      updatedAt: Date.now(),
+    };
+    if (args.refreshToken) {
+      updates.refreshToken = args.refreshToken;
+    }
+    await ctx.db.patch(args.connectionId, updates);
+  },
+});

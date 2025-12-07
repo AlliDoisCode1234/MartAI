@@ -38,6 +38,8 @@ MartAI is an AI-driven SEO & Lead Generation Platform. We have successfully comp
 1. **Retrier**: For robust OpenAI API calls.
 2. **Neutral Cost**: For tracking AI usage costs.
 3. **Subscriptions**: Polar integration.
+4. **Editor Migration**: Investigate switching from Lexical to ProseMirror using [`@convex-dev/prosemirror-sync`](https://www.convex.dev/components/prosemirror-sync) for real-time collaboration.
+5. **Google One Tap**: Implement One Tap and Auto Sign-in using Google Identity Services (or existing `@react-oauth/google` dependency).
 
 ---
 
