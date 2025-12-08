@@ -21,9 +21,8 @@ export async function generateKeywords(
   website: string,
   existingContent?: string[]
 ): Promise<KeywordSuggestion[]> {
-  // TODO: Add retrier for robust API calls (e.g. using convex-helpers/retrier)
-  // TODO: Add rate limiting (e.g. using @convex-dev/rate-limiter)
-  // TODO: Add caching for expensive API calls (e.g. using @convex-dev/action-cache)
+  // Note: Retrier, rate limiting, and caching are implemented in the Convex layer
+  // See: convex/lib/services/intelligence.ts and convex/rateLimits.ts
 
   // Skip OpenAI call if key is not available
   if (!process.env.OPENAI_API_KEY && !process.env.VERCEL_AI_GATEWAY_KEY) {
