@@ -251,3 +251,82 @@ export const optimizeCTR = action({
     return { success: true };
   },
 });
+
+/**
+ * Batch generate briefs with controlled concurrency
+ *
+ * Generates multiple briefs sequentially with delay to avoid rate limits.
+ * Useful for workflows processing multiple briefs at once.
+ */
+export const generateBriefsBatch = action({
+  args: {
+    briefIds: v.array(v.id('briefs')),
+    projectId: v.id('projects'),
+    /** Delay between brief generations in ms (default: 2000) */
+    delayMs: v.optional(v.number()),
+    /** Continue on error? (default: true) */
+    continueOnError: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const delayMs = args.delayMs ?? 2000;
+    const continueOnError = args.continueOnError ?? true;
+
+    const results: Array<{
+      briefId: string;
+      success: boolean;
+      cached?: boolean;
+      error?: string;
+    }> = [];
+
+    for (let i = 0; i < args.briefIds.length; i++) {
+      const briefId = args.briefIds[i];
+
+      try {
+        // Call the single brief generator
+        const result = await ctx.runAction(api.content.briefActions.generateBrief, {
+          briefId,
+          projectId: args.projectId,
+        });
+
+        results.push({
+          briefId: briefId as string,
+          success: true,
+          cached: result.cached,
+        });
+      } catch (error: any) {
+        console.error(`[BatchBriefs] Failed to generate brief ${briefId}:`, error.message);
+
+        if (continueOnError) {
+          results.push({
+            briefId: briefId as string,
+            success: false,
+            error: error.message,
+          });
+        } else {
+          throw error;
+        }
+      }
+
+      // Delay between briefs (skip after last)
+      if (i < args.briefIds.length - 1 && delayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    const failCount = results.filter((r) => !r.success).length;
+
+    return {
+      success: failCount === 0,
+      total: args.briefIds.length,
+      successCount,
+      failCount,
+      results,
+    };
+  },
+});
