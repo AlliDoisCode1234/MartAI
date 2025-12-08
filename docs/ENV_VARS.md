@@ -257,7 +257,32 @@ DEMO_ADMIN_PASSWORD=demo_password
 
 ---
 
-### 8. Development & Testing
+### 8. HubSpot Integration (OPTIONAL)
+
+```bash
+# HubSpot Private App Token - For syncing users/prospects to HubSpot
+HUBSPOT_API_KEY=pat-xxx-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+**Where to add**: Convex environment variables (via Convex dashboard)
+
+**How to get**:
+
+1. Go to [HubSpot](https://app.hubspot.com) → Settings → Integrations → Private Apps
+2. Create a new private app
+3. Grant scopes: `crm.objects.contacts.read`, `crm.objects.contacts.write`
+4. Copy the access token
+
+**Usage**:
+
+- Auto-sync users to HubSpot on signup
+- Sync prospects from lead forms
+- Track onboarding status, MR scores
+- Abandoned signup tracking
+
+---
+
+### 9. Development & Testing
 
 ```bash
 # Node Environment
