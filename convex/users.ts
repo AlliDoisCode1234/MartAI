@@ -38,3 +38,33 @@ export const resetOnboarding = mutation({
     await ctx.db.patch(args.userId, { onboardingStatus: 'in_progress' });
   },
 });
+
+/**
+ * Get user by ID
+ */
+export const getById = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.userId);
+  },
+});
+
+/**
+ * List all users (admin only, for bulk operations)
+ */
+export const listAll = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+      return [];
+    }
+
+    return await ctx.db.query('users').collect();
+  },
+});
