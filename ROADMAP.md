@@ -117,6 +117,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - [x] Date handling standardization (lib/dateUtils)
 - [x] UI Component Refactoring (Smart Options)
 - [ ] Test coverage expansion
+- [ ] **Future: Editor Migration** - Consider BlockNote + prosemirror-sync when React 19 strictMode issue is resolved
 
 ## Phase 2: Enhanced Features (P1 - Q2 2025)
 
