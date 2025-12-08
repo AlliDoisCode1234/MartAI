@@ -13,3 +13,8 @@ export { ErrorState } from './ErrorState';
 export { EmptyState } from './EmptyState';
 export { PageContainer } from './PageContainer';
 
+// Visualization components
+export { AnimatedCounter } from './AnimatedCounter';
+export { CircularGauge } from './CircularGauge';
+export { ChangeIndicator } from './ChangeIndicator';
+export { ScoreBar } from './ScoreBar';

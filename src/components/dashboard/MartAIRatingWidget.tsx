@@ -1,20 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-  Box,
-  VStack,
-  HStack,
-  Text,
-  Progress,
-  Tooltip,
-  useColorModeValue,
-  Icon,
-  Flex,
-  SimpleGrid,
-  Badge,
-} from '@chakra-ui/react';
-import { motion, useSpring, useTransform, AnimatePresence } from 'framer-motion';
+import { Box, VStack, HStack, Text, Badge, Icon, useColorModeValue } from '@chakra-ui/react';
+import { motion } from 'framer-motion';
 import {
   FiTrendingUp,
   FiEye,
@@ -23,16 +10,14 @@ import {
   FiZap,
   FiFileText,
   FiAward,
-  FiArrowUp,
-  FiArrowDown,
-  FiMinus,
 } from 'react-icons/fi';
+import { AnimatedCounter, CircularGauge, ChangeIndicator, ScoreBar } from '@/src/components/shared';
 
 const MotionBox = motion(Box);
 const MotionText = motion(Text);
 
 // -------------------------------------------------------------------
-// Types
+// Types - Exported for reuse
 // -------------------------------------------------------------------
 
 export interface MRScoreData {
@@ -50,11 +35,10 @@ export interface MRScoreData {
 interface MartAIRatingWidgetProps {
   score: MRScoreData | null;
   loading?: boolean;
-  showHistory?: boolean;
 }
 
 // -------------------------------------------------------------------
-// Constants
+// Config - Can be moved to a shared config file if needed elsewhere
 // -------------------------------------------------------------------
 
 const TIER_CONFIG: Record<
@@ -105,20 +89,20 @@ const TIER_CONFIG: Record<
   },
 };
 
-const COMPONENTS = [
+const SCORE_COMPONENTS = [
   {
     key: 'visibility',
     label: 'Visibility',
     icon: FiEye,
     weight: 30,
-    description: 'Average position in search',
+    description: 'Average position',
   },
   {
     key: 'trafficHealth',
     label: 'Traffic',
     icon: FiTrendingUp,
     weight: 25,
-    description: 'Week-over-week growth',
+    description: 'WoW growth',
   },
   {
     key: 'ctrPerformance',
@@ -132,202 +116,23 @@ const COMPONENTS = [
     label: 'Engagement',
     icon: FiActivity,
     weight: 10,
-    description: 'Bounce rate & time on site',
+    description: 'Bounce rate',
   },
   {
     key: 'quickWinPotential',
     label: 'Quick Wins',
     icon: FiZap,
     weight: 10,
-    description: 'Keywords on page 2',
+    description: 'Page 2 keywords',
   },
   {
     key: 'contentVelocity',
     label: 'Velocity',
     icon: FiFileText,
     weight: 10,
-    description: 'Content creation pace',
+    description: 'Content pace',
   },
 ] as const;
-
-// -------------------------------------------------------------------
-// Animated Counter Component
-// -------------------------------------------------------------------
-
-function AnimatedCounter({ value, duration = 1.5 }: { value: number; duration?: number }) {
-  const [displayValue, setDisplayValue] = useState(0);
-
-  useEffect(() => {
-    let start = 0;
-    const end = value;
-    if (start === end) return;
-
-    const totalMilSecDur = duration * 1000;
-    const incrementTime = totalMilSecDur / end;
-
-    const timer = setInterval(() => {
-      start += 1;
-      setDisplayValue(start);
-      if (start >= end) clearInterval(timer);
-    }, incrementTime);
-
-    return () => clearInterval(timer);
-  }, [value, duration]);
-
-  return <>{displayValue}</>;
-}
-
-// -------------------------------------------------------------------
-// Circular Gauge Component (SVG)
-// -------------------------------------------------------------------
-
-function CircularGauge({
-  value,
-  size = 180,
-  strokeWidth = 12,
-  gradientId,
-}: {
-  value: number;
-  size?: number;
-  strokeWidth?: number;
-  gradientId: string;
-}) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const progress = (value / 100) * circumference;
-
-  const bgStroke = useColorModeValue('#E2E8F0', '#2D3748');
-
-  return (
-    <Box position="relative" w={`${size}px`} h={`${size}px`}>
-      <svg width={size} height={size}>
-        <defs>
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#38A169" />
-            <stop offset="50%" stopColor="#4299E1" />
-            <stop offset="100%" stopColor="#9F7AEA" />
-          </linearGradient>
-        </defs>
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={bgStroke}
-          strokeWidth={strokeWidth}
-        />
-        {/* Animated progress circle */}
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={`url(#${gradientId})`}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: circumference - progress }}
-          transition={{ duration: 1.5, ease: 'easeOut' }}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </svg>
-    </Box>
-  );
-}
-
-// -------------------------------------------------------------------
-// Component Score Bar
-// -------------------------------------------------------------------
-
-function ComponentScoreBar({
-  label,
-  value,
-  icon,
-  weight,
-  description,
-  delay,
-}: {
-  label: string;
-  value: number;
-  icon: React.ComponentType;
-  weight: number;
-  description: string;
-  delay: number;
-}) {
-  const textMuted = useColorModeValue('gray.600', 'gray.400');
-  const barBg = useColorModeValue('gray.100', 'gray.700');
-
-  const getColorScheme = (v: number) => {
-    if (v >= 80) return 'green';
-    if (v >= 60) return 'blue';
-    if (v >= 40) return 'yellow';
-    return 'red';
-  };
-
-  return (
-    <Tooltip label={`${description} • ${weight}% of total score`} placement="top" hasArrow>
-      <MotionBox
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay, duration: 0.4 }}
-      >
-        <HStack justify="space-between" mb={1}>
-          <HStack spacing={2}>
-            <Icon as={icon} boxSize={4} color={textMuted} />
-            <Text fontSize="sm" color={textMuted} fontWeight="medium">
-              {label}
-            </Text>
-          </HStack>
-          <Badge colorScheme={getColorScheme(value)} fontSize="xs" borderRadius="full" px={2}>
-            {value}
-          </Badge>
-        </HStack>
-        <Progress
-          value={value}
-          size="sm"
-          borderRadius="full"
-          colorScheme={getColorScheme(value)}
-          bg={barBg}
-          sx={{
-            '& > div': {
-              transition: 'width 1s ease-out',
-            },
-          }}
-        />
-      </MotionBox>
-    </Tooltip>
-  );
-}
-
-// -------------------------------------------------------------------
-// Change Indicator
-// -------------------------------------------------------------------
-
-function ChangeIndicator({ current, previous }: { current: number; previous?: number }) {
-  if (previous === undefined) return null;
-
-  const diff = current - previous;
-  const isUp = diff > 0;
-  const isDown = diff < 0;
-
-  if (diff === 0) {
-    return (
-      <HStack spacing={1} fontSize="xs" color="gray.500">
-        <Icon as={FiMinus} />
-        <Text>No change</Text>
-      </HStack>
-    );
-  }
-
-  return (
-    <HStack spacing={1} fontSize="xs" color={isUp ? 'green.500' : 'red.500'}>
-      <Icon as={isUp ? FiArrowUp : FiArrowDown} />
-      <Text>{Math.abs(diff)} pts</Text>
-    </HStack>
-  );
-}
 
 // -------------------------------------------------------------------
 // Main Widget
@@ -337,7 +142,6 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const textMuted = useColorModeValue('gray.600', 'gray.400');
-  const gradientId = 'mr-gauge-gradient';
 
   if (loading) {
     return (
@@ -351,7 +155,7 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
       >
         <VStack spacing={6}>
           <Box w="180px" h="180px" borderRadius="full" bg="gray.200" />
-          <Text color={textMuted}>Calculating your MartAI Rating...</Text>
+          <Text color={textMuted}>Calculating MartAI Rating...</Text>
         </VStack>
       </Box>
     );
@@ -370,13 +174,7 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
         animate={{ opacity: 1, y: 0 }}
       >
         <VStack spacing={6}>
-          <MotionBox
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring' }}
-          >
-            <Icon as={FiAward} boxSize={16} color="gray.400" />
-          </MotionBox>
+          <Icon as={FiAward} boxSize={16} color="gray.400" />
           <VStack spacing={2}>
             <Text fontSize="lg" fontWeight="bold" color={textMuted}>
               No MartAI Rating Yet
@@ -413,9 +211,9 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
           <ChangeIndicator current={score.overall} previous={score.previousScore} />
         </HStack>
 
-        {/* Main Score Circle */}
+        {/* Score Circle */}
         <Box position="relative">
-          <CircularGauge value={score.overall} gradientId={gradientId} />
+          <CircularGauge value={score.overall} gradientId="mr-gauge" />
           <VStack
             position="absolute"
             top="50%"
@@ -465,8 +263,8 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
             Score Breakdown
           </Text>
           <VStack w="full" spacing={3}>
-            {COMPONENTS.map((comp, i) => (
-              <ComponentScoreBar
+            {SCORE_COMPONENTS.map((comp, i) => (
+              <ScoreBar
                 key={comp.key}
                 label={comp.label}
                 value={score[comp.key as keyof MRScoreData] as number}
