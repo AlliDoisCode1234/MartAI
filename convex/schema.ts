@@ -384,12 +384,20 @@ export default defineSchema({
   // Projects (user's SEO projects)
   projects: defineTable({
     userId: v.id('users'),
+    // Phase 3: Organization support (optional for backward compatibility)
+    organizationId: v.optional(v.id('organizations')),
     name: v.string(),
     websiteUrl: v.string(),
     industry: v.optional(v.string()),
+    // Additional context fields from onboarding
+    targetAudience: v.optional(v.string()),
+    businessGoals: v.optional(v.string()),
+    competitors: v.optional(v.array(v.string())),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index('by_user', ['userId']),
+  })
+    .index('by_user', ['userId'])
+    .index('by_org', ['organizationId']),
 
   // GA4 Connections
   ga4Connections: defineTable({

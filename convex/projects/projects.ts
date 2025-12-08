@@ -10,6 +10,12 @@ export const createProject = mutation({
     name: v.string(),
     websiteUrl: v.string(),
     industry: v.optional(v.string()),
+    // Phase 3: Organization support
+    organizationId: v.optional(v.id('organizations')),
+    // Context fields from onboarding
+    targetAudience: v.optional(v.string()),
+    businessGoals: v.optional(v.string()),
+    competitors: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
@@ -49,9 +55,13 @@ export const createProject = mutation({
     console.log('🏗️ [Convex] createProject mutation called with:', args);
     const projectId = await ctx.db.insert('projects', {
       userId,
+      organizationId: args.organizationId,
       name: args.name,
       websiteUrl: args.websiteUrl,
       industry: args.industry,
+      targetAudience: args.targetAudience,
+      businessGoals: args.businessGoals,
+      competitors: args.competitors,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -71,6 +81,34 @@ export const getProjectsByUser = query({
   },
 });
 
+// Get projects by organization (Phase 3)
+export const getProjectsByOrganization = query({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
+    // Check if user is a member of this org
+    const membership = await ctx.db
+      .query('teamMembers')
+      .withIndex('by_user_org', (q) =>
+        q.eq('userId', userId).eq('organizationId', args.organizationId)
+      )
+      .first();
+
+    if (!membership) {
+      return [];
+    }
+
+    return await ctx.db
+      .query('projects')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .collect();
+  },
+});
+
 // Get project by ID
 export const getProjectById = query({
   args: { projectId: v.id('projects') },
@@ -86,6 +124,10 @@ export const updateProject = mutation({
     name: v.optional(v.string()),
     websiteUrl: v.optional(v.string()),
     industry: v.optional(v.string()),
+    organizationId: v.optional(v.id('organizations')),
+    targetAudience: v.optional(v.string()),
+    businessGoals: v.optional(v.string()),
+    competitors: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const updates: any = { updatedAt: Date.now() };
