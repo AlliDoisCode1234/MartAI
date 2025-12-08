@@ -55,6 +55,7 @@ import {
   MartAIRatingWidget,
 } from '@/src/components/dashboard';
 import { IntegrationPromptBanner } from '@/src/components/analytics/IntegrationPromptBanner';
+import { InsightList } from '@/src/components/insights';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Card);
@@ -512,6 +513,26 @@ export default function DashboardPage() {
             </Box>
           </CardBody>
         </MotionCard>
+
+        {/* Insights Sections */}
+        {selectedProjectId && (
+          <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
+            <InsightList
+              projectId={selectedProjectId as Id<'projects'>}
+              type="quick_win"
+              title="⚡ Quick Wins"
+              maxItems={4}
+              columns={1}
+            />
+            <InsightList
+              projectId={selectedProjectId as Id<'projects'>}
+              type="semantic_opportunity"
+              title="🎯 Opportunities"
+              maxItems={4}
+              columns={1}
+            />
+          </Grid>
+        )}
 
         {/* Intelligence Section */}
         <MotionCard

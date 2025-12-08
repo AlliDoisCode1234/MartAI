@@ -46,7 +46,22 @@ import {
   StatLabel,
   StatNumber,
   StatHelpText,
+  Icon,
+  SimpleGrid,
+  useColorModeValue,
+  Divider,
+  Progress,
 } from '@chakra-ui/react';
+import { motion } from 'framer-motion';
+import {
+  FiTarget,
+  FiTrendingUp,
+  FiZap,
+  FiFileText,
+  FiCalendar,
+  FiLayers,
+  FiStar,
+} from 'react-icons/fi';
 import { useAuth } from '@/lib/useAuth';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -54,6 +69,10 @@ import type { Id } from '@/convex/_generated/dataModel';
 import type { Brief, ProjectId } from '@/types';
 import { DraggableBriefList } from '@/src/components/DraggableBriefList';
 import { assertProjectId } from '@/lib/typeGuards';
+import { InsightList } from '@/src/components/insights';
+
+const MotionBox = motion(Box);
+const MotionCard = motion(Card);
 
 function StrategyContent() {
   const { isAuthenticated, loading: authLoading, user } = useAuth();
@@ -352,25 +371,175 @@ function StrategyContent() {
         px={{ base: 4, sm: 6, md: 8, lg: 12 }}
       >
         <VStack spacing={8} align="stretch">
-          <HStack justify="space-between">
-            <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="gray.800">
-              SEO Strategy
-            </Heading>
-            <HStack>
-              <Button onClick={onClusterModalOpen} variant="outline">
-                Generate Topic Clusters
-              </Button>
-              <Button
-                bg="brand.orange"
-                color="white"
-                _hover={{ bg: '#E8851A' }}
-                onClick={onPlanModalOpen}
-                isDisabled={clusters.length === 0}
-              >
-                Generate Quarterly Plan
-              </Button>
+          {/* Hero Header */}
+          <MotionBox
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <HStack justify="space-between" flexWrap="wrap" gap={4}>
+              <VStack align="start" spacing={1}>
+                <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="gray.800">
+                  SEO Strategy
+                </Heading>
+                <Text color="gray.600">AI-powered content planning and keyword insights</Text>
+              </VStack>
+              <HStack spacing={3}>
+                <Button
+                  onClick={onClusterModalOpen}
+                  variant="outline"
+                  leftIcon={<Icon as={FiLayers} />}
+                >
+                  Generate Topic Clusters
+                </Button>
+                <Button
+                  bg="brand.orange"
+                  color="white"
+                  _hover={{ bg: '#E8851A' }}
+                  onClick={onPlanModalOpen}
+                  isDisabled={clusters.length === 0}
+                  leftIcon={<Icon as={FiCalendar} />}
+                >
+                  Generate Quarterly Plan
+                </Button>
+              </HStack>
             </HStack>
-          </HStack>
+          </MotionBox>
+
+          {/* Hero Stats Grid */}
+          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+            <MotionCard
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              bg="white"
+              borderRadius="xl"
+              boxShadow="sm"
+            >
+              <CardBody>
+                <HStack spacing={3}>
+                  <Box p={3} borderRadius="lg" bg="purple.100">
+                    <Icon as={FiLayers} color="purple.600" boxSize={5} />
+                  </Box>
+                  <Box>
+                    <Text fontSize="2xl" fontWeight="bold">
+                      {clusters.length}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      Topic Clusters
+                    </Text>
+                  </Box>
+                </HStack>
+              </CardBody>
+            </MotionCard>
+
+            <MotionCard
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              bg="white"
+              borderRadius="xl"
+              boxShadow="sm"
+            >
+              <CardBody>
+                <HStack spacing={3}>
+                  <Box p={3} borderRadius="lg" bg="blue.100">
+                    <Icon as={FiFileText} color="blue.600" boxSize={5} />
+                  </Box>
+                  <Box>
+                    <Text fontSize="2xl" fontWeight="bold">
+                      {plan?.briefs?.length || 0}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      Planned Briefs
+                    </Text>
+                  </Box>
+                </HStack>
+              </CardBody>
+            </MotionCard>
+
+            <MotionCard
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              bg="white"
+              borderRadius="xl"
+              boxShadow="sm"
+            >
+              <CardBody>
+                <HStack spacing={3}>
+                  <Box p={3} borderRadius="lg" bg="green.100">
+                    <Icon as={FiTrendingUp} color="green.600" boxSize={5} />
+                  </Box>
+                  <Box>
+                    <Text fontSize="2xl" fontWeight="bold">
+                      {plan?.contentVelocity || 0}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      Posts/Week
+                    </Text>
+                  </Box>
+                </HStack>
+              </CardBody>
+            </MotionCard>
+
+            <MotionCard
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              bg="white"
+              borderRadius="xl"
+              boxShadow="sm"
+            >
+              <CardBody>
+                <HStack spacing={3}>
+                  <Box p={3} borderRadius="lg" bg="yellow.100">
+                    <Icon as={FiZap} color="yellow.600" boxSize={5} />
+                  </Box>
+                  <Box>
+                    <Text fontSize="2xl" fontWeight="bold">
+                      {clusters.reduce((acc, c: any) => acc + (c.keywords?.length || 0), 0)}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      Target Keywords
+                    </Text>
+                  </Box>
+                </HStack>
+              </CardBody>
+            </MotionCard>
+          </SimpleGrid>
+
+          {/* Insights Section */}
+          {projectIdForQuery && (
+            <MotionBox
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
+                <Box>
+                  <InsightList
+                    projectId={projectIdForQuery}
+                    type="cluster_suggestion"
+                    title="🎯 Cluster Suggestions"
+                    maxItems={4}
+                    columns={1}
+                  />
+                </Box>
+                <Box>
+                  <InsightList
+                    projectId={projectIdForQuery}
+                    type="brief_suggestion"
+                    title="📝 Brief Ideas"
+                    maxItems={4}
+                    columns={1}
+                  />
+                </Box>
+              </Grid>
+            </MotionBox>
+          )}
+
+          <Divider />
 
           {/* Plan Summary */}
           {plan && (
