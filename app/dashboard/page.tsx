@@ -52,6 +52,7 @@ import {
   TrafficChart,
   KeywordGrowthChart,
   TopKeywordsTable,
+  MartAIRatingWidget,
 } from '@/src/components/dashboard';
 import { IntegrationPromptBanner } from '@/src/components/analytics/IntegrationPromptBanner';
 
@@ -131,6 +132,12 @@ export default function DashboardPage() {
   // Check if GA4 is connected for this project
   const ga4Connection = useQuery(
     api.integrations.ga4Connections.getGA4Connection,
+    selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip'
+  );
+
+  // Get MartAI Rating score
+  const mrScore = useQuery(
+    api.analytics.martaiRatingQueries.getLatestScore,
     selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip'
   );
 
@@ -280,50 +287,72 @@ export default function DashboardPage() {
           projectId={selectedProjectId || undefined}
         />
 
-        {/* Stats Grid */}
-        <MotionGrid
-          templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }}
-          gap={6}
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-        >
-          <StatCard
-            label="Organic Traffic"
-            value="9.5K"
-            trend="increase"
-            trendValue="23.5% vs last month"
-            icon={FiTrendingUp}
-            iconColor="orange.500"
-            iconBg="orange.50"
+        {/* MartAI Rating + Stats Grid - Hero Row */}
+        <Grid templateColumns={{ base: '1fr', lg: '300px 1fr' }} gap={6}>
+          {/* MartAI Rating Widget - Hero */}
+          <MartAIRatingWidget
+            score={
+              mrScore
+                ? {
+                    overall: mrScore.overall,
+                    tier: mrScore.tier,
+                    visibility: mrScore.visibility,
+                    trafficHealth: mrScore.trafficHealth,
+                    ctrPerformance: mrScore.ctrPerformance,
+                    engagementQuality: mrScore.engagementQuality,
+                    quickWinPotential: mrScore.quickWinPotential,
+                    contentVelocity: mrScore.contentVelocity,
+                  }
+                : null
+            }
+            loading={mrScore === undefined}
           />
-          <StatCard
-            label="Ranking Keywords"
-            value="480"
-            trend="increase"
-            trendValue="70 new this month"
-            icon={FiTarget}
-            iconColor="blue.500"
-            iconBg="blue.50"
-          />
-          <StatCard
-            label="Content Published"
-            value={stats?.briefCount || 0}
-            helpText={stats?.planExists ? 'Plan active' : 'No plan'}
-            icon={FiZap}
-            iconColor="purple.500"
-            iconBg="purple.50"
-          />
-          <StatCard
-            label="Avg. Position"
-            value="7.2"
-            trend="increase"
-            trendValue="Improved 2.3 spots"
-            icon={FiActivity}
-            iconColor="green.500"
-            iconBg="green.50"
-          />
-        </MotionGrid>
+
+          {/* Stats Grid */}
+          <MotionGrid
+            templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }}
+            gap={6}
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+          >
+            <StatCard
+              label="Organic Traffic"
+              value="9.5K"
+              trend="increase"
+              trendValue="23.5% vs last month"
+              icon={FiTrendingUp}
+              iconColor="orange.500"
+              iconBg="orange.50"
+            />
+            <StatCard
+              label="Ranking Keywords"
+              value="480"
+              trend="increase"
+              trendValue="70 new this month"
+              icon={FiTarget}
+              iconColor="blue.500"
+              iconBg="blue.50"
+            />
+            <StatCard
+              label="Content Published"
+              value={stats?.briefCount || 0}
+              helpText={stats?.planExists ? 'Plan active' : 'No plan'}
+              icon={FiZap}
+              iconColor="purple.500"
+              iconBg="purple.50"
+            />
+            <StatCard
+              label="Avg. Position"
+              value="7.2"
+              trend="increase"
+              trendValue="Improved 2.3 spots"
+              icon={FiActivity}
+              iconColor="green.500"
+              iconBg="green.50"
+            />
+          </MotionGrid>
+        </Grid>
 
         {/* Charts Section */}
         <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
