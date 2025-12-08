@@ -14,6 +14,7 @@ import {
   CardBody,
   Icon,
   Spinner,
+  Button,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
@@ -21,7 +22,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useAuth } from '@/lib/useAuth';
-import { FiLayers, FiFileText, FiTrendingUp, FiStar } from 'react-icons/fi';
+import { FiLayers, FiFileText, FiTrendingUp, FiStar, FiPlus } from 'react-icons/fi';
 import {
   MartCharacter,
   TutorialCard,
@@ -29,6 +30,7 @@ import {
   WHATS_NEXT_STEPS,
   TutorialStep,
 } from '@/src/components/assistant';
+import Link from 'next/link';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Card);
@@ -203,6 +205,11 @@ export default function HomePage() {
             <Heading size="md" color="gray.700">
               {isNewUser ? '🚀 Getting Started' : "✨ What's Next"}
             </Heading>
+            <Link href="/projects/new">
+              <Button colorScheme="orange" leftIcon={<FiPlus />} size="sm">
+                New Project
+              </Button>
+            </Link>
           </HStack>
 
           {/* Tutorial/Action Cards */}
