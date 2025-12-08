@@ -169,18 +169,72 @@ ${prompt}`;
     }
   }
 
+  /**
+   * Model fallback chain: try premium first, then fall back to cheaper models
+   */
+  private static readonly MODEL_FALLBACK_CHAIN = ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'];
+
+  /**
+   * Call LLM with retry and model fallback
+   */
   private async callLLM(
     modelName: string,
     prompt: string,
-    temperature: number
-  ): Promise<{ text: string; usage: any }> {
-    const model = openai(modelName as any);
-    const result = await generateText({
-      model,
-      prompt,
-      temperature,
-    });
-    return { text: result.text, usage: result.usage };
+    temperature: number,
+    maxRetries: number = 3
+  ): Promise<{ text: string; usage: any; modelUsed: string }> {
+    // Build fallback chain starting from requested model
+    const startIndex = IntelligenceService.MODEL_FALLBACK_CHAIN.indexOf(modelName);
+    const fallbackChain =
+      startIndex >= 0
+        ? IntelligenceService.MODEL_FALLBACK_CHAIN.slice(startIndex)
+        : [modelName, ...IntelligenceService.MODEL_FALLBACK_CHAIN];
+
+    let lastError: Error | null = null;
+
+    for (const currentModel of fallbackChain) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const model = openai(currentModel as any);
+          const result = await generateText({
+            model,
+            prompt,
+            temperature,
+          });
+
+          if (currentModel !== modelName) {
+            console.log(
+              `[IntelligenceService] Used fallback model: ${currentModel} (requested: ${modelName})`
+            );
+          }
+
+          return { text: result.text, usage: result.usage, modelUsed: currentModel };
+        } catch (error: any) {
+          lastError = error;
+          const isRateLimit = error?.message?.includes('rate') || error?.status === 429;
+          const isServerError = error?.status >= 500;
+
+          console.warn(
+            `[IntelligenceService] LLM call failed (model: ${currentModel}, attempt: ${attempt}/${maxRetries}):`,
+            error?.message || error
+          );
+
+          // For rate limits or server errors, wait with exponential backoff
+          if ((isRateLimit || isServerError) && attempt < maxRetries) {
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10s
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          } else if (attempt === maxRetries) {
+            // Max retries reached for this model, try next in fallback chain
+            break;
+          }
+        }
+      }
+    }
+
+    // All models and retries exhausted
+    throw new Error(
+      `[IntelligenceService] All LLM models failed. Last error: ${lastError?.message || 'Unknown error'}`
+    );
   }
 
   private async critiqueDraft(
