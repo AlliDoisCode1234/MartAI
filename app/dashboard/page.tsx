@@ -516,19 +516,29 @@ export default function DashboardPage() {
 
         {/* Insights Sections */}
         {selectedProjectId && (
-          <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
+          <Grid
+            templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }}
+            gap={6}
+          >
             <InsightList
               projectId={selectedProjectId as Id<'projects'>}
               type="quick_win"
               title="⚡ Quick Wins"
-              maxItems={4}
+              maxItems={3}
+              columns={1}
+            />
+            <InsightList
+              projectId={selectedProjectId as Id<'projects'>}
+              type="content_gap"
+              title="📊 Content Gaps"
+              maxItems={3}
               columns={1}
             />
             <InsightList
               projectId={selectedProjectId as Id<'projects'>}
               type="semantic_opportunity"
               title="🎯 Opportunities"
-              maxItems={4}
+              maxItems={3}
               columns={1}
             />
           </Grid>
