@@ -12,6 +12,10 @@ app.use(actionCache);
 app.use(workflow);
 app.use(rag);
 app.use(neutralCost);
-app.use(aggregate);
+
+// Named aggregate instances for efficient KPI counting
+app.use(aggregate, { name: 'aggregateBriefs' });
+app.use(aggregate, { name: 'aggregateKeywords' });
+app.use(aggregate); // Default aggregate for general use
 
 export default app;
