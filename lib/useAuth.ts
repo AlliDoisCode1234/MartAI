@@ -1,10 +1,10 @@
 'use client';
 
-import { useConvexAuth, useQuery } from "convex/react";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { api } from "@/convex/_generated/api";
-import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useConvexAuth, useQuery } from 'convex/react';
+import { useAuthActions } from '@convex-dev/auth/react';
+import { api } from '@/convex/_generated/api';
+import { useRouter } from 'next/navigation';
+import { useCallback } from 'react';
 
 export function useAuth() {
   const { isAuthenticated, isLoading } = useConvexAuth();
@@ -12,12 +12,11 @@ export function useAuth() {
   const router = useRouter();
 
   // Fetch current user details
-  // We cast to any because api.users might not be generated yet
-  const user = useQuery((api as any).users?.current);
+  const user = useQuery(api.users.current);
 
   const logout = useCallback(async () => {
     await signOut();
-    router.push("/auth/login");
+    router.push('/auth/login');
   }, [signOut, router]);
 
   return {
@@ -26,10 +25,16 @@ export function useAuth() {
     isAuthenticated,
     logout,
     // Legacy support (optional, or remove if unused)
-    token: "dummy-token", // Some components might check for token existence
-    login: async () => { throw new Error("Use useAuthActions instead"); },
-    signup: async () => { throw new Error("Use useAuthActions instead"); },
-    updateProfile: async () => { throw new Error("Use Convex mutations instead"); },
+    token: 'dummy-token', // Some components might check for token existence
+    login: async () => {
+      throw new Error('Use useAuthActions instead');
+    },
+    signup: async () => {
+      throw new Error('Use useAuthActions instead');
+    },
+    updateProfile: async () => {
+      throw new Error('Use Convex mutations instead');
+    },
     refreshAccessToken: async () => null,
   };
 }

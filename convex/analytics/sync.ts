@@ -2,6 +2,7 @@
 import { internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
+import { THRESHOLDS } from '../config/thresholds';
 
 export const syncProjectData = internalAction({
   args: {
@@ -10,9 +11,11 @@ export const syncProjectData = internalAction({
   handler: async (ctx, args) => {
     const projectId = args.projectId;
     const now = Date.now();
-    // Default to last 30 days
+    // Use centralized config for date range
     const endDate = new Date(now).toISOString().split('T')[0];
-    const startDate = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDate = new Date(now - THRESHOLDS.sync.defaultDays * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split('T')[0];
 
     // 1. Fetch Connections
     const ga4Connection = await ctx.runQuery(api.integrations.ga4Connections.getGA4Connection, {
@@ -144,8 +147,8 @@ export const syncProjectData = internalAction({
         revenue: 0, // Placeholder
       });
 
-      // Insight: Low Traffic
-      if (ga4Data.sessions < 100) {
+      // Insight: Low Traffic (using centralized threshold)
+      if (ga4Data.sessions < THRESHOLDS.insights.lowTrafficSessions) {
         await ctx.runMutation(api.analytics.analytics.storeInsight, {
           projectId,
           type: 'underperformer',
@@ -156,8 +159,8 @@ export const syncProjectData = internalAction({
         });
       }
 
-      // Insight: High Bounce Rate
-      if (ga4Data.bounceRate > 70) {
+      // Insight: High Bounce Rate (using centralized threshold)
+      if (ga4Data.bounceRate > THRESHOLDS.insights.highBounceRate) {
         await ctx.runMutation(api.analytics.analytics.storeInsight, {
           projectId,
           type: 'quick_win',
@@ -180,8 +183,11 @@ export const syncProjectData = internalAction({
         avgPosition: gscData.position,
       });
 
-      // Insight: High Impressions, Low CTR
-      if (gscData.impressions > 1000 && gscData.ctr < 1) {
+      // Insight: High Impressions, Low CTR (using centralized thresholds)
+      if (
+        gscData.impressions > THRESHOLDS.insights.highImpressionsThreshold &&
+        gscData.ctr < THRESHOLDS.insights.lowCTR
+      ) {
         await ctx.runMutation(api.analytics.analytics.storeInsight, {
           projectId,
           type: 'quick_win',
@@ -198,7 +204,7 @@ export const syncProjectData = internalAction({
     try {
       const quickWins = await ctx.runQuery(internal.analytics.gscKeywords.getQuickWinKeywords, {
         projectId,
-        minImpressions: 500,
+        minImpressions: THRESHOLDS.insights.quickWinMinImpressions,
       });
 
       if (quickWins && quickWins.length > 0) {

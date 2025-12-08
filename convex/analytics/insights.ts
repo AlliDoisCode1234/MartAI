@@ -15,6 +15,7 @@ import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
 import { embed } from 'ai';
 import { openai } from '@ai-sdk/openai';
+import { THRESHOLDS } from '../config/thresholds';
 
 /**
  * Legacy generateInsights for workflow compatibility
@@ -92,10 +93,10 @@ export const generateEnhancedInsights = internalAction({
       metadata: any;
     }> = [];
 
-    // 1. Get Quick Win keywords from GSC (position 5-15, high impressions)
+    // 1. Get Quick Win keywords from GSC (using centralized thresholds)
     const quickWins = await ctx.runQuery(internal.analytics.gscKeywords.getQuickWinKeywords, {
       projectId: args.projectId,
-      minImpressions: 300,
+      minImpressions: THRESHOLDS.insights.quickWinMinImpressions / 2, // Lower for enhanced insights
     });
 
     if (!quickWins || quickWins.length === 0) {
@@ -115,9 +116,11 @@ export const generateEnhancedInsights = internalAction({
         });
 
         if (relatedFromLibrary && relatedFromLibrary.length > 0) {
-          // Find high-value related keywords (high volume, lower difficulty)
+          // Find high-value related keywords (using centralized thresholds)
           const highValueRelated = relatedFromLibrary.filter(
-            (k: any) => k.searchVolume > 500 && k.difficulty < 60
+            (k: any) =>
+              k.searchVolume > THRESHOLDS.insights.highValueVolume &&
+              k.difficulty < THRESHOLDS.insights.lowDifficulty + 10
           );
 
           if (highValueRelated.length > 0) {
@@ -197,8 +200,8 @@ export const findContentGaps = internalAction({
     for (const libKeyword of libraryKeywords.page) {
       if (
         !rankedKeywords.has(libKeyword.keyword.toLowerCase()) &&
-        libKeyword.searchVolume > 500 &&
-        libKeyword.difficulty < 50
+        libKeyword.searchVolume > THRESHOLDS.insights.highValueVolume &&
+        libKeyword.difficulty < THRESHOLDS.insights.lowDifficulty
       ) {
         gaps.push({
           keyword: libKeyword.keyword,
