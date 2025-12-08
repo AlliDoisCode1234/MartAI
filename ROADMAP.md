@@ -4,7 +4,7 @@
 
 This roadmap outlines the development priorities and milestones for MartAI, an AI-driven SEO & Lead Generation Platform.
 
-## Current Status (Q1 2025)
+## Current Status (December 2025)
 
 ### ✅ Completed (MVP Foundation)
 
@@ -173,10 +173,13 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 
 ### Multi-tenancy & Collaboration
 
-- [ ] **Team Features**
-  - [ ] Workspace/team creation
-  - [ ] Role-based access control (RBAC)
-  - [ ] User invitations
+- [x] **Team Features** (Completed December 2025)
+  - [x] Organizations table + CRUD
+  - [x] Team members with invite flow
+  - [x] Role-based access control (RBAC: owner/admin/editor/viewer)
+  - [x] Organization invitations with token expiry
+  - [x] Shared RBAC utility (`convex/lib/rbac.ts`)
+  - [x] Projects linked to organizations
   - [ ] Activity logs
   - [ ] Comments & collaboration on briefs/drafts
 
@@ -199,21 +202,34 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
   - [ ] Brand guidelines enforcement
   - [ ] Multi-language support
 
+- [x] **Webhooks Infrastructure** (Completed December 2025)
+  - [x] Webhook endpoints CRUD
+  - [x] HMAC signature verification
+  - [x] Automatic retry (3 attempts with backoff)
+  - [x] Delivery logging and monitoring
+
 - [ ] **Integrations**
   - [ ] CRM integration (HubSpot, Salesforce)
   - [ ] Slack/Teams notifications
   - [ ] Email marketing platform sync
   - [ ] Additional CMS platforms
-  - [ ] API for third-party tools
+  - [ ] Public API for third-party tools
 
 ### Performance & Scale
 
+- [x] **Codebase Hardening** (Completed December 2025)
+  - [x] Centralized config (`convex/config/thresholds.ts`)
+  - [x] Structured error types (`lib/errors.ts`)
+  - [x] Custom React hooks (useProject, useAnalytics, useKeywords)
+  - [x] IntelligenceService retry + model fallback
+  - [x] Batch processing utilities
+  - [x] Frontend cache layer
+
 - [ ] **Infrastructure**
-  - [ ] Caching layer optimization
   - [ ] Background job queue (if needed)
   - [ ] CDN for static assets
   - [ ] Database optimization
-  - [ ] Rate limiting per plan tier
+  - [x] Rate limiting per plan tier
 
 ## Technical Priorities
 

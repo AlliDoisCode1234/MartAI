@@ -1,14 +1,14 @@
 # MartAI Project Status Report
 
-**Last Updated**: December 7, 2025  
-**Current Phase**: Phase 1.5 - Intelligence Layer & Analytics  
-**Active Task**: MartAI Rating Implementation
+**Last Updated**: December 8, 2025  
+**Current Phase**: Phase 3 - Enterprise Features  
+**Active Task**: Webhooks & RBAC Complete
 
 ---
 
 ## Executive Summary
 
-MartAI is an AI-driven SEO & Lead Generation Platform. We have completed **Convex Auth**, **Rate Limiter**, **Action Cache**, **Persistent AI Storage**, **Workflow Engine**, **Neutral Cost Tracking**, **AI Persona System**, and the **Intelligence Layer v2** with semantic keyword analysis and MartAI Rating (MR).
+MartAI is an AI-driven SEO & Lead Generation Platform. We have completed comprehensive **codebase hardening** and **enterprise features** including Organizations, RBAC, Webhooks, and scalability improvements.
 
 ### Current Status
 
@@ -19,67 +19,81 @@ MartAI is an AI-driven SEO & Lead Generation Platform. We have completed **Conve
 
 ---
 
-## Recently Completed (December 7, 2025)
+## Recently Completed (December 8, 2025)
 
-### ✅ Intelligence Layer v2
+### ✅ Codebase Hardening (Phase 1)
 
-- GA4 expanded metrics (7 metrics: sessions, pageViews, bounceRate, etc.)
-- GSC keyword-level data (100 keywords per sync with historical tracking)
-- Quick Wins detection (position 5-15, high impressions)
-- Semantic keyword cross-referencing with keyword library
-- Content gap analysis
-- Auto-suggest clusters and briefs
+- Centralized config (`convex/config/thresholds.ts`) - no more magic numbers
+- Structured error types (`lib/errors.ts`) - 8 error classes
+- Custom React hooks (useProject, useAnalytics, useKeywords)
+- IntelligenceService retry (3x) + model fallback (gpt-4o → gpt-4o-mini → gpt-3.5-turbo)
 
-### ✅ MartAI Rating (MR)
+### ✅ Scalability Improvements (Phase 2)
 
-- Research-backed composite SEO score (0-100)
-- 6 weighted components: Visibility, Traffic, CTR, Engagement, Quick Wins, Velocity
-- Strict scoring (no data = 0, max = 95)
-- Tier classification: Needs Work → Fair → Good → Really Good → Excellent → Super → Top Performer
-- Historical tracking in `projectScores` table
+- Batch processing utilities (`lib/batchUtils.ts`)
+- Batch brief generation action (`generateBriefsBatch`)
+- Frontend cache layer (`lib/frontendCache.ts`)
 
-### ✅ Admin Onboarding Tracking
+### ✅ Enterprise Features (Phase 3)
 
-- Granular onboarding steps (signup, plan, payment, project, GA4, GSC)
-- Progress visualization on admin users page
-- User detail modal with timestamps
-
-### ✅ GA4/GSC Integration Improvements
-
-- AnalyticsSetupWizard with step-by-step guidance
-- Property ID entry modal
-- Dashboard banner prompt for GA4 connection
+- **Organizations**: Full CRUD with owner permissions
+- **Team Members**: Invite flow, accept/reject, role management
+- **RBAC System**: Shared utility for admin portal + org-level access
+  - Admin roles: super_admin, admin, user, viewer
+  - Org roles: owner, admin, editor, viewer
+- **Projects → Organizations**: Multi-tenancy linking
+- **Webhooks Infrastructure**:
+  - CRUD with RBAC enforcement
+  - HMAC signature verification
+  - Automatic retry (3 attempts with exponential backoff)
+  - Delivery logging
 
 ---
 
 ## Active Components
 
-| Component             | Status | Notes                          |
-| --------------------- | ------ | ------------------------------ |
-| Convex Auth           | ✅     | Google OAuth + Password        |
-| Rate Limiter          | ✅     | Per-tier limits                |
-| Action Cache          | ✅     | 30-day TTL                     |
-| Persistent AI Storage | ✅     | SHA-256 lookup                 |
-| Workflow Engine       | ✅     | Durable workflows              |
-| Neutral Cost          | ✅     | AI usage tracking              |
-| AI Personas           | ✅     | Backend-stored, Mart persona   |
-| MartAI Rating         | ✅     | Composite SEO score            |
-| Aggregate             | ✅     | Configured, not fully utilized |
+| Component             | Status | Notes                        |
+| --------------------- | ------ | ---------------------------- |
+| Convex Auth           | ✅     | Google OAuth + Password      |
+| Rate Limiter          | ✅     | Per-tier limits              |
+| Action Cache          | ✅     | 30-day TTL                   |
+| Persistent AI Storage | ✅     | SHA-256 lookup               |
+| Workflow Engine       | ✅     | Durable workflows            |
+| Neutral Cost          | ✅     | AI usage tracking            |
+| AI Personas           | ✅     | Backend-stored, Mart persona |
+| MartAI Rating         | ✅     | Composite SEO score          |
+| **Organizations**     | ✅     | Multi-tenancy support        |
+| **RBAC**              | ✅     | Admin + Org roles            |
+| **Webhooks**          | ✅     | HMAC + retry                 |
+
+---
+
+## Session Commits (December 8, 2025)
+
+| Commit    | Description                        |
+| --------- | ---------------------------------- |
+| `bc17bb8` | Config, errors, useProject hook    |
+| `4c3e5c9` | IntelligenceService retry/fallback |
+| `7e4e105` | useAnalytics + useKeywords hooks   |
+| `c6f3644` | Batch utilities                    |
+| `188ea18` | Frontend cache + Organizations     |
+| `2d944b6` | Projects → Organizations linking   |
+| `2b1b53c` | Webhooks infrastructure with RBAC  |
 
 ---
 
 ## Next Steps (Priority Order)
 
-1. **Dashboard**: MR hero widget with trend chart
-2. **Insights UI**: Display Quick Wins, clusters, briefs on dashboard
-3. **Onboarding Integration**: Connect step updates to user actions
-4. **Staging Environment**: Vercel/Convex previews
-5. **WordPress Publishing**: Full adapter testing
+1. **Public API**: OpenAPI spec and routes for integrations
+2. **Activity Logs**: Track user actions in organizations
+3. **Staging Environment**: Vercel/Convex previews
+4. **WordPress Publishing**: Full adapter testing
+5. **Onboarding Integration**: Connect step updates to user actions
 
 ---
 
 ## Technical Debt
 
 - Increase test coverage for critical paths
-- Continue addressing `as any` usages
-- Optimize aggregate component usage
+- Continue addressing `as any` usages (UserDropdown.tsx)
+- Add activity logging for organizations
