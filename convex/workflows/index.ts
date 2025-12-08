@@ -33,6 +33,14 @@ export {
   batchContentGenerationWorkflow,
 } from './strategyWorkflows';
 
+// Onboarding (Types and Utilities)
+export {
+  ONBOARDING_STEPS,
+  ONBOARDING_STEP_LABELS,
+  calculateProgress,
+  type OnboardingStep,
+} from './onboardingWorkflows';
+
 /**
  * Workflow Registry
  *

@@ -1,49 +1,85 @@
 # MartAI Project Status Report
 
-**Last Updated**: December 6, 2025  
-**Current Phase**: Phase 1 - Convex Components & Hardening  
-**Active Task**: Code Refactoring & Standardization
+**Last Updated**: December 7, 2025  
+**Current Phase**: Phase 1.5 - Intelligence Layer & Analytics  
+**Active Task**: MartAI Rating Implementation
 
 ---
 
 ## Executive Summary
 
-MartAI is an AI-driven SEO & Lead Generation Platform. We have successfully completed **Convex Auth Migration**, **Rate Limiter Integration**, **Schema Fixes**, **Membership Limits Enforcement**, **Action Cache Integration** and **Persistent AI Storage**. The platform is stable and ready for feature expansion.
+MartAI is an AI-driven SEO & Lead Generation Platform. We have completed **Convex Auth**, **Rate Limiter**, **Action Cache**, **Persistent AI Storage**, **Workflow Engine**, **Neutral Cost Tracking**, **AI Persona System**, and the **Intelligence Layer v2** with semantic keyword analysis and MartAI Rating (MR).
 
 ### Current Status
 
 - **Build Status**: ✅ Passing (TSC Clean)
-- **Lint Status**: ⚠️ 8 warnings (non-blocking)
+- **Lint Status**: ⚠️ Minor warnings (non-blocking)
 - **Test Coverage**: ~5%
-- **Deployment**: Vercel (production-ready)
-
-### Active Task
-
-**Code Refactoring & Standardization**
-
-- Date Utilities Centralization: Completed ✅
-- Smart UI Options: Completed ✅
-- Coding Standards Doc: Created ✅
-
-### Next Steps (Priority Order)
-
-1. **Frontend**: Build `AdhocAnalyzer` component.
-2. **Analytics Insights**: Visualizing "Top Gainers" etc.
-3. **[Blocking Launch] Staging Environment**: Setup Vercel/Convex Previews for client testing.
-4. **[Blocking Launch] Security Rotation**: Rotate all secrets.
-5. **WordPress Publishing**: Deferred until post-launch.
-
-### Future Components
-
-1. **Retrier**: For robust OpenAI API calls.
-2. **Neutral Cost**: For tracking AI usage costs.
-3. **Subscriptions**: Polar integration.
-4. **Editor Migration**: Investigate switching from Lexical to ProseMirror using [`@convex-dev/prosemirror-sync`](https://www.convex.dev/components/prosemirror-sync) for real-time collaboration.
-5. **Google One Tap**: Implement One Tap and Auto Sign-in using Google Identity Services (or existing `@react-oauth/google` dependency).
+- **Deployment**: Convex + Vercel
 
 ---
 
-## Technical Debt & Maintenance
+## Recently Completed (December 7, 2025)
 
-- **Type Safety**: Continue addressing `as any` usages.
-- **Testing**: Increase coverage for critical paths.
+### ✅ Intelligence Layer v2
+
+- GA4 expanded metrics (7 metrics: sessions, pageViews, bounceRate, etc.)
+- GSC keyword-level data (100 keywords per sync with historical tracking)
+- Quick Wins detection (position 5-15, high impressions)
+- Semantic keyword cross-referencing with keyword library
+- Content gap analysis
+- Auto-suggest clusters and briefs
+
+### ✅ MartAI Rating (MR)
+
+- Research-backed composite SEO score (0-100)
+- 6 weighted components: Visibility, Traffic, CTR, Engagement, Quick Wins, Velocity
+- Strict scoring (no data = 0, max = 95)
+- Tier classification: Needs Work → Fair → Good → Really Good → Excellent → Super → Top Performer
+- Historical tracking in `projectScores` table
+
+### ✅ Admin Onboarding Tracking
+
+- Granular onboarding steps (signup, plan, payment, project, GA4, GSC)
+- Progress visualization on admin users page
+- User detail modal with timestamps
+
+### ✅ GA4/GSC Integration Improvements
+
+- AnalyticsSetupWizard with step-by-step guidance
+- Property ID entry modal
+- Dashboard banner prompt for GA4 connection
+
+---
+
+## Active Components
+
+| Component             | Status | Notes                          |
+| --------------------- | ------ | ------------------------------ |
+| Convex Auth           | ✅     | Google OAuth + Password        |
+| Rate Limiter          | ✅     | Per-tier limits                |
+| Action Cache          | ✅     | 30-day TTL                     |
+| Persistent AI Storage | ✅     | SHA-256 lookup                 |
+| Workflow Engine       | ✅     | Durable workflows              |
+| Neutral Cost          | ✅     | AI usage tracking              |
+| AI Personas           | ✅     | Backend-stored, Mart persona   |
+| MartAI Rating         | ✅     | Composite SEO score            |
+| Aggregate             | ✅     | Configured, not fully utilized |
+
+---
+
+## Next Steps (Priority Order)
+
+1. **Dashboard**: MR hero widget with trend chart
+2. **Insights UI**: Display Quick Wins, clusters, briefs on dashboard
+3. **Onboarding Integration**: Connect step updates to user actions
+4. **Staging Environment**: Vercel/Convex previews
+5. **WordPress Publishing**: Full adapter testing
+
+---
+
+## Technical Debt
+
+- Increase test coverage for critical paths
+- Continue addressing `as any` usages
+- Optimize aggregate component usage

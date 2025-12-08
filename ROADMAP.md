@@ -89,10 +89,15 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
   - [ ] Error handling & retry logic
   - [ ] Media upload support
 
-- [ ] **Analytics & Insights**
-  - [ ] Nightly GA4/GSC data sync
-  - [ ] KPI calculation & trending
-  - [ ] Insight generation (top gainers, underperformers, quick wins)
+- [x] **Analytics & Insights (v2 - December 2025)**
+  - [x] GA4/GSC data sync (10-step pipeline)
+  - [x] Expanded GA4 metrics (7: sessions, pageViews, bounceRate, etc.)
+  - [x] GSC keyword-level data (100 keywords with historical tracking)
+  - [x] Quick Wins detection (position 5-15, high impressions)
+  - [x] Semantic keyword cross-referencing with keyword library
+  - [x] Content gap analysis
+  - [x] Cluster and brief suggestions
+  - [x] MartAI Rating (MR) - composite SEO score (0-100)
   - [ ] Insight → Action workflow (Apply Suggestion)
   - [ ] CSV export functionality
 

@@ -53,6 +53,7 @@ import {
   KeywordGrowthChart,
   TopKeywordsTable,
 } from '@/src/components/dashboard';
+import { IntegrationPromptBanner } from '@/src/components/analytics/IntegrationPromptBanner';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Card);
@@ -124,6 +125,12 @@ export default function DashboardPage() {
   );
   const latestAiReport = useQuery(
     api.ai.reports.getLatestAiReport,
+    selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip'
+  );
+
+  // Check if GA4 is connected for this project
+  const ga4Connection = useQuery(
+    api.integrations.ga4Connections.getGA4Connection,
     selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip'
   );
 
@@ -266,6 +273,12 @@ export default function DashboardPage() {
             </Button>
           </HStack>
         </MotionBox>
+
+        {/* Integration Prompt Banner - shows when GA4 not connected */}
+        <IntegrationPromptBanner
+          isConnected={!!ga4Connection}
+          projectId={selectedProjectId || undefined}
+        />
 
         {/* Stats Grid */}
         <MotionGrid

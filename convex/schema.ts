@@ -32,9 +32,27 @@ export default defineSchema({
         timezone: v.optional(v.string()),
       })
     ),
-    createdAt: v.optional(v.number()), // Auth doesn't enforce this but good to have
+    createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
     onboardingStatus: v.optional(v.string()), // 'in_progress', 'completed'
+    // Granular onboarding step tracking
+    onboardingSteps: v.optional(
+      v.object({
+        signupCompleted: v.optional(v.boolean()),
+        signupCompletedAt: v.optional(v.number()),
+        planSelected: v.optional(v.string()), // 'starter', 'growth', 'pro'
+        planSelectedAt: v.optional(v.number()),
+        paymentCompleted: v.optional(v.boolean()),
+        paymentCompletedAt: v.optional(v.number()),
+        projectCreated: v.optional(v.boolean()),
+        projectCreatedAt: v.optional(v.number()),
+        ga4Connected: v.optional(v.boolean()),
+        ga4ConnectedAt: v.optional(v.number()),
+        gscConnected: v.optional(v.boolean()),
+        gscConnectedAt: v.optional(v.number()),
+      })
+    ),
+    lastActiveAt: v.optional(v.number()),
     // Legacy auth fields (for backward compatibility)
     passwordHash: v.optional(v.string()),
   })
@@ -512,11 +530,29 @@ export default defineSchema({
     avgPosition: v.optional(v.number()),
     leads: v.optional(v.number()),
     revenue: v.optional(v.number()),
+    // Expanded GA4 metrics
+    pageViews: v.optional(v.number()),
+    bounceRate: v.optional(v.number()),
+    avgSessionDuration: v.optional(v.number()),
+    newUsers: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index('by_project_date', ['projectId', 'date'])
     .index('by_project_date_source', ['projectId', 'date', 'source']),
+
+  // GSC Keyword Snapshots (Historical Tracking)
+  gscKeywordSnapshots: defineTable({
+    projectId: v.id('projects'),
+    syncDate: v.number(), // Date of snapshot
+    keyword: v.string(),
+    clicks: v.number(),
+    impressions: v.number(),
+    ctr: v.number(),
+    position: v.number(),
+  })
+    .index('by_project_date', ['projectId', 'syncDate'])
+    .index('by_project_keyword', ['projectId', 'keyword']),
 
   // Insights
   insights: defineTable({
@@ -532,6 +568,36 @@ export default defineSchema({
   })
     .index('by_project', ['projectId'])
     .index('by_type', ['type']),
+
+  // MartAI Rating (MR) Historical Scores
+  projectScores: defineTable({
+    projectId: v.id('projects'),
+    date: v.number(),
+    // Overall MR score (0-100)
+    overall: v.number(),
+    // Tier: 'needs_work' | 'fair' | 'good' | 'really_good' | 'excellent' | 'super' | 'top_performer'
+    tier: v.string(),
+    // Component scores (0-100 each)
+    visibility: v.number(),
+    trafficHealth: v.number(),
+    ctrPerformance: v.number(),
+    engagementQuality: v.number(),
+    quickWinPotential: v.number(),
+    contentVelocity: v.number(),
+    // Raw metrics for debugging
+    rawMetrics: v.optional(
+      v.object({
+        avgPosition: v.optional(v.number()),
+        sessionsChange: v.optional(v.number()),
+        ctr: v.optional(v.number()),
+        bounceRate: v.optional(v.number()),
+        quickWinCount: v.optional(v.number()),
+        briefsThisMonth: v.optional(v.number()),
+      })
+    ),
+  })
+    .index('by_project_date', ['projectId', 'date'])
+    .index('by_project', ['projectId']),
 
   // Brief Versions (version history)
   briefVersions: defineTable({

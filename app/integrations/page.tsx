@@ -31,8 +31,10 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
-import { useAction } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
+import { AnalyticsSetupWizard } from '@/src/components/analytics/AnalyticsSetupWizard';
 
 type Integration = {
   platform: string;
@@ -130,6 +132,139 @@ function IntegrationsContent() {
     error?: string;
     canPublish?: boolean;
   } | null>(null);
+
+  // GA4 Property ID Modal state
+  const {
+    isOpen: isGA4ModalOpen,
+    onOpen: onGA4ModalOpen,
+    onClose: onGA4ModalClose,
+  } = useDisclosure();
+  const [ga4PropertyId, setGA4PropertyId] = useState('');
+  const [ga4Tokens, setGA4Tokens] = useState<{
+    accessToken: string;
+    refreshToken: string;
+    projectId: string;
+  } | null>(null);
+
+  // Mutation to save GA4 connection
+  const upsertGA4Connection = useMutation(api.integrations.ga4Connections.upsertGA4Connection);
+
+  // State for the new guided wizard
+  const [showWizard, setShowWizard] = useState(false);
+
+  // Check for GA4 setup tokens in URL (after OAuth callback)
+  useEffect(() => {
+    const setup = searchParams?.get('setup');
+    const tokens = searchParams?.get('tokens');
+
+    if (setup === 'ga4' && tokens) {
+      try {
+        // Decode base64 tokens
+        const decoded = JSON.parse(atob(decodeURIComponent(tokens)));
+        setGA4Tokens(decoded);
+        // Show the guided wizard instead of simple modal
+        setShowWizard(true);
+
+        // Clean URL
+        window.history.replaceState({}, '', '/integrations');
+      } catch (e) {
+        console.error('Failed to parse GA4 tokens:', e);
+      }
+    }
+  }, [searchParams]);
+
+  const handleSaveGA4Connection = async () => {
+    if (!ga4PropertyId || !ga4Tokens) {
+      alert('Please enter a Property ID');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await upsertGA4Connection({
+        projectId: ga4Tokens.projectId as Id<'projects'>,
+        propertyId: ga4PropertyId,
+        propertyName: `Property ${ga4PropertyId}`,
+        accessToken: ga4Tokens.accessToken,
+        refreshToken: ga4Tokens.refreshToken,
+      });
+
+      setIntegrations((prev) =>
+        prev.map((i) =>
+          i.platform === 'ga4'
+            ? { ...i, connected: true, propertyName: `Property ${ga4PropertyId}` }
+            : i
+        )
+      );
+
+      onGA4ModalClose();
+      setGA4Tokens(null);
+      setGA4PropertyId('');
+
+      // After GA4 is connected, prompt for GSC
+      // The same tokens work for GSC since we requested both scopes
+      if (ga4Tokens) {
+        setGscTokens({
+          accessToken: ga4Tokens.accessToken,
+          refreshToken: ga4Tokens.refreshToken,
+          projectId: ga4Tokens.projectId,
+        });
+        onGSCModalOpen();
+      }
+    } catch (error) {
+      console.error('Failed to save GA4 connection:', error);
+      alert('Failed to save connection. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // GSC Site URL Modal state
+  const {
+    isOpen: isGSCModalOpen,
+    onOpen: onGSCModalOpen,
+    onClose: onGSCModalClose,
+  } = useDisclosure();
+  const [gscSiteUrl, setGscSiteUrl] = useState('');
+  const [gscTokens, setGscTokens] = useState<{
+    accessToken: string;
+    refreshToken: string;
+    projectId: string;
+  } | null>(null);
+
+  // Mutation to save GSC connection
+  const upsertGSCConnection = useMutation(api.integrations.gscConnections.upsertGSCConnection);
+
+  const handleSaveGSCConnection = async () => {
+    if (!gscSiteUrl || !gscTokens) {
+      alert('Please enter your site URL');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await upsertGSCConnection({
+        projectId: gscTokens.projectId as Id<'projects'>,
+        siteUrl: gscSiteUrl,
+        accessToken: gscTokens.accessToken,
+        refreshToken: gscTokens.refreshToken,
+      });
+
+      setIntegrations((prev) =>
+        prev.map((i) => (i.platform === 'gsc' ? { ...i, connected: true, siteUrl: gscSiteUrl } : i))
+      );
+
+      onGSCModalClose();
+      setGscTokens(null);
+      setGscSiteUrl('');
+    } catch (error) {
+      console.error('Failed to save GSC connection:', error);
+      alert('Failed to save connection. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const {
     isOpen: isCMSModalOpen,
     onOpen: onCMSModalOpen,
@@ -231,6 +366,46 @@ function IntegrationsContent() {
     }
   };
 
+  // Handler for the guided wizard completion
+  const handleWizardComplete = async (data: { ga4PropertyId: string; gscSiteUrl?: string }) => {
+    if (!ga4Tokens) return;
+
+    // Save GA4 connection
+    await upsertGA4Connection({
+      projectId: ga4Tokens.projectId as Id<'projects'>,
+      propertyId: data.ga4PropertyId,
+      propertyName: `Property ${data.ga4PropertyId}`,
+      accessToken: ga4Tokens.accessToken,
+      refreshToken: ga4Tokens.refreshToken,
+    });
+
+    setIntegrations((prev) =>
+      prev.map((i) =>
+        i.platform === 'ga4'
+          ? { ...i, connected: true, propertyName: `Property ${data.ga4PropertyId}` }
+          : i
+      )
+    );
+
+    // Save GSC connection if provided
+    if (data.gscSiteUrl) {
+      await upsertGSCConnection({
+        projectId: ga4Tokens.projectId as Id<'projects'>,
+        siteUrl: data.gscSiteUrl,
+        accessToken: ga4Tokens.accessToken,
+        refreshToken: ga4Tokens.refreshToken,
+      });
+
+      setIntegrations((prev) =>
+        prev.map((i) =>
+          i.platform === 'gsc' ? { ...i, connected: true, siteUrl: data.gscSiteUrl } : i
+        )
+      );
+    }
+
+    setGA4Tokens(null);
+  };
+
   if (!isAuthenticated) {
     return (
       <Box
@@ -322,6 +497,19 @@ function IntegrationsContent() {
               );
             })}
           </Grid>
+
+          {/* Guided Analytics Setup Wizard */}
+          {ga4Tokens && (
+            <AnalyticsSetupWizard
+              isOpen={showWizard}
+              onClose={() => {
+                setShowWizard(false);
+                setGA4Tokens(null);
+              }}
+              onComplete={handleWizardComplete}
+              tokens={ga4Tokens}
+            />
+          )}
 
           {/* CMS Connection Modal */}
           <Modal isOpen={isCMSModalOpen} onClose={onCMSModalClose} size="lg">
@@ -458,6 +646,119 @@ function IntegrationsContent() {
                   isLoading={loading}
                 >
                   Test Connection
+                </Button>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
+
+          {/* GA4 Property ID Modal */}
+          <Modal isOpen={isGA4ModalOpen} onClose={onGA4ModalClose} size="lg">
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>Complete GA4 Connection</ModalHeader>
+              <ModalCloseButton />
+              <ModalBody>
+                <VStack spacing={4} align="stretch">
+                  <Alert status="success" borderRadius="md">
+                    <AlertIcon />
+                    Google authorization successful! Now enter your GA4 Property ID.
+                  </Alert>
+
+                  <FormControl isRequired>
+                    <FormLabel>GA4 Property ID</FormLabel>
+                    <Input
+                      placeholder="123456789"
+                      value={ga4PropertyId}
+                      onChange={(e) => setGA4PropertyId(e.target.value)}
+                    />
+                  </FormControl>
+
+                  <Box bg="gray.50" p={4} borderRadius="md">
+                    <Text fontSize="sm" fontWeight="semibold" mb={2}>
+                      📖 How to find your Property ID:
+                    </Text>
+                    <VStack align="start" spacing={1} fontSize="sm" color="gray.600">
+                      <Text>
+                        1. Go to <strong>Google Analytics</strong>
+                      </Text>
+                      <Text>
+                        2. Click the <strong>Admin</strong> (gear icon) in the bottom left
+                      </Text>
+                      <Text>
+                        3. Under <strong>Property</strong>, click <strong>Property Settings</strong>
+                      </Text>
+                      <Text>
+                        4. Copy the <strong>Property ID</strong> (numbers only)
+                      </Text>
+                    </VStack>
+                  </Box>
+                </VStack>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="ghost" mr={3} onClick={onGA4ModalClose}>
+                  Cancel
+                </Button>
+                <Button
+                  colorScheme="blue"
+                  onClick={handleSaveGA4Connection}
+                  isLoading={loading}
+                  isDisabled={!ga4PropertyId}
+                >
+                  Connect GA4
+                </Button>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
+
+          {/* GSC Site URL Modal */}
+          <Modal isOpen={isGSCModalOpen} onClose={onGSCModalClose} size="lg">
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>Connect Google Search Console</ModalHeader>
+              <ModalCloseButton />
+              <ModalBody>
+                <VStack spacing={4} align="stretch">
+                  <Alert status="success" borderRadius="md">
+                    <AlertIcon />
+                    GA4 connected! Now add your Search Console site.
+                  </Alert>
+
+                  <FormControl isRequired>
+                    <FormLabel>Site URL</FormLabel>
+                    <Input
+                      placeholder="https://example.com or sc-domain:example.com"
+                      value={gscSiteUrl}
+                      onChange={(e) => setGscSiteUrl(e.target.value)}
+                    />
+                  </FormControl>
+
+                  <Box bg="gray.50" p={4} borderRadius="md">
+                    <Text fontSize="sm" fontWeight="semibold" mb={2}>
+                      📖 Site URL Format:
+                    </Text>
+                    <VStack align="start" spacing={1} fontSize="sm" color="gray.600">
+                      <Text>
+                        • For URL-prefix property: <strong>https://example.com/</strong>
+                      </Text>
+                      <Text>
+                        • For Domain property: <strong>sc-domain:example.com</strong>
+                      </Text>
+                      <Text>The URL must match exactly what's in Search Console.</Text>
+                    </VStack>
+                  </Box>
+                </VStack>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="ghost" mr={3} onClick={onGSCModalClose}>
+                  Skip for now
+                </Button>
+                <Button
+                  colorScheme="green"
+                  onClick={handleSaveGSCConnection}
+                  isLoading={loading}
+                  isDisabled={!gscSiteUrl}
+                >
+                  Connect GSC
                 </Button>
               </ModalFooter>
             </ModalContent>

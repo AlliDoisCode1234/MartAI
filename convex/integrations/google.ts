@@ -76,7 +76,15 @@ export const exchangeCode = action({
     }
 
     const tokens = await response.json();
-    return tokens;
+
+    // Return tokens - the callback will pass them to the frontend
+    // which will prompt for Property ID and then save
+    return {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresIn: tokens.expires_in,
+      tokenType: tokens.token_type,
+    };
   },
 });
 
@@ -157,7 +165,15 @@ async function runGA4Report(
     },
     body: JSON.stringify({
       dateRanges: [{ startDate, endDate }],
-      metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'userEngagementDuration' }],
+      metrics: [
+        { name: 'sessions' },
+        { name: 'totalUsers' },
+        { name: 'userEngagementDuration' },
+        { name: 'screenPageViews' },
+        { name: 'bounceRate' },
+        { name: 'averageSessionDuration' },
+        { name: 'newUsers' },
+      ],
     }),
   });
 }
@@ -217,8 +233,8 @@ async function runGSCQuery(
     body: JSON.stringify({
       startDate,
       endDate,
-      dimensions: ['date'],
-      rowLimit: 1,
+      dimensions: ['query'],
+      rowLimit: 100,
     }),
   });
 }

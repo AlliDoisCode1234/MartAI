@@ -15,6 +15,11 @@ export const storeAnalyticsData = mutation({
     avgPosition: v.optional(v.number()),
     leads: v.optional(v.number()),
     revenue: v.optional(v.number()),
+    // Expanded GA4 metrics
+    pageViews: v.optional(v.number()),
+    bounceRate: v.optional(v.number()),
+    avgSessionDuration: v.optional(v.number()),
+    newUsers: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { projectId, date, source, ...metrics } = args;

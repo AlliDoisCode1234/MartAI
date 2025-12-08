@@ -17,7 +17,10 @@ import type * as analytics_adhoc from "../analytics/adhoc.js";
 import type * as analytics_aggregations from "../analytics/aggregations.js";
 import type * as analytics_analytics from "../analytics/analytics.js";
 import type * as analytics_competitors from "../analytics/competitors.js";
+import type * as analytics_gscKeywords from "../analytics/gscKeywords.js";
 import type * as analytics_insights from "../analytics/insights.js";
+import type * as analytics_martaiRating from "../analytics/martaiRating.js";
+import type * as analytics_martaiRatingQueries from "../analytics/martaiRatingQueries.js";
 import type * as analytics_queries from "../analytics/queries.js";
 import type * as analytics_scheduler from "../analytics/scheduler.js";
 import type * as analytics_sync from "../analytics/sync.js";
@@ -47,6 +50,7 @@ import type * as integrations_pages from "../integrations/pages.js";
 import type * as integrations_wordpress from "../integrations/wordpress.js";
 import type * as lib_services_intelligence from "../lib/services/intelligence.js";
 import type * as migrations from "../migrations.js";
+import type * as onboarding from "../onboarding.js";
 import type * as projects_clients from "../projects/clients.js";
 import type * as projects_projects from "../projects/projects.js";
 import type * as prospects_prospects from "../prospects/prospects.js";
@@ -72,6 +76,7 @@ import type * as workflows_analyticsWorkflows from "../workflows/analyticsWorkfl
 import type * as workflows_contentWorkflows from "../workflows/contentWorkflows.js";
 import type * as workflows_index from "../workflows/index.js";
 import type * as workflows_keywordWorkflows from "../workflows/keywordWorkflows.js";
+import type * as workflows_onboardingWorkflows from "../workflows/onboardingWorkflows.js";
 import type * as workflows_strategyWorkflows from "../workflows/strategyWorkflows.js";
 
 import type {
@@ -90,7 +95,10 @@ declare const fullApi: ApiFromModules<{
   "analytics/aggregations": typeof analytics_aggregations;
   "analytics/analytics": typeof analytics_analytics;
   "analytics/competitors": typeof analytics_competitors;
+  "analytics/gscKeywords": typeof analytics_gscKeywords;
   "analytics/insights": typeof analytics_insights;
+  "analytics/martaiRating": typeof analytics_martaiRating;
+  "analytics/martaiRatingQueries": typeof analytics_martaiRatingQueries;
   "analytics/queries": typeof analytics_queries;
   "analytics/scheduler": typeof analytics_scheduler;
   "analytics/sync": typeof analytics_sync;
@@ -120,6 +128,7 @@ declare const fullApi: ApiFromModules<{
   "integrations/wordpress": typeof integrations_wordpress;
   "lib/services/intelligence": typeof lib_services_intelligence;
   migrations: typeof migrations;
+  onboarding: typeof onboarding;
   "projects/clients": typeof projects_clients;
   "projects/projects": typeof projects_projects;
   "prospects/prospects": typeof prospects_prospects;
@@ -145,6 +154,7 @@ declare const fullApi: ApiFromModules<{
   "workflows/contentWorkflows": typeof workflows_contentWorkflows;
   "workflows/index": typeof workflows_index;
   "workflows/keywordWorkflows": typeof workflows_keywordWorkflows;
+  "workflows/onboardingWorkflows": typeof workflows_onboardingWorkflows;
   "workflows/strategyWorkflows": typeof workflows_strategyWorkflows;
 }>;
 

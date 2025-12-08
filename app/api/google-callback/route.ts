@@ -28,14 +28,27 @@ export async function GET(req: NextRequest) {
   try {
     console.log(`[GoogleCallback] Exchanging code for Project: ${state}`);
 
-    // Exchange code for tokens and save them to the project
-    await convex.action(api.integrations.google.exchangeCode, {
+    // Exchange code for tokens
+    const tokens = await convex.action(api.integrations.google.exchangeCode, {
       code,
-      projectId: state as any, // Cast because we know it's an ID
+      projectId: state as any,
     });
 
-    // Redirect back to integrations page with success
-    return NextResponse.redirect(new URL('/integrations?success=ga4&property=connected', baseUrl));
+    // Encode tokens to pass to frontend for Property ID entry
+    // Using base64 to safely pass in URL
+    const tokenData = Buffer.from(
+      JSON.stringify({
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        projectId: state,
+      })
+    ).toString('base64');
+
+    // Redirect to integrations page with tokens in URL
+    // The frontend will prompt for Property ID and save
+    return NextResponse.redirect(
+      new URL(`/integrations?setup=ga4&tokens=${encodeURIComponent(tokenData)}`, baseUrl)
+    );
   } catch (e) {
     console.error('[GoogleCallback] Error:', e);
     return NextResponse.redirect(new URL('/integrations?error=exchange_failed', baseUrl));
