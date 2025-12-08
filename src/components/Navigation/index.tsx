@@ -53,7 +53,7 @@ export const Navigation: FC = () => {
     >
       <Box maxW="container.xl" mx="auto" px={{ base: 4, md: 8 }}>
         <HStack justify="space-between" h={16}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
+          <Link href={isAuthenticated ? '/home' : '/'} style={{ textDecoration: 'none' }}>
             <Text fontSize="xl" fontWeight="bold" color="brand.orange">
               MartAI
             </Text>
