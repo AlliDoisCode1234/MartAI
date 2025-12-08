@@ -688,4 +688,91 @@ export default defineSchema({
       vectorField: 'embedding',
       dimensions: 1536,
     }),
+
+  // ========================================
+  // PHASE 3: ENTERPRISE - Organizations & RBAC
+  // ========================================
+
+  // Organizations (Teams/Workspaces)
+  organizations: defineTable({
+    name: v.string(),
+    slug: v.string(), // URL-friendly identifier
+    logoUrl: v.optional(v.string()),
+    // Billing info
+    billingEmail: v.optional(v.string()),
+    stripeCustomerId: v.optional(v.string()),
+    subscriptionId: v.optional(v.string()),
+    subscriptionStatus: v.optional(
+      v.union(
+        v.literal('active'),
+        v.literal('canceled'),
+        v.literal('past_due'),
+        v.literal('trialing')
+      )
+    ),
+    // Plan/tier at org level
+    plan: v.optional(
+      v.union(
+        v.literal('free'),
+        v.literal('starter'),
+        v.literal('growth'),
+        v.literal('pro'),
+        v.literal('enterprise')
+      )
+    ),
+    // Limits
+    maxProjects: v.optional(v.number()),
+    maxMembers: v.optional(v.number()),
+    // Owner
+    ownerId: v.id('users'),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_slug', ['slug'])
+    .index('by_owner', ['ownerId'])
+    .index('by_stripe_customer', ['stripeCustomerId']),
+
+  // Team Members (Junction table: User <-> Organization)
+  teamMembers: defineTable({
+    userId: v.id('users'),
+    organizationId: v.id('organizations'),
+    // Role within the organization
+    role: v.union(
+      v.literal('owner'), // Full control, can delete org
+      v.literal('admin'), // Can manage members and projects
+      v.literal('editor'), // Can edit content
+      v.literal('viewer') // Read-only access
+    ),
+    // Invitation status
+    status: v.optional(v.union(v.literal('pending'), v.literal('active'), v.literal('revoked'))),
+    invitedBy: v.optional(v.id('users')),
+    invitedAt: v.optional(v.number()),
+    joinedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_org', ['organizationId'])
+    .index('by_user_org', ['userId', 'organizationId'])
+    .index('by_org_role', ['organizationId', 'role']),
+
+  // Organization Invitations (for pending invites before user signup)
+  organizationInvitations: defineTable({
+    organizationId: v.id('organizations'),
+    email: v.string(),
+    role: v.union(v.literal('admin'), v.literal('editor'), v.literal('viewer')),
+    invitedBy: v.id('users'),
+    token: v.string(), // Unique invite token
+    expiresAt: v.number(),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('accepted'),
+      v.literal('expired'),
+      v.literal('revoked')
+    ),
+    createdAt: v.number(),
+  })
+    .index('by_org', ['organizationId'])
+    .index('by_email', ['email'])
+    .index('by_token', ['token']),
 });
