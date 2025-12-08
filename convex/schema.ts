@@ -783,4 +783,64 @@ export default defineSchema({
     .index('by_org', ['organizationId'])
     .index('by_email', ['email'])
     .index('by_token', ['token']),
+
+  // ========================================
+  // PHASE 3: ENTERPRISE - Webhooks
+  // ========================================
+
+  // Webhook Endpoints (registered by users/integrations)
+  webhooks: defineTable({
+    // Owner - can be project or organization level
+    projectId: v.optional(v.id('projects')),
+    organizationId: v.optional(v.id('organizations')),
+    userId: v.id('users'), // Who created it
+    // Endpoint config
+    name: v.string(),
+    url: v.string(), // The webhook endpoint URL
+    secret: v.string(), // HMAC secret for signature verification
+    // Events to trigger on
+    events: v.array(v.string()), // e.g., ['brief.created', 'draft.published', 'insight.generated']
+    // Status
+    isActive: v.boolean(),
+    // Metadata
+    description: v.optional(v.string()),
+    headers: v.optional(v.any()), // Custom headers to include
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_project', ['projectId'])
+    .index('by_org', ['organizationId'])
+    .index('by_user', ['userId'])
+    .index('by_active', ['isActive']),
+
+  // Webhook Delivery Logs (track each delivery attempt)
+  webhookDeliveries: defineTable({
+    webhookId: v.id('webhooks'),
+    // Event details
+    event: v.string(), // e.g., 'brief.created'
+    payload: v.any(), // The JSON payload sent
+    // Delivery status
+    status: v.union(
+      v.literal('pending'),
+      v.literal('success'),
+      v.literal('failed'),
+      v.literal('retrying')
+    ),
+    // Response details
+    responseStatus: v.optional(v.number()), // HTTP status code
+    responseBody: v.optional(v.string()), // Truncated response
+    responseTime: v.optional(v.number()), // ms
+    // Retry info
+    attempts: v.number(),
+    maxAttempts: v.number(),
+    nextRetryAt: v.optional(v.number()),
+    lastAttemptAt: v.optional(v.number()),
+    // Error tracking
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_webhook', ['webhookId'])
+    .index('by_status', ['status'])
+    .index('by_webhook_status', ['webhookId', 'status'])
+    .index('by_next_retry', ['nextRetryAt']),
 });
