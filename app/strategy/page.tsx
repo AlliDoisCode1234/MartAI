@@ -498,7 +498,11 @@ function StrategyContent() {
                   </Box>
                   <Box>
                     <Text fontSize="2xl" fontWeight="bold">
-                      {clusters.reduce((acc, c: any) => acc + (c.keywords?.length || 0), 0)}
+                      {clusters.reduce(
+                        (acc: number, c: { keywords?: string[] }) =>
+                          acc + (c.keywords?.length || 0),
+                        0
+                      )}
                     </Text>
                     <Text fontSize="sm" color="gray.500">
                       Target Keywords

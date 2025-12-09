@@ -153,8 +153,13 @@ export default function AdminCostsPage() {
               </Thead>
               <Tbody>
                 {summary.byModel
-                  .sort((a, b) => b.cost - a.cost)
-                  .map((item) => (
+                  .sort(
+                    (
+                      a: { model: string; cost: number; count: number },
+                      b: { model: string; cost: number; count: number }
+                    ) => b.cost - a.cost
+                  )
+                  .map((item: { model: string; cost: number; count: number }) => (
                     <Tr key={item.model}>
                       <Td>
                         <Badge colorScheme="purple">{item.model}</Badge>

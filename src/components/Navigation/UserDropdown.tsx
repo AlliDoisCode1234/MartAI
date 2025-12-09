@@ -23,8 +23,8 @@ export const UserDropdown: FC = () => {
   if (!user) return null;
 
   const isAdmin = user.role === 'admin' || user.role === 'super_admin';
-  const initials = user.username
-    ? user.username
+  const initials = user.name
+    ? user.name
         .split(' ')
         .map((n: string) => n[0])
         .join('')
@@ -36,12 +36,12 @@ export const UserDropdown: FC = () => {
     <Menu>
       <MenuButton>
         <HStack spacing={3} cursor="pointer" _hover={{ opacity: 0.8 }}>
-          <Avatar size="sm" name={user.username} bg="brand.orange" color="white">
+          <Avatar size="sm" name={user.name} bg="brand.orange" color="white">
             {initials}
           </Avatar>
           <VStack align="start" spacing={0} display={{ base: 'none', md: 'flex' }}>
             <Text fontSize="sm" fontWeight="semibold" color="gray.700">
-              {user.username}
+              {user.name}
             </Text>
             <Text fontSize="xs" color="gray.500">
               {user.email}

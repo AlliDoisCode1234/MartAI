@@ -220,7 +220,7 @@ export const syncProspectToHubspot = action({
       properties.martai_marketing_frustration = p.marketingFrustration;
     }
 
-    const result = await upsertContact(p.email, properties);
+    const result = await upsertContact(p.email!, properties);
 
     return {
       success: true,
@@ -264,7 +264,10 @@ export const markAbandonedSignup = action({
  */
 export const updateMRScore = internalAction({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; reason?: string; mrScore?: number; mrTier?: string | null }> => {
     const user = await ctx.runQuery(api.users.getById, { userId: args.userId });
     if (!user?.email) {
       return { success: false, reason: 'no_email' };
@@ -321,7 +324,9 @@ export const updateMRScore = internalAction({
  */
 export const bulkSyncUsers = action({
   args: {},
-  handler: async (ctx) => {
+  handler: async (
+    ctx
+  ): Promise<{ synced: number; skipped: number; errors: number; total: number }> => {
     const users = await ctx.runQuery(api.users.listAll, {});
 
     let synced = 0;
@@ -356,7 +361,9 @@ export const bulkSyncUsers = action({
  */
 export const bulkSyncProspects = action({
   args: {},
-  handler: async (ctx) => {
+  handler: async (
+    ctx
+  ): Promise<{ synced: number; skipped: number; errors: number; total: number }> => {
     const prospectData = await ctx.runQuery(api.prospects.prospects.listProspects, {});
 
     let synced = 0;

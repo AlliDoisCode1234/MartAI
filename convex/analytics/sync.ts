@@ -213,14 +213,16 @@ export const syncProjectData = internalAction({
           projectId,
           type: 'quick_win',
           title: `${quickWins.length} Quick Win Keywords Found`,
-          description: `You have ${quickWins.length} keywords ranking on page 2 with high impressions. Top opportunities: ${topQuickWins.map((k) => k.keyword).join(', ')}`,
+          description: `You have ${quickWins.length} keywords ranking on page 2 with high impressions. Top opportunities: ${topQuickWins.map((k: { keyword: string }) => k.keyword).join(', ')}`,
           action: 'Create Content',
           metadata: {
-            keywords: topQuickWins.map((k) => ({
-              keyword: k.keyword,
-              position: k.position,
-              impressions: k.impressions,
-            })),
+            keywords: topQuickWins.map(
+              (k: { keyword: string; position: number; impressions: number }) => ({
+                keyword: k.keyword,
+                position: k.position,
+                impressions: k.impressions,
+              })
+            ),
           },
         });
       }

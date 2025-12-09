@@ -22,7 +22,7 @@ export const triggerWebhook = internalAction({
     event: v.string(),
     payload: v.any(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ delivered: number }> => {
     // Get all active webhooks for this project/org that subscribe to this event
     const webhooks = await ctx.runQuery(
       internal.webhooks.webhookQueries.getActiveWebhooksForEvent,
@@ -60,7 +60,7 @@ export const sendWebhook = internalAction({
   args: {
     deliveryId: v.id('webhookDeliveries'),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ success: boolean; error?: string; status?: number }> => {
     const delivery = await ctx.runQuery(internal.webhooks.webhookQueries.getDeliveryById, {
       deliveryId: args.deliveryId,
     });

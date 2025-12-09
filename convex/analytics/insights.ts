@@ -182,7 +182,9 @@ export const findContentGaps = internalAction({
       limit: 200,
     });
 
-    const rankedKeywords = new Set(latestKeywords.map((k: any) => k.keyword.toLowerCase()));
+    const rankedKeywords = new Set(
+      latestKeywords.map((k: { keyword: string }) => k.keyword.toLowerCase())
+    );
 
     // Get high-value keywords from the library that we're NOT ranking for
     const gaps: Array<{
@@ -274,9 +276,14 @@ export const suggestKeywordClusters = internalAction({
       if (group.length >= 3) {
         clusters.push({
           name: name.charAt(0).toUpperCase() + name.slice(1),
-          keywords: group.map((k) => k.keyword),
-          totalImpressions: group.reduce((acc, k) => acc + k.impressions, 0),
-          avgPosition: group.reduce((acc, k) => acc + k.position, 0) / group.length,
+          keywords: group.map((k: { keyword: string }) => k.keyword),
+          totalImpressions: group.reduce(
+            (acc: number, k: { impressions: number }) => acc + k.impressions,
+            0
+          ),
+          avgPosition:
+            group.reduce((acc: number, k: { position: number }) => acc + k.position, 0) /
+            group.length,
         });
       }
     }

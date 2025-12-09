@@ -153,13 +153,13 @@ export const searchLibrary = action({
     const docs = await ctx.runQuery(internal.seo.library.getKeywordsByIds, { ids });
 
     // Re-attach scores and sort by score (which vectorSearch already did, but map lookup might scramble)
-    const docsMap = new Map(docs.map((d) => [d._id, d]));
+    const docsMap = new Map(docs.map((d: Doc<'keywordLibrary'>) => [d._id, d]));
 
     return results
       .map((r) => {
         const doc = docsMap.get(r._id);
         return doc ? { ...doc, _score: r._score } : null;
       })
-      .filter((d) => d !== null);
+      .filter((d): d is Doc<'keywordLibrary'> & { _score: number } => d !== null);
   },
 });
