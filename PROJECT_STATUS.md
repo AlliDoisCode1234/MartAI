@@ -1,8 +1,8 @@
 # MartAI Project Status Report
 
-**Last Updated**: December 8, 2025  
+**Last Updated**: December 9, 2025  
 **Current Phase**: Phase 3 - Enterprise Features  
-**Active Task**: Webhooks & RBAC Complete
+**Active Task**: OAuth in Onboarding + Codebase Cleanup
 
 ---
 
@@ -19,7 +19,62 @@ MartAI is an AI-driven SEO & Lead Generation Platform. We have completed compreh
 
 ---
 
-## Recently Completed (December 8, 2025)
+## Business Model & Pricing
+
+### Target Customer
+
+- Small businesses under $500k annual revenue
+- Solopreneurs and small marketing teams
+- Non-SEO experts who need results, not tools
+
+### Pricing Tiers
+
+| Tier       | Price   | URLs | Target       | CTA           |
+| ---------- | ------- | ---- | ------------ | ------------- |
+| **Solo**   | $49/mo  | 1    | Solopreneurs | Buy Now       |
+| **Growth** | $149/mo | 3    | SMBs <$500k  | Buy Now       |
+| **Agency** | Contact | 3+   | Enterprise   | Talk to Sales |
+
+### Pricing Philosophy
+
+- **No free tier** - value requires investment
+- **AI cost + intelligence value** - base on real token costs
+- **Affordable for small businesses** - under $200/month for most users
+- **Enterprise = relationship** - no sticker price, sales conversation
+
+### Billing Integration
+
+- **Provider**: Polar (not Stripe)
+- **Status**: Not yet integrated
+
+---
+
+## Decision-Making Personas
+
+| Persona   | Role            | Consult For                      |
+| --------- | --------------- | -------------------------------- |
+| **MART**  | SEO Expert      | Product, pricing, user value     |
+| **KATE**  | Project Owner   | Scope, prioritization, MVP       |
+| **KHANH** | Dir Engineering | Architecture, tech debt, quality |
+| **BILL**  | CFO             | ROI, costs, unit economics       |
+
+See `docs/` for full persona documentation.
+
+---
+
+## Recently Completed (December 9, 2025)
+
+### ✅ OAuth in Onboarding
+
+- Project created in step 3 (before OAuth)
+- Combined GA4+GSC scopes in single consent
+- Connected status with discouraged skip option
+
+### ✅ MartCharacter Animation
+
+- Particle sphere with Fibonacci distribution
+- Breathing animation, hover explosion
+- Mouse repulsion effect
 
 ### ✅ Codebase Hardening (Phase 1)
 
@@ -39,61 +94,43 @@ MartAI is an AI-driven SEO & Lead Generation Platform. We have completed compreh
 - **Organizations**: Full CRUD with owner permissions
 - **Team Members**: Invite flow, accept/reject, role management
 - **RBAC System**: Shared utility for admin portal + org-level access
-  - Admin roles: super_admin, admin, user, viewer
-  - Org roles: owner, admin, editor, viewer
-- **Projects → Organizations**: Multi-tenancy linking
-- **Webhooks Infrastructure**:
-  - CRUD with RBAC enforcement
-  - HMAC signature verification
-  - Automatic retry (3 attempts with exponential backoff)
-  - Delivery logging
+- **Webhooks Infrastructure**: HMAC + retry + delivery logging
 
 ---
 
 ## Active Components
 
-| Component             | Status | Notes                        |
-| --------------------- | ------ | ---------------------------- |
-| Convex Auth           | ✅     | Google OAuth + Password      |
-| Rate Limiter          | ✅     | Per-tier limits              |
-| Action Cache          | ✅     | 30-day TTL                   |
-| Persistent AI Storage | ✅     | SHA-256 lookup               |
-| Workflow Engine       | ✅     | Durable workflows            |
-| Neutral Cost          | ✅     | AI usage tracking            |
-| AI Personas           | ✅     | Backend-stored, Mart persona |
-| MartAI Rating         | ✅     | Composite SEO score          |
-| **Organizations**     | ✅     | Multi-tenancy support        |
-| **RBAC**              | ✅     | Admin + Org roles            |
-| **Webhooks**          | ✅     | HMAC + retry                 |
-
----
-
-## Session Commits (December 8, 2025)
-
-| Commit    | Description                        |
-| --------- | ---------------------------------- |
-| `bc17bb8` | Config, errors, useProject hook    |
-| `4c3e5c9` | IntelligenceService retry/fallback |
-| `7e4e105` | useAnalytics + useKeywords hooks   |
-| `c6f3644` | Batch utilities                    |
-| `188ea18` | Frontend cache + Organizations     |
-| `2d944b6` | Projects → Organizations linking   |
-| `2b1b53c` | Webhooks infrastructure with RBAC  |
+| Component             | Status | Notes                   |
+| --------------------- | ------ | ----------------------- |
+| Convex Auth           | ✅     | Google OAuth + Password |
+| Rate Limiter          | ✅     | Per-tier limits         |
+| Action Cache          | ✅     | 30-day TTL              |
+| Persistent AI Storage | ✅     | SHA-256 lookup          |
+| Workflow Engine       | ✅     | Durable workflows       |
+| Neutral Cost          | ✅     | AI usage tracking       |
+| AI Personas           | ✅     | Backend-stored (Mart)   |
+| MartAI Rating         | ✅     | Composite SEO score     |
+| Organizations         | ✅     | Multi-tenancy support   |
+| RBAC                  | ✅     | Admin + Org roles       |
+| Webhooks              | ✅     | HMAC + retry            |
+| **Polar Billing**     | ❌     | Not started             |
+| **Public API**        | ❌     | Not started             |
 
 ---
 
 ## Next Steps (Priority Order)
 
-1. **Public API**: OpenAPI spec and routes for integrations
-2. **Activity Logs**: Track user actions in organizations
-3. **Staging Environment**: Vercel/Convex previews
-4. **WordPress Publishing**: Full adapter testing
-5. **Onboarding Integration**: Connect step updates to user actions
+1. **Polar Billing Integration**: Connect pricing tiers to Polar
+2. **Public API**: OpenAPI spec and routes for integrations
+3. **Activity Logs**: Track user actions in organizations
+4. **Type Safety Cleanup**: Remove `as any` casts (35+ files)
+5. **WordPress Publishing**: Full adapter testing
 
 ---
 
 ## Technical Debt
 
+- 35+ files with `as any` in app/
+- 17+ files with `as any` in convex/
 - Increase test coverage for critical paths
-- Continue addressing `as any` usages (UserDropdown.tsx)
-- Add activity logging for organizations
+- Component hierarchy comments needed
