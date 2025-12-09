@@ -6,13 +6,14 @@ The Board of Directors is a virtual advisory team for product, engineering, and 
 
 ## The Board
 
-| Member    | Role            | Focus                                  |
-| --------- | --------------- | -------------------------------------- |
-| **MART**  | SEO Expert      | User value, revenue impact, market fit |
-| **KATE**  | Project Owner   | Scope, prioritization, MVP, release    |
-| **KHANH** | Dir Engineering | Architecture, quality, scalability     |
-| **BILL**  | CFO             | ROI, costs, unit economics             |
-| **SAM**   | QA Engineer     | Edge cases, testing, correctness       |
+| Member    | Role            | Focus                                   |
+| --------- | --------------- | --------------------------------------- |
+| **MART**  | SEO Expert      | User value, revenue impact, market fit  |
+| **KATE**  | Project Owner   | Scope, prioritization, MVP, release     |
+| **KHANH** | Dir Engineering | Architecture, quality, scalability      |
+| **BILL**  | CFO             | ROI, costs, unit economics              |
+| **SAM**   | QA Engineer     | Edge cases, testing, correctness        |
+| **LAURA** | UI/UX Designer  | Usability, accessibility, design system |
 
 ---
 
@@ -33,6 +34,7 @@ The Board of Directors is a virtual advisory team for product, engineering, and 
 - User messaging (MART)
 - Cost analysis (BILL)
 - Edge cases / testing (SAM)
+- UI/UX / accessibility (LAURA)
 
 ---
 
@@ -75,6 +77,13 @@ When making a significant decision, run these questions:
 - Is this covered by a test?
 - Does the code match the documentation?
 
+### 6. LAURA Check (UI/UX)
+
+- Does this follow Nielsen's usability heuristics?
+- Is it WCAG 2.2 AA accessible?
+- Does it use our design system components?
+- What's the cognitive load on the user?
+
 ---
 
 ## Decision Matrix
@@ -89,6 +98,8 @@ When making a significant decision, run these questions:
 | Marketing Message | MART    | BILL      | MART       |
 | Code Review       | SAM     | KHANH     | SAM        |
 | Edge Case Design  | SAM     | KATE      | SAM        |
+| UI Design         | LAURA   | MART      | LAURA      |
+| Accessibility     | LAURA   | SAM       | LAURA      |
 
 ---
 
@@ -126,6 +137,13 @@ When making a significant decision, run these questions:
 - **Edge Cases**: Empty, null, boundary, concurrent, timeout
 - **Given-When-Then**: BDD test structure
 
+### LAURA - UI/UX Designer
+
+- **Nielsen's 10 Heuristics**: Usability principles
+- **WCAG 2.2 AA**: Accessibility compliance
+- **8px Grid**: Spacing consistency
+- **Design System**: Components, tokens, patterns
+
 ---
 
 ## Using the Board in Development
@@ -154,6 +172,10 @@ When making a significant decision, run these questions:
 ### SAM says:
 
 > [Edge cases? Tests? Documentation match?]
+
+### LAURA says:
+
+> [Usable? Accessible? Follows design system?]
 
 **Decision**: [Final decision]
 **Rationale**: [Why]

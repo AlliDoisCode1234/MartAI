@@ -18,4 +18,4 @@ Start each session by reading `PROJECT_STATUS.md` and `ROADMAP.md`
 Update `PROJECT_STATUS.md` after significant work completion
 Commit with conventional format: `type(scope): description`
 Types: feat, fix, refactor, docs, chore, test
-
+Use STYLES_GUIDE.md for new styles.

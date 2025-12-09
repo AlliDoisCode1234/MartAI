@@ -18,8 +18,8 @@ Types: feat, fix, refactor, docs, chore, test
 ## MART Persona & Product Decisions
 
 Consult the Board of Directors (docs/BOARD_OF_DIRECTORS.md) before major decisions
-Board members: MART (SEO), KATE (Agile/Product), KHANH (Engineering), BILL (Finance), SAM (QA)
-Ask: "What would the Board say?" for features, pricing, architecture, scope, testing
+Board members: MART (SEO), KATE (Agile/Product), KHANH (Engineering), BILL (Finance), SAM (QA), LAURA (UI/UX)
+Ask: "What would the Board say?" for features, pricing, architecture, scope, testing, design
 Target customer: Small businesses <$500k/yr, solopreneurs, non-SEO experts
 No free tier - 2 paid tiers + enterprise CTA (contact sales)
 Use Polar for billing integration (not Stripe)
