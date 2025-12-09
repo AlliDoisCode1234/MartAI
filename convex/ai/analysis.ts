@@ -1,11 +1,11 @@
-import { action } from "../_generated/server";
-import { v } from "convex/values";
-import { api } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import { action } from '../_generated/server';
+import { v } from 'convex/values';
+import { api } from '../_generated/api';
+import type { Id } from '../_generated/dataModel';
 
 interface ResolveTargetArgs {
-  prospectId?: Id<"prospects">;
-  projectId?: Id<"projects">;
+  prospectId?: Id<'prospects'>;
+  projectId?: Id<'projects'>;
 }
 
 interface PipelineArgs extends ResolveTargetArgs {
@@ -14,8 +14,8 @@ interface PipelineArgs extends ResolveTargetArgs {
 }
 
 interface TargetInfo {
-  prospectId?: Id<"prospects">;
-  projectId?: Id<"projects">;
+  prospectId?: Id<'prospects'>;
+  projectId?: Id<'projects'>;
   url: string;
   hints: {
     companyName?: string;
@@ -52,18 +52,21 @@ interface KeywordIdeaCandidate {
   priority: string;
 }
 
-import { auth } from "../auth";
-import { rateLimits, getRateLimitKey, type MembershipTier } from "../rateLimits";
-import { ConvexError } from "convex/values";
+import { auth } from '../auth';
+import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
+import { ConvexError } from 'convex/values';
 
 export const runPipeline = action({
   args: {
-    prospectId: v.optional(v.id("prospects")),
-    projectId: v.optional(v.id("projects")),
+    prospectId: v.optional(v.id('prospects')),
+    projectId: v.optional(v.id('projects')),
     url: v.optional(v.string()),
     force: v.optional(v.boolean()),
   },
-  handler: async (ctx, args: PipelineArgs): Promise<{
+  handler: async (
+    ctx,
+    args: PipelineArgs
+  ): Promise<{
     reportId: string;
     metrics: FusionResult;
     keywordIdeasCreated: number;
@@ -71,25 +74,25 @@ export const runPipeline = action({
     // Get authenticated user
     const userId = await auth.getUserId(ctx);
     if (!userId) {
-      throw new Error("Unauthorized");
+      throw new Error('Unauthorized');
     }
 
     // Get user to check membership tier and role
-    const user = await ctx.runQuery((api as any).users.current);
+    const user = await ctx.runQuery(api.users.current);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error('User not found');
     }
 
     // Determine rate limit tier
     let tier: MembershipTier;
-    if (user.role === "admin" || user.role === "super_admin") {
-      tier = "admin";
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      tier = 'admin';
     } else {
-      tier = (user.membershipTier as MembershipTier) || "free";
+      tier = (user.membershipTier as MembershipTier) || 'free';
     }
 
     // Check rate limit
-    const rateLimitKey = getRateLimitKey("aiAnalysis", tier);
+    const rateLimitKey = getRateLimitKey('aiAnalysis', tier);
     const { ok, retryAfter } = await rateLimits.limit(ctx, rateLimitKey as any, {
       key: userId as string,
     });
@@ -97,27 +100,27 @@ export const runPipeline = action({
     if (!ok) {
       const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
       throw new ConvexError({
-        kind: "RateLimitError",
-        message: `Rate limit exceeded. You can generate ${tier === "free" ? "2 reports per day" : tier === "admin" ? "50 reports per day" : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? "s" : ""}.`,
+        kind: 'RateLimitError',
+        message: `Rate limit exceeded. You can generate ${tier === 'free' ? '2 reports per day' : tier === 'admin' ? '50 reports per day' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
         retryAfter,
       });
     }
 
     if (!args.prospectId && !args.projectId && !args.url) {
-      throw new Error("Provide a prospectId, projectId, or url to analyze.");
+      throw new Error('Provide a prospectId, projectId, or url to analyze.');
     }
 
     const target = await resolveTarget(ctx, args);
-    const typedProspectId = target.prospectId as Id<"prospects"> | undefined;
-    const typedProjectId = target.projectId as Id<"projects"> | undefined;
-    console.info("Starting MartAI pipeline", target);
+    const typedProspectId = target.prospectId as Id<'prospects'> | undefined;
+    const typedProjectId = target.projectId as Id<'projects'> | undefined;
+    console.info('Starting MartAI pipeline', target);
 
     const initialSummary = `Running MartAI intelligence pipeline for ${target.url}`;
     const reportId = await ctx.runMutation(api.ai.reports.createAiReport, {
       prospectId: typedProspectId,
       projectId: typedProjectId,
       url: target.url,
-      status: "pending",
+      status: 'pending',
       summary: initialSummary,
       metrics: {
         coverageScore: 0,
@@ -141,7 +144,7 @@ export const runPipeline = action({
 
       await ctx.runMutation(api.ai.reports.updateAiReport, {
         reportId,
-        status: "completed",
+        status: 'completed',
         summary: fusion.summary,
         metrics: {
           coverageScore: fusion.coverageScore,
@@ -179,11 +182,11 @@ export const runPipeline = action({
         keywordIdeasCreated: keywordCandidates.length,
       };
     } catch (error: any) {
-      console.error("MartAI pipeline failed", error);
+      console.error('MartAI pipeline failed', error);
       await ctx.runMutation(api.ai.reports.updateAiReport, {
         reportId,
-        status: "failed",
-        summary: error?.message || "Pipeline failed unexpectedly",
+        status: 'failed',
+        summary: error?.message || 'Pipeline failed unexpectedly',
       });
       throw error;
     }
@@ -205,11 +208,11 @@ async function resolveTarget(ctx: any, args: PipelineArgs): Promise<TargetInfo> 
       prospectId: args.prospectId,
     });
     if (!prospectRecord) {
-      throw new Error("Prospect not found");
+      throw new Error('Prospect not found');
     }
     const firstUrl = prospectRecord.urls?.[0]?.url;
     if (!firstUrl) {
-      throw new Error("Prospect is missing URLs to analyze");
+      throw new Error('Prospect is missing URLs to analyze');
     }
     return {
       url: normalizeUrl(firstUrl),
@@ -226,7 +229,7 @@ async function resolveTarget(ctx: any, args: PipelineArgs): Promise<TargetInfo> 
       projectId: args.projectId,
     });
     if (!project) {
-      throw new Error("Project not found");
+      throw new Error('Project not found');
     }
     return {
       url: normalizeUrl(project.websiteUrl),
@@ -238,16 +241,16 @@ async function resolveTarget(ctx: any, args: PipelineArgs): Promise<TargetInfo> 
     };
   }
 
-  throw new Error("Unable to resolve target.");
+  throw new Error('Unable to resolve target.');
 }
 
 async function smartCrawl(url: string): Promise<CrawlResult> {
   try {
-    const response = await fetch(url, { method: "GET" });
+    const response = await fetch(url, { method: 'GET' });
     const html = await response.text();
-    const textOnly = html.replace(/<[^>]+>/g, " ");
+    const textOnly = html.replace(/<[^>]+>/g, ' ');
     const words = textOnly.split(/\s+/).filter(Boolean);
-    const loadTime = Number(response.headers.get("Server-Timing")?.split("=")[1]) || 1200;
+    const loadTime = Number(response.headers.get('Server-Timing')?.split('=')[1]) || 1200;
 
     return {
       url,
@@ -255,15 +258,15 @@ async function smartCrawl(url: string): Promise<CrawlResult> {
       wordCount: words.length,
       headings: extractHeadings(html),
       metadata: {
-        title: extractTag(html, "title"),
-        description: extractMeta(html, "description"),
+        title: extractTag(html, 'title'),
+        description: extractMeta(html, 'description'),
       },
       loadTime,
     };
   } catch (error) {
     return {
       url,
-      htmlSample: "",
+      htmlSample: '',
       wordCount: 0,
       headings: [],
       metadata: {},
@@ -280,10 +283,10 @@ async function knowledgeFusion(target: TargetInfo, crawl: CrawlResult): Promise<
   const trafficEstimate = Math.round(organicKeywords * 12);
 
   const summary = [
-    `Analyzed ${target.hints.companyName || "the site"} (${target.url}).`,
+    `Analyzed ${target.hints.companyName || 'the site'} (${target.url}).`,
     `Estimated traffic: ${trafficEstimate.toLocaleString()} visits / mo.`,
     `Keyword coverage: ${coverageScore}% with ~${organicKeywords} organic phrases.`,
-  ].join(" ");
+  ].join(' ');
 
   return {
     summary,
@@ -292,7 +295,7 @@ async function knowledgeFusion(target: TargetInfo, crawl: CrawlResult): Promise<
     domainRatingProxy,
     organicKeywords,
     trafficEstimate,
-    sources: ["smart_crawl", "heuristic_ai"],
+    sources: ['smart_crawl', 'heuristic_ai'],
   };
 }
 
@@ -302,13 +305,13 @@ function scoreConfidence(crawl: CrawlResult, fusion: FusionResult) {
   const combined = Math.min(100, hasContent + hasMeta + fusion.coverageScore * 0.3);
   return {
     score: Math.round(combined),
-    sources: ["smart_crawl", "heuristic_ai"],
+    sources: ['smart_crawl', 'heuristic_ai'],
   };
 }
 
 function generateKeywordIdeas(target: TargetInfo, fusion: FusionResult): KeywordIdeaCandidate[] {
-  const base = target.hints.companyName?.toLowerCase().includes("chef") ? "culinary" : "growth";
-  const intents = ["informational", "commercial", "transactional"];
+  const base = target.hints.companyName?.toLowerCase().includes('chef') ? 'culinary' : 'growth';
+  const intents = ['informational', 'commercial', 'transactional'];
   return intents.map((intent, index) => ({
     primaryKeyword: `${base} ${intent} strategy ${index + 1}`,
     supportingKeywords: [
@@ -320,7 +323,7 @@ function generateKeywordIdeas(target: TargetInfo, fusion: FusionResult): Keyword
     trafficPotential: fusion.trafficEstimate - index * 120,
     kdScore: Math.max(12, fusion.domainRatingProxy - index * 5),
     cpc: 2.5 + index,
-    priority: index === 0 ? "high" : index === 1 ? "medium" : "low",
+    priority: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
   }));
 }
 
@@ -351,40 +354,39 @@ async function persistCalendarPreview(ctx: any, ideas: KeywordIdeaCandidate[], t
     projectId: target.projectId,
     prospectId: target.prospectId,
     title: `Keyword Focus: ${capitalize(firstIdea.primaryKeyword)}`,
-    contentType: "long_form_article",
+    contentType: 'long_form_article',
     primaryKeyword: firstIdea.primaryKeyword,
     supportingKeywords: firstIdea.supportingKeywords,
-    status: "idea",
+    status: 'idea',
     publishDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
-    notes: "Autogenerated by MartAI intelligence layer. Adjust schedule before committing.",
+    notes: 'Autogenerated by MartAI intelligence layer. Adjust schedule before committing.',
   });
 }
 
 function extractTag(html: string, tag: string) {
-  const match = html.match(new RegExp(`<${tag}[^>]*>(.*?)</${tag}>`, "i"));
+  const match = html.match(new RegExp(`<${tag}[^>]*>(.*?)</${tag}>`, 'i'));
   return match ? match[1].trim() : undefined;
 }
 
 function extractMeta(html: string, name: string) {
-  const regex = new RegExp(`<meta[^>]+name=["']${name}["'][^>]+content=["'](.*?)["']`, "i");
+  const regex = new RegExp(`<meta[^>]+name=["']${name}["'][^>]+content=["'](.*?)["']`, 'i');
   const match = html.match(regex);
   return match ? match[1].trim() : undefined;
 }
 
 function extractHeadings(html: string) {
   const matches = Array.from(html.matchAll(/<(h[1-3])[^>]*>(.*?)<\/\1>/gi));
-  return matches.map((m) => m[2].replace(/<[^>]+>/g, "").trim());
+  return matches.map((m) => m[2].replace(/<[^>]+>/g, '').trim());
 }
 
 function normalizeUrl(url: string) {
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
     return `https://${url}`;
   }
   return url;
 }
 
 function capitalize(str?: string) {
-  if (!str) return "";
+  if (!str) return '';
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
-

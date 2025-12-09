@@ -40,7 +40,7 @@ export const generateDraft = action({
     }
 
     // Get user to check membership tier and role
-    const user = await ctx.runQuery((api as any).users.current);
+    const user = await ctx.runQuery(api.users.current);
     if (!user) {
       throw new Error('User not found');
     }
@@ -69,7 +69,7 @@ export const generateDraft = action({
     }
 
     // Get brief
-    const brief: any = await ctx.runQuery((api as any).content.briefs.getBriefById, {
+    const brief: any = await ctx.runQuery(api['content/briefs'].getBriefById, {
       briefId: args.briefId,
     });
 
@@ -83,7 +83,7 @@ export const generateDraft = action({
     }
 
     // Check if draft already exists
-    const existingDraft: any = await ctx.runQuery((api as any).content.drafts.getDraftByBrief, {
+    const existingDraft: any = await ctx.runQuery(api['content/drafts'].getDraftByBrief, {
       briefId: args.briefId,
     });
 
@@ -103,7 +103,7 @@ export const generateDraft = action({
     });
     const inputHash: string = crypto.createHash('sha256').update(inputForHash).digest('hex');
 
-    const stored = await ctx.runQuery((api as any).aiStorage.getStored, { inputHash });
+    const stored = await ctx.runQuery(api.aiStorage.getStored, { inputHash });
 
     if (stored) {
       console.log('Persistent Storage Hit for draft generation');
@@ -111,7 +111,7 @@ export const generateDraft = action({
 
       let draftId;
       if (existingDraft) {
-        await ctx.runMutation((api as any).content.drafts.updateDraft, {
+        await ctx.runMutation(api['content/drafts'].updateDraft, {
           draftId: existingDraft._id,
           ...cachedContent,
           status: 'draft',
@@ -119,7 +119,7 @@ export const generateDraft = action({
         });
         draftId = existingDraft._id;
       } else {
-        draftId = await ctx.runMutation((api as any).content.drafts.createDraft, {
+        draftId = await ctx.runMutation(api['content/drafts'].createDraft, {
           briefId: args.briefId,
           projectId: brief.projectId,
           ...cachedContent,
@@ -143,13 +143,13 @@ export const generateDraft = action({
     if (cached && !args.regenerationNotes) {
       console.log('Cache hit for draft generation');
       if (existingDraft) {
-        await ctx.runMutation((api as any).content.drafts.updateDraft, {
+        await ctx.runMutation(api['content/drafts'].updateDraft, {
           draftId: existingDraft._id,
           ...cached,
           status: 'draft',
         });
       } else {
-        await ctx.runMutation((api as any).content.drafts.createDraft, {
+        await ctx.runMutation(api['content/drafts'].createDraft, {
           briefId: args.briefId,
           projectId: brief.projectId,
           ...cached,
@@ -168,14 +168,14 @@ export const generateDraft = action({
     // Get cluster info
     let cluster = null;
     if (brief.clusterId) {
-      const clusters = await ctx.runQuery((api as any).seo.keywordClusters.getClustersByProject, {
+      const clusters = await ctx.runQuery(api['seo/keywordClusters'].getClustersByProject, {
         projectId: brief.projectId,
       });
       cluster = clusters.find((c: any) => c._id === brief.clusterId);
     }
 
     // Get project details
-    const project = await ctx.runQuery((api as any).projects.projects.getProjectById, {
+    const project = await ctx.runQuery(api['projects/projects'].getProjectById, {
       projectId: brief.projectId,
     });
 
@@ -290,7 +290,7 @@ export const generateDraft = action({
     let draftId;
     if (existingDraft) {
       // Update existing draft
-      await ctx.runMutation((api as any).content.drafts.updateDraft, {
+      await ctx.runMutation(api['content/drafts'].updateDraft, {
         draftId: existingDraft._id,
         content: draftResult.content,
         qualityScore: draftResult.qualityScore,
@@ -302,7 +302,7 @@ export const generateDraft = action({
       draftId = existingDraft._id;
     } else {
       // Create new draft
-      draftId = await ctx.runMutation((api as any).content.drafts.createDraft, {
+      draftId = await ctx.runMutation(api['content/drafts'].createDraft, {
         briefId: args.briefId,
         projectId: brief.projectId,
         content: draftResult.content,
@@ -317,7 +317,7 @@ export const generateDraft = action({
     // 3. Store in Persistence & Cache
     await cache.set(ctx, cacheKey, draftResult, CACHE_TTL.DRAFT_GENERATION);
 
-    await ctx.runMutation((api as any).aiStorage.store, {
+    await ctx.runMutation(api.aiStorage.store, {
       inputHash,
       operation: 'generateDraft',
       provider: 'openai',
@@ -333,7 +333,7 @@ export const generateDraft = action({
     });
 
     // Update brief status
-    await ctx.runMutation((api as any).content.briefs.updateBrief, {
+    await ctx.runMutation(api['content/briefs'].updateBrief, {
       briefId: args.briefId,
       status: 'in_progress',
     });

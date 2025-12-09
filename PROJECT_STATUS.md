@@ -122,8 +122,9 @@ See `docs/` for full persona documentation.
 | Organizations         | ✅     | Multi-tenancy support   |
 | RBAC                  | ✅     | Admin + Org roles       |
 | Webhooks              | ✅     | HMAC + retry            |
+| **Branded Types**     | ✅     | Type-safe primitives    |
 | **Polar Billing**     | ❌     | Not started             |
-| **Public API**        | ❌     | Not started             |
+| **Public API**        | 🔄     | Rate limiting done      |
 
 ---
 
@@ -132,14 +133,14 @@ See `docs/` for full persona documentation.
 1. **Polar Billing Integration**: Connect pricing tiers to Polar
 2. **Public API**: OpenAPI spec and routes for integrations
 3. **Activity Logs**: Track user actions in organizations
-4. **Type Safety Cleanup**: Remove `as any` casts (35+ files)
+4. **Type Safety Cleanup**: Remove `as any` casts (~158 remaining)
 5. **WordPress Publishing**: Full adapter testing
 
 ---
 
 ## Technical Debt
 
-- 35+ files with `as any` in app/
-- 17+ files with `as any` in convex/
+- ~158 files with `as any` casts remaining (down from 200+)
+- `convex/lib/typedHelpers.ts` provides branded types for systematic cleanup
 - Increase test coverage for critical paths
 - Component hierarchy comments needed

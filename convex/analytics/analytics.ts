@@ -249,7 +249,7 @@ export const applyInsight = mutation({
 
     // If it's a content opportunity, create an unplanned brief
     if (['keyword_opportunity', 'quick_win', 'top_gainer'].includes(insight.type)) {
-      await ctx.runMutation((api as any).content.briefs.createBrief, {
+      await ctx.runMutation(api['content/briefs'].createBrief, {
         projectId: insight.projectId,
         title: `Insight: ${insight.title}`,
         scheduledDate: Date.now() + 7 * 24 * 60 * 60 * 1000, // Tentative date +1 week

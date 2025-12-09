@@ -237,3 +237,83 @@ export const recordApiKeyUsage = mutation({
     });
   },
 });
+
+/**
+ * Check and consume API rate limit
+ * Returns rate limit status and headers to include in response
+ *
+ * Note: This uses a simple in-memory approximation for now.
+ * For production, integrate with @convex-dev/rate-limiter properly.
+ */
+export const checkApiRateLimit = mutation({
+  args: {
+    keyId: v.id('apiKeys'),
+    endpoint: v.string(), // e.g., 'keywords_read', 'keywords_write'
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    allowed: boolean;
+    limit: number;
+    remaining: number;
+    resetAt: number;
+    retryAfter?: number;
+  }> => {
+    const apiKey = await ctx.db.get(args.keyId);
+    if (!apiKey) {
+      return { allowed: false, limit: 0, remaining: 0, resetAt: 0, retryAfter: 60 };
+    }
+
+    // Rate limits per minute by endpoint
+    const limits: Record<string, number> = {
+      keywords_read: 100,
+      keywords_write: 50,
+      clusters_read: 100,
+      briefs_read: 100,
+      analytics_read: 60,
+    };
+
+    const limit = limits[args.endpoint] || 100;
+    const windowMs = 60 * 1000; // 1 minute window
+    const now = Date.now();
+
+    // Get or create rate limit tracking
+    // We'll track this in the API key's lastUsedAt and usageCount
+    // For a proper implementation, we'd use a separate rate limit table
+    // For now, we'll do a simple check based on usageCount per minute
+
+    // Calculate window start
+    const windowStart = now - windowMs;
+
+    // Check if we're in a new window (last used was before window start)
+    const isNewWindow = !apiKey.lastUsedAt || apiKey.lastUsedAt < windowStart;
+
+    // Get current count in this window
+    // For simplicity, we'll reset usageCount if in new window
+    let currentCount = isNewWindow ? 0 : apiKey.usageCount;
+
+    // Calculate remaining
+    const remaining = Math.max(0, limit - currentCount - 1);
+    const allowed = currentCount < limit;
+
+    // Calculate reset time (end of current window)
+    const resetAt = Math.floor((now + windowMs) / 1000); // Unix timestamp in seconds
+
+    // Update tracking
+    if (allowed) {
+      await ctx.db.patch(args.keyId, {
+        lastUsedAt: now,
+        usageCount: isNewWindow ? 1 : currentCount + 1,
+      });
+    }
+
+    return {
+      allowed,
+      limit,
+      remaining: allowed ? remaining : 0,
+      resetAt,
+      retryAfter: allowed ? undefined : Math.ceil((resetAt * 1000 - now) / 1000),
+    };
+  },
+});

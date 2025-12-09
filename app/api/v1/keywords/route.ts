@@ -12,6 +12,7 @@ import {
   validationErrorResponse,
   internalErrorResponse,
   corsPreflightResponse,
+  rateLimitedResponse,
   ApiKeyValidation,
 } from '@/lib/apiAuth';
 
@@ -62,6 +63,16 @@ export async function GET(request: NextRequest): Promise<Response> {
       return forbiddenResponse('API key does not have read permission', requestId);
     }
 
+    // Check rate limit
+    const rateLimit = await convex.mutation(api.apiKeys.checkApiRateLimit, {
+      keyId: validation.keyId,
+      endpoint: 'keywords_read',
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimitedResponse(rateLimit.retryAfter || 60, requestId);
+    }
+
     // Parse query params with validation
     const { searchParams } = new URL(request.url);
     const limitParam = searchParams.get('limit');
@@ -74,9 +85,6 @@ export async function GET(request: NextRequest): Promise<Response> {
     const keywords = await convex.query(api.seo.keywords.getKeywordsByProject, {
       projectId: validation.projectId,
     });
-
-    // Record usage (don't await to not slow response)
-    convex.mutation(api.apiKeys.recordApiKeyUsage, { keyId: validation.keyId }).catch(() => {});
 
     // Apply pagination
     const paginatedKeywords = keywords.slice(offset, offset + limit);
@@ -92,7 +100,12 @@ export async function GET(request: NextRequest): Promise<Response> {
         },
       },
       200,
-      requestId
+      requestId,
+      {
+        limit: rateLimit.limit,
+        remaining: rateLimit.remaining,
+        resetAt: rateLimit.resetAt,
+      }
     );
   } catch (error) {
     console.error(`[${requestId}] Public API error:`, error);
@@ -122,6 +135,16 @@ export async function POST(request: NextRequest): Promise<Response> {
     // Check write permission
     if (!hasPermission(validation as ApiKeyValidation, 'write')) {
       return forbiddenResponse('API key does not have write permission', requestId);
+    }
+
+    // Check rate limit
+    const rateLimit = await convex.mutation(api.apiKeys.checkApiRateLimit, {
+      keyId: validation.keyId,
+      endpoint: 'keywords_write',
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimitedResponse(rateLimit.retryAfter || 60, requestId);
     }
 
     // Parse and validate body

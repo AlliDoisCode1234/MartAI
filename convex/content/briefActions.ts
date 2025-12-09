@@ -2,7 +2,8 @@
 
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
-import { api, components } from '../_generated/api';
+import { api } from '../_generated/api';
+import { seoKeywordClusters, contentBriefs, aiStorage, users } from '../lib/api';
 import { generateBriefDetails, type ClusterInfo } from '../../lib/generators/briefGenerator';
 import { auth } from '../auth';
 import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
@@ -24,7 +25,7 @@ export const generateBrief = action({
     }
 
     // Get user to check membership tier and role
-    const user = await ctx.runQuery((api as any).users.current);
+    const user = await ctx.runQuery(api.users.current);
     if (!user) {
       throw new Error('User not found');
     }
@@ -74,7 +75,7 @@ export const generateBrief = action({
     let clusterInfo: ClusterInfo;
 
     if (args.clusterId) {
-      const clusters = await ctx.runQuery((api as any).seo.keywordClusters.getClustersByProject, {
+      const clusters = await ctx.runQuery(api['seo/keywordClusters'].getClustersByProject, {
         projectId: args.projectId,
       });
       const cluster = clusters.find((c: any) => c._id === args.clusterId);
@@ -95,7 +96,7 @@ export const generateBrief = action({
         };
       }
     } else {
-      const brief = await ctx.runQuery((api as any).content.briefs.getBriefById, {
+      const brief = await ctx.runQuery(api['content/briefs'].getBriefById, {
         briefId: args.briefId,
       });
       if (!brief) throw new Error('Brief not found');
@@ -118,11 +119,11 @@ export const generateBrief = action({
     const crypto = await import('node:crypto');
     const inputHash = crypto.createHash('sha256').update(JSON.stringify(inputs)).digest('hex');
 
-    const stored = await ctx.runQuery((api as any).aiStorage.getStored, { inputHash });
+    const stored = await ctx.runQuery(api.aiStorage.getStored, { inputHash });
 
     if (stored) {
       console.log('Persistent Storage Hit for brief generation');
-      await ctx.runMutation((api as any).content.briefs.updateBrief, {
+      await ctx.runMutation(api['content/briefs'].updateBrief, {
         briefId: args.briefId,
         ...stored.output,
         status: 'in_progress',
@@ -134,7 +135,7 @@ export const generateBrief = action({
     const cached = await cache.get(ctx, cacheKey);
     if (cached) {
       console.log('Cache hit for brief generation');
-      await ctx.runMutation((api as any).content.briefs.updateBrief, {
+      await ctx.runMutation(api['content/briefs'].updateBrief, {
         briefId: args.briefId,
         ...cached,
         status: 'in_progress',
@@ -158,7 +159,7 @@ export const generateBrief = action({
     );
 
     // Store in Persistent Storage
-    await ctx.runMutation((api as any).aiStorage.store, {
+    await ctx.runMutation(api.aiStorage.store, {
       inputHash,
       operation: 'generateBrief',
       provider: 'openai',
@@ -173,7 +174,7 @@ export const generateBrief = action({
     await cache.set(ctx, cacheKey, details, CACHE_TTL.BRIEF_GENERATION);
 
     // Update brief with details
-    await ctx.runMutation((api as any).content.briefs.updateBrief, {
+    await ctx.runMutation(api['content/briefs'].updateBrief, {
       briefId: args.briefId,
       ...details,
       status: 'in_progress',
@@ -192,7 +193,7 @@ export const optimizeCTR = action({
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error('Unauthorized');
 
-    const brief = await ctx.runQuery((api as any).content.briefs.getBriefById, {
+    const brief = await ctx.runQuery(api['content/briefs'].getBriefById, {
       briefId: args.briefId,
     });
     if (!brief) throw new Error('Brief not found');
@@ -241,7 +242,7 @@ export const optimizeCTR = action({
       throw new Error('Failed to generate optimized metadata');
     }
 
-    await ctx.runMutation((api as any).content.briefs.updateBrief, {
+    await ctx.runMutation(api['content/briefs'].updateBrief, {
       briefId: args.briefId,
       metaTitle: optimizedData.metaTitle,
       metaDescription: optimizedData.metaDescription,

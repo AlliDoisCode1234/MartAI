@@ -16,7 +16,7 @@ export const analyzeCompetitor = action({
       throw new Error('Unauthorized');
     }
 
-    const user = await ctx.runQuery((api as any).users.current);
+    const user = await ctx.runQuery(api.users.current);
     if (!user) {
       throw new Error('User not found');
     }
@@ -90,7 +90,7 @@ export const analyzeCompetitor = action({
       };
 
       // 3. Store Results
-      await ctx.runMutation((api as any).analytics.adhoc.storeCompetitorAnalysis, {
+      await ctx.runMutation(api['analytics/adhoc'].storeCompetitorAnalysis, {
         url: targetUrl,
         metrics,
         status: 'completed',
@@ -121,7 +121,7 @@ export const analyzeCompetitor = action({
       };
     } catch (error: any) {
       // Record failure
-      await ctx.runMutation((api as any).analytics.adhoc.storeCompetitorAnalysis, {
+      await ctx.runMutation(api['analytics/adhoc'].storeCompetitorAnalysis, {
         url: targetUrl,
         metrics: {},
         status: 'failed',
