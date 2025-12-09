@@ -22,9 +22,10 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useAuth } from '@/lib/useAuth';
-import { FiLayers, FiFileText, FiTrendingUp, FiStar, FiPlus } from 'react-icons/fi';
+import { Layers, FileText, TrendingUp, Star, Plus, Zap } from 'lucide-react';
 import {
   MartCharacter,
+  MartLoader,
   TutorialCard,
   ONBOARDING_STEPS,
   WHATS_NEXT_STEPS,
@@ -89,7 +90,7 @@ export default function HomePage() {
         justifyContent="center"
         bg="brand.light"
       >
-        <Spinner size="xl" color="brand.orange" />
+        <MartLoader message="Loading your dashboard..." />
       </Box>
     );
   }
@@ -133,25 +134,25 @@ export default function HomePage() {
   // Quick stats
   const stats = [
     {
-      icon: FiLayers,
+      icon: Layers,
       value: strategyData?.clusters?.length ?? 0,
       label: 'Clusters',
       color: 'purple',
     },
     {
-      icon: FiFileText,
+      icon: FileText,
       value: strategyData?.plan?.briefs?.length ?? 0,
       label: 'Briefs',
       color: 'blue',
     },
     {
-      icon: FiTrendingUp,
+      icon: TrendingUp,
       value: mrScore?.overall ?? '—',
       label: 'MR Score',
       color: 'green',
     },
     {
-      icon: FiStar,
+      icon: Star,
       value: projects?.length ?? 0,
       label: 'Projects',
       color: 'orange',
@@ -162,9 +163,9 @@ export default function HomePage() {
     <Box minH="calc(100vh - 64px)" bg="brand.light">
       <Container maxW="container.xl" py={{ base: 8, md: 12 }}>
         <VStack spacing={10} align="stretch">
-          {/* Mart Character Hero */}
-          <MotionBox initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} py={8}>
-            <VStack spacing={6}>
+          {/* Centered Mart Character */}
+          <MotionBox initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} py={4}>
+            <VStack spacing={4}>
               <MartCharacter message={getMartMessage()} size="lg" />
             </VStack>
           </MotionBox>
@@ -203,10 +204,13 @@ export default function HomePage() {
           {/* Section Header */}
           <HStack justify="space-between">
             <Heading size="md" color="gray.700">
-              {isNewUser ? '🚀 Getting Started' : "✨ What's Next"}
+              <HStack spacing={2}>
+                <Icon as={isNewUser ? TrendingUp : Zap} />
+                <Text>{isNewUser ? 'Getting Started' : "What's Next"}</Text>
+              </HStack>
             </Heading>
             <Link href="/projects/new">
-              <Button colorScheme="orange" leftIcon={<FiPlus />} size="sm">
+              <Button colorScheme="orange" leftIcon={<Plus size={16} />} size="sm">
                 New Project
               </Button>
             </Link>

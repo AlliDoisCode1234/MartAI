@@ -37,7 +37,7 @@ import {
   FiGlobe,
   FiCreditCard,
 } from 'react-icons/fi';
-import { MartCharacter } from '@/src/components/assistant';
+import { MartCharacter, MartLoader } from '@/src/components/assistant';
 
 const MotionBox = motion(Box);
 
@@ -161,7 +161,7 @@ export default function OnboardingPage() {
   if (!isAuthenticated || authLoading) {
     return (
       <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
-        <Spinner size="xl" color="brand.orange" />
+        <MartLoader message="Loading..." />
       </Box>
     );
   }
@@ -466,7 +466,7 @@ export default function OnboardingPage() {
               >
                 <Box bg="white" p={12} borderRadius="2xl" shadow="lg" textAlign="center">
                   <VStack spacing={6}>
-                    <Spinner size="xl" color="brand.orange" thickness="4px" />
+                    <MartCharacter state="loading" size="lg" showBubble={false} />
                     <Heading size="lg">Mart is analyzing your site...</Heading>
                     <Text color="gray.600">
                       Finding keywords, analyzing competitors, and building your strategy.
