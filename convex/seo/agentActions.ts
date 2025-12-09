@@ -1,9 +1,9 @@
 'use node';
 
 import { v } from 'convex/values';
-import { action, mutation } from '../_generated/server';
-import { crawlWebsite } from '../../lib/siteCrawler';
+import { action } from '../_generated/server';
 import { generateKeywords } from '../../lib/keywordGenerator';
+import { crawlWebsite } from '../../lib/siteCrawler';
 import { IntelligenceService } from '../lib/services/intelligence';
 
 export const runSEOAgent = action({

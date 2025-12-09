@@ -5,7 +5,7 @@
  */
 'use node';
 
-import { internalAction, internalMutation } from '../_generated/server';
+import { internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 
@@ -42,7 +42,7 @@ export const triggerWebhook = internalAction({
 
     // Create delivery records and send
     for (const webhook of webhooks) {
-      await ctx.runMutation(internal.webhooks.webhookActions.createDeliveryAndSend, {
+      await ctx.runMutation(internal.webhooks.webhookMutations.createDeliveryAndSend, {
         webhookId: webhook._id,
         event: args.event,
         payload: args.payload,
@@ -50,39 +50,6 @@ export const triggerWebhook = internalAction({
     }
 
     return { delivered: webhooks.length };
-  },
-});
-
-/**
- * Create delivery record and attempt to send
- */
-export const createDeliveryAndSend = internalMutation({
-  args: {
-    webhookId: v.id('webhooks'),
-    event: v.string(),
-    payload: v.any(),
-  },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-
-    // Create delivery record
-    const deliveryId = await ctx.db.insert('webhookDeliveries', {
-      webhookId: args.webhookId,
-      event: args.event,
-      payload: args.payload,
-      status: 'pending',
-      attempts: 0,
-      maxAttempts: MAX_RETRIES,
-      createdAt: now,
-    });
-
-    // Schedule the actual HTTP call
-    // Note: In production, use scheduler. For now, we'll use internal action
-    // await ctx.scheduler.runAfter(0, internal.webhooks.webhookActions.sendWebhook, {
-    //   deliveryId,
-    // });
-
-    return { deliveryId };
   },
 });
 
@@ -108,7 +75,7 @@ export const sendWebhook = internalAction({
     });
 
     if (!webhook || !webhook.isActive) {
-      await ctx.runMutation(internal.webhooks.webhookActions.updateDeliveryStatus, {
+      await ctx.runMutation(internal.webhooks.webhookMutations.updateDeliveryStatus, {
         deliveryId: args.deliveryId,
         status: 'failed',
         error: 'Webhook is inactive or deleted',
@@ -148,7 +115,7 @@ export const sendWebhook = internalAction({
       const responseBody = await response.text().catch(() => '');
 
       if (response.ok) {
-        await ctx.runMutation(internal.webhooks.webhookActions.updateDeliveryStatus, {
+        await ctx.runMutation(internal.webhooks.webhookMutations.updateDeliveryStatus, {
           deliveryId: args.deliveryId,
           status: 'success',
           responseStatus: response.status,
@@ -161,7 +128,7 @@ export const sendWebhook = internalAction({
         const attempts = delivery.attempts + 1;
         if (attempts < MAX_RETRIES) {
           const nextRetryAt = Date.now() + RETRY_DELAYS[attempts - 1];
-          await ctx.runMutation(internal.webhooks.webhookActions.updateDeliveryStatus, {
+          await ctx.runMutation(internal.webhooks.webhookMutations.updateDeliveryStatus, {
             deliveryId: args.deliveryId,
             status: 'retrying',
             responseStatus: response.status,
@@ -172,7 +139,7 @@ export const sendWebhook = internalAction({
             error: `HTTP ${response.status}`,
           });
         } else {
-          await ctx.runMutation(internal.webhooks.webhookActions.updateDeliveryStatus, {
+          await ctx.runMutation(internal.webhooks.webhookMutations.updateDeliveryStatus, {
             deliveryId: args.deliveryId,
             status: 'failed',
             responseStatus: response.status,
@@ -190,7 +157,7 @@ export const sendWebhook = internalAction({
 
       if (attempts < MAX_RETRIES) {
         const nextRetryAt = Date.now() + RETRY_DELAYS[attempts - 1];
-        await ctx.runMutation(internal.webhooks.webhookActions.updateDeliveryStatus, {
+        await ctx.runMutation(internal.webhooks.webhookMutations.updateDeliveryStatus, {
           deliveryId: args.deliveryId,
           status: 'retrying',
           responseTime,
@@ -199,7 +166,7 @@ export const sendWebhook = internalAction({
           error: error.message,
         });
       } else {
-        await ctx.runMutation(internal.webhooks.webhookActions.updateDeliveryStatus, {
+        await ctx.runMutation(internal.webhooks.webhookMutations.updateDeliveryStatus, {
           deliveryId: args.deliveryId,
           status: 'failed',
           responseTime,
@@ -209,40 +176,5 @@ export const sendWebhook = internalAction({
       }
       return { success: false, error: error.message };
     }
-  },
-});
-
-/**
- * Update delivery status
- */
-export const updateDeliveryStatus = internalMutation({
-  args: {
-    deliveryId: v.id('webhookDeliveries'),
-    status: v.union(
-      v.literal('pending'),
-      v.literal('success'),
-      v.literal('failed'),
-      v.literal('retrying')
-    ),
-    responseStatus: v.optional(v.number()),
-    responseBody: v.optional(v.string()),
-    responseTime: v.optional(v.number()),
-    attempts: v.optional(v.number()),
-    nextRetryAt: v.optional(v.number()),
-    error: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const { deliveryId, ...updates } = args;
-    const cleanUpdates: Record<string, any> = {
-      lastAttemptAt: Date.now(),
-    };
-
-    for (const [key, value] of Object.entries(updates)) {
-      if (value !== undefined) {
-        cleanUpdates[key] = value;
-      }
-    }
-
-    await ctx.db.patch(deliveryId, cleanUpdates);
   },
 });

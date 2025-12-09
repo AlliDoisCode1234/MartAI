@@ -1,11 +1,52 @@
 /**
- * Onboarding Internal Functions
+ * Onboarding Functions
  *
- * Internal mutations and queries for onboarding step tracking
+ * Public and internal mutations/queries for onboarding step tracking
  */
 
 import { v } from 'convex/values';
-import { internalMutation, internalQuery } from './_generated/server';
+import { mutation, internalMutation, internalQuery } from './_generated/server';
+import { auth } from './auth';
+
+/**
+ * Public mutation for frontend to update onboarding step
+ */
+export const updateOnboardingStep = mutation({
+  args: {
+    step: v.union(
+      v.literal('signupCompleted'),
+      v.literal('planSelected'),
+      v.literal('paymentCompleted'),
+      v.literal('projectCreated'),
+      v.literal('ga4Connected'),
+      v.literal('gscConnected')
+    ),
+    value: v.union(v.boolean(), v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error('User not found');
+
+    const currentSteps = user.onboardingSteps || {};
+    const now = Date.now();
+
+    const updatedSteps: Record<string, any> = { ...currentSteps };
+    updatedSteps[args.step] = args.value;
+    updatedSteps[`${args.step}At`] = now;
+
+    await ctx.db.patch(userId, {
+      onboardingSteps: updatedSteps,
+      onboardingStatus: 'in_progress',
+      lastActiveAt: now,
+      updatedAt: now,
+    });
+
+    return { success: true };
+  },
+});
 
 /**
  * Update a specific onboarding step

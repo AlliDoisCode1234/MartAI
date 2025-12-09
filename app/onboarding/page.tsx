@@ -84,6 +84,14 @@ export default function OnboardingPage() {
 
   const createProject = useMutation(api.projects.projects.createProject);
   const completeOnboarding = useMutation(api.users.completeOnboarding);
+  const updateOnboardingStep = useMutation(api.onboarding.updateOnboardingStep);
+
+  // Track signup completed on mount (user landed on onboarding)
+  useEffect(() => {
+    if (isAuthenticated && user && step === 1) {
+      updateOnboardingStep({ step: 'signupCompleted', value: true }).catch(console.error);
+    }
+  }, [isAuthenticated, user]);
 
   // Redirect if not authenticated or already onboarded
   useEffect(() => {
@@ -99,7 +107,15 @@ export default function OnboardingPage() {
     }
   }, [isAuthenticated, authLoading, router, user]);
 
-  const nextStep = () => setStep((s) => Math.min(s + 1, 5));
+  const nextStep = async () => {
+    // Track step transitions
+    if (step === 2 && selectedPlan) {
+      await updateOnboardingStep({ step: 'planSelected', value: selectedPlan }).catch(
+        console.error
+      );
+    }
+    setStep((s) => Math.min(s + 1, 5));
+  };
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
   const handleSubmit = async () => {
@@ -124,6 +140,8 @@ export default function OnboardingPage() {
       });
 
       if (projectId) {
+        // Track project created
+        await updateOnboardingStep({ step: 'projectCreated', value: true }).catch(console.error);
         await completeOnboarding();
         localStorage.setItem('currentProjectId', projectId);
         router.push('/onboarding/reveal');

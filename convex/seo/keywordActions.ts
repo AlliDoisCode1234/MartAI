@@ -62,6 +62,18 @@ export const generateClusters = action({
       throw new Error('User not found');
     }
 
+    // Admin portal RBAC: only super_admin can generate keywords
+    // Regular admins can view but not generate (prevents accidental expensive AI calls)
+    if (user.role === 'admin' && user.role !== 'super_admin') {
+      // Check if this is being called from admin context (no projectId ownership)
+      const project = await ctx.runQuery(api.projects.projects.getProjectById, {
+        projectId: args.projectId,
+      });
+      if (project && project.userId !== userId) {
+        throw new Error('Only super admins can generate keywords for other users projects');
+      }
+    }
+
     // Determine rate limit tier
     let tier: MembershipTier;
     if (user.role === 'admin' || user.role === 'super_admin') {
