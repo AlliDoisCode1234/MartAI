@@ -8,14 +8,22 @@ const MotionBox = motion(Box);
 
 interface Particle {
   id: number;
+  // Spherical coordinates for formation
+  theta: number;
+  phi: number;
+  radius: number;
+  // Current position
   x: number;
   y: number;
-  vx: number;
-  vy: number;
+  // Drift offset for ambient movement
+  driftX: number;
+  driftY: number;
+  driftSpeed: number;
+  driftPhase: number;
+  // Visual
   size: number;
-  color: { r: number; g: number; b: number };
-  alpha: number;
-  trail: { x: number; y: number }[];
+  baseAlpha: number;
+  hue: number;
 }
 
 interface MartCharacterProps {
@@ -25,160 +33,170 @@ interface MartCharacterProps {
   state?: 'idle' | 'thinking' | 'active' | 'loading';
 }
 
-// Antigravity-style color palette
-const COLORS = [
-  { r: 59, g: 130, b: 246 }, // Blue
-  { r: 139, g: 92, b: 246 }, // Purple
-  { r: 236, g: 72, b: 153 }, // Pink
-  { r: 249, g: 115, b: 22 }, // Orange
-  { r: 34, g: 197, b: 94 }, // Green
-];
-
 export function MartCharacter({
   message,
   size = 'md',
   showBubble = true,
   state = 'idle',
 }: MartCharacterProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const particlesRef = useRef<Particle[]>([]);
-  const mouseRef = useRef({ x: 0, y: 0, active: false });
-
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [initialized, setInitialized] = useState(false);
+  const isHoveredRef = useRef(false);
+  const hoverProgressRef = useRef(0);
+  const timeRef = useRef(0);
+  const mouseRef = useRef({ x: 0, y: 0 });
 
   const sizeMap = {
-    sm: { width: 380, height: 200, particles: 25 },
-    md: { width: 560, height: 300, particles: 40 },
-    lg: { width: 750, height: 400, particles: 60 },
-    full: { width: 0, height: 0, particles: 120 },
+    sm: { canvas: 200, ball: 40, particles: 150 },
+    md: { canvas: 280, ball: 55, particles: 200 },
+    lg: { canvas: 380, ball: 75, particles: 280 },
+    full: { canvas: 450, ball: 95, particles: 350 },
   };
 
-  // Measure container
+  const config = sizeMap[size];
+  const centerX = config.canvas / 2;
+  const centerY = config.canvas / 2;
+
+  // Initialize particles in a perfect sphere
   useEffect(() => {
-    const measure = () => {
-      if (size !== 'full') {
-        const s = sizeMap[size];
-        setDimensions({ width: s.width, height: s.height });
-      } else if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          setDimensions({
-            width: Math.floor(rect.width),
-            height: Math.floor(Math.max(rect.height, 400)),
-          });
-        }
-      }
-    };
+    const particles: Particle[] = [];
+    const goldenRatio = (1 + Math.sqrt(5)) / 2;
 
-    const timer = setTimeout(measure, 50);
-    window.addEventListener('resize', measure);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', measure);
-    };
-  }, [size]);
+    for (let i = 0; i < config.particles; i++) {
+      // Fibonacci sphere distribution for even spacing
+      const theta = (2 * Math.PI * i) / goldenRatio;
+      const phi = Math.acos(1 - (2 * (i + 0.5)) / config.particles);
 
-  // Initialize particles
+      // Convert to 2D with some depth variation
+      const r = config.ball * (0.3 + Math.random() * 0.7);
+
+      particles.push({
+        id: i,
+        theta,
+        phi,
+        radius: r,
+        x: centerX,
+        y: centerY,
+        driftX: 0,
+        driftY: 0,
+        driftSpeed: 0.3 + Math.random() * 0.5,
+        driftPhase: Math.random() * Math.PI * 2,
+        size: 1.5 + Math.random() * 2,
+        baseAlpha: 0.4 + Math.random() * 0.5,
+        hue: [210, 260, 320, 30, 180][Math.floor(Math.random() * 5)] + Math.random() * 20, // Blue, purple, pink, orange, cyan
+      });
+    }
+
+    particlesRef.current = particles;
+  }, [config.particles, config.ball, centerX, centerY]);
+
+  // Smooth animation loop
   useEffect(() => {
-    if (dimensions.width < 100 || dimensions.height < 100) return;
-
-    const count = size === 'full' ? 120 : sizeMap[size].particles;
-
-    particlesRef.current = Array.from({ length: count }, (_, i) => ({
-      id: i,
-      x: Math.random() * dimensions.width,
-      y: Math.random() * dimensions.height,
-      vx: (Math.random() - 0.5) * 0.05,
-      vy: (Math.random() - 0.5) * 0.05,
-      size: 1 + Math.random() * 1,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      alpha: 0.3 + Math.random() * 0.4,
-      trail: [],
-    }));
-
-    setInitialized(true);
-  }, [dimensions, size]);
-
-  // Animation loop
-  useEffect(() => {
-    if (!initialized || !canvasRef.current) return;
-
     const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let time = 0;
-
     const animate = () => {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+      timeRef.current += 0.008; // Slow time for dreamy effect
+      const t = timeRef.current;
 
-      particlesRef.current.forEach((particle) => {
-        particle.trail.unshift({ x: particle.x, y: particle.y });
-        if (particle.trail.length > 10) particle.trail.pop();
+      // Smooth hover transition (eased)
+      const targetProgress = isHoveredRef.current ? 1 : 0;
+      const diff = targetProgress - hoverProgressRef.current;
+      hoverProgressRef.current += diff * 0.03; // Very smooth transition
+      const progress = hoverProgressRef.current;
 
-        // Simple hover repulse
-        if (mouseRef.current.active) {
-          const mdx = particle.x - mouseRef.current.x;
-          const mdy = particle.y - mouseRef.current.y;
-          const mDist = Math.sqrt(mdx * mdx + mdy * mdy);
+      // Clear with slight fade for trail effect
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.fillRect(0, 0, config.canvas, config.canvas);
 
-          if (mDist < 100 && mDist > 0) {
-            const force = ((100 - mDist) / 100) * 0.1;
-            particle.vx += (mdx / mDist) * force;
-            particle.vy += (mdy / mDist) * force;
+      // Breathing scale
+      const breathe = 1 + Math.sin(t * 0.8) * 0.04;
+
+      // Sort particles by calculated depth for proper layering
+      const sortedParticles = [...particlesRef.current].sort((a, b) => {
+        const depthA = Math.sin(a.phi) * Math.cos(a.theta + t * 0.2);
+        const depthB = Math.sin(b.phi) * Math.cos(b.theta + t * 0.2);
+        return depthA - depthB;
+      });
+
+      sortedParticles.forEach((particle) => {
+        // Spherical to 2D projection with slow rotation
+        const rotatedTheta = particle.theta + t * 0.15;
+        const x3d = Math.sin(particle.phi) * Math.cos(rotatedTheta);
+        const y3d = Math.sin(particle.phi) * Math.sin(rotatedTheta);
+        const z3d = Math.cos(particle.phi);
+
+        // Depth factor for 3D effect
+        const depth = (z3d + 1) / 2; // 0 to 1
+
+        // Base position in sphere
+        const baseX = centerX + x3d * particle.radius * breathe;
+        const baseY = centerY + y3d * particle.radius * breathe;
+
+        // Ambient drift (always active, very subtle)
+        const driftAmount = 2;
+        particle.driftX = Math.sin(t * particle.driftSpeed + particle.driftPhase) * driftAmount;
+        particle.driftY =
+          Math.cos(t * particle.driftSpeed * 0.7 + particle.driftPhase) * driftAmount;
+
+        // Explode outward on hover
+        const explodeDistance = config.ball * 1.8;
+        const explodeX = centerX + x3d * explodeDistance + particle.driftX * 3;
+        const explodeY = centerY + y3d * explodeDistance + particle.driftY * 3;
+
+        // Smoothly interpolate position
+        const easeProgress = progress * progress * (3 - 2 * progress); // Smoothstep
+        particle.x = baseX + particle.driftX + (explodeX - baseX - particle.driftX) * easeProgress;
+        particle.y = baseY + particle.driftY + (explodeY - baseY - particle.driftY) * easeProgress;
+
+        // Mouse repulsion - particles flee from cursor when hovered
+        if (isHoveredRef.current && progress > 0.1) {
+          const dx = particle.x - mouseRef.current.x;
+          const dy = particle.y - mouseRef.current.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const repelRadius = 80;
+
+          if (dist < repelRadius && dist > 0) {
+            const force = ((repelRadius - dist) / repelRadius) * 25 * progress;
+            particle.x += (dx / dist) * force;
+            particle.y += (dy / dist) * force;
           }
         }
 
-        // Gentle damping
-        particle.vx *= 0.99;
-        particle.vy *= 0.99;
-        particle.x += particle.vx;
-        particle.y += particle.vy;
+        // Alpha based on depth and hover state
+        const depthAlpha = 0.3 + depth * 0.7;
+        const alpha = particle.baseAlpha * depthAlpha * (1 - easeProgress * 0.3);
 
-        // Wrap edges
-        if (particle.x < 0) particle.x = dimensions.width;
-        if (particle.x > dimensions.width) particle.x = 0;
-        if (particle.y < 0) particle.y = dimensions.height;
-        if (particle.y > dimensions.height) particle.y = 0;
+        // Size varies with depth
+        const particleSize = particle.size * (0.6 + depth * 0.6);
 
-        // Draw trail
-        for (let i = 1; i < particle.trail.length; i++) {
-          const t = particle.trail[i];
-          const prev = particle.trail[i - 1];
-          const trailAlpha = particle.alpha * (1 - i / particle.trail.length) * 0.2;
-          ctx.beginPath();
-          ctx.moveTo(prev.x, prev.y);
-          ctx.lineTo(t.x, t.y);
-          ctx.strokeStyle = `rgba(${particle.color.r}, ${particle.color.g}, ${particle.color.b}, ${trailAlpha})`;
-          ctx.lineWidth = particle.size * (1 - i / particle.trail.length);
-          ctx.lineCap = 'round';
-          ctx.stroke();
-        }
-
-        // Draw small glowing particle
-        const grad = ctx.createRadialGradient(
+        // Draw soft glowing particle
+        const gradient = ctx.createRadialGradient(
           particle.x,
           particle.y,
           0,
           particle.x,
           particle.y,
-          particle.size * 2
+          particleSize * 3
         );
-        grad.addColorStop(
-          0,
-          `rgba(${particle.color.r}, ${particle.color.g}, ${particle.color.b}, ${particle.alpha})`
+
+        const saturation = 85 + depth * 10;
+        const lightness = 55 + depth * 15;
+
+        gradient.addColorStop(0, `hsla(${particle.hue}, ${saturation}%, ${lightness}%, ${alpha})`);
+        gradient.addColorStop(
+          0.4,
+          `hsla(${particle.hue}, ${saturation}%, ${lightness}%, ${alpha * 0.5})`
         );
-        grad.addColorStop(
-          1,
-          `rgba(${particle.color.r}, ${particle.color.g}, ${particle.color.b}, 0)`
-        );
+        gradient.addColorStop(1, `hsla(${particle.hue}, ${saturation}%, ${lightness}%, 0)`);
+
         ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size * 2, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
+        ctx.arc(particle.x, particle.y, particleSize * 3, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
         ctx.fill();
       });
 
@@ -187,39 +205,39 @@ export function MartCharacter({
 
     animate();
     return () => cancelAnimationFrame(animationRef.current);
-  }, [initialized, dimensions]);
+  }, [config.canvas, config.ball, centerX, centerY]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top, active: true };
+    mouseRef.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    isHoveredRef.current = true;
   }, []);
 
   const handleMouseLeave = useCallback(() => {
-    mouseRef.current.active = false;
+    isHoveredRef.current = false;
   }, []);
-
-  const containerStyle =
-    size === 'full'
-      ? { width: '100%', height: '100%' }
-      : { width: `${sizeMap[size].width}px`, height: `${sizeMap[size].height}px` };
 
   return (
     <MotionBox
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 1 }}
+      transition={{ duration: 0.8 }}
       display="flex"
       flexDirection="column"
       alignItems="center"
       gap={4}
-      w={size === 'full' ? '100%' : 'auto'}
-      h={size === 'full' ? '100%' : 'auto'}
     >
       {showBubble && message && (
         <MotionBox
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
           bg="white"
           borderRadius="2xl"
           px={6}
@@ -237,29 +255,25 @@ export function MartCharacter({
       )}
 
       <Box
-        ref={containerRef}
         position="relative"
         cursor="pointer"
+        overflow="visible"
         onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        {...containerStyle}
-        minH={size === 'full' ? '100%' : undefined}
+        width={`${config.canvas}px`}
+        height={`${config.canvas}px`}
       >
-        {dimensions.width > 0 && dimensions.height > 0 && (
-          <canvas
-            ref={canvasRef}
-            width={dimensions.width}
-            height={dimensions.height}
-            style={{
-              display: 'block',
-              width: '100%',
-              height: '100%',
-              position: size === 'full' ? 'absolute' : 'relative',
-              top: 0,
-              left: 0,
-            }}
-          />
-        )}
+        <canvas
+          ref={canvasRef}
+          width={config.canvas}
+          height={config.canvas}
+          style={{
+            display: 'block',
+            width: '100%',
+            height: '100%',
+          }}
+        />
       </Box>
     </MotionBox>
   );
