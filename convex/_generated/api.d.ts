@@ -25,6 +25,7 @@ import type * as analytics_martaiRatingQueries from "../analytics/martaiRatingQu
 import type * as analytics_queries from "../analytics/queries.js";
 import type * as analytics_scheduler from "../analytics/scheduler.js";
 import type * as analytics_sync from "../analytics/sync.js";
+import type * as apiKeys from "../apiKeys.js";
 import type * as auth from "../auth.js";
 import type * as cache from "../cache.js";
 import type * as config_thresholds from "../config/thresholds.js";
@@ -114,6 +115,7 @@ declare const fullApi: ApiFromModules<{
   "analytics/queries": typeof analytics_queries;
   "analytics/scheduler": typeof analytics_scheduler;
   "analytics/sync": typeof analytics_sync;
+  apiKeys: typeof apiKeys;
   auth: typeof auth;
   cache: typeof cache;
   "config/thresholds": typeof config_thresholds;

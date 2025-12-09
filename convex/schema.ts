@@ -854,4 +854,35 @@ export default defineSchema({
     .index('by_status', ['status'])
     .index('by_webhook_status', ['webhookId', 'status'])
     .index('by_next_retry', ['nextRetryAt']),
+
+  // ========================================
+  // PUBLIC API
+  // ========================================
+
+  // API Keys for public API access (Enterprise feature)
+  apiKeys: defineTable({
+    userId: v.id('users'),
+    projectId: v.id('projects'),
+    // Key storage (only store hash, prefix for display)
+    keyHash: v.string(), // SHA-256 hash of full key
+    keyPrefix: v.string(), // First 8 chars for display (mart_xxxx)
+    // Metadata
+    name: v.string(), // User-friendly name
+    description: v.optional(v.string()),
+    // Permissions
+    permissions: v.array(v.union(v.literal('read'), v.literal('write'), v.literal('admin'))),
+    // Usage & Status
+    isActive: v.boolean(),
+    lastUsedAt: v.optional(v.number()),
+    usageCount: v.number(),
+    // Expiration
+    expiresAt: v.optional(v.number()),
+    // Timestamps
+    createdAt: v.number(),
+    revokedAt: v.optional(v.number()),
+  })
+    .index('by_key_hash', ['keyHash'])
+    .index('by_user', ['userId'])
+    .index('by_project', ['projectId'])
+    .index('by_active', ['isActive']),
 });

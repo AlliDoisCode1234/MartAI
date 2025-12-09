@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * InsightCard
+ * ├── src/components/insights/
+ * │   └── InsightCard.tsx (this file)
+ */
+
 import {
   Box,
   VStack,
@@ -65,7 +71,7 @@ const INSIGHT_TYPE_CONFIG: Record<
   },
 };
 
-export interface InsightData {
+export type InsightData = {
   _id: Id<'insights'>;
   type: string;
   title: string;
@@ -73,15 +79,15 @@ export interface InsightData {
   priority?: 'high' | 'medium' | 'low';
   metadata?: Record<string, unknown>;
   status: string;
-}
+};
 
-interface InsightCardProps {
+type Props = {
   insight: InsightData;
   delay?: number;
   onApplied?: () => void;
-}
+};
 
-export function InsightCard({ insight, delay = 0, onApplied }: InsightCardProps) {
+export function InsightCard({ insight, delay = 0, onApplied }: Props) {
   const [isApplying, setIsApplying] = useState(false);
   const applyInsight = useMutation(api.analytics.analytics.applyInsight);
 

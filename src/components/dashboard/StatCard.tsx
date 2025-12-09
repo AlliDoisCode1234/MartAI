@@ -1,13 +1,30 @@
 'use client';
 
+/**
+ * StatCard
+ * ├── src/components/dashboard/
+ * │   └── StatCard.tsx (this file)
+ */
+
 import { ReactNode } from 'react';
-import { Card, CardBody, Stat, StatLabel, StatNumber, StatHelpText, StatArrow, HStack, Box, Icon } from '@chakra-ui/react';
+import {
+  Card,
+  CardBody,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  StatArrow,
+  HStack,
+  Box,
+  Icon,
+} from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { IconType } from 'react-icons';
 
 const MotionCard = motion(Card);
 
-interface StatCardProps {
+type Props = {
   label: string;
   value: string | number;
   helpText?: string;
@@ -17,7 +34,7 @@ interface StatCardProps {
   iconColor: string;
   iconBg: string;
   delay?: number;
-}
+};
 
 export function StatCard({
   label,
@@ -29,7 +46,7 @@ export function StatCard({
   iconColor,
   iconBg,
   delay = 0,
-}: StatCardProps) {
+}: Props) {
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 },
