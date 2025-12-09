@@ -76,9 +76,9 @@ const STEP_CONFIG = [
   { key: 'signupCompleted', label: 'Signup', icon: '●' },
   { key: 'planSelected', label: 'Plan', icon: '◆' },
   { key: 'paymentCompleted', label: 'Payment', icon: '■' },
-  { key: 'projectCreated', label: 'Project', icon: '▲' },
   { key: 'ga4Connected', label: 'GA4', icon: '○' },
   { key: 'gscConnected', label: 'GSC', icon: '◇' },
+  { key: 'projectCreated', label: 'Project', icon: '▲' },
 ] as const;
 
 function calculateProgress(steps?: OnboardingSteps): number {
