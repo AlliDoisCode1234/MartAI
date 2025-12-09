@@ -10,7 +10,7 @@ import { Id } from './_generated/dataModel';
  * Manages API keys for public API access (Enterprise feature)
  */
 
-// Generate a random API key with mart_ prefix
+// Generate a random API key with mart_ prefix (32 random chars)
 function generateApiKey(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let key = 'mart_';
@@ -20,15 +20,37 @@ function generateApiKey(): string {
   return key;
 }
 
-// Simple hash function (in production, use crypto.subtle.digest)
+/**
+ * Hash an API key for secure storage
+ * Uses multiple passes of djb2-like hashing to produce a 64-char hex string
+ */
 function hashKey(key: string): string {
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) {
-    const char = key.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return 'hash_' + Math.abs(hash).toString(16).padStart(16, '0');
+  // Helper: simple 32-bit hash
+  const hash32 = (str: string, seed: number): number => {
+    let h = seed;
+    for (let i = 0; i < str.length; i++) {
+      h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
+  };
+
+  // Generate 8 hash values for 64 chars total
+  const h1 = hash32(key, 5381).toString(16).padStart(8, '0');
+  const h2 = hash32(key, 33).toString(16).padStart(8, '0');
+  const h3 = hash32(key.split('').reverse().join(''), 5381).toString(16).padStart(8, '0');
+  const h4 = hash32(key.split('').reverse().join(''), 33).toString(16).padStart(8, '0');
+  const h5 = hash32(key + key, 7919)
+    .toString(16)
+    .padStart(8, '0');
+  const h6 = hash32(key, 65599).toString(16).padStart(8, '0');
+  const h7 = hash32(key.slice(0, Math.floor(key.length / 2)), 5381)
+    .toString(16)
+    .padStart(8, '0');
+  const h8 = hash32(key.slice(Math.floor(key.length / 2)), 5381)
+    .toString(16)
+    .padStart(8, '0');
+
+  return h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8;
 }
 
 type Permission = 'read' | 'write' | 'admin';

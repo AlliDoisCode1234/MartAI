@@ -14,6 +14,13 @@ import { Id } from '../_generated/dataModel';
 const HUBSPOT_API_URL = 'https://api.hubapi.com';
 
 /**
+ * Check if HubSpot integration is enabled
+ */
+function isHubSpotEnabled(): boolean {
+  return !!process.env.HUBSPOT_API_KEY;
+}
+
+/**
  * HubSpot API helper
  */
 async function hubspotRequest(
@@ -23,7 +30,8 @@ async function hubspotRequest(
 ): Promise<any> {
   const apiKey = process.env.HUBSPOT_API_KEY;
   if (!apiKey) {
-    throw new Error('HUBSPOT_API_KEY environment variable not set');
+    console.log('[HubSpot] Skipping API call - HUBSPOT_API_KEY not set');
+    throw new Error('HUBSPOT_API_KEY not configured');
   }
 
   const response = await fetch(`${HUBSPOT_API_URL}${endpoint}`, {
@@ -87,6 +95,12 @@ async function upsertContact(
 export const syncUserToHubspot = action({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    // Graceful skip if no API key
+    if (!isHubSpotEnabled()) {
+      console.log('[HubSpot] Skipping user sync - no API key configured');
+      return { success: false, reason: 'no_api_key' };
+    }
+
     const user = await ctx.runQuery(api.users.getById, { userId: args.userId });
     if (!user || !user.email) {
       console.log(`[HubSpot] User ${args.userId} has no email, skipping`);
@@ -173,6 +187,11 @@ export const syncUserToHubspot = action({
       properties.martai_website = primaryWebsite;
     }
 
+    // Add last activity for churn tracking
+    if (user.lastActiveAt) {
+      properties.martai_last_activity = user.lastActiveAt;
+    }
+
     // Sync to HubSpot
     const result = await upsertContact(user.email, properties);
 
@@ -184,12 +203,15 @@ export const syncUserToHubspot = action({
   },
 });
 
-/**
- * Sync a prospect to HubSpot
- */
 export const syncProspectToHubspot = action({
   args: { prospectId: v.id('prospects') },
   handler: async (ctx, args) => {
+    // Graceful skip if no API key
+    if (!isHubSpotEnabled()) {
+      console.log('[HubSpot] Skipping prospect sync - no API key configured');
+      return { success: false, reason: 'no_api_key' };
+    }
+
     const prospect = await ctx.runQuery(api.prospects.prospects.getProspect, {
       prospectId: args.prospectId,
     });

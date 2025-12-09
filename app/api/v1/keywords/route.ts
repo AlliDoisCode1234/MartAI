@@ -1,39 +1,52 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 import {
   extractApiKey,
   hashApiKey,
+  generateRequestId,
+  hasPermission,
+  apiResponse,
   unauthorizedResponse,
   forbiddenResponse,
-  apiResponse,
-  errorResponse,
-  hasPermission,
+  validationErrorResponse,
+  internalErrorResponse,
+  corsPreflightResponse,
+  ApiKeyValidation,
 } from '@/lib/apiAuth';
 
 /**
  * Public API v1 - Keywords
  *
- * GET /api/v1/keywords - List keywords for a project
+ * GET  /api/v1/keywords - List keywords for a project
+ * POST /api/v1/keywords - Create keywords
  *
- * Headers:
- *   Authorization: Bearer mart_xxxxx
- *   or
- *   X-API-Key: mart_xxxxx
- *
- * Query params:
- *   limit: number (default: 50, max: 100)
- *   offset: number (default: 0)
+ * @see docs/API_REFERENCE.md
  */
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-export async function GET(request: NextRequest) {
+// ============================================
+// OPTIONS - CORS Preflight
+// ============================================
+export async function OPTIONS(): Promise<Response> {
+  return corsPreflightResponse();
+}
+
+// ============================================
+// GET - List Keywords
+// ============================================
+export async function GET(request: NextRequest): Promise<Response> {
+  const requestId = generateRequestId();
+
   try {
     // Extract and validate API key
     const apiKey = extractApiKey(request);
     if (!apiKey) {
-      return unauthorizedResponse('Missing API key. Use Authorization: Bearer mart_xxx');
+      return unauthorizedResponse(
+        'Missing API key. Use Authorization: Bearer mart_xxx or X-API-Key header',
+        requestId
+      );
     }
 
     const keyHash = hashApiKey(apiKey);
@@ -41,89 +54,153 @@ export async function GET(request: NextRequest) {
     // Validate with Convex
     const validation = await convex.query(api.apiKeys.validateApiKey, { keyHash });
     if (!validation) {
-      return unauthorizedResponse('Invalid or expired API key');
+      return unauthorizedResponse('Invalid or expired API key', requestId);
     }
 
     // Check read permission
-    if (!hasPermission(validation, 'read')) {
-      return forbiddenResponse('API key does not have read permission');
+    if (!hasPermission(validation as ApiKeyValidation, 'read')) {
+      return forbiddenResponse('API key does not have read permission', requestId);
     }
 
-    // Parse query params
+    // Parse query params with validation
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const limitParam = searchParams.get('limit');
+    const offsetParam = searchParams.get('offset');
+
+    const limit = limitParam ? Math.min(Math.max(1, parseInt(limitParam) || 50), 100) : 50;
+    const offset = offsetParam ? Math.max(0, parseInt(offsetParam) || 0) : 0;
 
     // Fetch keywords for the project
     const keywords = await convex.query(api.seo.keywords.getKeywordsByProject, {
       projectId: validation.projectId,
     });
 
-    // Record usage
-    await convex.mutation(api.apiKeys.recordApiKeyUsage, { keyId: validation.keyId });
+    // Record usage (don't await to not slow response)
+    convex.mutation(api.apiKeys.recordApiKeyUsage, { keyId: validation.keyId }).catch(() => {});
 
     // Apply pagination
     const paginatedKeywords = keywords.slice(offset, offset + limit);
 
-    return apiResponse({
-      keywords: paginatedKeywords,
-      total: keywords.length,
-      limit,
-      offset,
-      hasMore: offset + limit < keywords.length,
-    });
+    return apiResponse(
+      {
+        keywords: paginatedKeywords,
+        pagination: {
+          total: keywords.length,
+          limit,
+          offset,
+          hasMore: offset + limit < keywords.length,
+        },
+      },
+      200,
+      requestId
+    );
   } catch (error) {
-    console.error('Public API error:', error);
-    return errorResponse('Internal server error', 500);
+    console.error(`[${requestId}] Public API error:`, error);
+    return internalErrorResponse('An unexpected error occurred', requestId);
   }
 }
 
-export async function POST(request: NextRequest) {
+// ============================================
+// POST - Create Keywords
+// ============================================
+export async function POST(request: NextRequest): Promise<Response> {
+  const requestId = generateRequestId();
+
   try {
     // Extract and validate API key
     const apiKey = extractApiKey(request);
     if (!apiKey) {
-      return unauthorizedResponse('Missing API key');
+      return unauthorizedResponse('Missing API key', requestId);
     }
 
     const keyHash = hashApiKey(apiKey);
     const validation = await convex.query(api.apiKeys.validateApiKey, { keyHash });
     if (!validation) {
-      return unauthorizedResponse('Invalid or expired API key');
+      return unauthorizedResponse('Invalid or expired API key', requestId);
     }
 
     // Check write permission
-    if (!hasPermission(validation, 'write')) {
-      return forbiddenResponse('API key does not have write permission');
+    if (!hasPermission(validation as ApiKeyValidation, 'write')) {
+      return forbiddenResponse('API key does not have write permission', requestId);
     }
 
-    // Parse body
-    const body = await request.json();
-    const { keywords } = body;
+    // Parse and validate body
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return validationErrorResponse('Invalid JSON body', undefined, requestId);
+    }
 
-    if (!Array.isArray(keywords) || keywords.length === 0) {
-      return errorResponse('Keywords array is required');
+    // Validate keywords array
+    if (!body || typeof body !== 'object' || !('keywords' in body)) {
+      return validationErrorResponse(
+        'Request body must contain a "keywords" array',
+        { expected: { keywords: ['string', '...'] } },
+        requestId
+      );
+    }
+
+    const { keywords } = body as { keywords: unknown };
+
+    if (!Array.isArray(keywords)) {
+      return validationErrorResponse(
+        '"keywords" must be an array of strings',
+        { received: typeof keywords },
+        requestId
+      );
+    }
+
+    if (keywords.length === 0) {
+      return validationErrorResponse(
+        'Keywords array cannot be empty',
+        { received: 0, minimum: 1 },
+        requestId
+      );
     }
 
     if (keywords.length > 100) {
-      return errorResponse('Maximum 100 keywords per request');
+      return validationErrorResponse(
+        'Maximum 100 keywords per request',
+        { received: keywords.length, maximum: 100 },
+        requestId
+      );
+    }
+
+    // Validate each keyword is a non-empty string
+    const invalidKeywords = keywords.filter(
+      (k, i) => typeof k !== 'string' || k.trim().length === 0
+    );
+    if (invalidKeywords.length > 0) {
+      return validationErrorResponse(
+        'All keywords must be non-empty strings',
+        { invalidCount: invalidKeywords.length },
+        requestId
+      );
     }
 
     // Create keywords
     const result = await convex.mutation(api.seo.keywords.createKeywords, {
       projectId: validation.projectId,
       keywords: keywords.map((k: string) => ({
-        keyword: k,
+        keyword: k.trim(),
         source: 'api',
       })),
     });
 
     // Record usage
-    await convex.mutation(api.apiKeys.recordApiKeyUsage, { keyId: validation.keyId });
+    convex.mutation(api.apiKeys.recordApiKeyUsage, { keyId: validation.keyId }).catch(() => {});
 
-    return apiResponse({ created: result }, 201);
+    return apiResponse(
+      {
+        created: result,
+        count: keywords.length,
+      },
+      201,
+      requestId
+    );
   } catch (error) {
-    console.error('Public API error:', error);
-    return errorResponse('Internal server error', 500);
+    console.error(`[${requestId}] Public API error:`, error);
+    return internalErrorResponse('An unexpected error occurred', requestId);
   }
 }

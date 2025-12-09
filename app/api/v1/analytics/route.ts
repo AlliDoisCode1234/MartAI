@@ -1,14 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 import {
   extractApiKey,
   hashApiKey,
+  generateRequestId,
+  hasPermission,
+  apiResponse,
   unauthorizedResponse,
   forbiddenResponse,
-  apiResponse,
-  errorResponse,
-  hasPermission,
+  internalErrorResponse,
+  corsPreflightResponse,
+  ApiKeyValidation,
 } from '@/lib/apiAuth';
 
 /**
@@ -16,54 +19,72 @@ import {
  *
  * GET /api/v1/analytics - Get analytics summary for a project
  *
- * Headers:
- *   Authorization: Bearer mart_xxxxx
- *
- * Query params:
- *   days: number (default: 30) - number of days to look back
+ * @see docs/API_REFERENCE.md
  */
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-export async function GET(request: NextRequest) {
+// ============================================
+// OPTIONS - CORS Preflight
+// ============================================
+export async function OPTIONS(): Promise<Response> {
+  return corsPreflightResponse();
+}
+
+// ============================================
+// GET - Analytics Summary
+// ============================================
+export async function GET(request: NextRequest): Promise<Response> {
+  const requestId = generateRequestId();
+
   try {
     const apiKey = extractApiKey(request);
     if (!apiKey) {
-      return unauthorizedResponse('Missing API key');
+      return unauthorizedResponse('Missing API key. Use Authorization: Bearer mart_xxx', requestId);
     }
 
     const keyHash = hashApiKey(apiKey);
     const validation = await convex.query(api.apiKeys.validateApiKey, { keyHash });
     if (!validation) {
-      return unauthorizedResponse('Invalid or expired API key');
+      return unauthorizedResponse('Invalid or expired API key', requestId);
     }
 
-    if (!hasPermission(validation, 'read')) {
-      return forbiddenResponse('API key does not have read permission');
+    if (!hasPermission(validation as ApiKeyValidation, 'read')) {
+      return forbiddenResponse('API key does not have read permission', requestId);
     }
 
     const { searchParams } = new URL(request.url);
-    const days = Math.min(parseInt(searchParams.get('days') || '30'), 90);
+    const days = Math.min(Math.max(1, parseInt(searchParams.get('days') || '30')), 90);
 
-    // Fetch analytics KPIs for the project
-    const kpis = await convex.query(api.analytics.kpis.getKPIsByProject, {
+    // Calculate date range
+    const endDate = Date.now();
+    const startDate = endDate - days * 24 * 60 * 60 * 1000;
+
+    // Fetch analytics KPIs
+    const kpis = await convex.query(api.analytics.analytics.getKPIs, {
       projectId: validation.projectId,
+      startDate,
+      endDate,
     });
 
     // Record usage
-    await convex.mutation(api.apiKeys.recordApiKeyUsage, { keyId: validation.keyId });
+    convex.mutation(api.apiKeys.recordApiKeyUsage, { keyId: validation.keyId }).catch(() => {});
 
-    // Get latest KPIs within date range
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-    const recentKpis = kpis.filter((k: { calculatedAt: number }) => k.calculatedAt >= cutoff);
-
-    return apiResponse({
-      analytics: recentKpis,
-      days,
-      projectId: validation.projectId,
-    });
+    return apiResponse(
+      {
+        analytics: kpis,
+        filters: {
+          days,
+          from: new Date(startDate).toISOString(),
+          to: new Date(endDate).toISOString(),
+        },
+        projectId: validation.projectId,
+      },
+      200,
+      requestId
+    );
   } catch (error) {
-    console.error('Public API error:', error);
-    return errorResponse('Internal server error', 500);
+    console.error(`[${requestId}] Public API error:`, error);
+    return internalErrorResponse('An unexpected error occurred', requestId);
   }
 }

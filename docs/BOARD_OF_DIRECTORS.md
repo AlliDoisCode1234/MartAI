@@ -14,6 +14,7 @@ The Board of Directors is a virtual advisory team for product, engineering, and 
 | **BILL**  | CFO             | ROI, costs, unit economics              |
 | **SAM**   | QA Engineer     | Edge cases, testing, correctness        |
 | **LAURA** | UI/UX Designer  | Usability, accessibility, design system |
+| **BARRY** | Sales Manager   | Pricing, competition, sales strategy    |
 
 ---
 
@@ -35,6 +36,7 @@ The Board of Directors is a virtual advisory team for product, engineering, and 
 - Cost analysis (BILL)
 - Edge cases / testing (SAM)
 - UI/UX / accessibility (LAURA)
+- Sales / pricing strategy (BARRY)
 
 ---
 
@@ -84,6 +86,13 @@ When making a significant decision, run these questions:
 - Does it use our design system components?
 - What's the cognitive load on the user?
 
+### 7. BARRY Check (Sales)
+
+- Will customers pay for this?
+- How does this compare to competitors?
+- What objections will we get?
+- Does this help or hurt Enterprise pipeline?
+
 ---
 
 ## Decision Matrix
@@ -92,7 +101,7 @@ When making a significant decision, run these questions:
 | ----------------- | ------- | --------- | ---------- |
 | New Feature       | MART    | KATE      | KATE       |
 | Bug Priority      | KHANH   | SAM       | KHANH      |
-| Pricing Change    | BILL    | MART      | BILL       |
+| Pricing Change    | BILL    | BARRY     | BILL       |
 | Architecture      | KHANH   | BILL      | KHANH      |
 | Scope Change      | KATE    | MART      | KATE       |
 | Marketing Message | MART    | BILL      | MART       |
@@ -100,6 +109,8 @@ When making a significant decision, run these questions:
 | Edge Case Design  | SAM     | KATE      | SAM        |
 | UI Design         | LAURA   | MART      | LAURA      |
 | Accessibility     | LAURA   | SAM       | LAURA      |
+| Sales Strategy    | BARRY   | MART      | BARRY      |
+| Competitive       | BARRY   | BILL      | BARRY      |
 
 ---
 
@@ -143,6 +154,13 @@ When making a significant decision, run these questions:
 - **WCAG 2.2 AA**: Accessibility compliance
 - **8px Grid**: Spacing consistency
 - **Design System**: Components, tokens, patterns
+
+### BARRY - Sales Manager
+
+- **Objection Handling**: Know top 5 objections, have answers
+- **Competitive Intel**: Know differentiators vs Ahrefs/SEMrush
+- **Pricing Psychology**: Anchor, value framing, no discounts
+- **Enterprise Sales**: Custom pricing, relationships > sticker price
 
 ---
 

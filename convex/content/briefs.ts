@@ -60,6 +60,17 @@ export const getBriefsByPlan = query({
   },
 });
 
+// Get briefs by project (for public API)
+export const getBriefsByProject = query({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('briefs')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .collect();
+  },
+});
+
 // Update brief
 export const updateBrief = mutation({
   args: {
