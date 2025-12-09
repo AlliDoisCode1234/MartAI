@@ -172,7 +172,7 @@ export default function OnboardingPage() {
     );
   }
 
-  const totalSteps = 5;
+  const totalSteps = 6;
   const progress = (step / totalSteps) * 100;
 
   return (
@@ -448,7 +448,6 @@ export default function OnboardingPage() {
                         onClick={() => {
                           if (formData.website) {
                             nextStep();
-                            handleSubmit();
                           }
                         }}
                         size="lg"
@@ -564,6 +563,7 @@ export default function OnboardingPage() {
                           onClick={async () => {
                             // Skip GA4 connection
                             setStep(6);
+                            handleSubmit();
                           }}
                         >
                           Skip for now
@@ -580,6 +580,7 @@ export default function OnboardingPage() {
                               }).catch(console.error);
                             }
                             setStep(6);
+                            handleSubmit();
                           }}
                           size="lg"
                         >

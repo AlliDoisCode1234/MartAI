@@ -53,6 +53,10 @@ export default defineSchema({
       })
     ),
     lastActiveAt: v.optional(v.number()),
+    // Prospect conversion tracking
+    previousProspect: v.optional(v.boolean()),
+    prospectConvertedAt: v.optional(v.number()),
+    prospectId: v.optional(v.id('prospects')),
     // Legacy auth fields (for backward compatibility)
     passwordHash: v.optional(v.string()),
   })
@@ -237,13 +241,20 @@ export default defineSchema({
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
     companyName: v.optional(v.string()),
+    // Onboarding-specific fields
+    websiteUrl: v.optional(v.string()),
+    planSelected: v.optional(v.string()),
+    // Legacy fields
     monthlyRevenue: v.optional(v.string()),
     marketingFrustration: v.optional(v.string()),
     investedBefore: v.optional(v.string()),
     timeline: v.optional(v.string()),
     source: v.optional(v.string()),
-    status: v.string(), // draft, initial_submitted, details_submitted
+    status: v.string(), // draft, initial_submitted, details_submitted, converted
     userId: v.optional(v.id('users')),
+    // Conversion tracking
+    convertedAt: v.optional(v.number()),
+    convertedUserId: v.optional(v.id('users')),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
