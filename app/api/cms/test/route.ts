@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { WordPressClient } from '@/lib/wordpress';
-import { ShopifyClient } from '@/lib/shopify';
-import { WebflowClient } from '@/lib/webflow';
+import { WordPressClient } from '@/lib/integrations/wordpress';
+import { ShopifyClient } from '@/lib/integrations/shopify';
+import { WebflowClient } from '@/lib/integrations/webflow';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
-
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,7 +40,7 @@ export async function POST(request: NextRequest) {
 
           // Check publishing rights
           const rightsCheck = await client.checkPublishingRights();
-          
+
           testResult = {
             valid: true,
             siteName: connectionTest.siteName,
@@ -66,7 +65,7 @@ export async function POST(request: NextRequest) {
           }
 
           const rightsCheck = await client.checkPublishingRights();
-          
+
           testResult = {
             valid: true,
             siteName: connectionTest.shopName,
@@ -92,7 +91,7 @@ export async function POST(request: NextRequest) {
           }
 
           const rightsCheck = await client.checkPublishingRights();
-          
+
           testResult = {
             valid: true,
             siteName: connectionTest.siteName,
@@ -103,10 +102,7 @@ export async function POST(request: NextRequest) {
         }
 
         default:
-          return NextResponse.json(
-            { error: `Unsupported platform: ${platform}` },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: `Unsupported platform: ${platform}` }, { status: 400 });
       }
 
       // Store connection if valid and has publishing rights
@@ -127,20 +123,15 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error('CMS test error:', error);
       return NextResponse.json(
-        { 
-          valid: false, 
-          error: error instanceof Error ? error.message : 'Test failed' 
+        {
+          valid: false,
+          error: error instanceof Error ? error.message : 'Test failed',
         },
         { status: 500 }
       );
     }
   } catch (error) {
     console.error('CMS test route error:', error);
-    return NextResponse.json(
-      { error: 'Failed to test CMS connection' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to test CMS connection' }, { status: 500 });
   }
 }
-
-

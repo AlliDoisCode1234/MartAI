@@ -4,7 +4,11 @@ import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
 import { Id } from '../_generated/dataModel';
-import { generatePlanSummary, estimateTraffic, estimateLeads } from '../../lib/quarterlyPlanning';
+import {
+  generatePlanSummary,
+  estimateTraffic,
+  estimateLeads,
+} from '../../lib/generators/quarterlyPlanning';
 import { auth } from '../auth';
 import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
 import { ConvexError } from 'convex/values';

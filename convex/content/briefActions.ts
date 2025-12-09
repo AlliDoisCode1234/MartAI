@@ -3,7 +3,7 @@
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, components } from '../_generated/api';
-import { generateBriefDetails, type ClusterInfo } from '../../lib/briefGenerator';
+import { generateBriefDetails, type ClusterInfo } from '../../lib/generators/briefGenerator';
 import { auth } from '../auth';
 import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
 import { ConvexError } from 'convex/values';

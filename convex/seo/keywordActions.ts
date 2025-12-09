@@ -6,7 +6,7 @@ import { api } from '../_generated/api';
 import { auth } from '../auth';
 import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
 import { ConvexError } from 'convex/values';
-import { generateKeywordClusters } from '../../lib/keywordClustering';
+import { generateKeywordClusters } from '../../lib/generators/keywordClustering';
 import { cache, getCacheKey, CACHE_TTL } from '../cache';
 import { getGSCData } from '../../lib/googleAuth';
 import * as crypto from 'node:crypto';

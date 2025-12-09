@@ -1,7 +1,7 @@
 import { generateText, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
-import { withRetry } from './utils';
+import { withRetry } from '../utils';
 
 export interface KeywordSuggestion {
   keyword: string;

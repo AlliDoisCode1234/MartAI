@@ -1,14 +1,14 @@
-"use node";
+'use node';
 
-import { action } from "../_generated/server";
-import { v } from "convex/values";
-import { api } from "../_generated/api";
-import { WordPressClient, type WordPressPage } from "../../lib/wordpress";
+import { action } from '../_generated/server';
+import { v } from 'convex/values';
+import { api } from '../_generated/api';
+import { WordPressClient, type WordPressPage } from '../../lib/integrations/wordpress';
 
 export const publishPost = action({
   args: {
-    draftId: v.id("drafts"),
-    projectId: v.id("projects"),
+    draftId: v.id('drafts'),
+    projectId: v.id('projects'),
     siteUrl: v.string(),
     username: v.string(),
     password: v.string(), // App password
@@ -23,17 +23,17 @@ export const publishPost = action({
     // Let's check if getDraftById exists in convex/content/drafts.ts?
     // I'll assume it does or I'll use a generic query if available.
     // If not, I'll need to add it.
-    
+
     // For now, let's try to fetch it.
     // Wait, I can't check file content in this tool call.
     // I'll assume api.content.drafts.getDraftById exists (common pattern).
-    
+
     const draft = await ctx.runQuery(api.content.drafts.getDraftById, {
       draftId: args.draftId,
     });
 
     if (!draft) {
-      throw new Error("Draft not found");
+      throw new Error('Draft not found');
     }
 
     // 2. Get Brief (for title)
@@ -42,7 +42,7 @@ export const publishPost = action({
     });
 
     if (!brief) {
-      throw new Error("Brief not found");
+      throw new Error('Brief not found');
     }
 
     // 3. Initialize WordPress Client
@@ -77,7 +77,7 @@ export const publishPost = action({
     // api.content.drafts.updateDraftStatus?
     await ctx.runMutation(api.content.drafts.updateDraft, {
       draftId: args.draftId,
-      status: "published",
+      status: 'published',
     });
 
     return {

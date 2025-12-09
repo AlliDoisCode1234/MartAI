@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
-import { WordPressClient } from '@/lib/wordpress';
-import { ShopifyClient } from '@/lib/shopify';
+import { WordPressClient } from '@/lib/integrations/wordpress';
+import { ShopifyClient } from '@/lib/integrations/shopify';
 import { assertDraftId, assertProjectId } from '@/lib/typeGuards';
 
 // Import api dynamically for routes that need it
@@ -26,17 +26,11 @@ export async function POST(request: NextRequest) {
     const { draftId, platform, tags, categories, slug } = body;
 
     if (!draftId || !platform) {
-      return NextResponse.json(
-        { error: 'draftId and platform are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'draftId and platform are required' }, { status: 400 });
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
     }
 
     // Validate required field - type guaranteed after assertion
@@ -46,10 +40,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!draft) {
-      return NextResponse.json(
-        { error: 'Draft not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
     }
 
     if (draft.status !== 'approved') {
@@ -70,12 +61,9 @@ export async function POST(request: NextRequest) {
       clientId: projectIdTyped,
       platform,
     });
-    
+
     if (!connection) {
-      return NextResponse.json(
-        { error: `${platform} connection not found` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: `${platform} connection not found` }, { status: 404 });
     }
 
     // Publish to platform with retry logic
@@ -157,10 +145,7 @@ export async function POST(request: NextRequest) {
 
       publishedUrl = result.url;
     } else {
-      return NextResponse.json(
-        { error: 'Unsupported platform' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Unsupported platform' }, { status: 400 });
     }
 
     // Update draft and brief status

@@ -1,5 +1,4 @@
-
-import { WordPressClient } from '@/lib/wordpress';
+import { WordPressClient } from '@/lib/integrations/wordpress';
 import axios from 'axios';
 
 jest.mock('axios');
@@ -42,9 +41,11 @@ describe('WordPressClient', () => {
   it('should handle errors', async () => {
     mockedAxios.post.mockRejectedValueOnce(new Error('Network Error'));
 
-    await expect(client.createPage({
-      title: 'Test Page',
-      content: 'Hello World',
-    })).rejects.toThrow('Network Error');
+    await expect(
+      client.createPage({
+        title: 'Test Page',
+        content: 'Hello World',
+      })
+    ).rejects.toThrow('Network Error');
   });
 });

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
-import { validateSEOChecklist } from '@/lib/briefGenerator';
+import { validateSEOChecklist } from '@/lib/generators/briefGenerator';
 import { assertBriefId, parseClusterId } from '@/lib/typeGuards';
 
 // Import api dynamically for routes that need it
@@ -25,17 +25,11 @@ export async function GET(request: NextRequest) {
     const briefId = searchParams.get('briefId');
 
     if (!briefId) {
-      return NextResponse.json(
-        { error: 'briefId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'briefId is required' }, { status: 400 });
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
     }
 
     // Validate required ID - type guaranteed after assertion
@@ -45,12 +39,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!brief) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Brief not found' },
-          { status: 404 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Brief not found' }, { status: 404 }));
     }
 
     // Get cluster info if assigned - clusterId is optional in schema
@@ -68,17 +57,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Validate SEO checklist
-    const seoCheck = brief.titleOptions && brief.h2Outline
-      ? validateSEOChecklist({
-          titleOptions: brief.titleOptions || [],
-          h2Outline: brief.h2Outline || [],
-          faqs: brief.faqs || [],
-          metaTitle: brief.metaTitle || '',
-          metaDescription: brief.metaDescription || '',
-          internalLinks: brief.internalLinks || [],
-          schemaSuggestion: brief.schemaSuggestion || '',
-        })
-      : { valid: false, issues: ['Brief details not generated yet'] };
+    const seoCheck =
+      brief.titleOptions && brief.h2Outline
+        ? validateSEOChecklist({
+            titleOptions: brief.titleOptions || [],
+            h2Outline: brief.h2Outline || [],
+            faqs: brief.faqs || [],
+            metaTitle: brief.metaTitle || '',
+            metaDescription: brief.metaDescription || '',
+            internalLinks: brief.internalLinks || [],
+            schemaSuggestion: brief.schemaSuggestion || '',
+          })
+        : { valid: false, issues: ['Brief details not generated yet'] };
 
     return secureResponse(
       NextResponse.json({
@@ -92,12 +82,7 @@ export async function GET(request: NextRequest) {
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to get brief' },
-        { status: 500 }
-      )
-    );
+    return secureResponse(NextResponse.json({ error: 'Failed to get brief' }, { status: 500 }));
   }
 }
 
@@ -114,21 +99,11 @@ export async function PATCH(request: NextRequest) {
     const { briefId, ...updates } = body;
 
     if (!briefId) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'briefId is required' },
-          { status: 400 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'briefId is required' }, { status: 400 }));
     }
 
     if (!apiLocal) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Convex not configured' },
-          { status: 503 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Convex not configured' }, { status: 503 }));
     }
 
     const briefIdTyped = assertBriefId(briefId);
@@ -137,20 +112,13 @@ export async function PATCH(request: NextRequest) {
       ...updates,
     });
 
-    return secureResponse(
-      NextResponse.json({ success: true })
-    );
+    return secureResponse(NextResponse.json({ success: true }));
   } catch (error: any) {
     console.error('Update brief error:', error);
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to update brief' },
-        { status: 500 }
-      )
-    );
+    return secureResponse(NextResponse.json({ error: 'Failed to update brief' }, { status: 500 }));
   }
 }
 
@@ -166,21 +134,11 @@ export async function DELETE(request: NextRequest) {
     const briefId = searchParams.get('briefId');
 
     if (!briefId) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'briefId is required' },
-          { status: 400 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'briefId is required' }, { status: 400 }));
     }
 
     if (!apiLocal) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Convex not configured' },
-          { status: 503 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Convex not configured' }, { status: 503 }));
     }
 
     const briefIdTyped = assertBriefId(briefId);
@@ -188,20 +146,12 @@ export async function DELETE(request: NextRequest) {
       briefId: briefIdTyped,
     });
 
-    return secureResponse(
-      NextResponse.json({ success: true })
-    );
+    return secureResponse(NextResponse.json({ success: true }));
   } catch (error: any) {
     console.error('Delete brief error:', error);
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to delete brief' },
-        { status: 500 }
-      )
-    );
+    return secureResponse(NextResponse.json({ error: 'Failed to delete brief' }, { status: 500 }));
   }
 }
-

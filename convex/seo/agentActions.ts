@@ -2,8 +2,8 @@
 
 import { v } from 'convex/values';
 import { action } from '../_generated/server';
-import { generateKeywords } from '../../lib/keywordGenerator';
-import { crawlWebsite } from '../../lib/siteCrawler';
+import { generateKeywords } from '../../lib/generators/keywordGenerator';
+import { crawlWebsite } from '../../lib/generators/siteCrawler';
 import { IntelligenceService } from '../lib/services/intelligence';
 
 export const runSEOAgent = action({

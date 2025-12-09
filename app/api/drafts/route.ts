@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
-import { validateDraftSEO } from '@/lib/draftGenerator';
+import { validateDraftSEO } from '@/lib/generators/draftGenerator';
 import { assertDraftId, assertBriefId } from '@/lib/typeGuards';
 
 // Import api dynamically for routes that need it
@@ -27,20 +27,12 @@ export async function GET(request: NextRequest) {
 
     if (!draftId && !briefId) {
       return secureResponse(
-        NextResponse.json(
-          { error: 'draftId or briefId is required' },
-          { status: 400 }
-        )
+        NextResponse.json({ error: 'draftId or briefId is required' }, { status: 400 })
       );
     }
 
     if (!apiLocal) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Convex not configured' },
-          { status: 503 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Convex not configured' }, { status: 503 }));
     }
 
     let draft;
@@ -57,12 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!draft) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Draft not found' },
-          { status: 404 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Draft not found' }, { status: 404 }));
     }
 
     // Get brief for SEO validation
@@ -92,12 +79,7 @@ export async function GET(request: NextRequest) {
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to get draft' },
-        { status: 500 }
-      )
-    );
+    return secureResponse(NextResponse.json({ error: 'Failed to get draft' }, { status: 500 }));
   }
 }
 
@@ -114,21 +96,11 @@ export async function PATCH(request: NextRequest) {
     const { draftId, ...updates } = body;
 
     if (!draftId) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'draftId is required' },
-          { status: 400 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'draftId is required' }, { status: 400 }));
     }
 
     if (!apiLocal) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Convex not configured' },
-          { status: 503 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Convex not configured' }, { status: 503 }));
     }
 
     // Recalculate word count if content changed
@@ -142,20 +114,13 @@ export async function PATCH(request: NextRequest) {
       ...updates,
     });
 
-    return secureResponse(
-      NextResponse.json({ success: true })
-    );
+    return secureResponse(NextResponse.json({ success: true }));
   } catch (error: any) {
     console.error('Update draft error:', error);
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to update draft' },
-        { status: 500 }
-      )
-    );
+    return secureResponse(NextResponse.json({ error: 'Failed to update draft' }, { status: 500 }));
   }
 }
 
@@ -172,17 +137,11 @@ export async function POST(request: NextRequest) {
     const { draftId } = body;
 
     if (!draftId) {
-      return NextResponse.json(
-        { error: 'draftId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'draftId is required' }, { status: 400 });
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
     }
 
     const draftIdTyped = assertDraftId(draftId);
@@ -202,20 +161,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return secureResponse(
-      NextResponse.json({ success: true })
-    );
+    return secureResponse(NextResponse.json({ success: true }));
   } catch (error: any) {
     console.error('Approve draft error:', error);
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to approve draft' },
-        { status: 500 }
-      )
-    );
+    return secureResponse(NextResponse.json({ error: 'Failed to approve draft' }, { status: 500 }));
   }
 }
 
@@ -231,21 +183,11 @@ export async function DELETE(request: NextRequest) {
     const draftId = searchParams.get('draftId');
 
     if (!draftId) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'draftId is required' },
-          { status: 400 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'draftId is required' }, { status: 400 }));
     }
 
     if (!apiLocal) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Convex not configured' },
-          { status: 503 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Convex not configured' }, { status: 503 }));
     }
 
     const draftIdTyped = assertDraftId(draftId);
@@ -253,20 +195,12 @@ export async function DELETE(request: NextRequest) {
       draftId: draftIdTyped,
     });
 
-    return secureResponse(
-      NextResponse.json({ success: true })
-    );
+    return secureResponse(NextResponse.json({ success: true }));
   } catch (error: any) {
     console.error('Delete draft error:', error);
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to delete draft' },
-        { status: 500 }
-      )
-    );
+    return secureResponse(NextResponse.json({ error: 'Failed to delete draft' }, { status: 500 }));
   }
 }
-

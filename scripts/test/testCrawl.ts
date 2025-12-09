@@ -1,5 +1,4 @@
-
-import { crawlWebsite } from '../lib/siteCrawler';
+import { crawlWebsite } from '../lib/generators/siteCrawler';
 
 async function testCrawl() {
   const url = 'https://helps2.com/';

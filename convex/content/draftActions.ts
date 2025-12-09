@@ -10,7 +10,7 @@ import {
   generateDraftFromBrief,
   constructDraftPrompt,
   processDraftResult,
-} from '../../lib/draftGenerator';
+} from '../../lib/generators/draftGenerator';
 import { cache, getCacheKey, CACHE_TTL } from '../cache';
 import { IntelligenceService } from '../lib/services/intelligence';
 
