@@ -42,10 +42,6 @@ import type * as projects_projects from '../projects/projects';
 import type * as projects_clients from '../projects/clients';
 import type * as prospects_prospects from '../prospects/prospects';
 
-import type * as ai_analysis from '../ai/analysis';
-import type * as ai_reports from '../ai/reports';
-import type * as ai_personas from '../ai/personas';
-
 import type * as integrations_hubspot from '../integrations/hubspot';
 import type * as integrations_ga4Connections from '../integrations/ga4Connections';
 import type * as integrations_gscConnections from '../integrations/gscConnections';
@@ -63,6 +59,8 @@ import type * as publishing_scheduledPosts from '../publishing/scheduledPosts';
 import type * as subscriptions_subscriptions from '../subscriptions/subscriptions';
 
 import type * as webhooks_webhooks from '../webhooks/webhooks';
+
+import type * as top_apiAccessRequests from '../apiAccessRequests';
 
 // Import base api for top-level modules
 import { api as baseApi, internal as baseInternal } from '../_generated/api';
@@ -98,10 +96,6 @@ type FullApiType = {
   'projects/projects': typeof projects_projects;
   'projects/clients': typeof projects_clients;
   'prospects/prospects': typeof prospects_prospects;
-  // AI
-  'ai/analysis': typeof ai_analysis;
-  'ai/reports': typeof ai_reports;
-  'ai/personas': typeof ai_personas;
   // Integrations
   'integrations/hubspot': typeof integrations_hubspot;
   'integrations/ga4Connections': typeof integrations_ga4Connections;
@@ -120,11 +114,12 @@ type FullApiType = {
   'subscriptions/subscriptions': typeof subscriptions_subscriptions;
   // Webhooks
   'webhooks/webhooks': typeof webhooks_webhooks;
+  // Top-level modules
+  apiAccessRequests: typeof top_apiAccessRequests;
 };
 
 // Cast api to include bracket access
 const api = baseApi as typeof baseApi & FullApiType;
-const internal = baseInternal as typeof baseInternal & FullApiType;
 
 // ============================================
 // TYPED EXPORTS - SEO
@@ -168,10 +163,9 @@ export const prospectsProspects = api['prospects/prospects'];
 
 // ============================================
 // TYPED EXPORTS - AI
+// Note: For ai/analysis, ai/reports, ai/personas - use api['ai/...']
+// directly from _generated/api to avoid circular refs
 // ============================================
-export const aiAnalysis = api['ai/analysis'];
-export const aiReports = api['ai/reports'];
-export const aiPersonas = api['ai/personas'];
 
 // ============================================
 // TYPED EXPORTS - INTEGRATIONS
@@ -207,20 +201,10 @@ export const subscriptionsSubscriptions = api['subscriptions/subscriptions'];
 export const webhooksWebhooks = api['webhooks/webhooks'];
 
 // ============================================
-// TOP-LEVEL MODULES (already accessible)
+// TOP-LEVEL MODULES
+// Note: For users, aiStorage, etc. - import directly from '../_generated/api'
+// to avoid circular reference issues
 // ============================================
-export const users = baseApi.users;
-export const aiStorage = baseApi.aiStorage;
-export const admin = baseApi.admin;
-export const apiKeys = baseApi.apiKeys;
-export const apiAccessRequests = baseApi.apiAccessRequests;
-export const onboarding = baseApi.onboarding;
-
-// ============================================
-// INTERNAL API (for actions calling queries/mutations)
-// ============================================
-export const internalSeoKeywordClusters = internal['seo/keywordClusters'];
-export const internalContentBriefs = internal['content/briefs'];
-export const internalContentDrafts = internal['content/drafts'];
-export const internalAiStorage = baseInternal.aiStorage;
-export const internalAnalyticsGscKeywords = internal['analytics/gscKeywords'];
+export const apiKeys = api['apiKeys'];
+export const apiAccessRequests = api['apiAccessRequests'];
+export const onboarding = api['onboarding'];

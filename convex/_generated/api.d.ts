@@ -54,6 +54,7 @@ import type * as integrations_oauth from "../integrations/oauth.js";
 import type * as integrations_pages from "../integrations/pages.js";
 import type * as integrations_wordpress from "../integrations/wordpress.js";
 import type * as lib_aggregates from "../lib/aggregates.js";
+import type * as lib_api from "../lib/api.js";
 import type * as lib_rbac from "../lib/rbac.js";
 import type * as lib_services_intelligence from "../lib/services/intelligence.js";
 import type * as lib_typedHelpers from "../lib/typedHelpers.js";
@@ -146,6 +147,7 @@ declare const fullApi: ApiFromModules<{
   "integrations/pages": typeof integrations_pages;
   "integrations/wordpress": typeof integrations_wordpress;
   "lib/aggregates": typeof lib_aggregates;
+  "lib/api": typeof lib_api;
   "lib/rbac": typeof lib_rbac;
   "lib/services/intelligence": typeof lib_services_intelligence;
   "lib/typedHelpers": typeof lib_typedHelpers;

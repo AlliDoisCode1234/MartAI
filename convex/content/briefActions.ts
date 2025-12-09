@@ -3,7 +3,7 @@
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
-import { seoKeywordClusters, contentBriefs, aiStorage, users } from '../lib/api';
+import { seoKeywordClusters, contentBriefs } from '../lib/api';
 import { generateBriefDetails, type ClusterInfo } from '../../lib/generators/briefGenerator';
 import { auth } from '../auth';
 import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
