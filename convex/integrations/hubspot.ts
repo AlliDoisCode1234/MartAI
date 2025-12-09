@@ -282,14 +282,99 @@ export const markAbandonedSignup = action({
 });
 
 /**
+ * Sync API access request to HubSpot (Enterprise lead)
+ */
+export const syncApiAccessRequest = action({
+  args: { requestId: v.id('apiAccessRequests') },
+  handler: async (ctx, args) => {
+    // Graceful skip if no API key
+    if (!isHubSpotEnabled()) {
+      console.log('[HubSpot] Skipping API access request sync - no API key configured');
+      return { success: false, reason: 'no_api_key' };
+    }
+
+    const request = await ctx.runQuery(api.apiAccessRequests.getRequest, {
+      requestId: args.requestId,
+    });
+
+    if (!request?.email) {
+      console.log(`[HubSpot] API access request ${args.requestId} has no email, skipping`);
+      return { success: false, reason: 'no_email' };
+    }
+
+    // Map use case to readable format
+    const useCaseMap: Record<string, string> = {
+      bi_integration: 'BI Integration',
+      automation: 'Automation',
+      custom_reports: 'Custom Reports',
+      other: 'Other',
+    };
+
+    // Map volume to readable format
+    const volumeMap: Record<string, string> = {
+      under_100: 'Under 100 calls/mo',
+      '100_1000': '100-1,000 calls/mo',
+      '1000_10000': '1,000-10,000 calls/mo',
+      over_10000: 'Over 10,000 calls/mo',
+    };
+
+    const properties: Record<string, string | number | boolean> = {
+      company: request.companyName,
+      martai_api_access_requested: true,
+      martai_api_use_case: useCaseMap[request.useCase] || request.useCase,
+      martai_api_volume: volumeMap[request.expectedMonthlyVolume] || request.expectedMonthlyVolume,
+      martai_api_request_status: request.status,
+      martai_lead_source: 'api_access_form',
+    };
+
+    if (request.contactName) {
+      const nameParts = request.contactName.split(' ');
+      properties.firstname = nameParts[0] || '';
+      properties.lastname = nameParts.slice(1).join(' ') || '';
+    }
+
+    if (request.useCaseDetails) {
+      properties.martai_api_use_case_details = request.useCaseDetails;
+    }
+
+    const result = await upsertContact(request.email, properties);
+
+    // Update request with HubSpot ID
+    await ctx.runMutation(api.apiAccessRequests.updateHubspotSync, {
+      requestId: args.requestId,
+      hubspotContactId: result.id,
+    });
+
+    return {
+      success: true,
+      hubspotId: result.id,
+      isNew: result.isNew,
+    };
+  },
+});
+
+/**
  * Update MR score for a user (called by weekly cron)
+ * Includes churn risk calculation for sales outreach
  */
 export const updateMRScore = internalAction({
   args: { userId: v.id('users') },
   handler: async (
     ctx,
     args
-  ): Promise<{ success: boolean; reason?: string; mrScore?: number; mrTier?: string | null }> => {
+  ): Promise<{
+    success: boolean;
+    reason?: string;
+    mrScore?: number;
+    mrTier?: string | null;
+    churnRisk?: boolean;
+  }> => {
+    // Graceful skip if no API key
+    if (!isHubSpotEnabled()) {
+      console.log('[HubSpot] Skipping MR score update - no API key configured');
+      return { success: false, reason: 'no_api_key' };
+    }
+
     const user = await ctx.runQuery(api.users.getById, { userId: args.userId });
     if (!user?.email) {
       return { success: false, reason: 'no_email' };
@@ -328,16 +413,25 @@ export const updateMRScore = internalAction({
       return { success: false, reason: 'no_mr_score' };
     }
 
+    // Calculate churn risk
+    // Risk if: score < 50 OR score dropped significantly
+    // For now, we just check if score is low (weekly cron can compare to previous)
+    const churnRisk = mrScore < 50 || mrTier === 'needs_work';
+
     const properties: Record<string, string | number | boolean> = {
       martai_mr_score: mrScore,
+      martai_churn_risk: churnRisk,
     };
     if (mrTier) {
       properties.martai_mr_tier = mrTier;
     }
+    if (user.lastActiveAt) {
+      properties.martai_last_activity = user.lastActiveAt;
+    }
 
     await upsertContact(user.email, properties);
 
-    return { success: true, mrScore, mrTier };
+    return { success: true, mrScore, mrTier, churnRisk };
   },
 });
 

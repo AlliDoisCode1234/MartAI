@@ -858,6 +858,44 @@ export default defineSchema({
   // ========================================
   // PUBLIC API
   // ========================================
+  // PUBLIC API
+  // ========================================
+
+  // API Access Requests (Lead Gen for Enterprise API)
+  apiAccessRequests: defineTable({
+    // Contact info
+    email: v.string(),
+    companyName: v.string(),
+    contactName: v.optional(v.string()),
+    // Use case info
+    useCase: v.string(), // e.g., 'bi_integration', 'automation', 'custom_reports', 'other'
+    useCaseDetails: v.optional(v.string()),
+    expectedMonthlyVolume: v.string(), // e.g., 'under_100', '100_1000', '1000_10000', 'over_10000'
+    // Status tracking
+    status: v.union(
+      v.literal('pending'),
+      v.literal('approved'),
+      v.literal('rejected'),
+      v.literal('contacted')
+    ),
+    // Linked user (if they already have an account)
+    userId: v.optional(v.id('users')),
+    // HubSpot sync
+    hubspotContactId: v.optional(v.string()),
+    hubspotSyncedAt: v.optional(v.number()),
+    // Admin notes
+    adminNotes: v.optional(v.string()),
+    reviewedBy: v.optional(v.id('users')),
+    reviewedAt: v.optional(v.number()),
+    // Generated API key (on approval)
+    apiKeyId: v.optional(v.id('apiKeys')),
+    // Timestamps
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_email', ['email'])
+    .index('by_status', ['status'])
+    .index('by_user', ['userId']),
 
   // API Keys for public API access (Enterprise feature)
   apiKeys: defineTable({

@@ -29,17 +29,26 @@ MartAI is an AI-driven SEO & Lead Generation Platform. We have completed compreh
 
 ### Pricing Tiers
 
-| Tier       | Price   | URLs | Target       | CTA           |
-| ---------- | ------- | ---- | ------------ | ------------- |
-| **Solo**   | $49/mo  | 1    | Solopreneurs | Buy Now       |
-| **Growth** | $149/mo | 3    | SMBs <$500k  | Buy Now       |
-| **Agency** | Contact | 3+   | Enterprise   | Talk to Sales |
+| Tier       | Price   | URLs | AI Cost | Profit  | Margin |
+| ---------- | ------- | ---- | ------- | ------- | ------ |
+| **Solo**   | $49/mo  | 1    | $0.15   | $48.85  | 99.7%  |
+| **Growth** | $149/mo | 3    | $0.45   | $148.55 | 99.7%  |
+| **Agency** | Custom  | 10+  | $3.64   | ~$496   | 99.3%  |
+
+### AI Cost Per Operation (GPT-4o-mini)
+
+| Operation         | Cost   |
+| ----------------- | ------ |
+| 250 keyword ideas | $0.006 |
+| Content brief     | $0.007 |
+| Draft generation  | $0.016 |
+| AI report (URL)   | $0.010 |
 
 ### Pricing Philosophy
 
 - **No free tier** - value requires investment
-- **AI cost + intelligence value** - base on real token costs
-- **Affordable for small businesses** - under $200/month for most users
+- **Value-based pricing** - AI costs are <1% of revenue
+- **10x time savings** - ~10 hrs/mo @ $50/hr = $500 value
 - **Enterprise = relationship** - no sticker price, sales conversation
 
 ### Billing Integration

@@ -156,11 +156,21 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 
 ## Phase 3: Scale & Monetization (P2 - Q3 2025)
 
+### Pricing Model (BILL-Approved)
+
+| Tier   | Price   | AI Cost | Profit  | Margin | Target       |
+| ------ | ------- | ------- | ------- | ------ | ------------ |
+| Solo   | $49/mo  | $0.15   | $48.85  | 99.7%  | Solopreneurs |
+| Growth | $149/mo | $0.45   | $148.55 | 99.7%  | SMBs <$500k  |
+| Agency | Custom  | $3.64   | ~$496   | 99.3%  | Enterprise   |
+
+**Key Insight**: AI costs are <1% of revenue. Price on VALUE, not tokens.
+
 ### Billing & Subscriptions
 
 - [ ] **Subscription Management**
-  - [ ] Stripe integration
-  - [ ] Plan tiers (Starter/Growth/Pro)
+  - [ ] Polar integration (not Stripe)
+  - [ ] Plan tiers (Solo/Growth/Agency)
   - [ ] Usage limits & enforcement
   - [ ] Upgrade/downgrade flows
   - [ ] Invoice generation

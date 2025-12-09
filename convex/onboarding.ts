@@ -7,6 +7,7 @@
 import { v } from 'convex/values';
 import { mutation, internalMutation, internalQuery } from './_generated/server';
 import { auth } from './auth';
+import { api } from './_generated/api';
 
 /**
  * Public mutation for frontend to update onboarding step
@@ -147,6 +148,11 @@ export const markComplete = internalMutation({
       onboardingStatus: 'completed',
       lastActiveAt: now,
       updatedAt: now,
+    });
+
+    // Fire-and-forget HubSpot sync (will skip if no API key)
+    ctx.scheduler.runAfter(0, api.integrations.hubspot.syncUserToHubspot, {
+      userId: args.userId,
     });
 
     return { success: true };

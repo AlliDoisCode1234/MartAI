@@ -1,6 +1,7 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import type { Id } from '../_generated/dataModel';
+import { api } from '../_generated/api';
 
 const baseProspectFields = {
   firstName: v.optional(v.string()),
@@ -324,7 +325,7 @@ export const createOnboardingProspect = mutation({
     }
 
     // Create new prospect
-    return await ctx.db.insert('prospects', {
+    const prospectId = await ctx.db.insert('prospects', {
       email: args.email,
       companyName: args.companyName ?? '',
       websiteUrl: args.websiteUrl,
@@ -334,6 +335,13 @@ export const createOnboardingProspect = mutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    // Fire-and-forget HubSpot sync (will skip if no API key)
+    ctx.scheduler.runAfter(0, api.integrations.hubspot.syncProspectToHubspot, {
+      prospectId,
+    });
+
+    return prospectId;
   },
 });
 
