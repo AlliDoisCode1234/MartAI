@@ -87,6 +87,13 @@ export default function OnboardingPage() {
   const createProject = useMutation(api.projects.projects.createProject);
   const completeOnboarding = useMutation(api.users.completeOnboarding);
   const updateOnboardingStep = useMutation(api.onboarding.updateOnboardingStep);
+  const createOnboardingProspect = useMutation(api.prospects.prospects.createOnboardingProspect);
+  const updateOnboardingProspect = useMutation(api.prospects.prospects.updateOnboardingProspect);
+  const convertProspectToUser = useMutation(api.prospects.prospects.convertProspectToUser);
+
+  // Track prospect ID for auto-save and conversion
+  const [prospectId, setProspectId] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
 
   // Track signup completed on mount (user landed on onboarding)
   useEffect(() => {
@@ -120,7 +127,7 @@ export default function OnboardingPage() {
       // Track payment step completion (even if skipped for now)
       await updateOnboardingStep({ step: 'paymentCompleted', value: true }).catch(console.error);
     }
-    setStep((s) => Math.min(s + 1, 6));
+    setStep((s) => Math.min(s + 1, 5));
   };
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
@@ -172,7 +179,7 @@ export default function OnboardingPage() {
     );
   }
 
-  const totalSteps = 6;
+  const totalSteps = 5;
   const progress = (step / totalSteps) * 100;
 
   return (
@@ -200,7 +207,7 @@ export default function OnboardingPage() {
 
           {/* Step Content */}
           <AnimatePresence mode="wait">
-            {/* Step 1: Welcome */}
+            {/* Step 1: Welcome + Website URL (Combined) */}
             {step === 1 && (
               <MotionBox
                 key="step1"
@@ -209,29 +216,94 @@ export default function OnboardingPage() {
                 exit={{ opacity: 0, x: -50 }}
                 transition={{ duration: 0.3 }}
               >
-                <Box bg="white" p={8} borderRadius="2xl" shadow="lg" textAlign="center">
-                  <VStack spacing={6}>
-                    <MartCharacter
-                      message="Hey there! I'm Mart, your AI marketing manager. Let's set up your SEO strategy in just a few minutes."
-                      size="lg"
-                    />
-                    <Box pt={4}>
-                      <Heading size="lg" mb={2}>
-                        Welcome to MartAI
-                      </Heading>
-                      <Text color="gray.600">
-                        I'll analyze your website, find keyword opportunities, and create a content
-                        plan to grow your organic traffic.
-                      </Text>
-                    </Box>
+                <Box bg="white" p={8} borderRadius="2xl" shadow="lg">
+                  <VStack spacing={6} align="stretch">
+                    <HStack spacing={4} align="start">
+                      <Box flexShrink={0}>
+                        <MartCharacter size="md" />
+                      </Box>
+                      <Box>
+                        <Heading size="lg" mb={2}>
+                          Welcome to MartAI
+                        </Heading>
+                        <Text color="gray.600">
+                          I'm Mart, your AI marketing manager. Enter your website below and I'll
+                          analyze it to find keyword opportunities and create your SEO strategy.
+                        </Text>
+                      </Box>
+                    </HStack>
+
+                    <VStack spacing={4} align="stretch" pt={4}>
+                      <FormControl>
+                        <FormLabel>Business Name (optional)</FormLabel>
+                        <Input
+                          placeholder="e.g., Acme Corp"
+                          value={formData.businessName}
+                          onChange={(e) => {
+                            setFormData({ ...formData, businessName: e.target.value });
+                            setIsDirty(true);
+                          }}
+                          size="lg"
+                        />
+                      </FormControl>
+
+                      <FormControl isRequired>
+                        <FormLabel>Website URL</FormLabel>
+                        <Input
+                          placeholder="https://yourwebsite.com"
+                          value={formData.website}
+                          onChange={(e) => {
+                            setFormData({ ...formData, website: e.target.value });
+                            setIsDirty(true);
+                          }}
+                          size="lg"
+                          leftElement={
+                            <Box pl={3} color="gray.400">
+                              <FiGlobe />
+                            </Box>
+                          }
+                        />
+                      </FormControl>
+                    </VStack>
+
                     <Button
                       colorScheme="orange"
                       size="lg"
                       rightIcon={<FiArrowRight />}
-                      onClick={nextStep}
+                      onClick={async () => {
+                        if (!formData.website || !user?.email) return;
+
+                        setLoading(true);
+                        try {
+                          // Create prospect (captures lead before paywall)
+                          const newProspectId = await createOnboardingProspect({
+                            email: user.email,
+                            companyName: formData.businessName || undefined,
+                            websiteUrl: formData.website,
+                            source: 'onboarding',
+                          });
+                          setProspectId(newProspectId);
+                          setIsDirty(false);
+
+                          // Track step and advance
+                          await updateOnboardingStep({
+                            step: 'signupCompleted',
+                            value: true,
+                          }).catch(console.error);
+                          nextStep();
+                        } catch (err) {
+                          console.error('Failed to create prospect:', err);
+                          // Still allow advancing even if prospect creation fails
+                          nextStep();
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      isDisabled={!formData.website}
+                      isLoading={loading}
                       px={8}
                     >
-                      Let's Get Started
+                      Analyze My Site
                     </Button>
                   </VStack>
                 </Box>
@@ -387,84 +459,10 @@ export default function OnboardingPage() {
               </MotionBox>
             )}
 
-            {/* Step 4: Business + URL */}
+            {/* Step 4: GA4/GSC Connection Wizard */}
             {step === 4 && (
               <MotionBox
                 key="step4"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Box bg="white" p={8} borderRadius="2xl" shadow="lg">
-                  <VStack spacing={6} align="stretch">
-                    <Box textAlign="center">
-                      <Icon as={FiGlobe} boxSize={8} color="brand.orange" mb={2} />
-                      <Heading size="lg" mb={2}>
-                        Add Your Website
-                      </Heading>
-                      <Text color="gray.600">
-                        Give me your website URL and I'll start analyzing it.
-                      </Text>
-                    </Box>
-
-                    {error && (
-                      <Alert status="error" borderRadius="md">
-                        <AlertIcon />
-                        {error}
-                      </Alert>
-                    )}
-
-                    <FormControl>
-                      <FormLabel fontWeight="semibold">Business Name (optional)</FormLabel>
-                      <Input
-                        placeholder="e.g., Acme Bakery"
-                        value={formData.businessName}
-                        onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                        size="lg"
-                      />
-                    </FormControl>
-
-                    <FormControl isRequired>
-                      <FormLabel fontWeight="semibold">Website URL</FormLabel>
-                      <Input
-                        placeholder="yourwebsite.com"
-                        value={formData.website}
-                        onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                        size="lg"
-                      />
-                      <Text fontSize="xs" color="gray.500" mt={1}>
-                        This is where Mart will focus the SEO analysis.
-                      </Text>
-                    </FormControl>
-
-                    <HStack justify="space-between" pt={4}>
-                      <Button variant="ghost" leftIcon={<FiArrowLeft />} onClick={prevStep}>
-                        Back
-                      </Button>
-                      <Button
-                        colorScheme="orange"
-                        rightIcon={<FiArrowRight />}
-                        onClick={() => {
-                          if (formData.website) {
-                            nextStep();
-                          }
-                        }}
-                        size="lg"
-                        isDisabled={!formData.website}
-                      >
-                        Analyze My Site
-                      </Button>
-                    </HStack>
-                  </VStack>
-                </Box>
-              </MotionBox>
-            )}
-
-            {/* Step 5: GA4/GSC Connection Wizard */}
-            {step === 5 && (
-              <MotionBox
-                key="step5"
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
@@ -562,7 +560,7 @@ export default function OnboardingPage() {
                           variant="outline"
                           onClick={async () => {
                             // Skip GA4 connection
-                            setStep(6);
+                            setStep(5);
                             handleSubmit();
                           }}
                         >
@@ -579,7 +577,7 @@ export default function OnboardingPage() {
                                 value: true,
                               }).catch(console.error);
                             }
-                            setStep(6);
+                            setStep(5);
                             handleSubmit();
                           }}
                           size="lg"
@@ -593,10 +591,10 @@ export default function OnboardingPage() {
               </MotionBox>
             )}
 
-            {/* Step 6: Processing */}
-            {step === 6 && (
+            {/* Step 5: Processing */}
+            {step === 5 && (
               <MotionBox
-                key="step6"
+                key="step5"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3 }}
