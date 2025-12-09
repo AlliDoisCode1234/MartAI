@@ -80,6 +80,8 @@ export default function OnboardingPage() {
   const [formData, setFormData] = useState({
     businessName: '',
     website: '',
+    ga4PropertyId: '',
+    gscSiteUrl: '',
   });
 
   const createProject = useMutation(api.projects.projects.createProject);
@@ -114,7 +116,11 @@ export default function OnboardingPage() {
         console.error
       );
     }
-    setStep((s) => Math.min(s + 1, 5));
+    if (step === 3) {
+      // Track payment step completion (even if skipped for now)
+      await updateOnboardingStep({ step: 'paymentCompleted', value: true }).catch(console.error);
+    }
+    setStep((s) => Math.min(s + 1, 6));
   };
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
@@ -206,7 +212,7 @@ export default function OnboardingPage() {
                 <Box bg="white" p={8} borderRadius="2xl" shadow="lg" textAlign="center">
                   <VStack spacing={6}>
                     <MartCharacter
-                      message="Hey there! 👋 I'm Mart, your AI marketing manager. Let's set up your SEO strategy in just a few minutes."
+                      message="Hey there! I'm Mart, your AI marketing manager. Let's set up your SEO strategy in just a few minutes."
                       size="lg"
                     />
                     <Box pt={4}>
@@ -456,10 +462,140 @@ export default function OnboardingPage() {
               </MotionBox>
             )}
 
-            {/* Step 5: Processing */}
+            {/* Step 5: GA4/GSC Connection Wizard */}
             {step === 5 && (
               <MotionBox
                 key="step5"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Box bg="white" p={8} borderRadius="2xl" shadow="lg">
+                  <VStack spacing={6} align="stretch">
+                    <Box textAlign="center">
+                      <Badge colorScheme="orange" mb={2}>
+                        Preliminary Score Ready!
+                      </Badge>
+                      <Heading size="lg" mb={2}>
+                        Boost Your MR Score
+                      </Heading>
+                      <Text color="gray.600">
+                        Connect Google Analytics to unlock accurate traffic data and improve your
+                        MartAI Rating by up to 30%.
+                      </Text>
+                    </Box>
+
+                    {/* Value Prop Card */}
+                    <Card bg="orange.50" borderWidth="1px" borderColor="orange.200">
+                      <CardBody>
+                        <HStack spacing={4}>
+                          <Icon as={FiTrendingUp} boxSize={8} color="orange.500" />
+                          <Box>
+                            <Text fontWeight="semibold">Why Connect GA4?</Text>
+                            <Text fontSize="sm" color="gray.600">
+                              Real traffic data lets Mart understand your actual audience, find
+                              better keywords, and create more targeted content strategies.
+                            </Text>
+                          </Box>
+                        </HStack>
+                      </CardBody>
+                    </Card>
+
+                    {/* GA4 Input */}
+                    <FormControl>
+                      <FormLabel fontWeight="semibold">
+                        <HStack>
+                          <Text>GA4 Property ID</Text>
+                          <Badge colorScheme="blue" fontSize="xs">
+                            Optional
+                          </Badge>
+                        </HStack>
+                      </FormLabel>
+                      <Input
+                        placeholder="e.g., 123456789"
+                        value={formData.ga4PropertyId}
+                        onChange={(e) =>
+                          setFormData({ ...formData, ga4PropertyId: e.target.value })
+                        }
+                        size="lg"
+                      />
+                      <Text fontSize="xs" color="gray.500" mt={1}>
+                        Find this in GA4 → Admin → Property Settings → Property ID
+                      </Text>
+                    </FormControl>
+
+                    {/* Visual Guide */}
+                    <Box
+                      p={4}
+                      bg="gray.50"
+                      borderRadius="lg"
+                      borderStyle="dashed"
+                      borderWidth="2px"
+                      borderColor="gray.300"
+                    >
+                      <VStack spacing={2}>
+                        <Icon as={FiStar} boxSize={6} color="gray.400" />
+                        <Text fontWeight="medium" color="gray.600">
+                          How to find your GA4 Property ID:
+                        </Text>
+                        <Text fontSize="sm" color="gray.500" textAlign="center">
+                          1. Go to{' '}
+                          <Text as="span" color="blue.500" fontWeight="medium">
+                            analytics.google.com
+                          </Text>
+                          <br />
+                          2. Click Admin (gear icon)
+                          <br />
+                          3. Select your property
+                          <br />
+                          4. Copy the Property ID number
+                        </Text>
+                      </VStack>
+                    </Box>
+
+                    <HStack justify="space-between" pt={4}>
+                      <Button variant="ghost" leftIcon={<FiArrowLeft />} onClick={prevStep}>
+                        Back
+                      </Button>
+                      <HStack spacing={3}>
+                        <Button
+                          variant="outline"
+                          onClick={async () => {
+                            // Skip GA4 connection
+                            setStep(6);
+                          }}
+                        >
+                          Skip for now
+                        </Button>
+                        <Button
+                          colorScheme="orange"
+                          rightIcon={<FiArrowRight />}
+                          onClick={async () => {
+                            // Track GA4 connection if provided
+                            if (formData.ga4PropertyId) {
+                              await updateOnboardingStep({
+                                step: 'ga4Connected',
+                                value: true,
+                              }).catch(console.error);
+                            }
+                            setStep(6);
+                          }}
+                          size="lg"
+                        >
+                          {formData.ga4PropertyId ? 'Connect & Continue' : 'Continue'}
+                        </Button>
+                      </HStack>
+                    </HStack>
+                  </VStack>
+                </Box>
+              </MotionBox>
+            )}
+
+            {/* Step 6: Processing */}
+            {step === 6 && (
+              <MotionBox
+                key="step6"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3 }}

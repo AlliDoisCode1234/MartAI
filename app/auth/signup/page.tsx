@@ -89,7 +89,7 @@ export default function SignupPage() {
               color="gray.800"
               textAlign="center"
             >
-              Get Started - It's Free! 🚀
+              Get Started - It's Free!
             </Heading>
             <Text color="gray.600" textAlign="center">
               No SEO knowledge needed. We'll help you get found on Google.

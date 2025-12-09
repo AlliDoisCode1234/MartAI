@@ -187,7 +187,7 @@ function AnalyticsPageContent() {
           label: 'Keywords',
           value: m.keywords || 0,
           change: 0,
-          icon: '🔑',
+          icon: '◆',
           color: 'white',
           bgGradient: KPI_CONFIG[1].bgGradient,
           borderColor: KPI_CONFIG[1].borderColor,
@@ -198,7 +198,7 @@ function AnalyticsPageContent() {
           label: 'Domain Authority',
           value: m.domainAuthority || 0,
           change: 0,
-          icon: '🏆',
+          icon: '★',
           color: 'white',
           bgGradient: KPI_CONFIG[3].bgGradient,
           borderColor: KPI_CONFIG[3].borderColor,
@@ -218,7 +218,9 @@ function AnalyticsPageContent() {
               <HStack justify="space-between" flexWrap="wrap" gap={4}>
                 <VStack align="start" spacing={2}>
                   <HStack spacing={3}>
-                    <Text fontSize="3xl">📊</Text>
+                    <Text fontSize="3xl" color="brand.orange">
+                      ●
+                    </Text>
                     <VStack align="start" spacing={0}>
                       <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="white">
                         Analytics Dashboard
@@ -242,11 +244,11 @@ function AnalyticsPageContent() {
                     fontWeight="bold"
                     color="brand.dark"
                   >
-                    <option value="main">🚀 Main Project (Live)</option>
+                    <option value="main">▶ Main Project (Live)</option>
                     <option disabled>──────────</option>
                     {competitorHistory?.map((h: any) => (
                       <option key={h._id} value={h._id}>
-                        🔍 {h.url} ({new Date(h.createdAt).toLocaleDateString()})
+                        → {h.url} ({new Date(h.createdAt).toLocaleDateString()})
                       </option>
                     ))}
                   </Select>
@@ -273,7 +275,7 @@ function AnalyticsPageContent() {
 
                   <Button
                     onClick={() => setShowAdhoc(!showAdhoc)}
-                    leftIcon={<Text>➕</Text>}
+                    leftIcon={<Text>+</Text>}
                     size="md"
                     colorScheme="blue"
                     variant="solid"
@@ -294,7 +296,7 @@ function AnalyticsPageContent() {
                       shadow="lg"
                       transition="all 0.2s"
                     >
-                      {syncing ? '' : '🔄'}
+                      {syncing ? '' : '↻'}
                     </Button>
                   )}
                 </HStack>
@@ -511,7 +513,9 @@ function AnalyticsPageContent() {
                               borderColor="brand.orange"
                             >
                               <VStack spacing={4}>
-                                <Text fontSize="4xl">📊</Text>
+                                <Text fontSize="4xl" color="brand.orange">
+                                  ●
+                                </Text>
                                 <VStack spacing={2}>
                                   <Text fontWeight="semibold" color="gray.700">
                                     No data available
@@ -557,7 +561,7 @@ function AnalyticsPageContent() {
                               </Text>
                             </VStack>
                             <Badge colorScheme="teal" fontSize="sm" px={3} py={1}>
-                              🎯 Goals
+                              Goals
                             </Badge>
                           </HStack>
                           {chartData.length > 0 ? (
@@ -620,7 +624,9 @@ function AnalyticsPageContent() {
                               borderColor="brand.teal"
                             >
                               <VStack spacing={4}>
-                                <Text fontSize="4xl">🎯</Text>
+                                <Text fontSize="4xl" color="brand.teal">
+                                  ●
+                                </Text>
                                 <VStack spacing={2}>
                                   <Text fontWeight="semibold" color="gray.700">
                                     No leads data

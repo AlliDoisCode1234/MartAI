@@ -525,7 +525,7 @@ function StrategyContent() {
                   <InsightList
                     projectId={projectIdForQuery}
                     type="cluster_suggestion"
-                    title="🎯 Cluster Suggestions"
+                    title="Cluster Suggestions"
                     maxItems={4}
                     columns={1}
                   />

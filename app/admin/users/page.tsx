@@ -73,12 +73,12 @@ type User = {
 };
 
 const STEP_CONFIG = [
-  { key: 'signupCompleted', label: 'Signup', icon: '👤' },
-  { key: 'planSelected', label: 'Plan', icon: '📋' },
-  { key: 'paymentCompleted', label: 'Payment', icon: '💳' },
-  { key: 'projectCreated', label: 'Project', icon: '📁' },
-  { key: 'ga4Connected', label: 'GA4', icon: '📊' },
-  { key: 'gscConnected', label: 'GSC', icon: '🔍' },
+  { key: 'signupCompleted', label: 'Signup', icon: '●' },
+  { key: 'planSelected', label: 'Plan', icon: '◆' },
+  { key: 'paymentCompleted', label: 'Payment', icon: '■' },
+  { key: 'projectCreated', label: 'Project', icon: '▲' },
+  { key: 'ga4Connected', label: 'GA4', icon: '○' },
+  { key: 'gscConnected', label: 'GSC', icon: '◇' },
 ] as const;
 
 function calculateProgress(steps?: OnboardingSteps): number {
@@ -163,7 +163,7 @@ function UserDetailModal({
                 <StatLabel>Progress</StatLabel>
                 <StatNumber>{progress}%</StatNumber>
                 <StatHelpText>
-                  {user.onboardingStatus === 'completed' ? '✅ Complete' : '⏳ In Progress'}
+                  {user.onboardingStatus === 'completed' ? 'Complete' : 'In Progress'}
                 </StatHelpText>
               </Stat>
               <Stat>

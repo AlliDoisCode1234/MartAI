@@ -264,7 +264,7 @@ export default function DashboardPage() {
           <HStack justify="space-between" align="center" wrap="wrap" spacing={4}>
             <Box>
               <Heading size="lg" mb={2} color="white">
-                Welcome back, {user?.name ?? 'there'}! 👋
+                Welcome back, {user?.name ?? 'there'}!
               </Heading>
               <Text fontSize="lg" color="whiteAlpha.900">
                 Here's what's happening with <b>{project.name}</b>
@@ -523,21 +523,21 @@ export default function DashboardPage() {
             <InsightList
               projectId={selectedProjectId as Id<'projects'>}
               type="quick_win"
-              title="⚡ Quick Wins"
+              title="Quick Wins"
               maxItems={3}
               columns={1}
             />
             <InsightList
               projectId={selectedProjectId as Id<'projects'>}
               type="content_gap"
-              title="📊 Content Gaps"
+              title="Content Gaps"
               maxItems={3}
               columns={1}
             />
             <InsightList
               projectId={selectedProjectId as Id<'projects'>}
               type="semantic_opportunity"
-              title="🎯 Opportunities"
+              title="Opportunities"
               maxItems={3}
               columns={1}
             />

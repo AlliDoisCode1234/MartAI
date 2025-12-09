@@ -123,10 +123,10 @@ export default function HomePage() {
   // Get Mart's message based on state
   const getMartMessage = () => {
     if (isNewUser) {
-      return `Hey ${userName}! 👋 Let's get your SEO strategy off the ground. Here's what we need to do first:`;
+      return `Hey ${userName}! Let's get your SEO strategy off the ground. Here's what we need to do first:`;
     }
     if (mrScore && mrScore.overall >= 70) {
-      return `Nice work, ${userName}! 🎉 Your MR score is looking great. Here are some ways to keep the momentum:`;
+      return `Nice work, ${userName}! Your MR score is looking great. Here are some ways to keep the momentum:`;
     }
     return `Welcome back, ${userName}! Here's what I'd focus on next to boost your SEO:`;
   };

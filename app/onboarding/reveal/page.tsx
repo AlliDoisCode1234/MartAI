@@ -72,7 +72,9 @@ export default function OnboardingRevealPage() {
         if (existingClusters.length > 0) {
           // Sort by impact score and take top clusters for reveal
           const sortedClusters = existingClusters
-            .sort((a: KeywordCluster, b: KeywordCluster) => (b.impactScore || 0) - (a.impactScore || 0))
+            .sort(
+              (a: KeywordCluster, b: KeywordCluster) => (b.impactScore || 0) - (a.impactScore || 0)
+            )
             .slice(0, 8);
           setClusters(sortedClusters);
           setLoading(false);
@@ -105,17 +107,21 @@ export default function OnboardingRevealPage() {
           if (demoResponse.ok) {
             const demoData = await demoResponse.json();
             const demoClusters = demoData.demo?.keywordClusters || [];
-            
+
             // Transform demo format to KeywordCluster format AND save to DB
             const transformedClusters: KeywordCluster[] = [];
-            
+
             for (const demo of demoClusters.slice(0, 6)) {
               // Save to Convex
               try {
                 await createCluster({
                   projectId: projectIdTyped as any,
                   clusterName: demo.clusterName || demo.topic || 'Keyword Opportunity',
-                  keywords: demo.keywords || (demo.primaryKeyword ? [demo.primaryKeyword, ...(demo.supportingKeywords || [])] : []),
+                  keywords:
+                    demo.keywords ||
+                    (demo.primaryKeyword
+                      ? [demo.primaryKeyword, ...(demo.supportingKeywords || [])]
+                      : []),
                   intent: (demo.searchIntent || demo.intent || 'commercial') as any,
                   difficulty: demo.difficulty || 50,
                   volumeRange: demo.volumeRange || { min: 100, max: 1000 },
@@ -130,8 +136,14 @@ export default function OnboardingRevealPage() {
                   _id: `temp-${Date.now()}-${Math.random()}` as any, // Temporary ID for display
                   projectId: projectIdTyped,
                   clusterName: demo.clusterName || demo.topic || 'Keyword Opportunity',
-                  keywords: demo.keywords || (demo.primaryKeyword ? [demo.primaryKeyword, ...(demo.supportingKeywords || [])] : []),
-                  intent: (demo.searchIntent || demo.intent || 'commercial') as KeywordCluster['intent'],
+                  keywords:
+                    demo.keywords ||
+                    (demo.primaryKeyword
+                      ? [demo.primaryKeyword, ...(demo.supportingKeywords || [])]
+                      : []),
+                  intent: (demo.searchIntent ||
+                    demo.intent ||
+                    'commercial') as KeywordCluster['intent'],
                   difficulty: demo.difficulty || 50,
                   volumeRange: demo.volumeRange || { min: 100, max: 1000 },
                   impactScore: demo.impactScore || 0.7,
@@ -248,7 +260,7 @@ export default function OnboardingRevealPage() {
               bgGradient="linear(to-r, brand.orange, brand.teal)"
               bgClip="text"
             >
-              🎉 Amazing! We Found Your Opportunities
+              Amazing! We Found Your Opportunities
             </Heading>
             <Text fontSize="xl" color="gray.600" maxW="2xl" mx="auto">
               We've analyzed your website and discovered{' '}
@@ -280,10 +292,9 @@ export default function OnboardingRevealPage() {
                   You're All Set!
                 </Heading>
                 <Text fontSize="lg" color="gray.600" lineHeight="tall">
-                  You've discovered{' '}
-                  <strong>{clusters.length} keyword opportunities</strong> that can drive traffic
-                  to your website. Now let's create a content strategy to help you rank for these
-                  keywords.
+                  You've discovered <strong>{clusters.length} keyword opportunities</strong> that
+                  can drive traffic to your website. Now let's create a content strategy to help you
+                  rank for these keywords.
                 </Text>
                 <Button
                   size="lg"
@@ -305,4 +316,3 @@ export default function OnboardingRevealPage() {
     </Box>
   );
 }
-
