@@ -51,6 +51,7 @@ import {
   useColorModeValue,
   Divider,
   Progress,
+  Tooltip,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import {
@@ -76,6 +77,7 @@ import {
   NextStepCard,
   StrategyModeToggle,
   SkipWizardLink,
+  KeywordSourceModal,
   getSavedStrategyMode,
   type StrategyMode,
 } from '@/src/components/strategy';
@@ -102,6 +104,7 @@ function StrategyContent() {
     setStrategyMode(getSavedStrategyMode());
   }, []);
   const rescheduleBrief = useMutation(api.content.quarterlyPlans.rescheduleBrief);
+  const createKeywordsMutation = useMutation(api.seo.keywords.createKeywords);
   const generateClustersAction = useAction(api.seo.keywordActions.generateClusters);
   const generatePlanAction = useAction((api as any).content.quarterlyPlanActions.generatePlan);
   const projectIdForQuery =
@@ -157,6 +160,17 @@ function StrategyContent() {
     onOpen: onPlanModalOpen,
     onClose: onPlanModalClose,
   } = useDisclosure();
+  const {
+    isOpen: isKeywordModalOpen,
+    onOpen: onKeywordModalOpen,
+    onClose: onKeywordModalClose,
+  } = useDisclosure();
+
+  // GSC connection status
+  const gscConnection = useQuery(
+    api.integrations.gscConnections.getGSCConnection,
+    projectIdForQuery ? { projectId: projectIdForQuery } : 'skip'
+  );
 
   const [planFormData, setPlanFormData] = useState({
     contentVelocity: 2,
@@ -171,8 +185,13 @@ function StrategyContent() {
     }
     if (!isAuthenticated) {
       router.replace('/auth/login');
+      return;
     }
-  }, [authLoading, isAuthenticated, router]);
+    // Redirect to onboarding if not completed
+    if (user && user.onboardingStatus !== 'completed') {
+      router.replace('/onboarding');
+    }
+  }, [authLoading, isAuthenticated, router, user]);
 
   useEffect(() => {
     if (authLoading || !isAuthenticated) {
@@ -185,21 +204,37 @@ function StrategyContent() {
 
     setProjectsLoading(false);
 
+    // Check localStorage for project ID
+    const storedId =
+      typeof window !== 'undefined' ? window.localStorage.getItem('currentProjectId') : null;
+
     if (!projects || projects.length === 0) {
+      // If localStorage has a project ID but query returns empty,
+      // this might be a timing issue right after onboarding.
+      // Try to use localStorage ID directly if valid
+      if (storedId) {
+        try {
+          assertProjectId(storedId);
+          console.log('[Strategy] Query empty but localStorage has project:', storedId);
+          // Use localStorage project ID - Convex will validate on use
+          setProjectId(storedId);
+          return;
+        } catch {
+          // Invalid ID in localStorage, clear it
+          window.localStorage.removeItem('currentProjectId');
+        }
+      }
       setProjectId(null);
       return;
     }
 
-    const storedId =
-      typeof window !== 'undefined' ? window.localStorage.getItem('currentProjectId') : null;
-
-    let normalizedStored: string | null = null;
+    let normalizedStored: string | null = storedId;
     if (storedId) {
       try {
         assertProjectId(storedId);
-        normalizedStored = storedId;
       } catch {
         window.localStorage.removeItem('currentProjectId');
+        normalizedStored = null;
       }
     }
 
@@ -369,6 +404,60 @@ function StrategyContent() {
     }
   };
 
+  // Handler for importing keywords from GSC
+  const handleImportFromGSC = async () => {
+    if (!projectIdForQuery) return;
+
+    setGenerating(true);
+    try {
+      const result = await generateClustersAction({
+        projectId: projectIdForQuery,
+        importFromGSC: true,
+      });
+      toast({
+        title: '🎯 Keywords Imported!',
+        description: `Imported keywords from Google Search Console`,
+        status: 'success',
+      });
+    } catch (error: any) {
+      console.error('Failed to import GSC keywords', error);
+      toast({
+        title: 'Import failed',
+        description: error?.message || 'Please try again.',
+        status: 'error',
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Handler for adding keywords manually
+  const handleAddKeywordsManually = async (keywords: string[]) => {
+    if (!projectIdForQuery) return;
+
+    setGenerating(true);
+    try {
+      await createKeywordsMutation({
+        projectId: projectIdForQuery,
+        keywords: keywords.map((k) => ({ keyword: k })),
+      });
+      toast({
+        title: '🎯 Keywords Added!',
+        description: `Added ${keywords.length} keywords to your strategy`,
+        status: 'success',
+      });
+    } catch (error: any) {
+      console.error('Failed to add keywords', error);
+      toast({
+        title: 'Failed to add keywords',
+        description: error?.message || 'Please try again.',
+        status: 'error',
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const getIntentColor = (intent: string) => {
     switch (intent) {
       case 'transactional':
@@ -450,8 +539,8 @@ function StrategyContent() {
                 onAction={() => {
                   switch (currentStage) {
                     case 1:
-                      // TODO: Open GSC connect or keyword input modal
-                      onClusterModalOpen();
+                      // Open keyword source modal for GSC import or manual entry
+                      onKeywordModalOpen();
                       break;
                     case 2:
                       onClusterModalOpen();
@@ -476,26 +565,39 @@ function StrategyContent() {
           {/* Quick Actions - Always visible in DIY mode, or after stage 2 in guided */}
           {(strategyMode === 'diy' || currentStage >= 2) && (
             <HStack spacing={3} justify={strategyMode === 'diy' ? 'flex-start' : 'flex-end'}>
-              <Button
-                onClick={onClusterModalOpen}
-                variant={strategyMode === 'diy' ? 'solid' : 'outline'}
-                bg={strategyMode === 'diy' ? 'brand.orange' : undefined}
-                color={strategyMode === 'diy' ? 'white' : undefined}
-                _hover={strategyMode === 'diy' ? { bg: '#E8851A' } : undefined}
-                leftIcon={<Icon as={FiLayers} />}
+              <Tooltip
+                label={keywordCount < 10 ? 'Add at least 10 keywords first' : ''}
+                isDisabled={keywordCount >= 10}
+                hasArrow
               >
-                Generate Topic Clusters
-              </Button>
-              <Button
-                bg="brand.orange"
-                color="white"
-                _hover={{ bg: '#E8851A' }}
-                onClick={onPlanModalOpen}
-                isDisabled={clusters.length === 0}
-                leftIcon={<Icon as={FiCalendar} />}
+                <Button
+                  onClick={onClusterModalOpen}
+                  variant={strategyMode === 'diy' ? 'solid' : 'outline'}
+                  bg={strategyMode === 'diy' ? 'brand.orange' : undefined}
+                  color={strategyMode === 'diy' ? 'white' : undefined}
+                  _hover={strategyMode === 'diy' ? { bg: '#E8851A' } : undefined}
+                  leftIcon={<Icon as={FiLayers} />}
+                  isDisabled={keywordCount < 10}
+                >
+                  Generate Topic Clusters
+                </Button>
+              </Tooltip>
+              <Tooltip
+                label={clusterCount === 0 ? 'Generate topic clusters first' : ''}
+                isDisabled={clusterCount > 0}
+                hasArrow
               >
-                Generate Quarterly Plan
-              </Button>
+                <Button
+                  bg="brand.orange"
+                  color="white"
+                  _hover={{ bg: '#E8851A' }}
+                  onClick={onPlanModalOpen}
+                  isDisabled={clusters.length === 0}
+                  leftIcon={<Icon as={FiCalendar} />}
+                >
+                  Generate Quarterly Plan
+                </Button>
+              </Tooltip>
             </HStack>
           )}
 
@@ -889,6 +991,18 @@ function StrategyContent() {
               </ModalFooter>
             </ModalContent>
           </Modal>
+
+          {/* Keyword Source Modal for Stage 1 */}
+          <KeywordSourceModal
+            isOpen={isKeywordModalOpen}
+            onClose={onKeywordModalClose}
+            hasGSC={!!gscConnection}
+            gscSiteUrl={gscConnection?.siteUrl}
+            onImportFromGSC={handleImportFromGSC}
+            onAddManually={handleAddKeywordsManually}
+            isLoading={generating}
+            existingKeywordCount={keywordCount}
+          />
         </VStack>
       </Container>
     </Box>

@@ -6,6 +6,7 @@
 
 export { StrategyStepper, StrategyStepperCompact } from './StrategyStepper';
 export { NextStepCard } from './NextStepCard';
+export { KeywordSourceModal } from './KeywordSourceModal';
 export {
   StrategyModeToggle,
   SkipWizardLink,

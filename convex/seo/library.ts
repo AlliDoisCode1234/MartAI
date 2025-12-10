@@ -93,6 +93,14 @@ export const listKeywords = query({
   },
 });
 
+export const getKeywordCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query('keywordLibrary').collect();
+    return all.length;
+  },
+});
+
 // --- Public Actions (AI/External) ---
 
 export const seedKeywords = action({

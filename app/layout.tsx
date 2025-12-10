@@ -5,6 +5,7 @@ import { ConvexProviderWrapper } from '@/src/providers/ConvexProvider';
 import { GoogleAuthProvider } from '@/src/providers/GoogleAuthProvider';
 import { Layout } from '@/src/components/Layout';
 import { ErrorBoundary } from '@/src/components/shared/ErrorBoundary';
+import { TrackingProvider } from '@/src/providers/TrackingProvider';
 import '@/src/index.css';
 import type { Metadata } from 'next';
 
@@ -48,7 +49,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <GoogleAuthProvider>
               <SecurityProvider>
                 <ChakraProviderWrapper>
-                  <Layout>{children}</Layout>
+                  <TrackingProvider>
+                    <Layout>{children}</Layout>
+                  </TrackingProvider>
                 </ChakraProviderWrapper>
               </SecurityProvider>
             </GoogleAuthProvider>

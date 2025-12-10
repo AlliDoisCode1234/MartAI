@@ -951,4 +951,24 @@ export default defineSchema({
     .index('by_user', ['userId'])
     .index('by_project', ['projectId'])
     .index('by_active', ['isActive']),
+
+  // ========================================
+  // ANALYTICS: Event Tracking for BI
+  // ========================================
+  analyticsEvents: defineTable({
+    userId: v.optional(v.id('users')),
+    sessionId: v.optional(v.string()), // UUID for grouping session events
+    event: v.string(), // 'click', 'page_view', 'funnel_step', 'error'
+    trackId: v.optional(v.string()), // data-track-id attribute value
+    properties: v.optional(v.any()), // Additional event data
+    url: v.optional(v.string()), // Page URL
+    referrer: v.optional(v.string()), // Referrer URL
+    userAgent: v.optional(v.string()), // Browser/device info
+    timestamp: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_session', ['sessionId'])
+    .index('by_event', ['event'])
+    .index('by_timestamp', ['timestamp'])
+    .index('by_track_id', ['trackId']),
 });

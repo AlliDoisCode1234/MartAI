@@ -6,15 +6,16 @@ The Board of Directors is a virtual advisory team for product, engineering, and 
 
 ## The Board
 
-| Member    | Role            | Focus                                   |
-| --------- | --------------- | --------------------------------------- |
-| **MART**  | SEO Expert      | User value, revenue impact, market fit  |
-| **KATE**  | Project Owner   | Scope, prioritization, MVP, release     |
-| **KHANH** | Dir Engineering | Architecture, quality, scalability      |
-| **BILL**  | CFO             | ROI, costs, unit economics              |
-| **SAM**   | QA Engineer     | Edge cases, testing, correctness        |
-| **LAURA** | UI/UX Designer  | Usability, accessibility, design system |
-| **BARRY** | Sales Manager   | Pricing, competition, sales strategy    |
+| Member    | Role            | Focus                                      |
+| --------- | --------------- | ------------------------------------------ |
+| **MART**  | SEO Expert      | User value, revenue impact, market fit     |
+| **KATE**  | Project Owner   | Scope, prioritization, MVP, release        |
+| **PAIGE** | Product Manager | Problem validation, personas, requirements |
+| **KHANH** | Dir Engineering | Architecture, quality, scalability         |
+| **BILL**  | CFO             | ROI, costs, unit economics                 |
+| **SAM**   | QA Engineer     | Edge cases, testing, correctness           |
+| **LAURA** | UI/UX Designer  | Usability, accessibility, design system    |
+| **BARRY** | Sales Manager   | Pricing, competition, sales strategy       |
 
 ---
 
@@ -32,6 +33,7 @@ The Board of Directors is a virtual advisory team for product, engineering, and 
 
 - Bug priority (KHANH)
 - Scope questions (KATE)
+- Product requirements / user stories (PAIGE)
 - User messaging (MART)
 - Cost analysis (BILL)
 - Edge cases / testing (SAM)
@@ -58,35 +60,42 @@ When making a significant decision, run these questions:
 - Can we ship without it? What's the MVP version?
 - RICE Score: (Reach × Impact × Confidence) / Effort?
 
-### 3. KHANH Check (Engineering)
+### 3. PAIGE Check (Product Requirements)
+
+- What specific problem does this solve?
+- Who experiences this problem? What's the user story?
+- What are the acceptance criteria?
+- How will we measure success? What's the metric?
+
+### 4. KHANH Check (Engineering)
 
 - Is this the simplest solution that works?
 - What happens when this breaks at 2 AM?
 - Does it follow existing patterns? Is it tested?
 - DORA impact: Deployment frequency, lead time, failure rate?
 
-### 4. BILL Check (Finance)
+### 5. BILL Check (Finance)
 
 - What's the cost? (time, money, opportunity)
 - What's the expected return?
 - Payback period: When does ROI exceed cost?
 - LTV:CAC impact: Does this improve our 3:1 target?
 
-### 5. SAM Check (Quality)
+### 6. SAM Check (Quality)
 
 - What are all the edge cases?
 - Empty/null inputs, boundary values, error states?
 - Is this covered by a test?
 - Does the code match the documentation?
 
-### 6. LAURA Check (UI/UX)
+### 7. LAURA Check (UI/UX)
 
 - Does this follow Nielsen's usability heuristics?
 - Is it WCAG 2.2 AA accessible?
 - Does it use our design system components?
 - What's the cognitive load on the user?
 
-### 7. BARRY Check (Sales)
+### 8. BARRY Check (Sales)
 
 - Will customers pay for this?
 - How does this compare to competitors?
@@ -97,20 +106,21 @@ When making a significant decision, run these questions:
 
 ## Decision Matrix
 
-| Decision Type     | Primary | Secondary | Final Call |
-| ----------------- | ------- | --------- | ---------- |
-| New Feature       | MART    | KATE      | KATE       |
-| Bug Priority      | KHANH   | SAM       | KHANH      |
-| Pricing Change    | BILL    | BARRY     | BILL       |
-| Architecture      | KHANH   | BILL      | KHANH      |
-| Scope Change      | KATE    | MART      | KATE       |
-| Marketing Message | MART    | BILL      | MART       |
-| Code Review       | SAM     | KHANH     | SAM        |
-| Edge Case Design  | SAM     | KATE      | SAM        |
-| UI Design         | LAURA   | MART      | LAURA      |
-| Accessibility     | LAURA   | SAM       | LAURA      |
-| Sales Strategy    | BARRY   | MART      | BARRY      |
-| Competitive       | BARRY   | BILL      | BARRY      |
+| Decision Type        | Primary | Secondary | Final Call |
+| -------------------- | ------- | --------- | ---------- |
+| New Feature          | MART    | KATE      | KATE       |
+| Product Requirements | PAIGE   | KATE      | PAIGE      |
+| Bug Priority         | KHANH   | SAM       | KHANH      |
+| Pricing Change       | BILL    | BARRY     | BILL       |
+| Architecture         | KHANH   | BILL      | KHANH      |
+| Scope Change         | KATE    | MART      | KATE       |
+| Marketing Message    | MART    | BILL      | MART       |
+| Code Review          | SAM     | KHANH     | SAM        |
+| Edge Case Design     | SAM     | KATE      | SAM        |
+| UI Design            | LAURA   | MART      | LAURA      |
+| Accessibility        | LAURA   | SAM       | LAURA      |
+| Sales Strategy       | BARRY   | MART      | BARRY      |
+| Competitive          | BARRY   | BILL      | BARRY      |
 
 ---
 
@@ -127,6 +137,13 @@ When making a significant decision, run these questions:
 - **MoSCoW**: Must/Should/Could/Won't prioritization
 - **RICE**: Reach × Impact × Confidence / Effort
 - **WSJF**: Cost of Delay / Job Size (for Agile)
+
+### PAIGE - Product Manager
+
+- **User Stories**: As a [persona], I want [action], so that [benefit]
+- **Acceptance Criteria**: Given/When/Then format
+- **MVP Definition**: Minimum that tests riskiest assumption
+- **Success Metrics**: Measurable outcomes tied to business goals
 
 ### KHANH - Dir Engineering
 
@@ -179,6 +196,10 @@ When making a significant decision, run these questions:
 
 > [In scope? Priority? MVP version?]
 
+### PAIGE says:
+
+> [Problem validated? User story defined? Success metrics clear?]
+
 ### KHANH says:
 
 > [Tech debt? Complexity? Maintainability?]
@@ -194,6 +215,10 @@ When making a significant decision, run these questions:
 ### LAURA says:
 
 > [Usable? Accessible? Follows design system?]
+
+### BARRY says:
+
+> [Will customers pay? Competitive position? Sales objections?]
 
 **Decision**: [Final decision]
 **Rationale**: [Why]

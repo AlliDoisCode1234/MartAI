@@ -33,6 +33,31 @@ export const getAllUsers = query({
   },
 });
 
+// Get a single user with details
+export const getUser = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) return null;
+
+    const subscription = await ctx.db
+      .query('subscriptions')
+      .withIndex('by_user', (q) => q.eq('userId', user._id))
+      .first();
+
+    return {
+      ...user,
+      createdAt: user.createdAt ?? user._creationTime,
+      subscription: subscription
+        ? {
+            planTier: subscription.planTier,
+            status: subscription.status,
+          }
+        : null,
+    };
+  },
+});
+
 // Get all keywords across the system
 export const getAllKeywords = query({
   args: { limit: v.optional(v.number()) },

@@ -1,0 +1,1031 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "createdAt": "2025-12-10",
+    "totalKeywords": 200,
+    "niches": ["marketing", "saas", "ecommerce", "local_business", "professional_services"]
+  },
+  "keywords": [
+    {
+      "keyword": "content marketing strategy",
+      "searchVolume": 12100,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "seo best practices 2024",
+      "searchVolume": 8100,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "digital marketing agency",
+      "searchVolume": 40500,
+      "difficulty": 78,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "how to rank on google",
+      "searchVolume": 6600,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "keyword research tools",
+      "searchVolume": 14800,
+      "difficulty": 62,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "local seo tips",
+      "searchVolume": 3600,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "content calendar template",
+      "searchVolume": 9900,
+      "difficulty": 42,
+      "intent": "transactional"
+    },
+    {
+      "keyword": "blog post ideas",
+      "searchVolume": 22200,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+    {
+      "keyword": "social media marketing",
+      "searchVolume": 74000,
+      "difficulty": 85,
+      "intent": "informational"
+    },
+    {
+      "keyword": "email marketing examples",
+      "searchVolume": 5400,
+      "difficulty": 40,
+      "intent": "informational"
+    },
+    {
+      "keyword": "b2b marketing strategies",
+      "searchVolume": 4400,
+      "difficulty": 55,
+      "intent": "informational"
+    },
+    {
+      "keyword": "lead generation ideas",
+      "searchVolume": 3600,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "marketing automation tools",
+      "searchVolume": 8100,
+      "difficulty": 65,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "content writing tips",
+      "searchVolume": 4400,
+      "difficulty": 32,
+      "intent": "informational"
+    },
+    {
+      "keyword": "seo audit checklist",
+      "searchVolume": 2900,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "backlink building strategies",
+      "searchVolume": 2400,
+      "difficulty": 58,
+      "intent": "informational"
+    },
+    {
+      "keyword": "google analytics tutorial",
+      "searchVolume": 6600,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "conversion rate optimization",
+      "searchVolume": 5400,
+      "difficulty": 60,
+      "intent": "informational"
+    },
+    {
+      "keyword": "landing page best practices",
+      "searchVolume": 2900,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "ppc advertising tips",
+      "searchVolume": 1900,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+
+    {
+      "keyword": "saas pricing models",
+      "searchVolume": 4400,
+      "difficulty": 38,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "saas marketing strategy",
+      "searchVolume": 2900,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "product led growth",
+      "searchVolume": 6600,
+      "difficulty": 55,
+      "intent": "informational"
+    },
+    {
+      "keyword": "saas customer acquisition",
+      "searchVolume": 1600,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "saas onboarding best practices",
+      "searchVolume": 1300,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "reduce saas churn",
+      "searchVolume": 880,
+      "difficulty": 40,
+      "intent": "informational"
+    },
+    {
+      "keyword": "freemium vs paid",
+      "searchVolume": 1900,
+      "difficulty": 32,
+      "intent": "informational"
+    },
+    {
+      "keyword": "saas metrics dashboard",
+      "searchVolume": 720,
+      "difficulty": 38,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "b2b saas lead generation",
+      "searchVolume": 590,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "saas content marketing",
+      "searchVolume": 480,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "saas seo strategy",
+      "searchVolume": 390,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "software pricing strategy",
+      "searchVolume": 1300,
+      "difficulty": 50,
+      "intent": "informational"
+    },
+    {
+      "keyword": "subscription business model",
+      "searchVolume": 3600,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "customer success strategies",
+      "searchVolume": 2400,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "net revenue retention",
+      "searchVolume": 1600,
+      "difficulty": 55,
+      "intent": "informational"
+    },
+    {
+      "keyword": "annual recurring revenue",
+      "searchVolume": 4400,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "monthly recurring revenue",
+      "searchVolume": 5400,
+      "difficulty": 32,
+      "intent": "informational"
+    },
+    {
+      "keyword": "saas growth hacking",
+      "searchVolume": 880,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "product market fit",
+      "searchVolume": 6600,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "startup marketing budget",
+      "searchVolume": 720,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+
+    {
+      "keyword": "ecommerce marketing ideas",
+      "searchVolume": 2400,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "online store promotion",
+      "searchVolume": 1900,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "ecommerce seo guide",
+      "searchVolume": 3600,
+      "difficulty": 55,
+      "intent": "informational"
+    },
+    {
+      "keyword": "product description examples",
+      "searchVolume": 6600,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "increase ecommerce conversion",
+      "searchVolume": 1300,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "abandoned cart recovery",
+      "searchVolume": 5400,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "ecommerce email marketing",
+      "searchVolume": 2400,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "product photography tips",
+      "searchVolume": 8100,
+      "difficulty": 32,
+      "intent": "informational"
+    },
+    {
+      "keyword": "shopify seo tips",
+      "searchVolume": 2900,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "woocommerce optimization",
+      "searchVolume": 1900,
+      "difficulty": 40,
+      "intent": "informational"
+    },
+    {
+      "keyword": "dropshipping marketing",
+      "searchVolume": 4400,
+      "difficulty": 55,
+      "intent": "informational"
+    },
+    {
+      "keyword": "amazon seller tips",
+      "searchVolume": 9900,
+      "difficulty": 62,
+      "intent": "informational"
+    },
+    {
+      "keyword": "product listing optimization",
+      "searchVolume": 1600,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "ecommerce content strategy",
+      "searchVolume": 590,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "online retail trends",
+      "searchVolume": 2400,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+    {
+      "keyword": "customer reviews strategy",
+      "searchVolume": 880,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "upselling techniques",
+      "searchVolume": 2900,
+      "difficulty": 40,
+      "intent": "informational"
+    },
+    {
+      "keyword": "cross selling examples",
+      "searchVolume": 2400,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "ecommerce personalization",
+      "searchVolume": 1300,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "flash sale strategy",
+      "searchVolume": 720,
+      "difficulty": 32,
+      "intent": "informational"
+    },
+
+    {
+      "keyword": "local business marketing",
+      "searchVolume": 2900,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "google my business optimization",
+      "searchVolume": 8100,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "local seo checklist",
+      "searchVolume": 1900,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+    {
+      "keyword": "how to get more reviews",
+      "searchVolume": 4400,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "restaurant marketing ideas",
+      "searchVolume": 3600,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "dental practice marketing",
+      "searchVolume": 2400,
+      "difficulty": 52,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "real estate agent marketing",
+      "searchVolume": 4400,
+      "difficulty": 55,
+      "intent": "informational"
+    },
+    {
+      "keyword": "hvac marketing strategies",
+      "searchVolume": 1300,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    { "keyword": "plumber seo", "searchVolume": 880, "difficulty": 40, "intent": "commercial" },
+    {
+      "keyword": "lawyer marketing",
+      "searchVolume": 2900,
+      "difficulty": 62,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "gym marketing ideas",
+      "searchVolume": 2400,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+    {
+      "keyword": "salon marketing tips",
+      "searchVolume": 1900,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "auto repair shop marketing",
+      "searchVolume": 880,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "local citation building",
+      "searchVolume": 1300,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "neighborhood marketing",
+      "searchVolume": 480,
+      "difficulty": 28,
+      "intent": "informational"
+    },
+    {
+      "keyword": "community engagement ideas",
+      "searchVolume": 2400,
+      "difficulty": 32,
+      "intent": "informational"
+    },
+    {
+      "keyword": "small business advertising",
+      "searchVolume": 6600,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "local event marketing",
+      "searchVolume": 1600,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "word of mouth marketing",
+      "searchVolume": 5400,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "referral program ideas",
+      "searchVolume": 2900,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+
+    {
+      "keyword": "consulting business marketing",
+      "searchVolume": 1300,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "professional services seo",
+      "searchVolume": 590,
+      "difficulty": 48,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "accounting firm marketing",
+      "searchVolume": 1900,
+      "difficulty": 52,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "financial advisor marketing",
+      "searchVolume": 2400,
+      "difficulty": 58,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "architect marketing",
+      "searchVolume": 880,
+      "difficulty": 42,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "engineering firm marketing",
+      "searchVolume": 590,
+      "difficulty": 45,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "it consulting marketing",
+      "searchVolume": 720,
+      "difficulty": 48,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "hr consulting marketing",
+      "searchVolume": 390,
+      "difficulty": 42,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "management consulting leads",
+      "searchVolume": 480,
+      "difficulty": 55,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "thought leadership content",
+      "searchVolume": 2900,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "b2b lead generation",
+      "searchVolume": 9900,
+      "difficulty": 65,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "professional networking tips",
+      "searchVolume": 3600,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "linkedin marketing strategy",
+      "searchVolume": 6600,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "white paper marketing",
+      "searchVolume": 1300,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "case study examples",
+      "searchVolume": 14800,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+    {
+      "keyword": "webinar marketing",
+      "searchVolume": 2900,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "speaking engagement tips",
+      "searchVolume": 1600,
+      "difficulty": 32,
+      "intent": "informational"
+    },
+    {
+      "keyword": "industry report marketing",
+      "searchVolume": 480,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "professional credibility",
+      "searchVolume": 880,
+      "difficulty": 28,
+      "intent": "informational"
+    },
+    {
+      "keyword": "expertise marketing",
+      "searchVolume": 390,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+
+    {
+      "keyword": "ai marketing tools",
+      "searchVolume": 6600,
+      "difficulty": 55,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "chatgpt for marketing",
+      "searchVolume": 8100,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "ai content writing",
+      "searchVolume": 5400,
+      "difficulty": 48,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "marketing automation ai",
+      "searchVolume": 1900,
+      "difficulty": 52,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "personalization ai marketing",
+      "searchVolume": 720,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "predictive analytics marketing",
+      "searchVolume": 2400,
+      "difficulty": 58,
+      "intent": "informational"
+    },
+    { "keyword": "ai seo tools", "searchVolume": 3600, "difficulty": 48, "intent": "commercial" },
+    {
+      "keyword": "machine learning marketing",
+      "searchVolume": 1300,
+      "difficulty": 55,
+      "intent": "informational"
+    },
+    {
+      "keyword": "ai customer segmentation",
+      "searchVolume": 590,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "automated content creation",
+      "searchVolume": 2900,
+      "difficulty": 45,
+      "intent": "commercial"
+    },
+
+    {
+      "keyword": "content repurposing ideas",
+      "searchVolume": 2400,
+      "difficulty": 32,
+      "intent": "informational"
+    },
+    {
+      "keyword": "pillar content strategy",
+      "searchVolume": 1900,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "content cluster examples",
+      "searchVolume": 1300,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "evergreen content ideas",
+      "searchVolume": 2900,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "content distribution channels",
+      "searchVolume": 1600,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "content promotion strategies",
+      "searchVolume": 880,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "content marketing roi",
+      "searchVolume": 1300,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "content performance metrics",
+      "searchVolume": 720,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "user generated content",
+      "searchVolume": 9900,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "interactive content ideas",
+      "searchVolume": 1900,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+
+    {
+      "keyword": "competitor keyword analysis",
+      "searchVolume": 2400,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "keyword gap analysis",
+      "searchVolume": 1600,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "long tail keyword research",
+      "searchVolume": 4400,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "keyword difficulty checker",
+      "searchVolume": 3600,
+      "difficulty": 55,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "search intent optimization",
+      "searchVolume": 1300,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "featured snippet optimization",
+      "searchVolume": 2900,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "voice search optimization",
+      "searchVolume": 3600,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "mobile seo best practices",
+      "searchVolume": 2400,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "core web vitals optimization",
+      "searchVolume": 5400,
+      "difficulty": 55,
+      "intent": "informational"
+    },
+    {
+      "keyword": "schema markup guide",
+      "searchVolume": 6600,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+
+    {
+      "keyword": "brand awareness strategies",
+      "searchVolume": 4400,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "brand positioning examples",
+      "searchVolume": 3600,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "brand storytelling",
+      "searchVolume": 5400,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "personal branding tips",
+      "searchVolume": 8100,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+    {
+      "keyword": "brand voice guidelines",
+      "searchVolume": 2400,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "brand consistency tips",
+      "searchVolume": 880,
+      "difficulty": 32,
+      "intent": "informational"
+    },
+    {
+      "keyword": "rebranding strategy",
+      "searchVolume": 2900,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "brand partnership ideas",
+      "searchVolume": 1300,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "influencer marketing guide",
+      "searchVolume": 6600,
+      "difficulty": 55,
+      "intent": "informational"
+    },
+    {
+      "keyword": "brand ambassador program",
+      "searchVolume": 4400,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+
+    {
+      "keyword": "website traffic strategies",
+      "searchVolume": 2900,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "organic traffic tips",
+      "searchVolume": 2400,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "increase website visitors",
+      "searchVolume": 4400,
+      "difficulty": 55,
+      "intent": "informational"
+    },
+    {
+      "keyword": "reduce bounce rate",
+      "searchVolume": 3600,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "improve time on site",
+      "searchVolume": 1300,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+    {
+      "keyword": "exit intent popup",
+      "searchVolume": 2900,
+      "difficulty": 45,
+      "intent": "commercial"
+    },
+    {
+      "keyword": "heat map analysis",
+      "searchVolume": 4400,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "ab testing examples",
+      "searchVolume": 5400,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "website personalization",
+      "searchVolume": 2400,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "cta optimization tips",
+      "searchVolume": 1600,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+
+    {
+      "keyword": "video marketing strategy",
+      "searchVolume": 5400,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "youtube seo tips",
+      "searchVolume": 9900,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "video content ideas",
+      "searchVolume": 4400,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "short form video marketing",
+      "searchVolume": 2900,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "tiktok marketing strategy",
+      "searchVolume": 6600,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "instagram reels tips",
+      "searchVolume": 8100,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+    {
+      "keyword": "live streaming marketing",
+      "searchVolume": 1900,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "podcast marketing",
+      "searchVolume": 3600,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "video testimonials",
+      "searchVolume": 2400,
+      "difficulty": 32,
+      "intent": "informational"
+    },
+    {
+      "keyword": "explainer video tips",
+      "searchVolume": 1600,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+
+    {
+      "keyword": "email list building",
+      "searchVolume": 5400,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "email subject line tips",
+      "searchVolume": 4400,
+      "difficulty": 35,
+      "intent": "informational"
+    },
+    {
+      "keyword": "email segmentation strategy",
+      "searchVolume": 2400,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "email automation workflows",
+      "searchVolume": 2900,
+      "difficulty": 52,
+      "intent": "informational"
+    },
+    {
+      "keyword": "drip campaign examples",
+      "searchVolume": 3600,
+      "difficulty": 45,
+      "intent": "informational"
+    },
+    {
+      "keyword": "newsletter content ideas",
+      "searchVolume": 2400,
+      "difficulty": 32,
+      "intent": "informational"
+    },
+    {
+      "keyword": "email deliverability tips",
+      "searchVolume": 1900,
+      "difficulty": 48,
+      "intent": "informational"
+    },
+    {
+      "keyword": "email a b testing",
+      "searchVolume": 1600,
+      "difficulty": 42,
+      "intent": "informational"
+    },
+    {
+      "keyword": "re engagement email examples",
+      "searchVolume": 880,
+      "difficulty": 38,
+      "intent": "informational"
+    },
+    {
+      "keyword": "welcome email sequence",
+      "searchVolume": 2400,
+      "difficulty": 35,
+      "intent": "informational"
+    }
+  ]
+}

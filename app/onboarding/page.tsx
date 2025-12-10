@@ -99,6 +99,40 @@ export default function OnboardingPage() {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [ga4Connected, setGa4Connected] = useState(false);
 
+  // Helper: Get user email with localStorage fallback
+  // Convex Auth may not populate user.email immediately
+  const getUserEmail = (): string | null => {
+    // 1. Try Convex user.email
+    if (user?.email) return user.email;
+    // 2. Try localStorage (cached from previous auth)
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          // Check both 'email' and 'username' (Convex Auth sometimes uses username)
+          return parsed.email || parsed.username || null;
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+    return null;
+  };
+
+  // Cache email to localStorage when user is loaded
+  useEffect(() => {
+    if (user?.email && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('user');
+        const existing = stored ? JSON.parse(stored) : {};
+        localStorage.setItem('user', JSON.stringify({ ...existing, email: user.email }));
+      } catch {
+        // Ignore
+      }
+    }
+  }, [user?.email]);
+
   // Track signup completed on mount (user landed on onboarding)
   useEffect(() => {
     if (isAuthenticated && user && step === 1) {
@@ -119,6 +153,37 @@ export default function OnboardingPage() {
       router.replace('/home');
     }
   }, [isAuthenticated, authLoading, router, user]);
+
+  // Prevent browser back button during onboarding
+  useEffect(() => {
+    const preventBack = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    // Push initial state
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', preventBack);
+    return () => window.removeEventListener('popstate', preventBack);
+  }, []);
+
+  // Persist step to localStorage for recovery on refresh
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('onboardingStep', step.toString());
+    }
+  }, [step]);
+
+  // Restore step from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedStep = localStorage.getItem('onboardingStep');
+      if (savedStep) {
+        const parsed = parseInt(savedStep, 10);
+        if (parsed >= 1 && parsed <= 5) {
+          setStep(parsed);
+        }
+      }
+    }
+  }, []);
 
   const nextStep = async () => {
     // Track step transitions
@@ -160,6 +225,8 @@ export default function OnboardingPage() {
         // Track project created
         await updateOnboardingStep({ step: 'projectCreated', value: true }).catch(console.error);
         await completeOnboarding();
+        // Clear onboarding step and store project
+        localStorage.removeItem('onboardingStep');
         localStorage.setItem('currentProjectId', projectId);
         router.push('/onboarding/reveal');
       } else {
@@ -270,13 +337,20 @@ export default function OnboardingPage() {
                       size="lg"
                       rightIcon={<FiArrowRight />}
                       onClick={async () => {
-                        if (!formData.website || !user?.email) return;
+                        const email = getUserEmail();
+                        if (!formData.website || !email) {
+                          console.log('[Onboarding] Missing website or email:', {
+                            website: formData.website,
+                            email,
+                          });
+                          return;
+                        }
 
                         setLoading(true);
                         try {
                           // Create prospect (captures lead before paywall)
                           const newProspectId = await createOnboardingProspect({
-                            email: user.email,
+                            email,
                             companyName: formData.businessName || undefined,
                             websiteUrl: formData.website,
                             source: 'onboarding',

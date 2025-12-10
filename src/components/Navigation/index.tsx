@@ -34,6 +34,12 @@ export const Navigation: FC = () => {
   const pathname = usePathname();
   const { user, isAuthenticated } = useAuth();
 
+  // Hide navigation completely on onboarding and auth pages
+  const hiddenRoutes = ['/onboarding', '/auth/signup', '/auth/login'];
+  if (hiddenRoutes.some((route) => pathname?.startsWith(route))) {
+    return null;
+  }
+
   // Determine which nav items to show
   let navItems = publicNavItems;
   if (isAuthenticated && user) {

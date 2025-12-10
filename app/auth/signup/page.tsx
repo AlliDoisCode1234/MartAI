@@ -63,6 +63,8 @@ export default function SignupPage() {
       router.push('/onboarding');
     } catch (err) {
       setError('Failed to create account. Email might be already in use.');
+      // Clear password fields on error for security
+      setFormData({ ...formData, password: '', confirmPassword: '' });
       setLoading(false);
     }
   };
@@ -110,6 +112,7 @@ export default function SignupPage() {
               width="full"
               isLoading={loading}
               isDisabled={loading}
+              data-track-id="signup_google"
             >
               Sign up with Google
             </Button>
@@ -189,6 +192,7 @@ export default function SignupPage() {
                   disabled={loading}
                   isLoading={loading}
                   loadingText="Creating account..."
+                  data-track-id="signup_submit"
                 >
                   Sign Up
                 </Button>

@@ -361,7 +361,8 @@ export default function AdminUsersPage() {
                               icon={<ViewIcon />}
                               size="xs"
                               variant="ghost"
-                              onClick={() => handleViewUser(user)}
+                              as="a"
+                              href={`/admin/users/${user._id}`}
                             />
                           </Tooltip>
                           <Button
