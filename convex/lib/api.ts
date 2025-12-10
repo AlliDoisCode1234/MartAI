@@ -24,6 +24,7 @@ import type * as seo_competitors from '../seo/competitors';
 import type * as seo_rankings from '../seo/rankings';
 import type * as seo_library from '../seo/library';
 import type * as seo_strategy from '../seo/strategy';
+import type * as seo_serpAnalysis from '../seo/serpAnalysis';
 
 import type * as content_briefs from '../content/briefs';
 import type * as content_drafts from '../content/drafts';
@@ -60,7 +61,8 @@ import type * as subscriptions_subscriptions from '../subscriptions/subscription
 
 import type * as webhooks_webhooks from '../webhooks/webhooks';
 
-import type * as top_apiAccessRequests from '../apiAccessRequests';
+// NOTE: top-level modules like apiAccessRequests, users, aiStorage cause
+// circular type inference. Import them from '_generated/api' directly.
 
 // Import base api for top-level modules
 import { api as baseApi, internal as baseInternal } from '../_generated/api';
@@ -79,6 +81,7 @@ type FullApiType = {
   'seo/rankings': typeof seo_rankings;
   'seo/library': typeof seo_library;
   'seo/strategy': typeof seo_strategy;
+  'seo/serpAnalysis': typeof seo_serpAnalysis;
   // Content
   'content/briefs': typeof content_briefs;
   'content/drafts': typeof content_drafts;
@@ -114,8 +117,7 @@ type FullApiType = {
   'subscriptions/subscriptions': typeof subscriptions_subscriptions;
   // Webhooks
   'webhooks/webhooks': typeof webhooks_webhooks;
-  // Top-level modules
-  apiAccessRequests: typeof top_apiAccessRequests;
+  // NOTE: Top-level modules excluded - see comment at top of imports
 };
 
 // Cast api to include bracket access
@@ -134,6 +136,7 @@ export const seoCompetitors = api['seo/competitors'];
 export const seoRankings = api['seo/rankings'];
 export const seoLibrary = api['seo/library'];
 export const seoStrategy = api['seo/strategy'];
+export const seoSerpAnalysis = api['seo/serpAnalysis'];
 
 // ============================================
 // TYPED EXPORTS - CONTENT
@@ -202,9 +205,8 @@ export const webhooksWebhooks = api['webhooks/webhooks'];
 
 // ============================================
 // TOP-LEVEL MODULES
-// Note: For users, aiStorage, etc. - import directly from '../_generated/api'
-// to avoid circular reference issues
+// Note: For apiAccessRequests, users, aiStorage, etc. - import directly from
+// '../_generated/api' to avoid circular reference issues
 // ============================================
 export const apiKeys = api['apiKeys'];
-export const apiAccessRequests = api['apiAccessRequests'];
 export const onboarding = api['onboarding'];

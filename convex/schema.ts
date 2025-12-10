@@ -856,7 +856,35 @@ export default defineSchema({
     .index('by_next_retry', ['nextRetryAt']),
 
   // ========================================
-  // PUBLIC API
+  // SERP ANALYSIS (Competitor Research)
+  // ========================================
+
+  // SERP Analysis Results (1 per project limit, upsell for more)
+  serpAnalyses: defineTable({
+    projectId: v.id('projects'),
+    keyword: v.string(),
+    location: v.optional(v.string()), // 'US', 'UK', etc.
+    results: v.array(
+      v.object({
+        position: v.number(),
+        url: v.string(),
+        domain: v.string(),
+        title: v.string(),
+        snippet: v.optional(v.string()),
+        isAd: v.optional(v.boolean()),
+      })
+    ),
+    // Metadata
+    searchVolume: v.optional(v.number()),
+    difficulty: v.optional(v.number()),
+    analyzedAt: v.number(),
+    // Source tracking
+    source: v.optional(v.string()), // 'dataforseo', 'serpapi', 'mock'
+  })
+    .index('by_project', ['projectId'])
+    .index('by_keyword', ['keyword'])
+    .index('by_project_keyword', ['projectId', 'keyword']),
+
   // ========================================
   // PUBLIC API
   // ========================================

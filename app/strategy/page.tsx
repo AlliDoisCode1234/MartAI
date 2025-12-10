@@ -61,6 +61,7 @@ import {
   FiCalendar,
   FiLayers,
   FiStar,
+  FiSearch,
 } from 'react-icons/fi';
 import { useAuth } from '@/lib/useAuth';
 import { useAction, useMutation, useQuery } from 'convex/react';
@@ -658,6 +659,18 @@ function StrategyContent() {
                             Impact: {cluster.impactScore.toFixed(2)} | {cluster.keywords.length}{' '}
                             keywords
                           </Text>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            colorScheme="blue"
+                            leftIcon={<Icon as={FiSearch} boxSize={3} />}
+                            onClick={() => {
+                              const primaryKeyword = cluster.keywords?.[0] || cluster.clusterName;
+                              window.location.href = `/competitors?keyword=${encodeURIComponent(primaryKeyword)}`;
+                            }}
+                          >
+                            Analyze SERP
+                          </Button>
                         </VStack>
                       </CardBody>
                     </Card>
