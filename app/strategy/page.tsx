@@ -71,6 +71,14 @@ import type { Brief, ProjectId } from '@/types';
 import { DraggableBriefList } from '@/src/components/DraggableBriefList';
 import { assertProjectId } from '@/lib/typeGuards';
 import { InsightList } from '@/src/components/insights';
+import {
+  StrategyStepper,
+  NextStepCard,
+  StrategyModeToggle,
+  SkipWizardLink,
+  getSavedStrategyMode,
+  type StrategyMode,
+} from '@/src/components/strategy';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Card);
@@ -87,6 +95,12 @@ function StrategyContent() {
   const [generating, setGenerating] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectsLoading, setProjectsLoading] = useState(true);
+  const [strategyMode, setStrategyMode] = useState<StrategyMode>('guided');
+
+  // Load saved mode preference on mount
+  useEffect(() => {
+    setStrategyMode(getSavedStrategyMode());
+  }, []);
   const rescheduleBrief = useMutation(api.content.quarterlyPlans.rescheduleBrief);
   const generateClustersAction = useAction(api.seo.keywordActions.generateClusters);
   const generatePlanAction = useAction((api as any).content.quarterlyPlanActions.generatePlan);
@@ -108,6 +122,29 @@ function StrategyContent() {
   const clusters = strategyData?.clusters ?? [];
   const plan = strategyData?.plan ?? null;
   const strategyLoading = projectIdForQuery ? strategyData === undefined : false;
+
+  // Calculate current stage based on data
+  // Stage 1: Find Topics (no keywords/clusters)
+  // Stage 2: Organize (has keywords, no clusters)
+  // Stage 3: Plan (has clusters, no briefs)
+  // Stage 4: Write (has briefs)
+  const keywordCount = clusters.reduce(
+    (acc: number, c: { keywords?: string[] }) => acc + (c.keywords?.length || 0),
+    0
+  );
+  const clusterCount = clusters.length;
+  const briefCount = plan?.briefs?.length || 0;
+  const draftCount =
+    plan?.briefs?.filter((b: any) => b.status === 'draft' || b.status === 'in_progress')?.length ||
+    0;
+
+  const currentStage = (() => {
+    if (draftCount > 0) return 4;
+    if (briefCount > 0) return 4;
+    if (clusterCount > 0) return 3;
+    if (keywordCount > 0) return 2;
+    return 1;
+  })();
 
   // Modals
   const {
@@ -385,27 +422,82 @@ function StrategyContent() {
                 </Heading>
                 <Text color="gray.600">AI-powered content planning and keyword insights</Text>
               </VStack>
-              <HStack spacing={3}>
-                <Button
-                  onClick={onClusterModalOpen}
-                  variant="outline"
-                  leftIcon={<Icon as={FiLayers} />}
-                >
-                  Generate Topic Clusters
-                </Button>
-                <Button
-                  bg="brand.orange"
-                  color="white"
-                  _hover={{ bg: '#E8851A' }}
-                  onClick={onPlanModalOpen}
-                  isDisabled={clusters.length === 0}
-                  leftIcon={<Icon as={FiCalendar} />}
-                >
-                  Generate Quarterly Plan
-                </Button>
-              </HStack>
+              <StrategyModeToggle mode={strategyMode} onModeChange={setStrategyMode} />
             </HStack>
           </MotionBox>
+
+          {/* Progress Stepper - Guided mode only */}
+          {strategyMode === 'guided' && (
+            <MotionBox
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+            >
+              <StrategyStepper currentStage={currentStage} />
+            </MotionBox>
+          )}
+
+          {/* Next Step Guidance Card - Guided mode only */}
+          {strategyMode === 'guided' && (
+            <>
+              <NextStepCard
+                stage={currentStage}
+                keywordCount={keywordCount}
+                clusterCount={clusterCount}
+                briefCount={briefCount}
+                draftCount={draftCount}
+                isLoading={generating}
+                onAction={() => {
+                  switch (currentStage) {
+                    case 1:
+                      // TODO: Open GSC connect or keyword input modal
+                      onClusterModalOpen();
+                      break;
+                    case 2:
+                      onClusterModalOpen();
+                      break;
+                    case 3:
+                      onPlanModalOpen();
+                      break;
+                    case 4:
+                      // Navigate to first brief
+                      if (plan?.briefs?.[0]?._id) {
+                        window.location.href = `/content?briefId=${plan.briefs[0]._id}`;
+                      }
+                      break;
+                  }
+                }}
+              />
+              {/* Escape hatch - switch to DIY mode */}
+              <SkipWizardLink onClick={() => setStrategyMode('diy')} />
+            </>
+          )}
+
+          {/* Quick Actions - Always visible in DIY mode, or after stage 2 in guided */}
+          {(strategyMode === 'diy' || currentStage >= 2) && (
+            <HStack spacing={3} justify={strategyMode === 'diy' ? 'flex-start' : 'flex-end'}>
+              <Button
+                onClick={onClusterModalOpen}
+                variant={strategyMode === 'diy' ? 'solid' : 'outline'}
+                bg={strategyMode === 'diy' ? 'brand.orange' : undefined}
+                color={strategyMode === 'diy' ? 'white' : undefined}
+                _hover={strategyMode === 'diy' ? { bg: '#E8851A' } : undefined}
+                leftIcon={<Icon as={FiLayers} />}
+              >
+                Generate Topic Clusters
+              </Button>
+              <Button
+                bg="brand.orange"
+                color="white"
+                _hover={{ bg: '#E8851A' }}
+                onClick={onPlanModalOpen}
+                isDisabled={clusters.length === 0}
+                leftIcon={<Icon as={FiCalendar} />}
+              >
+                Generate Quarterly Plan
+              </Button>
+            </HStack>
+          )}
 
           {/* Hero Stats Grid */}
           <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
