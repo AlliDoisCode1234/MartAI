@@ -3,7 +3,7 @@
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
-import { seoKeywordClusters, contentBriefs } from '../lib/api';
+// NOTE: Do NOT import from '../lib/api' - causes circular type inference
 import { generateBriefDetails, type ClusterInfo } from '../../lib/generators/briefGenerator';
 import { auth } from '../auth';
 import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';

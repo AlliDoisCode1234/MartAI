@@ -79,6 +79,7 @@ import type * as seo_keywordsData from "../seo/keywordsData.js";
 import type * as seo_library from "../seo/library.js";
 import type * as seo_rankings from "../seo/rankings.js";
 import type * as seo_seoAudits from "../seo/seoAudits.js";
+import type * as seo_serpAnalysis from "../seo/serpAnalysis.js";
 import type * as seo_statistics from "../seo/statistics.js";
 import type * as seo_strategy from "../seo/strategy.js";
 import type * as subscriptions_subscriptions from "../subscriptions/subscriptions.js";
@@ -172,6 +173,7 @@ declare const fullApi: ApiFromModules<{
   "seo/library": typeof seo_library;
   "seo/rankings": typeof seo_rankings;
   "seo/seoAudits": typeof seo_seoAudits;
+  "seo/serpAnalysis": typeof seo_serpAnalysis;
   "seo/statistics": typeof seo_statistics;
   "seo/strategy": typeof seo_strategy;
   "subscriptions/subscriptions": typeof subscriptions_subscriptions;
