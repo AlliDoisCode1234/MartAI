@@ -4,6 +4,7 @@ import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
 import { WordPressClient, type WordPressPage } from '../../lib/integrations/wordpress';
+import type { WordPressStatus } from '../lib/typedHelpers';
 
 export const publishPost = action({
   args: {
@@ -61,7 +62,7 @@ export const publishPost = action({
       // For MVP, we'll send markdown (some WP plugins handle it) or just wrap in <p>.
       // Ideally we use `marked` or similar.
       // I'll add a simple conversion or just send as is for now.
-      status: (args.status as any) || 'publish',
+      status: (args.status as WordPressStatus | undefined) || 'publish',
     };
 
     // Simple Markdown to HTML (very basic)

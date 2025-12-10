@@ -16,6 +16,7 @@ The Board of Directors is a virtual advisory team for product, engineering, and 
 | **SAM**   | QA Engineer     | Edge cases, testing, correctness           |
 | **LAURA** | UI/UX Designer  | Usability, accessibility, design system    |
 | **BARRY** | Sales Manager   | Pricing, competition, sales strategy       |
+| **THEO**  | TS Wizard       | Type safety, branded types, `as any` casts |
 
 ---
 
@@ -39,6 +40,7 @@ The Board of Directors is a virtual advisory team for product, engineering, and 
 - Edge cases / testing (SAM)
 - UI/UX / accessibility (LAURA)
 - Sales / pricing strategy (BARRY)
+- Type safety / `as any` review (THEO)
 
 ---
 
@@ -121,6 +123,8 @@ When making a significant decision, run these questions:
 | Accessibility        | LAURA   | SAM       | LAURA      |
 | Sales Strategy       | BARRY   | MART      | BARRY      |
 | Competitive          | BARRY   | BILL      | BARRY      |
+| Type Safety          | THEO    | SAM       | THEO       |
+| `as any` Review      | THEO    | KHANH     | THEO       |
 
 ---
 
@@ -179,6 +183,13 @@ When making a significant decision, run these questions:
 - **Pricing Psychology**: Anchor, value framing, no discounts
 - **Enterprise Sales**: Custom pricing, relationships > sticker price
 
+### THEO - TypeScript Wizard
+
+- **Branded Types**: `Brand<T, B>` for nominal typing
+- **Type Hierarchy**: Inferred > Explicit > Generics > Guards > Assertions
+- **Acceptable `as any`**: Component generics, auth context, external libs
+- **typedHelpers.ts**: Central location for domain types
+
 ---
 
 ## Using the Board in Development
@@ -219,6 +230,10 @@ When making a significant decision, run these questions:
 ### BARRY says:
 
 > [Will customers pay? Competitive position? Sales objections?]
+
+### THEO says:
+
+> [Type safe? `as any` justified? Branded types used?]
 
 **Decision**: [Final decision]
 **Rationale**: [Why]

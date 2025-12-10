@@ -280,17 +280,24 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {projects.map((project) => (
-                    <Tr key={project._id}>
-                      <Td fontWeight="medium">{project.name}</Td>
-                      <Td fontSize="sm" color="gray.600">
-                        {project.websiteUrl ? new URL(project.websiteUrl).hostname : 'No URL'}
-                      </Td>
-                      <Td fontSize="sm" color="gray.500">
-                        {project.createdAt ? format(project.createdAt, 'MMM d, yyyy') : 'N/A'}
-                      </Td>
-                    </Tr>
-                  ))}
+                  {projects.map(
+                    (project: {
+                      _id: string;
+                      name?: string;
+                      websiteUrl?: string;
+                      createdAt?: number;
+                    }) => (
+                      <Tr key={project._id}>
+                        <Td fontWeight="medium">{project.name}</Td>
+                        <Td fontSize="sm" color="gray.600">
+                          {project.websiteUrl ? new URL(project.websiteUrl).hostname : 'No URL'}
+                        </Td>
+                        <Td fontSize="sm" color="gray.500">
+                          {project.createdAt ? format(project.createdAt, 'MMM d, yyyy') : 'N/A'}
+                        </Td>
+                      </Tr>
+                    )
+                  )}
                 </Tbody>
               </Table>
             )}

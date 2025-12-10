@@ -56,6 +56,12 @@ Read and consult these personas before major decisions:
 - Frameworks: Objection handling, competitive intel, pricing psychology
 - Ask: "Will customers pay? What objections will we get? How does this compare?"
 
+### THEO - TypeScript Wizard (docs/THEO_PERSONA.md)
+
+- Focus: Type safety, branded types, `as any` justifications
+- Frameworks: Branded types, type guards, generic constraints
+- Ask: "Is this type-safe? Is `as any` documented? Could branded types help?"
+
 ---
 
 ## Consultation Process
@@ -104,6 +110,42 @@ Read and consult these personas before major decisions:
 
 > [Will customers pay? Competitive position? Sales objections?]
 
+### THEO says:
+
+> [Type safe? `as any` justified? Branded types used?]
+
 **Decision**: [Final decision]
 **Rationale**: [Why, based on Board input]
+**Confidence**: [0.0-1.0 based on Board consensus]
 ```
+
+---
+
+## Context & Confidence Building
+
+The Board builds institutional knowledge over time. After each decision:
+
+1. **Log the decision** to `docs/BOARD_DECISIONS.md`
+2. **Rate confidence** (0.0-1.0) based on Board consensus
+3. **Track outcomes** - Was the decision correct? Update confidence.
+4. **Reference prior decisions** - "See Board Decision #12" in future reviews
+
+### Confidence Scoring
+
+| Score   | Meaning         | Board State                          |
+| ------- | --------------- | ------------------------------------ |
+| 0.9-1.0 | High confidence | All personas agree, prior success    |
+| 0.7-0.8 | Good confidence | Most agree, some concerns noted      |
+| 0.5-0.6 | Moderate        | Split board, needs monitoring        |
+| 0.3-0.4 | Low             | Major concerns, proceed with caution |
+| 0.0-0.2 | Very low        | Reconsider decision                  |
+
+### Prior Decisions Reference
+
+Before making a new decision, check `docs/BOARD_DECISIONS.md` for:
+
+- Similar past decisions
+- Patterns that worked/failed
+- Confidence trends by domain
+
+This builds **institutional memory** so the Board gets smarter over time.

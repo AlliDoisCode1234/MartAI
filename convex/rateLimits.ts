@@ -1,5 +1,6 @@
 import { RateLimiter, MINUTE, HOUR } from '@convex-dev/rate-limiter';
 import { components } from './_generated/api';
+import type { RateLimitKey } from './lib/typedHelpers';
 
 // Define DAY constant (24 hours in milliseconds)
 const DAY = 24 * HOUR;
@@ -45,7 +46,9 @@ export const RATE_LIMIT_TIERS = {
 } as const;
 
 // Create rate limiter instance
-export const rateLimits = new RateLimiter((components as any).rateLimiter, {
+// Note: Using `as any` because RateLimiter generics don't fully support
+// dynamic rate limit names (tier-based keys like 'generateBrief_free')
+export const rateLimits = new RateLimiter(components.rateLimiter as any, {
   // Brief generation - token bucket for smooth usage
   generateBrief_free: {
     kind: 'token bucket',
@@ -264,6 +267,6 @@ export type ApiRateLimitResult = {
 /**
  * Get the appropriate rate limit key for a user based on their tier
  */
-export function getRateLimitKey(operation: RateLimitName, tier: MembershipTier): string {
-  return `${operation}_${tier}`;
+export function getRateLimitKey(operation: RateLimitName, tier: MembershipTier): RateLimitKey {
+  return `${operation}_${tier}` as RateLimitKey;
 }

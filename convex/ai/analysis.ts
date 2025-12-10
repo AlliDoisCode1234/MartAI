@@ -93,7 +93,8 @@ export const runPipeline = action({
 
     // Check rate limit
     const rateLimitKey = getRateLimitKey('aiAnalysis', tier);
-    const { ok, retryAfter } = await rateLimits.limit(ctx, rateLimitKey as any, {
+    // rateLimitKey is dynamic (tier-based) so we need type assertion
+    const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
       key: userId as string,
     });
 

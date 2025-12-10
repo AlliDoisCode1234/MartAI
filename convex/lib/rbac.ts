@@ -10,6 +10,11 @@ import { QueryCtx, MutationCtx, ActionCtx } from '../_generated/server';
 import { Id } from '../_generated/dataModel';
 import { auth } from '../auth';
 
+// Auth context type - getUserId accepts any of these contexts
+// Using intersection type to satisfy auth.getUserId's expectations
+type AuthContext = { auth: { getUserIdentity(): Promise<unknown> } };
+type GenericCtx = (QueryCtx | MutationCtx | ActionCtx) & AuthContext;
+
 // Admin portal roles (global)
 export type AdminRole = 'super_admin' | 'admin' | 'user' | 'viewer';
 

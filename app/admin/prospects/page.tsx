@@ -34,6 +34,16 @@ import { ExternalLinkIcon, ViewIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
 import type { Id } from '@/convex/_generated/dataModel';
 
+type ProspectData = {
+  _id: string;
+  companyName?: string;
+  email?: string;
+  websiteUrl?: string;
+  status?: string;
+  source?: string;
+  createdAt?: number;
+};
+
 export default function AdminProspectsPage() {
   const prospects = useQuery(api.prospects.prospects.listProspects, {});
   const runAnalysis = useAction(api.ai.analysis.runPipeline);
@@ -62,10 +72,11 @@ export default function AdminProspectsPage() {
 
   // Calculate stats
   const totalProspects = prospects?.length || 0;
-  const newProspects = prospects?.filter((p) => p.status === 'new').length || 0;
+  const newProspects = prospects?.filter((p: ProspectData) => p.status === 'new').length || 0;
   const analyzedProspects =
-    prospects?.filter((p) => ['analyzed', 'details_submitted'].includes(p.status || '')).length ||
-    0;
+    prospects?.filter((p: ProspectData) =>
+      ['analyzed', 'details_submitted'].includes(p.status || '')
+    ).length || 0;
 
   return (
     <Container maxW="container.xl">
@@ -132,7 +143,7 @@ export default function AdminProspectsPage() {
                 </Tr>
               </Thead>
               <Tbody>
-                {prospects.map((prospect) => (
+                {prospects.map((prospect: ProspectData) => (
                   <Tr key={prospect._id}>
                     <Td>
                       <HStack>

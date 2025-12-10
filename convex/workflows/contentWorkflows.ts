@@ -145,8 +145,8 @@ export const publishingWorkflow = workflow.define({
     }
 
     // Step 2: Check WordPress connection
-    // We use the integration module we created
-    const wpConnection = await step.runQuery((api.integrations as any).wordpress.getConnection, {
+    // Using bracket notation for nested module path
+    const wpConnection = await step.runQuery(api['integrations/wordpress'].getConnection, {
       projectId: draft.projectId,
     });
 
@@ -186,7 +186,7 @@ export const publishingWorkflow = workflow.define({
 
     return {
       scheduledPostId,
-      status: (publishDate > Date.now() ? 'scheduled' : 'published') as any,
+      status: publishDate > Date.now() ? ('scheduled' as const) : ('published' as const),
       publishDate,
     };
   },

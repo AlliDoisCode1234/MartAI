@@ -49,7 +49,7 @@ export const generatePlan = action({
     }
 
     // Get user to check membership tier and role
-    const user = await ctx.runQuery((api as any).users.current);
+    const user = await ctx.runQuery(api.users.current);
     if (!user) {
       throw new Error('User not found');
     }
@@ -64,7 +64,8 @@ export const generatePlan = action({
 
     // Check rate limit
     const rateLimitKey = getRateLimitKey('createQuarterlyPlan', tier);
-    const { ok, retryAfter } = await rateLimits.limit(ctx, rateLimitKey as any, {
+    // rateLimitKey is dynamic (tier-based) so we need type assertion
+    const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
       key: userId as string,
     });
 
@@ -108,20 +109,17 @@ export const generatePlan = action({
     });
     const inputHash: string = crypto.createHash('sha256').update(inputForHash).digest('hex');
 
-    const stored = await ctx.runQuery((api as any).aiStorage.getStored, { inputHash });
+    const stored = await ctx.runQuery(api.aiStorage.getStored, { inputHash });
 
     if (stored) {
       console.log('Persistent Storage Hit for quarterly planning');
       const { assumptions, goals } = stored.output;
 
-      const planId = (await ctx.runMutation(
-        (api as any).content.quarterlyPlans.createQuarterlyPlan,
-        {
-          ...args,
-          assumptions,
-          goals,
-        }
-      )) as Id<'quarterlyPlans'>;
+      const planId = (await ctx.runMutation(api.content.quarterlyPlans.createQuarterlyPlan, {
+        ...args,
+        assumptions,
+        goals,
+      })) as Id<'quarterlyPlans'>;
       return { success: true, planId, cached: true, storage: true, assumptions, goals };
     }
 
@@ -129,14 +127,11 @@ export const generatePlan = action({
     const cached = await cache.get(ctx, cacheKey);
     if (cached) {
       console.log('Cache hit for quarterly planning');
-      const planId = (await ctx.runMutation(
-        (api as any).content.quarterlyPlans.createQuarterlyPlan,
-        {
-          ...args,
-          assumptions: cached.assumptions,
-          goals: cached.goals,
-        }
-      )) as Id<'quarterlyPlans'>;
+      const planId = (await ctx.runMutation(api.content.quarterlyPlans.createQuarterlyPlan, {
+        ...args,
+        assumptions: cached.assumptions,
+        goals: cached.goals,
+      })) as Id<'quarterlyPlans'>;
       return { success: true, planId, cached: true, ...cached };
     }
 
@@ -171,8 +166,8 @@ export const generatePlan = action({
 
     await cache.set(ctx, cacheKey, outputData, CACHE_TTL.QUARTERLY_PLANNING);
 
-    // Using (api as any) to avoid stale type errors, assuming aiStorage exists at runtime
-    await ctx.runMutation((api as any).aiStorage.store, {
+    // Store result in persistent storage
+    await ctx.runMutation(api.aiStorage.store, {
       inputHash,
       operation: 'generatePlan',
       provider: 'openai',

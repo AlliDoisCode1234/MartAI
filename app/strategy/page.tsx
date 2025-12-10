@@ -78,6 +78,7 @@ import {
   StrategyModeToggle,
   SkipWizardLink,
   KeywordSourceModal,
+  StrategyDashboard,
   getSavedStrategyMode,
   type StrategyMode,
 } from '@/src/components/strategy';
@@ -514,6 +515,42 @@ function StrategyContent() {
               <StrategyModeToggle mode={strategyMode} onModeChange={setStrategyMode} />
             </HStack>
           </MotionBox>
+
+          {/* DIY Mode: Dashboard Layout */}
+          {strategyMode === 'diy' && (
+            <MotionBox
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+            >
+              <StrategyDashboard
+                projectId={projectId}
+                keywordCount={keywordCount}
+                clusterCount={clusterCount}
+                planExists={plan !== null}
+                briefCount={briefCount}
+                draftCount={draftCount}
+                onImportKeywords={onKeywordModalOpen}
+                onGenerateClusters={handleGenerateClusters}
+                onGeneratePlan={onPlanModalOpen}
+                onStartWizard={() => setStrategyMode('guided')}
+                clusters={clusters.map((c: any) => ({
+                  _id: c._id,
+                  clusterName: c.clusterName,
+                  keywords: c.keywords || [],
+                  intent: c.intent || 'informational',
+                  status: c.status || 'active',
+                }))}
+                briefs={(plan?.briefs || []).map((b: any) => ({
+                  _id: b._id,
+                  title: b.title,
+                  status: b.status,
+                  scheduledDate: b.scheduledDate,
+                }))}
+                isGenerating={generating}
+              />
+            </MotionBox>
+          )}
 
           {/* Progress Stepper - Guided mode only */}
           {strategyMode === 'guided' && (

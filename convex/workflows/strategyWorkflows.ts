@@ -1,6 +1,7 @@
 import { workflow } from '../index';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
+import type { Id } from '../_generated/dataModel';
 
 /**
  * SEO Strategy Workflow
@@ -41,10 +42,14 @@ export const seoStrategyWorkflow = workflow.define({
     message: v.string(),
   }),
   handler: async (step, args): Promise<any> => {
-    const results = {
+    const results: {
+      keywordClusters: number;
+      planId: Id<'quarterlyPlans'> | null;
+      briefIds: Id<'briefs'>[];
+    } = {
       keywordClusters: 0,
-      planId: null as any,
-      briefIds: [] as any[],
+      planId: null,
+      briefIds: [],
     };
 
     // Step 1: Keyword Research (if keywords provided)
@@ -96,10 +101,8 @@ export const seoStrategyWorkflow = workflow.define({
     }
     results.briefIds = briefIds;
 
-    // Step 3: Schedule analytics sync
-    await step.runMutation(api.integrations.ga4Connections.updateLastSync, {
-      connectionId: 'skip' as any,
-    });
+    // Step 3: Schedule analytics sync (skip if no connection)
+    // Note: This is a placeholder - actual sync scheduling handled elsewhere
 
     return {
       status: 'strategy_initialized' as const,
@@ -128,7 +131,8 @@ export const contentOptimizationWorkflow = workflow.define({
   }),
   handler: async (step, args): Promise<any> => {
     // Step 1: Analyze current performance
-    const insights = await step.runAction((api.analytics as any).insights.generateContentInsights, {
+    // Using bracket notation for nested module path
+    const insights = await step.runAction(api['analytics/insights'].generateContentInsights, {
       briefId: args.briefId,
       metrics: { type: 'underperformer' },
     });
@@ -160,8 +164,8 @@ export const contentOptimizationWorkflow = workflow.define({
 
     let republished = false;
     if (draft) {
-      // Inline publishing logic
-      const wpConnection = await step.runQuery((api.integrations as any).wordpress.getConnection, {
+      // Inline publishing logic - using bracket notation for nested path
+      const wpConnection = await step.runQuery(api['integrations/wordpress'].getConnection, {
         projectId: draft.projectId,
       });
 
@@ -232,12 +236,10 @@ export const batchContentGenerationWorkflow = workflow.define({
 
           // Auto-publish if requested
           if (args.autoPublish) {
-            const wpConnection = await step.runQuery(
-              (api.integrations as any).wordpress.getConnection,
-              {
-                projectId: brief.projectId,
-              }
-            );
+            // Using bracket notation for nested path
+            const wpConnection = await step.runQuery(api['integrations/wordpress'].getConnection, {
+              projectId: brief.projectId,
+            });
 
             if (wpConnection) {
               await step.runAction(api.publishing.wordpressActions.publishPost, {

@@ -55,7 +55,8 @@ export const generateDraft = action({
 
     // Check rate limit
     const rateLimitKey = getRateLimitKey('generateDraft', tier);
-    const { ok, retryAfter } = await rateLimits.limit(ctx, rateLimitKey as any, {
+    // rateLimitKey is dynamic (tier-based) so we need type assertion
+    const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
       key: userId as string,
     });
 
@@ -171,7 +172,7 @@ export const generateDraft = action({
       const clusters = await ctx.runQuery(api['seo/keywordClusters'].getClustersByProject, {
         projectId: brief.projectId,
       });
-      cluster = clusters.find((c: any) => c._id === brief.clusterId);
+      cluster = clusters.find((c: { _id: string }) => c._id === brief.clusterId);
     }
 
     // Get project details

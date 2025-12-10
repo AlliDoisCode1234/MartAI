@@ -57,7 +57,7 @@ export const generateClusters = action({
     }
 
     // Get user to check membership tier and role
-    const user = await ctx.runQuery((api as any).users.current);
+    const user = await ctx.runQuery(api.users.current);
     if (!user) {
       throw new Error('User not found');
     }
@@ -84,7 +84,8 @@ export const generateClusters = action({
 
     // Check rate limit
     const rateLimitKey = getRateLimitKey('generateKeywordClusters', tier);
-    const { ok, retryAfter } = await rateLimits.limit(ctx, rateLimitKey as any, {
+    // rateLimitKey is dynamic (tier-based) so we need type assertion for the string union
+    const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
       key: userId as string,
     });
 
@@ -160,7 +161,7 @@ export const generateClusters = action({
     });
     const fullInputHash: string = crypto.createHash('sha256').update(inputForHash).digest('hex');
 
-    const stored = await ctx.runQuery((api as any).aiStorage.getStored, {
+    const stored = await ctx.runQuery(api.aiStorage.getStored, {
       inputHash: fullInputHash,
     });
 
@@ -169,7 +170,7 @@ export const generateClusters = action({
       const clusters = stored.output.clusters;
 
       for (const cluster of clusters) {
-        await ctx.runMutation((api as any).seo.keywordClusters.createCluster, {
+        await ctx.runMutation(api.seo.keywordClusters.createCluster, {
           ...cluster,
           projectId: args.projectId,
         });
@@ -183,7 +184,7 @@ export const generateClusters = action({
     if (cached) {
       console.log('Cache hit for keyword clustering');
       for (const cluster of cached.clusters) {
-        await ctx.runMutation((api as any).seo.keywordClusters.createCluster, cluster);
+        await ctx.runMutation(api.seo.keywordClusters.createCluster, cluster);
       }
       return { success: true, count: cached.clusters.length, cached: true };
     }
@@ -222,7 +223,7 @@ export const generateClusters = action({
 
     await cache.set(ctx, cacheKey, outputData, CACHE_TTL.KEYWORD_CLUSTERING);
 
-    await ctx.runMutation((api as any).aiStorage.store, {
+    await ctx.runMutation(api.aiStorage.store, {
       inputHash: fullInputHash,
       operation: 'generateKeywordClusters',
       provider: 'openai',
@@ -280,5 +281,86 @@ export const reclusterKeywords = action({
   },
   handler: async (ctx, args) => {
     return args.clusterIds;
+  },
+});
+
+/**
+ * Get semantically similar keywords from the library
+ *
+ * Uses vector embeddings to find keywords with similar meaning.
+ * This enables intelligent keyword discovery beyond exact matches.
+ *
+ * Example: "content marketing" might return:
+ * - "content strategy"
+ * - "blog post ideas"
+ * - "editorial calendar"
+ */
+export const getSimilarKeywords = action({
+  args: {
+    query: v.string(),
+    limit: v.optional(v.number()),
+    minVolume: v.optional(v.number()),
+    maxDifficulty: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Search library using semantic vector search
+    const results = await ctx.runAction(api.seo.library.searchLibrary, {
+      query: args.query,
+      limit: args.limit || 10,
+    });
+
+    // Apply optional filters
+    let filtered = results;
+
+    if (args.minVolume !== undefined) {
+      filtered = filtered.filter((k) => k.searchVolume >= args.minVolume!);
+    }
+
+    if (args.maxDifficulty !== undefined) {
+      filtered = filtered.filter((k) => k.difficulty <= args.maxDifficulty!);
+    }
+
+    return filtered.map((k) => ({
+      keyword: k.keyword,
+      searchVolume: k.searchVolume,
+      difficulty: k.difficulty,
+      intent: k.intent,
+      similarityScore: k._score,
+    }));
+  },
+});
+
+/**
+ * Enrich user keywords with semantically related library keywords
+ *
+ * For each user keyword, finds similar keywords from the library
+ * to provide context for better AI clustering.
+ */
+export const enrichKeywordsWithLibrary = action({
+  args: {
+    keywords: v.array(v.string()),
+    limitPerKeyword: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const enriched: Record<string, Array<{ keyword: string; score: number }>> = {};
+
+    for (const kw of args.keywords) {
+      try {
+        const similar = await ctx.runAction(api.seo.library.searchLibrary, {
+          query: kw,
+          limit: args.limitPerKeyword || 3,
+        });
+
+        enriched[kw] = similar.map((s) => ({
+          keyword: s.keyword,
+          score: s._score,
+        }));
+      } catch (e) {
+        console.warn(`Failed to enrich keyword "${kw}":`, e);
+        enriched[kw] = [];
+      }
+    }
+
+    return enriched;
   },
 });
