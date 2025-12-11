@@ -10,6 +10,7 @@
 
 import type * as admin from "../admin.js";
 import type * as admin_costs from "../admin/costs.js";
+import type * as admin_users from "../admin/users.js";
 import type * as aiStorage from "../aiStorage.js";
 import type * as ai_analysis from "../ai/analysis.js";
 import type * as ai_personas from "../ai/personas.js";
@@ -36,6 +37,8 @@ import type * as content_briefVersions from "../content/briefVersions.js";
 import type * as content_briefs from "../content/briefs.js";
 import type * as content_calendars from "../content/calendars.js";
 import type * as content_content from "../content/content.js";
+import type * as content_contentCheckQueries from "../content/contentCheckQueries.js";
+import type * as content_contentChecks from "../content/contentChecks.js";
 import type * as content_draftActions from "../content/draftActions.js";
 import type * as content_drafts from "../content/drafts.js";
 import type * as content_quarterlyPlanActions from "../content/quarterlyPlanActions.js";
@@ -106,6 +109,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   "admin/costs": typeof admin_costs;
+  "admin/users": typeof admin_users;
   aiStorage: typeof aiStorage;
   "ai/analysis": typeof ai_analysis;
   "ai/personas": typeof ai_personas;
@@ -132,6 +136,8 @@ declare const fullApi: ApiFromModules<{
   "content/briefs": typeof content_briefs;
   "content/calendars": typeof content_calendars;
   "content/content": typeof content_content;
+  "content/contentCheckQueries": typeof content_contentCheckQueries;
+  "content/contentChecks": typeof content_contentChecks;
   "content/draftActions": typeof content_draftActions;
   "content/drafts": typeof content_drafts;
   "content/quarterlyPlanActions": typeof content_quarterlyPlanActions;

@@ -516,6 +516,50 @@ export default defineSchema({
     .index('by_project', ['projectId'])
     .index('by_status', ['status']),
 
+  // Content Quality Checks (Plagiarism & AI Detection)
+  contentChecks: defineTable({
+    draftId: v.id('drafts'),
+    briefId: v.optional(v.id('briefs')),
+    projectId: v.id('projects'),
+    // Check results
+    plagiarismScore: v.number(), // 0-100, higher = more unique
+    aiScore: v.number(), // 0-100, higher = more AI-like
+    readabilityScore: v.optional(v.number()), // 0-100
+    // Overall status
+    status: v.union(v.literal('pass'), v.literal('warning'), v.literal('fail')),
+    // Detailed results
+    details: v.optional(
+      v.object({
+        flaggedSentences: v.optional(
+          v.array(
+            v.object({
+              text: v.string(),
+              aiProbability: v.number(),
+            })
+          )
+        ),
+        plagiarismMatches: v.optional(
+          v.array(
+            v.object({
+              text: v.string(),
+              source: v.string(),
+              matchPercentage: v.number(),
+            })
+          )
+        ),
+      })
+    ),
+    // API response metadata
+    provider: v.optional(v.string()), // 'originality.ai', 'gptzero', etc.
+    rawResponse: v.optional(v.any()), // Store full API response for debugging
+    checkedAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index('by_draft', ['draftId'])
+    .index('by_brief', ['briefId'])
+    .index('by_project', ['projectId'])
+    .index('by_status', ['status']),
+
   // Scheduled Posts
   scheduledPosts: defineTable({
     draftId: v.id('drafts'),

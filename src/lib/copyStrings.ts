@@ -173,3 +173,127 @@ export const TERM_MAP = {
   quarterlyPlans: 'contentCalendar',
   contentPlan: 'contentCalendar',
 } as const;
+
+/**
+ * Humanize content check scores
+ */
+export const getPlagiarismLabel = (
+  score: number
+): { label: string; description: string; color: string } => {
+  if (score >= 95) {
+    return {
+      label: 'Original',
+      description: 'Content is almost entirely unique',
+      color: 'green',
+    };
+  }
+  if (score >= 90) {
+    return {
+      label: 'Mostly Original',
+      description: 'A few phrases may match existing content',
+      color: 'green',
+    };
+  }
+  if (score >= 70) {
+    return {
+      label: 'Some Matches',
+      description: 'Review highlighted sections for originality',
+      color: 'orange',
+    };
+  }
+  return {
+    label: 'Needs Review',
+    description: 'Significant overlap with existing content',
+    color: 'red',
+  };
+};
+
+export const getAiScoreLabel = (
+  score: number
+): { label: string; description: string; color: string } => {
+  if (score <= 20) {
+    return {
+      label: 'Very Human',
+      description: 'Reads like it was written by a person',
+      color: 'green',
+    };
+  }
+  if (score <= 35) {
+    return {
+      label: 'Natural',
+      description: 'Good balance of human and AI assistance',
+      color: 'green',
+    };
+  }
+  if (score <= 60) {
+    return {
+      label: 'AI-Assisted',
+      description: 'Some AI patterns detected - consider editing',
+      color: 'orange',
+    };
+  }
+  return {
+    label: 'AI-Heavy',
+    description: 'Content may be flagged by Google - humanize it',
+    color: 'red',
+  };
+};
+
+export const getReadabilityLabel = (
+  score: number
+): { label: string; description: string; color: string } => {
+  if (score >= 80) {
+    return {
+      label: 'Very Easy',
+      description: 'Anyone can understand this',
+      color: 'green',
+    };
+  }
+  if (score >= 60) {
+    return {
+      label: 'Easy',
+      description: 'Most readers will follow along',
+      color: 'green',
+    };
+  }
+  if (score >= 40) {
+    return {
+      label: 'Moderate',
+      description: 'May require some focus to understand',
+      color: 'orange',
+    };
+  }
+  return {
+    label: 'Complex',
+    description: 'Consider simplifying for wider audience',
+    color: 'red',
+  };
+};
+
+export const getOverallCheckStatus = (
+  status: 'pass' | 'warning' | 'fail'
+): { label: string; description: string; color: string; icon: string } => {
+  switch (status) {
+    case 'pass':
+      return {
+        label: 'Ready to Publish',
+        description: 'All quality checks passed',
+        color: 'green',
+        icon: 'FiCheckCircle',
+      };
+    case 'warning':
+      return {
+        label: 'Review Recommended',
+        description: 'Some issues detected - review before publishing',
+        color: 'orange',
+        icon: 'FiAlertTriangle',
+      };
+    case 'fail':
+      return {
+        label: 'Needs Improvement',
+        description: 'Content needs work before publishing',
+        color: 'red',
+        icon: 'FiXCircle',
+      };
+  }
+};
