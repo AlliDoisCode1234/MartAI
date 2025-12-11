@@ -5,10 +5,10 @@
  * app/strategy/page.tsx
  *   └── StrategyDashboard (this file)
  *       ├── Quick Stats Header
- *       ├── KeywordsSection (collapsible)
- *       ├── ClustersSection (collapsible)
- *       ├── PlanSection (collapsible)
- *       └── BriefsSection (collapsible)
+ *       ├── Keywords Section (collapsible)
+ *       ├── Topic Curator Section (collapsible)
+ *       ├── Content Calendar Section (collapsible)
+ *       └── Article Studio Section (collapsible)
  */
 
 import { useState } from 'react';
@@ -41,11 +41,14 @@ import {
   FiSearch,
   FiLayers,
   FiCalendar,
-  FiFileText,
+  FiEdit3,
   FiPlay,
   FiPlus,
   FiZap,
+  FiCompass,
 } from 'react-icons/fi';
+import { RelatedKeywords } from './RelatedKeywords';
+import { SECTION_LABELS } from '@/src/lib/copyStrings';
 
 interface Props {
   projectId: string;
@@ -55,6 +58,8 @@ interface Props {
   briefCount: number;
   draftCount: number;
   onImportKeywords: () => void;
+  onAddKeyword: (keyword: string) => void;
+  existingKeywords: string[];
   onGenerateClusters: () => void;
   onGeneratePlan: () => void;
   onStartWizard: () => void;
@@ -85,16 +90,19 @@ export function StrategyDashboard({
   onGenerateClusters,
   onGeneratePlan,
   onStartWizard,
+  onAddKeyword,
+  existingKeywords,
   clusters,
   briefs,
   isGenerating,
 }: Props) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     keywords: true,
-    clusters: true,
-    plan: true,
-    briefs: true,
+    topicCurator: true,
+    contentCalendar: true,
+    articleStudio: true,
   });
+  const [showRelated, setShowRelated] = useState(false);
 
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -161,22 +169,22 @@ export function StrategyDashboard({
               <Stat size="sm">
                 <StatLabel>Keywords</StatLabel>
                 <StatNumber>{keywordCount}</StatNumber>
-                <StatHelpText>imported</StatHelpText>
+                <StatHelpText>discovered</StatHelpText>
               </Stat>
               <Stat size="sm">
-                <StatLabel>Clusters</StatLabel>
+                <StatLabel>Topics</StatLabel>
                 <StatNumber>{clusterCount}</StatNumber>
-                <StatHelpText>topics</StatHelpText>
+                <StatHelpText>curated</StatHelpText>
               </Stat>
               <Stat size="sm">
-                <StatLabel>Briefs</StatLabel>
+                <StatLabel>Articles</StatLabel>
                 <StatNumber>{briefCount}</StatNumber>
-                <StatHelpText>planned</StatHelpText>
+                <StatHelpText>scheduled</StatHelpText>
               </Stat>
               <Stat size="sm">
                 <StatLabel>Drafts</StatLabel>
                 <StatNumber>{draftCount}</StatNumber>
-                <StatHelpText>in progress</StatHelpText>
+                <StatHelpText>ready to review</StatHelpText>
               </Stat>
             </SimpleGrid>
             <Tooltip label="Start guided setup wizard">
@@ -220,14 +228,43 @@ export function StrategyDashboard({
             </Button>
           </VStack>
         ) : (
-          <Text color="gray.600">{keywordCount} keywords imported and ready for clustering.</Text>
+          <VStack align="stretch" spacing={4}>
+            <Text color="gray.600">
+              {SECTION_LABELS.keywords.subtitle} — {keywordCount} keywords discovered.
+            </Text>
+
+            {/* Related Keywords Toggle */}
+            <Divider />
+            <HStack justify="space-between">
+              <HStack spacing={2}>
+                <Icon as={FiCompass} color="purple.500" />
+                <Text fontWeight="medium" fontSize="sm">
+                  Discover Related Keywords
+                </Text>
+              </HStack>
+              <Button
+                size="xs"
+                variant={showRelated ? 'solid' : 'outline'}
+                colorScheme="purple"
+                onClick={() => setShowRelated(!showRelated)}
+              >
+                {showRelated ? 'Hide' : 'Show'}
+              </Button>
+            </HStack>
+
+            <Collapse in={showRelated} animateOpacity>
+              <Box pt={2}>
+                <RelatedKeywords onAddKeyword={onAddKeyword} existingKeywords={existingKeywords} />
+              </Box>
+            </Collapse>
+          </VStack>
         )}
       </SectionCard>
 
-      {/* Clusters Section */}
+      {/* Topic Curator Section */}
       <SectionCard
-        id="clusters"
-        title="Topic Clusters"
+        id="topicCurator"
+        title={SECTION_LABELS.topicCurator.title}
         icon={FiLayers}
         badge={clusterCount > 0 ? `${clusterCount}` : undefined}
         action={
@@ -240,7 +277,7 @@ export function StrategyDashboard({
               onClick={onGenerateClusters}
               isLoading={isGenerating}
             >
-              Generate
+              Curate Topics
             </Button>
           )
         }
@@ -249,8 +286,8 @@ export function StrategyDashboard({
           <VStack py={6} spacing={3}>
             <Text color="gray.500">
               {keywordCount > 0
-                ? 'Keywords ready - generate topic clusters'
-                : 'Import keywords first, then generate clusters'}
+                ? SECTION_LABELS.topicCurator.emptyAction
+                : "Discover keywords first, then we'll organize them into topics"}
             </Text>
             {keywordCount > 0 && (
               <Button
@@ -259,7 +296,7 @@ export function StrategyDashboard({
                 onClick={onGenerateClusters}
                 isLoading={isGenerating}
               >
-                Generate Topic Clusters
+                Curate Topics
               </Button>
             )}
           </VStack>
@@ -282,17 +319,17 @@ export function StrategyDashboard({
             ))}
             {clusters.length > 5 && (
               <Text fontSize="sm" color="gray.500" textAlign="center">
-                +{clusters.length - 5} more clusters
+                +{clusters.length - 5} more topics
               </Text>
             )}
           </VStack>
         )}
       </SectionCard>
 
-      {/* Plan Section */}
+      {/* Content Calendar Section */}
       <SectionCard
-        id="plan"
-        title="Content Plan"
+        id="contentCalendar"
+        title={SECTION_LABELS.contentCalendar.title}
         icon={FiCalendar}
         badge={planExists ? 'Active' : undefined}
         action={
@@ -305,7 +342,7 @@ export function StrategyDashboard({
               onClick={onGeneratePlan}
               isLoading={isGenerating}
             >
-              {planExists ? 'Regenerate' : 'Generate'}
+              {planExists ? 'Regenerate' : 'Plan Schedule'}
             </Button>
           )
         }
@@ -314,8 +351,8 @@ export function StrategyDashboard({
           <VStack py={6} spacing={3}>
             <Text color="gray.500">
               {clusterCount > 0
-                ? 'Clusters ready - generate a quarterly content plan'
-                : 'Generate topic clusters first'}
+                ? SECTION_LABELS.contentCalendar.emptyAction
+                : 'Curate topics first, then plan your publishing schedule'}
             </Text>
             {clusterCount > 0 && (
               <Button
@@ -324,25 +361,27 @@ export function StrategyDashboard({
                 onClick={onGeneratePlan}
                 isLoading={isGenerating}
               >
-                Generate Content Plan
+                Plan Schedule
               </Button>
             )}
           </VStack>
         ) : (
-          <Text color="gray.600">{briefCount} briefs planned in your content calendar.</Text>
+          <Text color="gray.600">
+            {SECTION_LABELS.contentCalendar.subtitle} — {briefCount} articles scheduled.
+          </Text>
         )}
       </SectionCard>
 
-      {/* Briefs Section */}
+      {/* Article Studio Section */}
       <SectionCard
-        id="briefs"
-        title="Content Briefs"
-        icon={FiFileText}
+        id="articleStudio"
+        title={SECTION_LABELS.articleStudio.title}
+        icon={FiEdit3}
         badge={briefCount > 0 ? `${briefCount}` : undefined}
       >
         {briefCount === 0 ? (
           <VStack py={6} spacing={3}>
-            <Text color="gray.500">Generate a content plan to create briefs</Text>
+            <Text color="gray.500">{SECTION_LABELS.articleStudio.emptyAction}</Text>
           </VStack>
         ) : (
           <VStack align="stretch" spacing={2}>
@@ -361,13 +400,17 @@ export function StrategyDashboard({
                   }
                   size="sm"
                 >
-                  {brief.status}
+                  {brief.status === 'published'
+                    ? 'Published'
+                    : brief.status === 'in_progress'
+                      ? 'Drafting'
+                      : 'Scheduled'}
                 </Badge>
               </HStack>
             ))}
             {briefs.length > 5 && (
               <Text fontSize="sm" color="gray.500" textAlign="center">
-                +{briefs.length - 5} more briefs
+                +{briefs.length - 5} more articles
               </Text>
             )}
           </VStack>

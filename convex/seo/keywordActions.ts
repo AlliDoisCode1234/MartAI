@@ -309,18 +309,27 @@ export const getSimilarKeywords = action({
       limit: args.limit || 10,
     });
 
+    // Define type for library results
+    type LibraryResult = {
+      keyword: string;
+      searchVolume: number;
+      difficulty: number;
+      intent: string;
+      _score: number;
+    };
+
     // Apply optional filters
-    let filtered = results;
+    let filtered: LibraryResult[] = results as LibraryResult[];
 
     if (args.minVolume !== undefined) {
-      filtered = filtered.filter((k) => k.searchVolume >= args.minVolume!);
+      filtered = filtered.filter((k: LibraryResult) => k.searchVolume >= args.minVolume!);
     }
 
     if (args.maxDifficulty !== undefined) {
-      filtered = filtered.filter((k) => k.difficulty <= args.maxDifficulty!);
+      filtered = filtered.filter((k: LibraryResult) => k.difficulty <= args.maxDifficulty!);
     }
 
-    return filtered.map((k) => ({
+    return filtered.map((k: LibraryResult) => ({
       keyword: k.keyword,
       searchVolume: k.searchVolume,
       difficulty: k.difficulty,
@@ -351,7 +360,7 @@ export const enrichKeywordsWithLibrary = action({
           limit: args.limitPerKeyword || 3,
         });
 
-        enriched[kw] = similar.map((s) => ({
+        enriched[kw] = similar.map((s: { keyword: string; _score: number }) => ({
           keyword: s.keyword,
           score: s._score,
         }));

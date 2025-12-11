@@ -100,12 +100,12 @@ export function NextStepCard({
       case 1:
         return {
           icon: FiSearch,
-          title: "Let's Find Topics Worth Writing About",
+          title: 'Find What Your Customers Search For',
           description:
-            "We'll analyze your website and discover keywords you can rank for. Most users spend about 5 minutes here.",
-          ctaText: keywordCount > 0 ? 'Add More Keywords' : 'Connect Google Search Console',
+            "We'll discover what people type into Google when looking for businesses like yours. This takes about 5 minutes.",
+          ctaText: keywordCount > 0 ? 'Discover More Keywords' : 'Connect Google Search Console',
           ctaIcon: FiArrowRight,
-          statLabel: 'Keywords found',
+          statLabel: 'Keywords discovered',
           statValue: keywordCount,
           celebrationEmoji: keywordCount > 0 ? '🎯' : undefined,
           celebrationText:
@@ -115,41 +115,40 @@ export function NextStepCard({
       case 2:
         return {
           icon: FiLayers,
-          title: 'Organizing Your Keywords into Topics',
-          description: `AI will group your ${keywordCount} keywords into topic clusters. Each cluster becomes an article opportunity.`,
-          ctaText: 'Generate Topic Clusters',
+          title: 'Curate Your Article Topics',
+          description: `AI will group your ${keywordCount} keywords into topics. Each topic becomes one article for your website.`,
+          ctaText: 'Curate Topics',
           ctaIcon: FiZap,
-          statLabel: 'Topic clusters',
+          statLabel: 'Topics curated',
           statValue: clusterCount,
           celebrationEmoji: clusterCount > 0 ? '🧩' : undefined,
-          celebrationText:
-            clusterCount > 0 ? `${clusterCount} topic clusters organized!` : undefined,
+          celebrationText: clusterCount > 0 ? `${clusterCount} article topics ready!` : undefined,
         };
 
       case 3:
         return {
           icon: FiCalendar,
-          title: 'Planning Your Content Calendar',
-          description: `Based on your ${clusterCount} topic clusters, we'll create a 12-week content schedule with ${clusterCount * 2}-${clusterCount * 3} article briefs.`,
-          ctaText: 'Create 12-Week Plan',
+          title: 'Plan Your Publishing Schedule',
+          description: `Based on your ${clusterCount} topics, we'll create a 12-week content calendar. You'll know exactly when to publish each article.`,
+          ctaText: 'Plan Schedule',
           ctaIcon: FiCalendar,
-          statLabel: 'Articles planned',
+          statLabel: 'Articles scheduled',
           statValue: briefCount,
           celebrationEmoji: briefCount > 0 ? '📅' : undefined,
-          celebrationText: briefCount > 0 ? `${briefCount} articles scheduled!` : undefined,
+          celebrationText: briefCount > 0 ? `${briefCount} articles on your calendar!` : undefined,
         };
 
       case 4:
         return {
           icon: FiEdit3,
-          title: 'Time to Write!',
-          description: `You have ${briefCount} article briefs ready. Pick one and start writing. AI will help with outlines, research, and drafting.`,
-          ctaText: 'Start Writing',
+          title: 'Your Articles Are Ready',
+          description: `You have ${briefCount} articles scheduled. Click any article and AI will write the first draft for you to review and publish.`,
+          ctaText: 'View Article Studio',
           ctaIcon: FiEdit3,
-          statLabel: 'Drafts created',
+          statLabel: 'Drafts ready',
           statValue: draftCount,
           celebrationEmoji: draftCount > 0 ? '✍️' : undefined,
-          celebrationText: draftCount > 0 ? `${draftCount} drafts in progress!` : undefined,
+          celebrationText: draftCount > 0 ? `${draftCount} drafts ready to review!` : undefined,
         };
 
       default:

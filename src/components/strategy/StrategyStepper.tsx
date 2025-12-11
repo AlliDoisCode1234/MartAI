@@ -5,10 +5,10 @@
  * App → StrategyPage → StrategyStepper
  *
  * Horizontal progress stepper showing 4 stages:
- * 1. Find Topics (keywords)
- * 2. Organize (clusters)
- * 3. Plan (briefs)
- * 4. Write (drafts)
+ * 1. Keywords - Find what customers search
+ * 2. Topic Curator - Group into article topics
+ * 3. Content Calendar - Schedule publishing
+ * 4. Article Studio - Write and publish
  */
 
 'use client';
@@ -32,6 +32,7 @@ import {
   Skeleton,
 } from '@chakra-ui/react';
 import { FiSearch, FiLayers, FiCalendar, FiEdit3, FiCheck } from 'react-icons/fi';
+import { STEP_LABELS } from '@/src/lib/copyStrings';
 
 interface Props {
   currentStage: number; // 1-4
@@ -41,23 +42,23 @@ interface Props {
 
 const stages = [
   {
-    title: 'Find Topics',
-    description: 'Discover keywords',
+    title: STEP_LABELS[1].title,
+    description: STEP_LABELS[1].description,
     icon: FiSearch,
   },
   {
-    title: 'Organize',
-    description: 'Build clusters',
+    title: STEP_LABELS[2].title,
+    description: STEP_LABELS[2].description,
     icon: FiLayers,
   },
   {
-    title: 'Plan',
-    description: 'Schedule content',
+    title: STEP_LABELS[3].title,
+    description: STEP_LABELS[3].description,
     icon: FiCalendar,
   },
   {
-    title: 'Write',
-    description: 'Create articles',
+    title: STEP_LABELS[4].title,
+    description: STEP_LABELS[4].description,
     icon: FiEdit3,
   },
 ];

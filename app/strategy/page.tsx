@@ -459,6 +459,34 @@ function StrategyContent() {
     }
   };
 
+  // Handler for adding a single keyword from semantic search
+  const handleAddKeyword = async (keyword: string) => {
+    if (!projectIdForQuery) return;
+
+    try {
+      await createKeywordsMutation({
+        projectId: projectIdForQuery,
+        keywords: [{ keyword }],
+      });
+      toast({
+        title: 'Keyword added',
+        description: `Added "${keyword}" to your strategy`,
+        status: 'success',
+        duration: 2000,
+      });
+    } catch (error: any) {
+      console.error('Failed to add keyword', error);
+      toast({
+        title: 'Failed to add keyword',
+        description: error?.message || 'Please try again.',
+        status: 'error',
+      });
+    }
+  };
+
+  // Get all existing keywords from clusters for the RelatedKeywords component
+  const existingKeywords = clusters.flatMap((c: { keywords?: string[] }) => c.keywords || []);
+
   const getIntentColor = (intent: string) => {
     switch (intent) {
       case 'transactional':
@@ -531,6 +559,8 @@ function StrategyContent() {
                 briefCount={briefCount}
                 draftCount={draftCount}
                 onImportKeywords={onKeywordModalOpen}
+                onAddKeyword={handleAddKeyword}
+                existingKeywords={existingKeywords}
                 onGenerateClusters={handleGenerateClusters}
                 onGeneratePlan={onPlanModalOpen}
                 onStartWizard={() => setStrategyMode('guided')}
