@@ -17,8 +17,6 @@ import {
   Input,
   Button,
   Badge,
-  Wrap,
-  WrapItem,
   Spinner,
   useColorModeValue,
   InputGroup,
@@ -26,9 +24,10 @@ import {
   Tooltip,
   Icon,
 } from '@chakra-ui/react';
-import { FiSearch, FiPlus, FiTrendingUp, FiTarget } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiTrendingUp, FiZap } from 'react-icons/fi';
 import { useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { getDifficultyLabel, getVolumeLabel, getIntentLabel } from '@/src/lib/copyStrings';
 
 interface SimilarKeyword {
   keyword: string;
@@ -81,28 +80,6 @@ export function RelatedKeywords({ onAddKeyword, existingKeywords = [] }: Props) 
     }
   };
 
-  const getIntentColor = (intent: string): string => {
-    switch (intent) {
-      case 'transactional':
-        return 'red';
-      case 'commercial':
-        return 'orange';
-      case 'informational':
-        return 'blue';
-      case 'navigational':
-        return 'gray';
-      default:
-        return 'gray';
-    }
-  };
-
-  const formatVolume = (volume: number): string => {
-    if (volume >= 1000) {
-      return `${(volume / 1000).toFixed(1)}K`;
-    }
-    return volume.toString();
-  };
-
   const isAlreadyAdded = (keyword: string): boolean => {
     return existingKeywords.some((k) => k.toLowerCase() === keyword.toLowerCase());
   };
@@ -116,7 +93,7 @@ export function RelatedKeywords({ onAddKeyword, existingKeywords = [] }: Props) 
             <Icon as={FiSearch} color="gray.400" />
           </InputLeftElement>
           <Input
-            placeholder="Search for related keywords..."
+            placeholder="Search by topic (e.g., 'content marketing')"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyPress={handleKeyPress}
@@ -125,7 +102,7 @@ export function RelatedKeywords({ onAddKeyword, existingKeywords = [] }: Props) 
           />
         </InputGroup>
         <Button colorScheme="purple" onClick={handleSearch} isLoading={loading} minW="100px">
-          Search
+          Discover
         </Button>
       </HStack>
 
@@ -134,21 +111,24 @@ export function RelatedKeywords({ onAddKeyword, existingKeywords = [] }: Props) 
         <HStack justify="center" py={4}>
           <Spinner size="sm" color="purple.500" />
           <Text fontSize="sm" color="gray.500">
-            Finding similar keywords...
+            Finding related keywords...
           </Text>
         </HStack>
       )}
 
       {!loading && searched && results.length === 0 && (
         <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
-          No similar keywords found. Try a different search term.
+          No related keywords found. Try a different topic.
         </Text>
       )}
 
       {!loading && results.length > 0 && (
-        <VStack spacing={2} align="stretch" maxH="300px" overflowY="auto">
+        <VStack spacing={2} align="stretch" maxH="350px" overflowY="auto">
           {results.map((kw) => {
             const added = isAlreadyAdded(kw.keyword);
+            const difficulty = getDifficultyLabel(kw.difficulty);
+            const volume = getVolumeLabel(kw.searchVolume);
+            const intent = getIntentLabel(kw.intent);
 
             return (
               <HStack
@@ -162,33 +142,50 @@ export function RelatedKeywords({ onAddKeyword, existingKeywords = [] }: Props) 
                 _hover={{ bg: hoverBg }}
                 transition="background 0.2s"
               >
-                <VStack align="start" spacing={0} flex="1">
+                <VStack align="start" spacing={1} flex="1">
                   <Text fontWeight="medium" fontSize="sm">
                     {kw.keyword}
                   </Text>
-                  <HStack spacing={2} mt={1}>
-                    <Tooltip label="Search Volume">
-                      <HStack spacing={1}>
-                        <Icon as={FiTrendingUp} boxSize={3} color="gray.400" />
-                        <Text fontSize="xs" color="gray.500">
-                          {formatVolume(kw.searchVolume)}
-                        </Text>
-                      </HStack>
+                  <HStack spacing={2} flexWrap="wrap">
+                    {/* Difficulty - Human readable */}
+                    <Tooltip label={difficulty.advice}>
+                      <Badge
+                        colorScheme={difficulty.color}
+                        variant="subtle"
+                        fontSize="2xs"
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
+                      >
+                        <Icon as={FiZap} boxSize={2.5} />
+                        {difficulty.label}
+                      </Badge>
                     </Tooltip>
-                    <Tooltip label="Difficulty">
-                      <HStack spacing={1}>
-                        <Icon as={FiTarget} boxSize={3} color="gray.400" />
-                        <Text fontSize="xs" color="gray.500">
-                          {kw.difficulty}%
-                        </Text>
-                      </HStack>
+
+                    {/* Volume - Human readable */}
+                    <Tooltip label={volume.description}>
+                      <Badge
+                        colorScheme="gray"
+                        variant="outline"
+                        fontSize="2xs"
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
+                      >
+                        <Icon as={FiTrendingUp} boxSize={2.5} />
+                        {volume.label}
+                      </Badge>
                     </Tooltip>
-                    <Badge colorScheme={getIntentColor(kw.intent)} size="sm" fontSize="2xs">
-                      {kw.intent}
-                    </Badge>
+
+                    {/* Intent - Human readable */}
+                    <Tooltip label={intent.advice}>
+                      <Badge colorScheme={intent.color} fontSize="2xs">
+                        {intent.label}
+                      </Badge>
+                    </Tooltip>
                   </HStack>
                 </VStack>
-                <Tooltip label={added ? 'Already added' : 'Add to project'}>
+                <Tooltip label={added ? 'Already in your keywords' : 'Add to your keywords'}>
                   <Button
                     size="xs"
                     leftIcon={<FiPlus />}
