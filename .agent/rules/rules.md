@@ -19,3 +19,4 @@ Update `PROJECT_STATUS.md` after significant work completion
 Commit with conventional format: `type(scope): description`
 Types: feat, fix, refactor, docs, chore, test
 Use STYLES_GUIDE.md for new styles.
+/bod is our board of directors, always refer to them
