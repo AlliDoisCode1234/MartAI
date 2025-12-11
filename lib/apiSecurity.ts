@@ -9,9 +9,16 @@ const SIGNATURE_HEADER = 'X-Request-Signature';
 const TIMESTAMP_HEADER = 'X-Request-Timestamp';
 
 // Environment variables for security secrets
-const API_SECRET_KEY = process.env.API_SECRET_KEY || (process.env.NODE_ENV === 'production' ? null : 'dev-api-secret-key-change-in-production');
-const CSRF_SECRET = process.env.CSRF_SECRET || (process.env.NODE_ENV === 'production' ? null : 'dev-csrf-secret-change-in-production');
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001'];
+const API_SECRET_KEY =
+  process.env.API_SECRET_KEY ||
+  (process.env.NODE_ENV === 'production' ? null : 'dev-api-secret-key-change-in-production');
+const CSRF_SECRET =
+  process.env.CSRF_SECRET ||
+  (process.env.NODE_ENV === 'production' ? null : 'dev-csrf-secret-change-in-production');
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || [
+  'http://localhost:3000',
+  'http://localhost:3001',
+];
 
 // Request timestamp tolerance (5 minutes)
 const TIMESTAMP_TOLERANCE_MS = 5 * 60 * 1000;
@@ -25,48 +32,90 @@ export interface SecurityHeaders {
   'X-Request-ID'?: string;
   'X-Request-Signature'?: string;
   'X-Request-Timestamp'?: string;
-  'Origin'?: string;
-  'Referer'?: string;
+  Origin?: string;
+  Referer?: string;
 }
 
+// CSRF token TTL (1 hour)
+const CSRF_TTL_MS = 60 * 60 * 1000;
+
 /**
- * Generate a CSRF token
+ * Generate a stateless CSRF token
+ * Format: base64(random:timestamp:hmac)
+ *
+ * This is a serverless-friendly approach that doesn't require
+ * in-memory storage. The token encodes its own expiration.
  */
 export function generateCsrfToken(): string {
-  const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
-  csrfTokens.set(token, { token, expiresAt });
-  return token;
+  if (!CSRF_SECRET) {
+    // In development without secret, generate simple token
+    if (process.env.NODE_ENV !== 'production') {
+      return crypto.randomBytes(32).toString('hex');
+    }
+    throw new Error('CSRF_SECRET not configured');
+  }
+
+  const random = crypto.randomBytes(16).toString('hex');
+  const timestamp = Date.now().toString();
+  const payload = `${random}:${timestamp}`;
+  const signature = crypto.createHmac('sha256', CSRF_SECRET).update(payload).digest('hex');
+
+  // Combine and encode as base64 for URL safety
+  return Buffer.from(`${payload}:${signature}`).toString('base64url');
 }
 
 /**
- * Validate CSRF token
+ * Validate stateless CSRF token
+ * Verifies signature and checks expiration encoded in the token
  */
 export function validateCsrfToken(token: string | null): boolean {
   if (!token) return false;
-  
-  const stored = csrfTokens.get(token);
-  if (!stored) return false;
-  
-  // Check expiration
-  if (Date.now() > stored.expiresAt) {
-    csrfTokens.delete(token);
+
+  // In development without secret, accept any non-empty token
+  if (!CSRF_SECRET && process.env.NODE_ENV !== 'production') {
+    return token.length > 0;
+  }
+
+  if (!CSRF_SECRET) return false;
+
+  try {
+    // Decode base64url
+    const decoded = Buffer.from(token, 'base64url').toString('utf8');
+    const parts = decoded.split(':');
+
+    if (parts.length !== 3) return false;
+
+    const [random, timestamp, signature] = parts;
+
+    // Verify signature
+    const payload = `${random}:${timestamp}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', CSRF_SECRET)
+      .update(payload)
+      .digest('hex');
+
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+      return false;
+    }
+
+    // Check expiration
+    const tokenTime = parseInt(timestamp, 10);
+    if (isNaN(tokenTime) || Date.now() - tokenTime > CSRF_TTL_MS) {
+      return false;
+    }
+
+    return true;
+  } catch {
     return false;
   }
-  
-  return true;
 }
 
 /**
- * Clean expired CSRF tokens (run periodically)
+ * @deprecated No longer needed with stateless tokens
+ * Kept for backwards compatibility
  */
 export function cleanExpiredCsrfTokens() {
-  const now = Date.now();
-  for (const [token, data] of csrfTokens.entries()) {
-    if (now > data.expiresAt) {
-      csrfTokens.delete(token);
-    }
-  }
+  // No-op: stateless tokens don't need cleanup
 }
 
 /**
@@ -96,10 +145,7 @@ export function validateApiKey(request: NextRequest): boolean {
   const expectedHash = process.env.API_KEY_HASH;
   if (expectedHash) {
     const providedHash = generateApiKeyHash(apiKey);
-    return crypto.timingSafeEqual(
-      Buffer.from(providedHash),
-      Buffer.from(expectedHash)
-    );
+    return crypto.timingSafeEqual(Buffer.from(providedHash), Buffer.from(expectedHash));
   }
 
   // Fallback: check if API key matches configured key
@@ -133,7 +179,10 @@ export function validateOrigin(request: NextRequest): boolean {
   if (referer) {
     try {
       const refererUrl = new URL(referer);
-      if (refererUrl.hostname === hostname || ALLOWED_ORIGINS.some(allowed => referer.includes(allowed))) {
+      if (
+        refererUrl.hostname === hostname ||
+        ALLOWED_ORIGINS.some((allowed) => referer.includes(allowed))
+      ) {
         return true;
       }
     } catch {
@@ -159,10 +208,7 @@ export function generateRequestSignature(
   }
 
   const payload = `${method}:${path}:${body}:${timestamp}`;
-  return crypto
-    .createHmac('sha256', API_SECRET_KEY)
-    .update(payload)
-    .digest('hex');
+  return crypto.createHmac('sha256', API_SECRET_KEY).update(payload).digest('hex');
 }
 
 /**
@@ -191,10 +237,7 @@ export function validateRequestSignature(request: NextRequest, body: string): bo
     timestamp
   );
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
 }
 
 /**
@@ -207,11 +250,14 @@ export function generateRequestId(): string {
 /**
  * Validate Content-Type header
  */
-export function validateContentType(request: NextRequest, allowedTypes: string[] = ['application/json']): boolean {
+export function validateContentType(
+  request: NextRequest,
+  allowedTypes: string[] = ['application/json']
+): boolean {
   const contentType = request.headers.get('content-type');
   if (!contentType) return false;
-  
-  return allowedTypes.some(type => contentType.includes(type));
+
+  return allowedTypes.some((type) => contentType.includes(type));
 }
 
 /**
@@ -224,11 +270,14 @@ export function addSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-  
+
   // CORS headers (configure as needed)
   response.headers.set('Access-Control-Allow-Origin', ALLOWED_ORIGINS[0] || '*');
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, X-CSRF-Token, X-Request-ID');
+  response.headers.set(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-API-Key, X-CSRF-Token, X-Request-ID'
+  );
   response.headers.set('Access-Control-Max-Age', '86400');
 
   return response;
@@ -243,12 +292,12 @@ export function extractClientIp(request: NextRequest): string {
   if (forwarded) {
     return forwarded.split(',')[0].trim();
   }
-  
+
   const realIp = request.headers.get('x-real-ip');
   if (realIp) {
     return realIp;
   }
-  
+
   const reqWithIp = request as NextRequest & { ip?: string | null };
   return reqWithIp.ip ?? 'unknown';
 }
@@ -281,7 +330,7 @@ export async function validateApiSecurity(
   options: SecurityValidationOptions = {}
 ): Promise<SecurityValidationResult> {
   const requestId = generateRequestId();
-  
+
   // Check HTTP method
   if (options.allowedMethods && !options.allowedMethods.includes(request.method)) {
     return {
@@ -364,10 +413,7 @@ export async function validateApiSecurity(
  * Create unauthorized response with security headers
  */
 export function unauthorizedResponse(error: string = 'Unauthorized', code?: string): NextResponse {
-  const response = NextResponse.json(
-    { error, code },
-    { status: 401 }
-  );
+  const response = NextResponse.json({ error, code }, { status: 401 });
   return addSecurityHeaders(response);
 }
 
@@ -375,10 +421,7 @@ export function unauthorizedResponse(error: string = 'Unauthorized', code?: stri
  * Create forbidden response with security headers
  */
 export function forbiddenResponse(error: string = 'Forbidden', code?: string): NextResponse {
-  const response = NextResponse.json(
-    { error, code },
-    { status: 403 }
-  );
+  const response = NextResponse.json({ error, code }, { status: 403 });
   return addSecurityHeaders(response);
 }
 
@@ -386,4 +429,3 @@ export function forbiddenResponse(error: string = 'Forbidden', code?: string): N
 if (typeof setInterval !== 'undefined') {
   setInterval(cleanExpiredCsrfTokens, 60 * 60 * 1000);
 }
-

@@ -1,8 +1,8 @@
 # MartAI Project Status Report
 
-**Last Updated**: December 9, 2025  
+**Last Updated**: December 11, 2025  
 **Current Phase**: Phase 3 - Enterprise Features  
-**Active Task**: OAuth in Onboarding + Codebase Cleanup
+**Active Task**: WordPress Integration Hardening + Market Strategy
 
 ---
 
@@ -105,6 +105,14 @@ See `docs/` for full persona documentation.
 - **RBAC System**: Shared utility for admin portal + org-level access
 - **Webhooks Infrastructure**: HMAC + retry + delivery logging
 
+### ✅ WordPress Integration Hardening (December 11, 2025)
+
+- `platformConnections` table for CMS credentials
+- Content mappers (Markdown → Gutenberg blocks)
+- Enhanced WordPressClient with posts, media, categories, tags
+- `publishToWordPress`, `quickPublish`, `saveAsDraft` actions
+- `WordPressConnect` UI component
+
 ---
 
 ## Active Components
@@ -134,7 +142,22 @@ See `docs/` for full persona documentation.
 2. **Public API**: OpenAPI spec and routes for integrations
 3. **Activity Logs**: Track user actions in organizations
 4. **Type Safety Cleanup**: Remove `as any` casts (~158 remaining)
-5. **WordPress Publishing**: Full adapter testing
+5. **Wire up WordPress UI**: Add `WordPressConnect` to Settings page
+6. **Originality.ai API Key**: Enable plagiarism/AI detection
+7. **Penetration Testing**: Security audit before launch
+
+---
+
+## Backlog (Future Sprints)
+
+### Programmatic SEO (Blocked: Needs Originality.ai API)
+
+- `/compare/[competitor]` pages (MartAI vs X)
+- `/for/[industry]` pages (MartAI for X)
+- `/integrations/[platform]` pages (MartAI + X)
+- Pillar content (5 high-quality pages)
+- Topic cluster content (15-20 supporting articles)
+- Blog automation using MartAI's own pipeline (dogfooding)
 
 ---
 

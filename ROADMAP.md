@@ -82,12 +82,21 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 ### Core Features
 
 - [ ] **Publishing Workflow**
-  - [ ] WordPress adapter completion & testing
+  - [x] WordPress adapter completion & testing (December 2025)
+  - [x] Content mappers (Markdown → Gutenberg)
+  - [x] Media upload support
   - [ ] Webflow adapter implementation
   - [ ] Shopify adapter implementation
   - [ ] Scheduled post management
   - [ ] Error handling & retry logic
-  - [ ] Media upload support
+
+- [ ] **Programmatic SEO** (Backlog - Needs Originality.ai API)
+  - [ ] `/compare/[competitor]` template pages
+  - [ ] `/for/[industry]` template pages
+  - [ ] `/integrations/[platform]` template pages
+  - [ ] Pillar content framework (5 pages)
+  - [ ] Topic cluster structure (15-20 articles)
+  - [ ] Blog automation using MartAI pipeline (dogfooding)
 
 - [x] **Analytics & Insights (v2 - December 2025)**
   - [x] GA4/GSC data sync (10-step pipeline)
@@ -285,6 +294,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - [ ] 99.5% uptime
 - [ ] WCAG AA accessibility compliance
 - [ ] Security audit passed
+- [ ] Penetration testing completed (internal or third-party)
 
 ### Growth Metrics (Post-MVP)
 
