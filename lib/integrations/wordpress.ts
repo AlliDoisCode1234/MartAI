@@ -1,40 +1,90 @@
-// Removed axios import
+/**
+ * WordPress REST API Client
+ *
+ * Handles all WordPress API interactions for content publishing.
+ */
 
 export interface WordPressPage {
   id?: number;
   title: string;
   content: string;
   slug?: string;
-  status?: 'publish' | 'draft' | 'private';
+  status?: 'publish' | 'draft' | 'private' | 'future';
   excerpt?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
+  date?: string; // ISO date for scheduled posts
+}
+
+export interface WordPressPost extends WordPressPage {
+  categories?: number[];
+  tags?: number[];
+  featured_media?: number;
 }
 
 export interface WordPressAuth {
   siteUrl: string;
   username: string;
-  password: string; // Application password or OAuth token
+  password: string; // Application password
+}
+
+export interface WordPressMedia {
+  id: number;
+  source_url: string;
+  title: { rendered: string };
+}
+
+export interface WordPressCategory {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface WordPressTag {
+  id: number;
+  name: string;
+  slug: string;
 }
 
 export class WordPressClient {
   private siteUrl: string;
   private auth: WordPressAuth;
   private apiUrl: string;
+  private authHeader: string;
 
   constructor(auth: WordPressAuth) {
     this.siteUrl = auth.siteUrl.replace(/\/$/, '');
     this.auth = auth;
     this.apiUrl = `${this.siteUrl}/wp-json/wp/v2`;
+    this.authHeader =
+      'Basic ' + Buffer.from(`${auth.username}:${auth.password}`).toString('base64');
   }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${this.apiUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        Authorization: this.authHeader,
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(
+        `WordPress API error: ${data.message || response.statusText} (${response.status})`
+      );
+    }
+
+    return response.json();
+  }
+
+  // ============ Connection Testing ============
 
   async testConnection(): Promise<{ valid: boolean; siteName?: string; error?: string }> {
     try {
       const response = await fetch(`${this.apiUrl}/`, {
-        headers: {
-          Authorization:
-            'Basic ' +
-            Buffer.from(`${this.auth.username}:${this.auth.password}`).toString('base64'),
-        },
+        headers: { Authorization: this.authHeader },
       });
 
       if (!response.ok) {
@@ -47,30 +97,17 @@ export class WordPressClient {
 
       const data = await response.json();
       return { valid: true, siteName: data.name || 'WordPress Site' };
-    } catch (error: any) {
-      return { valid: false, error: error.message || 'Connection failed' };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Connection failed';
+      return { valid: false, error: message };
     }
   }
 
   async checkPublishingRights(): Promise<{ canPublish: boolean; error?: string }> {
     try {
-      const response = await fetch(`${this.apiUrl}/users/me`, {
-        headers: {
-          Authorization:
-            'Basic ' +
-            Buffer.from(`${this.auth.username}:${this.auth.password}`).toString('base64'),
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        return {
-          canPublish: false,
-          error: data.message || `HTTP error ${response.status}`,
-        };
-      }
-
-      const data = await response.json();
+      const data = await this.request<{ capabilities?: Record<string, boolean> }>(
+        '/users/me?context=edit'
+      );
       const capabilities = data.capabilities || {};
       const canPublish =
         capabilities.publish_pages || capabilities.publish_posts || capabilities.edit_pages;
@@ -80,115 +117,262 @@ export class WordPressClient {
       }
 
       return { canPublish: true };
-    } catch (error: any) {
-      return { canPublish: false, error: error.message || 'Failed to check permissions' };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to check permissions';
+      return { canPublish: false, error: message };
     }
   }
 
+  // ============ Pages ============
+
   async createPage(page: WordPressPage): Promise<{ id: number; link: string }> {
-    try {
-      const response = await fetch(`${this.apiUrl}/pages`, {
-        method: 'POST',
-        headers: {
-          Authorization:
-            'Basic ' +
-            Buffer.from(`${this.auth.username}:${this.auth.password}`).toString('base64'),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: page.title,
-          content: page.content,
-          status: page.status || 'publish',
-          slug: page.slug,
-          excerpt: page.excerpt,
-          meta: page.meta,
-        }),
-      });
+    const data = await this.request<{ id: number; link: string }>('/pages', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: page.title,
+        content: page.content,
+        status: page.status || 'publish',
+        slug: page.slug,
+        excerpt: page.excerpt,
+        meta: page.meta,
+        date: page.date,
+      }),
+    });
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(`WordPress API error: ${data.message || response.statusText}`);
-      }
-
-      const data = await response.json();
-      return {
-        id: data.id,
-        link: data.link,
-      };
-    } catch (error: any) {
-      console.error('WordPress API Error:', error);
-      throw error;
-    }
+    return { id: data.id, link: data.link };
   }
 
   async updatePage(
     pageId: number,
     page: Partial<WordPressPage>
   ): Promise<{ id: number; link: string }> {
-    try {
-      const response = await fetch(`${this.apiUrl}/pages/${pageId}`, {
-        method: 'POST',
-        headers: {
-          Authorization:
-            'Basic ' +
-            Buffer.from(`${this.auth.username}:${this.auth.password}`).toString('base64'),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: page.title,
-          content: page.content,
-          status: page.status,
-          slug: page.slug,
-          excerpt: page.excerpt,
-          meta: page.meta,
-        }),
-      });
+    const data = await this.request<{ id: number; link: string }>(`/pages/${pageId}`, {
+      method: 'POST',
+      body: JSON.stringify(page),
+    });
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(`WordPress API error: ${data.message || response.statusText}`);
-      }
-
-      const data = await response.json();
-      return {
-        id: data.id,
-        link: data.link,
-      };
-    } catch (error: any) {
-      console.error('WordPress API Error:', error);
-      throw error;
-    }
+    return { id: data.id, link: data.link };
   }
 
-  async getPages(): Promise<any[]> {
-    try {
-      const response = await fetch(`${this.apiUrl}/pages?per_page=100`, {
-        headers: {
-          Authorization:
-            'Basic ' +
-            Buffer.from(`${this.auth.username}:${this.auth.password}`).toString('base64'),
-        },
-      });
+  async getPages(perPage: number = 100): Promise<WordPressPage[]> {
+    return this.request<WordPressPage[]>(`/pages?per_page=${perPage}`);
+  }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
+  // ============ Posts ============
 
-      return await response.json();
-    } catch (error) {
-      console.error('WordPress API Error:', error);
-      throw error;
+  async createPost(post: WordPressPost): Promise<{ id: number; link: string }> {
+    const data = await this.request<{ id: number; link: string }>('/posts', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: post.title,
+        content: post.content,
+        status: post.status || 'draft',
+        slug: post.slug,
+        excerpt: post.excerpt,
+        categories: post.categories,
+        tags: post.tags,
+        featured_media: post.featured_media,
+        meta: post.meta,
+        date: post.date,
+      }),
+    });
+
+    return { id: data.id, link: data.link };
+  }
+
+  async updatePost(
+    postId: number,
+    post: Partial<WordPressPost>
+  ): Promise<{ id: number; link: string }> {
+    const data = await this.request<{ id: number; link: string }>(`/posts/${postId}`, {
+      method: 'POST',
+      body: JSON.stringify(post),
+    });
+
+    return { id: data.id, link: data.link };
+  }
+
+  async getPosts(perPage: number = 100): Promise<WordPressPost[]> {
+    return this.request<WordPressPost[]>(`/posts?per_page=${perPage}`);
+  }
+
+  // ============ Media ============
+
+  async uploadMedia(imageUrl: string, filename: string): Promise<{ id: number; url: string }> {
+    // Fetch the image
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
     }
+
+    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+    const imageBuffer = await imageResponse.arrayBuffer();
+
+    // Upload to WordPress
+    const response = await fetch(`${this.apiUrl}/media`, {
+      method: 'POST',
+      headers: {
+        Authorization: this.authHeader,
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+      body: imageBuffer,
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(`Media upload failed: ${data.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return {
+      id: data.id,
+      url: data.source_url,
+    };
+  }
+
+  async getMedia(mediaId: number): Promise<WordPressMedia> {
+    return this.request<WordPressMedia>(`/media/${mediaId}`);
+  }
+
+  // ============ Categories ============
+
+  async getCategories(): Promise<WordPressCategory[]> {
+    return this.request<WordPressCategory[]>('/categories?per_page=100');
+  }
+
+  async createCategory(name: string): Promise<WordPressCategory> {
+    return this.request<WordPressCategory>('/categories', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async getOrCreateCategory(name: string): Promise<number> {
+    const categories = await this.getCategories();
+    const existing = categories.find((c) => c.name.toLowerCase() === name.toLowerCase());
+
+    if (existing) return existing.id;
+
+    const newCategory = await this.createCategory(name);
+    return newCategory.id;
+  }
+
+  async getOrCreateCategories(names: string[]): Promise<number[]> {
+    const ids: number[] = [];
+    for (const name of names) {
+      const id = await this.getOrCreateCategory(name);
+      ids.push(id);
+    }
+    return ids;
+  }
+
+  // ============ Tags ============
+
+  async getTags(): Promise<WordPressTag[]> {
+    return this.request<WordPressTag[]>('/tags?per_page=100');
+  }
+
+  async createTag(name: string): Promise<WordPressTag> {
+    return this.request<WordPressTag>('/tags', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async getOrCreateTag(name: string): Promise<number> {
+    const tags = await this.getTags();
+    const existing = tags.find((t) => t.name.toLowerCase() === name.toLowerCase());
+
+    if (existing) return existing.id;
+
+    const newTag = await this.createTag(name);
+    return newTag.id;
+  }
+
+  async getOrCreateTags(names: string[]): Promise<number[]> {
+    const ids: number[] = [];
+    for (const name of names) {
+      const id = await this.getOrCreateTag(name);
+      ids.push(id);
+    }
+    return ids;
+  }
+
+  // ============ Full Publishing Flow ============
+
+  async publishArticle(options: {
+    title: string;
+    content: string;
+    excerpt?: string;
+    slug?: string;
+    status?: 'draft' | 'publish' | 'future' | 'private';
+    categories?: string[];
+    tags?: string[];
+    featuredImageUrl?: string;
+    scheduledDate?: Date;
+    meta?: Record<string, unknown>;
+    postType?: 'post' | 'page';
+  }): Promise<{ id: number; link: string; featuredMediaId?: number }> {
+    let featuredMediaId: number | undefined;
+
+    // Upload featured image if provided
+    if (options.featuredImageUrl) {
+      try {
+        const filename = `featured-${Date.now()}.jpg`;
+        const media = await this.uploadMedia(options.featuredImageUrl, filename);
+        featuredMediaId = media.id;
+      } catch (error) {
+        console.error('Failed to upload featured image:', error);
+        // Continue without featured image
+      }
+    }
+
+    // Get/create categories
+    let categoryIds: number[] = [];
+    if (options.categories?.length) {
+      categoryIds = await this.getOrCreateCategories(options.categories);
+    }
+
+    // Get/create tags
+    let tagIds: number[] = [];
+    if (options.tags?.length) {
+      tagIds = await this.getOrCreateTags(options.tags);
+    }
+
+    // Prepare post data
+    const postData: WordPressPost = {
+      title: options.title,
+      content: options.content,
+      excerpt: options.excerpt,
+      slug: options.slug,
+      status: options.status || 'draft',
+      categories: categoryIds.length ? categoryIds : undefined,
+      tags: tagIds.length ? tagIds : undefined,
+      featured_media: featuredMediaId,
+      meta: options.meta,
+      date: options.scheduledDate?.toISOString(),
+    };
+
+    // Create post or page
+    const result =
+      options.postType === 'page'
+        ? await this.createPage(postData)
+        : await this.createPost(postData);
+
+    return {
+      ...result,
+      featuredMediaId,
+    };
   }
 }
 
-// OAuth flow helpers
+// OAuth flow helpers (for future WordPress.com hosted sites)
 export function getWordPressOAuthUrl(
   siteUrl: string,
   clientId: string,
   redirectUri: string
 ): string {
-  // WordPress OAuth 1.0a flow
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: clientId,
@@ -199,6 +383,7 @@ export function getWordPressOAuthUrl(
   return `${siteUrl}/wp-admin/admin.php?page=oauth1_authorize&${params.toString()}`;
 }
 
+// Template generator
 export function generateServicesPageContent(
   companyName: string,
   industry: string,
@@ -206,7 +391,6 @@ export function generateServicesPageContent(
   targetAudience: string
 ): string {
   const primaryKeyword = keywords[0] || `${industry} services`;
-  const secondaryKeywords = keywords.slice(1, 5).join(', ');
 
   return `<!-- wp:heading {"level":1} -->
 <h1>${primaryKeyword.charAt(0).toUpperCase() + primaryKeyword.slice(1)}</h1>

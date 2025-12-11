@@ -509,6 +509,7 @@ export default defineSchema({
     wordCount: v.optional(v.number()),
     status: v.string(), // draft, approved, published
     notes: v.optional(v.string()),
+    publishedUrl: v.optional(v.string()), // WordPress/Shopify URL
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -580,6 +581,54 @@ export default defineSchema({
     .index('by_project', ['projectId'])
     .index('by_status', ['status'])
     .index('by_publish_date', ['publishDate']),
+
+  // Platform Connections (WordPress, Shopify, etc.)
+  platformConnections: defineTable({
+    projectId: v.id('projects'),
+    platform: v.union(
+      v.literal('wordpress'),
+      v.literal('shopify'),
+      v.literal('wix'),
+      v.literal('webflow'),
+      v.literal('ghost')
+    ),
+    // Connection details
+    siteUrl: v.string(),
+    siteName: v.optional(v.string()),
+    credentials: v.object({
+      username: v.optional(v.string()),
+      applicationPassword: v.optional(v.string()), // WordPress App Password
+      apiKey: v.optional(v.string()), // Shopify/other APIs
+      accessToken: v.optional(v.string()),
+      refreshToken: v.optional(v.string()),
+    }),
+    // Validation status
+    isValid: v.boolean(),
+    lastValidatedAt: v.optional(v.number()),
+    validationError: v.optional(v.string()),
+    // User capabilities on the platform
+    capabilities: v.optional(
+      v.object({
+        canPublishPosts: v.optional(v.boolean()),
+        canPublishPages: v.optional(v.boolean()),
+        canUploadMedia: v.optional(v.boolean()),
+        canManageCategories: v.optional(v.boolean()),
+      })
+    ),
+    // Default publish settings
+    defaultPostType: v.optional(v.union(v.literal('post'), v.literal('page'))),
+    defaultStatus: v.optional(
+      v.union(v.literal('draft'), v.literal('publish'), v.literal('private'))
+    ),
+    defaultCategories: v.optional(v.array(v.string())),
+    defaultTags: v.optional(v.array(v.string())),
+    // Timestamps
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_project', ['projectId'])
+    .index('by_project_platform', ['projectId', 'platform'])
+    .index('by_platform', ['platform']),
 
   // Analytics Data
   analyticsData: defineTable({

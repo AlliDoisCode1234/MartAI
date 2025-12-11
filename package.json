@@ -50,6 +50,7 @@
     "jest-environment-jsdom": "^30.2.0",
     "lexical": "^0.38.2",
     "lucide-react": "^0.556.0",
+    "marked": "^17.0.1",
     "neutral-cost": "^0.2.2",
     "next": "^15.5.7",
     "react": "^19.2.1",

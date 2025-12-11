@@ -56,6 +56,8 @@ import type * as integrations_hubspot from "../integrations/hubspot.js";
 import type * as integrations_integrations from "../integrations/integrations.js";
 import type * as integrations_oauth from "../integrations/oauth.js";
 import type * as integrations_pages from "../integrations/pages.js";
+import type * as integrations_platformConnectionActions from "../integrations/platformConnectionActions.js";
+import type * as integrations_platformConnections from "../integrations/platformConnections.js";
 import type * as integrations_wordpress from "../integrations/wordpress.js";
 import type * as lib_aggregates from "../lib/aggregates.js";
 import type * as lib_api from "../lib/api.js";
@@ -155,6 +157,8 @@ declare const fullApi: ApiFromModules<{
   "integrations/integrations": typeof integrations_integrations;
   "integrations/oauth": typeof integrations_oauth;
   "integrations/pages": typeof integrations_pages;
+  "integrations/platformConnectionActions": typeof integrations_platformConnectionActions;
+  "integrations/platformConnections": typeof integrations_platformConnections;
   "integrations/wordpress": typeof integrations_wordpress;
   "lib/aggregates": typeof lib_aggregates;
   "lib/api": typeof lib_api;
