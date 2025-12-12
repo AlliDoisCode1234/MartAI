@@ -22,9 +22,10 @@ import {
   Icon,
   Badge,
   Spinner,
+  useToast,
 } from '@chakra-ui/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMutation } from 'convex/react';
+import { useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/lib/useAuth';
 import {
@@ -54,24 +55,26 @@ const PLANS = [
   {
     id: 'growth',
     name: 'Growth',
-    price: '$99/mo',
+    price: '$149/mo',
     description: '3 websites, full features',
     features: ['3 Websites', 'Full SEO Suite', 'Daily Sync', 'AI Briefs'],
     color: 'purple',
     popular: true,
   },
   {
-    id: 'pro',
-    name: 'Pro',
-    price: '$199/mo',
-    description: 'Unlimited, priority support',
-    features: ['Unlimited Websites', 'Priority Support', 'Custom Reports', 'API Access'],
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 'Custom',
+    description: 'Tailored to your needs',
+    features: ['Unlimited Websites', 'Dedicated Support', 'Custom Integrations', 'SLA Guarantee'],
     color: 'orange',
+    cta: 'Contact Us',
   },
 ];
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const toast = useToast();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -90,6 +93,11 @@ export default function OnboardingPage() {
   const createOnboardingProspect = useMutation(api.prospects.prospects.createOnboardingProspect);
   const updateOnboardingProspect = useMutation(api.prospects.prospects.updateOnboardingProspect);
   const convertProspectToUser = useMutation(api.prospects.prospects.convertProspectToUser);
+  const generateKeywordsFromUrl = useAction(api.seo.keywordActions.generateKeywordsFromUrl);
+  const generateClusters = useAction(api.seo.keywordActions.generateClusters);
+  const generatePreliminaryScore = useMutation(
+    api.analytics.martaiRatingQueries.generatePreliminaryScore
+  );
 
   // Track prospect ID for auto-save and conversion
   const [prospectId, setProspectId] = useState<string | null>(null);
@@ -224,6 +232,70 @@ export default function OnboardingPage() {
       if (projectId) {
         // Track project created
         await updateOnboardingStep({ step: 'projectCreated', value: true }).catch(console.error);
+
+        // Auto-generate keywords from URL using semantic library
+        try {
+          const kwResult = await generateKeywordsFromUrl({
+            projectId: projectId as any, // Id<'projects'>
+            limit: 30,
+          });
+          console.log('Keywords auto-generated from URL during onboarding:', kwResult.count);
+
+          if (kwResult.count > 0) {
+            toast({
+              title: `Generated ${kwResult.count} keywords!`,
+              status: 'success',
+              duration: 3000,
+            });
+          }
+
+          // Auto-generate at least 1 topic cluster if we have enough keywords
+          if (kwResult.count >= 10) {
+            try {
+              const clusterResult = await generateClusters({
+                projectId: projectId as any,
+              });
+              console.log('Topic clusters auto-generated during onboarding:', clusterResult.count);
+            } catch (clusterError) {
+              console.warn('Topic cluster generation failed (non-blocking):', clusterError);
+            }
+          }
+        } catch (kwError: any) {
+          // Non-blocking: continue even if keyword generation fails
+          console.warn('Keyword generation failed (non-blocking):', kwError);
+          toast({
+            title: 'Keyword generation issue',
+            description: kwError?.message || 'Could not generate keywords',
+            status: 'warning',
+            duration: 5000,
+          });
+        }
+
+        // Generate preliminary MR score (gives immediate feedback)
+        try {
+          const mrResult = await generatePreliminaryScore({
+            projectId: projectId as any,
+          });
+          console.log('Preliminary MR score generated:', mrResult?.overall);
+
+          if (mrResult?.overall) {
+            toast({
+              title: `MR Score: ${mrResult.overall}`,
+              description: 'Your initial rating is ready!',
+              status: 'success',
+              duration: 3000,
+            });
+          }
+        } catch (mrError: any) {
+          console.warn('Preliminary MR generation failed (non-blocking):', mrError);
+          toast({
+            title: 'MR Rating issue',
+            description: mrError?.message || 'Could not generate rating',
+            status: 'warning',
+            duration: 5000,
+          });
+        }
+
         await completeOnboarding();
         // Clear onboarding step and store project
         localStorage.removeItem('onboardingStep');

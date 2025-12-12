@@ -7,6 +7,8 @@
 export { StrategyStepper, StrategyStepperCompact } from './StrategyStepper';
 export { NextStepCard } from './NextStepCard';
 export { KeywordSourceModal } from './KeywordSourceModal';
+export { KeywordsPreview } from './KeywordsPreview';
+export { TopicsPreview } from './TopicsPreview';
 export { StrategyDashboard } from './StrategyDashboard';
 export { RelatedKeywords } from './RelatedKeywords';
 export {

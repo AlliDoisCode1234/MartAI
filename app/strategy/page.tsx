@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Container,
@@ -78,6 +78,7 @@ import {
   StrategyModeToggle,
   SkipWizardLink,
   KeywordSourceModal,
+  KeywordsPreview,
   StrategyDashboard,
   getSavedStrategyMode,
   type StrategyMode,
@@ -107,6 +108,7 @@ function StrategyContent() {
   const rescheduleBrief = useMutation(api.content.quarterlyPlans.rescheduleBrief);
   const createKeywordsMutation = useMutation(api.seo.keywords.createKeywords);
   const generateClustersAction = useAction(api.seo.keywordActions.generateClusters);
+  const generateKeywordsFromUrlAction = useAction(api.seo.keywordActions.generateKeywordsFromUrl);
   const generatePlanAction = useAction((api as any).content.quarterlyPlanActions.generatePlan);
   const projectIdForQuery =
     projectId !== null
@@ -149,6 +151,48 @@ function StrategyContent() {
     if (keywordCount > 0) return 2;
     return 1;
   })();
+
+  // Auto-discover keywords when project has 0 keywords
+  const hasAttemptedAutoDiscovery = useRef(false);
+  useEffect(() => {
+    const shouldAutoDiscover =
+      projectIdForQuery &&
+      strategyData !== undefined &&
+      keywordCount === 0 &&
+      !hasAttemptedAutoDiscovery.current &&
+      !generating;
+
+    if (shouldAutoDiscover) {
+      hasAttemptedAutoDiscovery.current = true;
+      toast({
+        title: 'Discovering keywords...',
+        description: 'Finding relevant keywords based on your website.',
+        status: 'info',
+        duration: 3000,
+      });
+
+      generateKeywordsFromUrlAction({ projectId: projectIdForQuery })
+        .then((result) => {
+          if (result.success && result.count > 0) {
+            toast({
+              title: `Found ${result.count} keywords!`,
+              status: 'success',
+              duration: 3000,
+            });
+          }
+        })
+        .catch((err) => {
+          console.warn('Auto-discovery failed:', err);
+        });
+    }
+  }, [
+    projectIdForQuery,
+    strategyData,
+    keywordCount,
+    generating,
+    generateKeywordsFromUrlAction,
+    toast,
+  ]);
 
   // Modals
   const {
@@ -432,6 +476,33 @@ function StrategyContent() {
     }
   };
 
+  // Handler for generating keywords from website URL using semantic library
+  const handleGenerateFromUrl = async () => {
+    if (!projectIdForQuery) return;
+
+    setGenerating(true);
+    try {
+      const result = await generateKeywordsFromUrlAction({
+        projectId: projectIdForQuery,
+        limit: 30,
+      });
+      toast({
+        title: '🎯 Keywords Generated!',
+        description: `Discovered ${result.count} keywords based on your website`,
+        status: 'success',
+      });
+    } catch (error: any) {
+      console.error('Failed to generate keywords from URL', error);
+      toast({
+        title: 'Generation failed',
+        description: error?.message || 'Please try again or add keywords manually.',
+        status: 'error',
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   // Handler for adding keywords manually
   const handleAddKeywordsManually = async (keywords: string[]) => {
     if (!projectIdForQuery) return;
@@ -666,6 +737,11 @@ function StrategyContent() {
                 </Button>
               </Tooltip>
             </HStack>
+          )}
+
+          {/* Keywords Preview - Shows uploaded keywords */}
+          {projectIdForQuery && keywordCount > 0 && (
+            <KeywordsPreview projectId={projectIdForQuery} maxPreview={15} />
           )}
 
           {/* Hero Stats Grid */}
@@ -1067,6 +1143,7 @@ function StrategyContent() {
             gscSiteUrl={gscConnection?.siteUrl}
             onImportFromGSC={handleImportFromGSC}
             onAddManually={handleAddKeywordsManually}
+            onGenerateFromUrl={handleGenerateFromUrl}
             isLoading={generating}
             existingKeywordCount={keywordCount}
           />

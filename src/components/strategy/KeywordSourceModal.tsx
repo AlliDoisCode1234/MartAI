@@ -34,7 +34,15 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { FiDatabase, FiEdit3, FiCheck, FiAlertCircle, FiArrowRight, FiLink } from 'react-icons/fi';
+import {
+  FiDatabase,
+  FiEdit3,
+  FiCheck,
+  FiAlertCircle,
+  FiArrowRight,
+  FiLink,
+  FiZap,
+} from 'react-icons/fi';
 
 const MotionBox = motion(Box);
 
@@ -45,6 +53,7 @@ interface Props {
   gscSiteUrl?: string;
   onImportFromGSC: () => Promise<void>;
   onAddManually: (keywords: string[]) => Promise<void>;
+  onGenerateFromUrl?: () => Promise<void>;
   isLoading?: boolean;
   existingKeywordCount?: number;
 }
@@ -58,6 +67,7 @@ export function KeywordSourceModal({
   gscSiteUrl,
   onImportFromGSC,
   onAddManually,
+  onGenerateFromUrl,
   isLoading = false,
   existingKeywordCount = 0,
 }: Props) {
@@ -73,6 +83,17 @@ export function KeywordSourceModal({
     setImporting(true);
     try {
       await onImportFromGSC();
+      onClose();
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleGenerateFromUrl = async () => {
+    if (!onGenerateFromUrl) return;
+    setImporting(true);
+    try {
+      await onGenerateFromUrl();
       onClose();
     } finally {
       setImporting(false);
@@ -217,6 +238,49 @@ export function KeywordSourceModal({
                   <Icon as={FiArrowRight} color="gray.400" />
                 </HStack>
               </MotionBox>
+
+              {/* Generate from Website Option */}
+              {onGenerateFromUrl && (
+                <MotionBox
+                  as="button"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={handleGenerateFromUrl}
+                  disabled={importing}
+                  p={4}
+                  bg={cardBg}
+                  borderRadius="lg"
+                  border="2px"
+                  borderColor={borderColor}
+                  textAlign="left"
+                  cursor="pointer"
+                  _hover={{ bg: cardHoverBg, borderColor: 'purple.300' }}
+                >
+                  <HStack justify="space-between">
+                    <HStack spacing={3}>
+                      <Box p={2} borderRadius="md" bg="purple.100">
+                        <Icon as={FiZap} color="purple.600" boxSize={5} />
+                      </Box>
+                      <VStack align="start" spacing={0}>
+                        <HStack>
+                          <Text fontWeight="bold">Discover Keywords from URL</Text>
+                          <Badge colorScheme="purple" fontSize="xs">
+                            AI
+                          </Badge>
+                        </HStack>
+                        <Text fontSize="sm" color="gray.500">
+                          Find keywords based on your project website
+                        </Text>
+                      </VStack>
+                    </HStack>
+                    {importing ? (
+                      <Spinner size="sm" color="purple.500" />
+                    ) : (
+                      <Icon as={FiArrowRight} color="purple.400" />
+                    )}
+                  </HStack>
+                </MotionBox>
+              )}
 
               {!hasGSC && (
                 <Alert status="warning" borderRadius="lg" fontSize="sm">

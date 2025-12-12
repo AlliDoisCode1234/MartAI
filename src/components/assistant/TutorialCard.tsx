@@ -31,7 +31,7 @@ export interface TutorialStep {
   gradient: string;
 }
 
-// Default onboarding steps
+// Default onboarding steps - shown during onboarding flow
 export const ONBOARDING_STEPS: TutorialStep[] = [
   {
     id: 'connect-ga4',
@@ -64,6 +64,26 @@ export const ONBOARDING_STEPS: TutorialStep[] = [
     icon: FiFileText,
     action: { label: 'Create Plan', href: '/strategy' },
     gradient: 'linear(to-br, orange.400, orange.600)',
+  },
+];
+
+// Post-onboarding steps - shown on Home after completing onboarding (focus on next action)
+export const POST_ONBOARDING_STEPS: TutorialStep[] = [
+  {
+    id: 'create-clusters',
+    title: 'Create Topic Clusters',
+    description: 'Group your keywords into topic clusters to build your content strategy.',
+    icon: FiLayers,
+    action: { label: 'Go to Strategy', href: '/strategy' },
+    gradient: 'linear(to-br, purple.400, purple.600)',
+  },
+  {
+    id: 'view-dashboard',
+    title: 'Track Your Progress',
+    description: 'See your SEO performance and MartAI Rating insights.',
+    icon: FiTrendingUp,
+    action: { label: 'View Dashboard', href: '/dashboard' },
+    gradient: 'linear(to-br, teal.400, green.400)',
   },
 ];
 

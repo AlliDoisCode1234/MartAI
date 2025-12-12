@@ -15,14 +15,6 @@
 
 import {
   Box,
-  Stepper,
-  Step,
-  StepIndicator,
-  StepStatus,
-  StepIcon,
-  StepTitle,
-  StepDescription,
-  StepSeparator,
   Icon,
   HStack,
   VStack,
@@ -30,6 +22,8 @@ import {
   useColorModeValue,
   useBreakpointValue,
   Skeleton,
+  Grid,
+  GridItem,
 } from '@chakra-ui/react';
 import { FiSearch, FiLayers, FiCalendar, FiEdit3, FiCheck } from 'react-icons/fi';
 import { STEP_LABELS } from '@/src/lib/copyStrings';
@@ -64,11 +58,14 @@ const stages = [
 ];
 
 export function StrategyStepper({ currentStage, onStageClick, isLoading = false }: Props) {
-  const activeStep = Math.min(Math.max(currentStage - 1, 0), 3); // Clamp to 0-3
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const activeColor = useColorModeValue('orange.500', 'orange.300');
+  const inactiveColor = useColorModeValue('gray.300', 'gray.600');
+  const completedColor = useColorModeValue('green.500', 'green.400');
+  const textColor = useColorModeValue('gray.600', 'gray.400');
 
-  // Use compact version on mobile
+  // Use different layouts based on screen size
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   if (isLoading) {
@@ -93,11 +90,12 @@ export function StrategyStepper({ currentStage, onStageClick, isLoading = false 
     );
   }
 
-  // Compact version for mobile
+  // Mobile: Compact vertical/icon-only layout
   if (isMobile) {
     return <StrategyStepperCompact currentStage={currentStage} />;
   }
 
+  // Desktop: Full horizontal layout with grid for proper spacing
   return (
     <Box
       bg={bgColor}
@@ -109,37 +107,64 @@ export function StrategyStepper({ currentStage, onStageClick, isLoading = false 
       role="navigation"
       aria-label="Strategy progress"
     >
-      <Stepper index={activeStep} colorScheme="orange" size="lg">
-        {stages.map((stage, index) => (
-          <Step
-            key={index}
-            onClick={() => onStageClick?.(index + 1)}
-            style={{ cursor: onStageClick ? 'pointer' : 'default' }}
-            aria-current={index === activeStep ? 'step' : undefined}
-          >
-            <StepIndicator>
-              <StepStatus
-                complete={<StepIcon />}
-                incomplete={<Icon as={stage.icon} boxSize={5} />}
-                active={<Icon as={stage.icon} boxSize={5} />}
-              />
-            </StepIndicator>
+      <Grid templateColumns="repeat(4, 1fr)" gap={4}>
+        {stages.map((stage, index) => {
+          const stageNum = index + 1;
+          const isCompleted = stageNum < currentStage;
+          const isActive = stageNum === currentStage;
 
-            <Box flexShrink="0">
-              <StepTitle>{stage.title}</StepTitle>
-              <StepDescription>{stage.description}</StepDescription>
-            </Box>
+          return (
+            <GridItem
+              key={index}
+              onClick={() => onStageClick?.(stageNum)}
+              cursor={onStageClick ? 'pointer' : 'default'}
+              aria-current={isActive ? 'step' : undefined}
+            >
+              <HStack spacing={3} align="flex-start">
+                {/* Step indicator */}
+                <Box
+                  w={10}
+                  h={10}
+                  borderRadius="full"
+                  bg={isCompleted ? completedColor : isActive ? activeColor : inactiveColor}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  color="white"
+                  flexShrink={0}
+                  transition="all 0.2s"
+                >
+                  {isCompleted ? (
+                    <Icon as={FiCheck} boxSize={5} />
+                  ) : (
+                    <Icon as={stage.icon} boxSize={5} />
+                  )}
+                </Box>
 
-            <StepSeparator />
-          </Step>
-        ))}
-      </Stepper>
+                {/* Title and description */}
+                <VStack align="start" spacing={0} flex={1}>
+                  <Text
+                    fontSize="sm"
+                    fontWeight={isActive ? 'bold' : 'semibold'}
+                    color={isActive ? activeColor : isCompleted ? completedColor : 'gray.700'}
+                  >
+                    {stage.title}
+                  </Text>
+                  <Text fontSize="xs" color={textColor} lineHeight="short">
+                    {stage.description}
+                  </Text>
+                </VStack>
+              </HStack>
+            </GridItem>
+          );
+        })}
+      </Grid>
     </Box>
   );
 }
 
 /**
- * Compact version for mobile
+ * Compact version for mobile - shows only icons with titles below
  */
 export function StrategyStepperCompact({ currentStage }: Props) {
   const bgColor = useColorModeValue('white', 'gray.800');

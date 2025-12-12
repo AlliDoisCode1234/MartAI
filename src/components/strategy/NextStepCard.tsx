@@ -102,8 +102,8 @@ export function NextStepCard({
           icon: FiSearch,
           title: 'Find What Your Customers Search For',
           description:
-            "We'll discover what people type into Google when looking for businesses like yours. This takes about 5 minutes.",
-          ctaText: keywordCount > 0 ? 'Discover More Keywords' : 'Connect Google Search Console',
+            'Discover what people type into Google when looking for businesses like yours. Import from Google Search Console or add keywords manually.',
+          ctaText: keywordCount > 0 ? 'Add More Keywords' : 'Add Keywords',
           ctaIcon: FiArrowRight,
           statLabel: 'Keywords discovered',
           statValue: keywordCount,

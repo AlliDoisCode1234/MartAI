@@ -285,6 +285,166 @@ export const reclusterKeywords = action({
 });
 
 /**
+ * Generate keywords from project URL using semantic library
+ *
+ * This allows users to get keywords without GSC by:
+ * 1. Extracting relevant terms from their website URL/domain
+ * 2. Searching the semantic keyword library for related keywords
+ * 3. Adding discovered keywords to the project
+ */
+export const generateKeywordsFromUrl = action({
+  args: {
+    projectId: v.id('projects'),
+    limit: v.optional(v.number()),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    count: number;
+    keywords: Array<{ keyword: string; volume: number; difficulty: number; intent: string }>;
+  }> => {
+    // Get authenticated user
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+
+    // Get project details
+    const project = await ctx.runQuery(api.projects.projects.getProjectById, {
+      projectId: args.projectId,
+    });
+
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    // Extract search terms from URL and project info
+    const searchTerms = extractSearchTermsFromProject(project);
+
+    const limit = args.limit || 30;
+    const allKeywords: Array<{
+      keyword: string;
+      volume: number;
+      difficulty: number;
+      intent: string;
+    }> = [];
+
+    // If we have search terms, try library search first
+    if (searchTerms.length > 0) {
+      const keywordsPerTerm = Math.ceil(limit / searchTerms.length);
+
+      // Search semantic library for each term
+      for (const term of searchTerms) {
+        try {
+          const results = await ctx.runAction(api.seo.library.searchLibrary, {
+            query: term,
+            limit: keywordsPerTerm,
+          });
+
+          for (const r of results) {
+            // Avoid duplicates
+            if (!allKeywords.some((k) => k.keyword === r.keyword)) {
+              allKeywords.push({
+                keyword: r.keyword,
+                volume: r.searchVolume,
+                difficulty: r.difficulty,
+                intent: r.intent,
+              });
+            }
+          }
+        } catch (e) {
+          console.warn(`Failed to search library for term "${term}":`, e);
+        }
+      }
+    }
+
+    // If library search returned nothing (or we had no search terms), fall back to generated keywords
+    if (allKeywords.length === 0) {
+      const fallback = buildFallbackKeywords(project);
+      allKeywords.push(...fallback);
+    }
+
+    // Store keywords in the project
+    if (allKeywords.length > 0) {
+      await ctx.runMutation(api.seo.keywords.createKeywords, {
+        projectId: args.projectId,
+        keywords: allKeywords.map((k) => ({
+          keyword: k.keyword,
+          searchVolume: k.volume,
+          difficulty: k.difficulty,
+          intent: k.intent,
+        })),
+      });
+    }
+
+    return {
+      success: true,
+      count: allKeywords.length,
+      keywords: allKeywords.slice(0, limit),
+    };
+  },
+});
+
+/**
+ * Extract search terms from project URL and metadata
+ */
+function extractSearchTermsFromProject(project: {
+  websiteUrl?: string;
+  name?: string;
+  industry?: string;
+}): string[] {
+  const terms: string[] = [];
+
+  // Extract from URL
+  if (project.websiteUrl) {
+    try {
+      const url = new URL(project.websiteUrl);
+      const hostname = url.hostname.replace('www.', '');
+
+      // Get domain name without TLD
+      const domainParts = hostname.split('.');
+      if (domainParts.length > 0) {
+        const domainName = domainParts[0];
+        // Split camelCase or hyphenated names
+        const nameParts = domainName
+          .replace(/([a-z])([A-Z])/g, '$1 $2')
+          .replace(/-/g, ' ')
+          .toLowerCase()
+          .split(' ')
+          .filter((p) => p.length > 2);
+        terms.push(...nameParts);
+      }
+
+      // Extract from path if meaningful
+      const pathParts = url.pathname.split('/').filter((p) => p.length > 2);
+      terms.push(...pathParts.slice(0, 2));
+    } catch {
+      // Invalid URL, continue with other sources
+    }
+  }
+
+  // Add industry if available
+  if (project.industry) {
+    terms.push(project.industry.toLowerCase());
+  }
+
+  // Add project name terms
+  if (project.name) {
+    const nameParts = project.name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .split(' ')
+      .filter((p) => p.length > 2);
+    terms.push(...nameParts);
+  }
+
+  // Deduplicate and limit
+  return [...new Set(terms)].slice(0, 5);
+}
+
+/**
  * Get semantically similar keywords from the library
  *
  * Uses vector embeddings to find keywords with similar meaning.

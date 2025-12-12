@@ -125,7 +125,7 @@ export default function SignupPage() {
               <Divider />
             </HStack>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} autoComplete="off">
               <VStack spacing={4} align="stretch">
                 <FormControl>
                   <FormLabel fontWeight="semibold">What should we call you?</FormLabel>
@@ -140,16 +140,17 @@ export default function SignupPage() {
                 </FormControl>
 
                 <FormControl isRequired>
-                  <FormLabel fontWeight="semibold">Username</FormLabel>
+                  <FormLabel fontWeight="semibold">Email</FormLabel>
                   <Input
                     type="email"
-                    placeholder="username (we use your email)"
+                    placeholder="your@email.com"
                     value={formData.email}
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value.toLowerCase() })
                     }
                     disabled={loading}
                     size="lg"
+                    autoComplete="off"
                   />
                   <Text fontSize="xs" color="gray.500" mt={1}>
                     Your email doubles as your username so sign-ins stay simple.
@@ -165,6 +166,7 @@ export default function SignupPage() {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     disabled={loading}
                     size="lg"
+                    autoComplete="new-password"
                   />
                   <Text fontSize="xs" color="gray.500" mt={1}>
                     Make it something you'll remember
@@ -180,6 +182,7 @@ export default function SignupPage() {
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     disabled={loading}
                     size="lg"
+                    autoComplete="new-password"
                   />
                 </FormControl>
 

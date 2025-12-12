@@ -23,13 +23,13 @@ import { DataModel } from './_generated/dataModel';
 export const polar = new Polar<DataModel>(components.polar, {
   // Required: Get user info for checkout sessions and subscription lookups
   // Uses runQuery to call the users.current query
-  getUserInfo: async (ctx) => {
+  getUserInfo: async (ctx): Promise<{ userId: string; email: string }> => {
     const user = await ctx.runQuery(api.users.current);
     if (!user) {
       throw new Error('User not found');
     }
     return {
-      userId: user._id,
+      userId: user._id as string,
       email: user.email,
     };
   },

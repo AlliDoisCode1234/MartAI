@@ -35,12 +35,12 @@ export const SECTION_LABELS = {
 export const STEP_LABELS = {
   1: {
     title: 'Keywords',
-    description: 'Find what your customers search for',
+    description: 'Discover what your customers search',
     action: 'Discover Keywords',
   },
   2: {
     title: 'Topic Curator',
-    description: 'Group searches into article topics',
+    description: 'Group keywords into article topics',
     action: 'Curate Topics',
   },
   3: {

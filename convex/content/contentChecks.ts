@@ -191,7 +191,7 @@ export const runAndStoreCheck = action({
   handler: async (ctx, args): Promise<ContentCheckResult> => {
     // Run the check
     const result: ContentCheckResult = await ctx.runAction(
-      internal.content.contentChecks.checkContent,
+      internal['content/contentChecks'].checkContent,
       {
         draftId: args.draftId,
         content: args.content,
