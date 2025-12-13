@@ -1,6 +1,22 @@
 import { query, mutation } from './_generated/server';
 import { v } from 'convex/values';
 import { auth } from './auth';
+import { checkAdminRole } from './lib/rbac';
+
+/**
+ * Filter user object to safe fields only.
+ * Rule: Never return more data than the UI requires.
+ */
+function filterUserFields(user: any) {
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    createdAt: user.createdAt ?? user._creationTime,
+    onboardingStatus: user.onboardingStatus,
+  };
+}
 
 export const current = query({
   args: {},
@@ -41,16 +57,38 @@ export const resetOnboarding = mutation({
 
 /**
  * Get user by ID
+ * Security: Users can only get their own data, admins can get any user.
  */
 export const getById = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.userId);
+    const callerId = await auth.getUserId(ctx);
+    if (!callerId) {
+      throw new Error('Unauthorized: Not logged in');
+    }
+
+    const user = await ctx.db.get(args.userId);
+    if (!user) return null;
+
+    // Allow if requesting own data
+    if (callerId === args.userId) {
+      return filterUserFields(user);
+    }
+
+    // Allow if caller is admin
+    const isAdmin = await checkAdminRole(ctx, 'admin');
+    if (isAdmin) {
+      return filterUserFields(user);
+    }
+
+    // Otherwise, deny access
+    throw new Error('Forbidden: Cannot access other users data');
   },
 });
 
 /**
  * List all users (admin only, for bulk operations)
+ * Security: Requires admin role, returns filtered fields only.
  */
 export const listAll = query({
   args: {},
@@ -65,6 +103,7 @@ export const listAll = query({
       return [];
     }
 
-    return await ctx.db.query('users').collect();
+    const users = await ctx.db.query('users').collect();
+    return users.map(filterUserFields);
   },
 });

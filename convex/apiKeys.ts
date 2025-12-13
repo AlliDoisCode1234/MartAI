@@ -125,7 +125,8 @@ export const createApiKey = mutation({
   },
 });
 
-// List API keys for a project (doesn't return full keys)
+// List API keys for a project (doesn't return full keys or keyHash)
+// Security: NEVER return keyHash - that's the authentication secret
 export const listApiKeys = query({
   args: {
     projectId: v.id('projects'),
@@ -145,11 +146,30 @@ export const listApiKeys = query({
       throw new Error('User not found');
     }
 
-    return await ctx.db
+    const apiKeys = await ctx.db
       .query('apiKeys')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .filter((q) => q.eq(q.field('userId'), user._id))
       .collect();
+
+    // Security: Filter to safe fields only - NEVER return keyHash
+    return apiKeys.map((key) => ({
+      _id: key._id,
+      _creationTime: key._creationTime,
+      userId: key.userId,
+      projectId: key.projectId,
+      keyPrefix: key.keyPrefix, // Safe: just first 12 chars like "mart_xxxx"
+      name: key.name,
+      description: key.description,
+      permissions: key.permissions,
+      isActive: key.isActive,
+      usageCount: key.usageCount,
+      lastUsedAt: key.lastUsedAt,
+      expiresAt: key.expiresAt,
+      createdAt: key.createdAt,
+      revokedAt: key.revokedAt,
+      // keyHash is INTENTIONALLY EXCLUDED - it's the auth secret
+    }));
   },
 });
 

@@ -1,13 +1,32 @@
 import { query } from './_generated/server';
 import { v } from 'convex/values';
+import { requireAdmin } from './lib/rbac';
 
-// Get all users with their subscription details
+/**
+ * Filter user object to safe fields only.
+ * Rule: Never return more data than the UI requires.
+ */
+function filterUserFields(user: any) {
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    createdAt: user.createdAt ?? user._creationTime,
+    onboardingStatus: user.onboardingStatus,
+  };
+}
+
+// Get all users with their subscription details (Admin only)
 export const getAllUsers = query({
   args: {},
   handler: async (ctx) => {
+    // Security: Require admin role
+    await requireAdmin(ctx);
+
     const users = await ctx.db.query('users').order('desc').collect();
 
-    // Enrich with subscription info
+    // Enrich with subscription info, filter to safe fields
     const usersWithDetails = await Promise.all(
       users.map(async (user) => {
         const subscription = await ctx.db
@@ -16,9 +35,7 @@ export const getAllUsers = query({
           .first();
 
         return {
-          ...user,
-          // Use createdAt if available, otherwise use _creationTime
-          createdAt: user.createdAt ?? user._creationTime,
+          ...filterUserFields(user),
           subscription: subscription
             ? {
                 planTier: subscription.planTier,
@@ -33,10 +50,13 @@ export const getAllUsers = query({
   },
 });
 
-// Get a single user with details
+// Get a single user with details (Admin only)
 export const getUser = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    // Security: Require admin role
+    await requireAdmin(ctx);
+
     const user = await ctx.db.get(args.userId);
     if (!user) return null;
 
@@ -46,8 +66,7 @@ export const getUser = query({
       .first();
 
     return {
-      ...user,
-      createdAt: user.createdAt ?? user._creationTime,
+      ...filterUserFields(user),
       subscription: subscription
         ? {
             planTier: subscription.planTier,
@@ -58,10 +77,13 @@ export const getUser = query({
   },
 });
 
-// Get all keywords across the system
+// Get all keywords across the system (Admin only)
 export const getAllKeywords = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
+    // Security: Require admin role
+    await requireAdmin(ctx);
+
     const limit = args.limit ?? 100;
     const keywords = await ctx.db.query('keywords').order('desc').take(limit);
 

@@ -1,16 +1,20 @@
 import { query } from '../_generated/server';
-import { components } from '../_generated/api';
 import { v } from 'convex/values';
+import { requireSuperAdmin } from '../lib/rbac';
 
 /**
- * Get all AI costs across all users (for super admin dashboard).
+ * Get all AI costs across all users (Super Admin only).
  * Returns recent cost records with user info.
+ * Security: Cost data is sensitive, requires super_admin role.
  */
 export const getAllAICosts = query({
   args: {
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Security: Only super_admin can view all costs
+    await requireSuperAdmin(ctx);
+
     const limit = args.limit ?? 50;
 
     // Query the neutralCost aiCosts table directly
@@ -24,11 +28,15 @@ export const getAllAICosts = query({
 });
 
 /**
- * Get AI cost summary statistics for admin dashboard.
+ * Get AI cost summary statistics for admin dashboard (Super Admin only).
+ * Security: Cost data is sensitive, requires super_admin role.
  */
 export const getAICostSummary = query({
   args: {},
   handler: async (ctx) => {
+    // Security: Only super_admin can view cost summaries
+    await requireSuperAdmin(ctx);
+
     // Get all costs to calculate totals
     const allCosts = await ctx.db.query('neutralCost:aiCosts' as any).collect();
 
