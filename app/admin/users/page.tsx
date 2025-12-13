@@ -17,7 +17,6 @@ import {
   Avatar,
   HStack,
   VStack,
-  Button,
   Progress,
   Tooltip,
   IconButton,
@@ -35,11 +34,12 @@ import {
   StatHelpText,
   Divider,
 } from '@chakra-ui/react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import { CheckCircleIcon, TimeIcon, ViewIcon } from '@chakra-ui/icons';
+import Link from 'next/link';
 
 type OnboardingSteps = {
   signupCompleted?: boolean;
@@ -250,7 +250,6 @@ function UserDetailModal({
 
 export default function AdminUsersPage() {
   const users = useQuery(api.admin.getAllUsers);
-  const resetOnboarding = useMutation(api.users.resetOnboarding);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
@@ -354,30 +353,16 @@ export default function AdminUsersPage() {
                         </Text>
                       </Td>
                       <Td>
-                        <HStack spacing={1}>
-                          <Tooltip label="View Details" hasArrow>
-                            <IconButton
-                              aria-label="View user"
-                              icon={<ViewIcon />}
-                              size="xs"
-                              variant="ghost"
-                              as="a"
-                              href={`/admin/users/${user._id}`}
-                            />
-                          </Tooltip>
-                          <Button
+                        <Tooltip label="View Details" hasArrow>
+                          <IconButton
+                            aria-label="View user"
+                            icon={<ViewIcon />}
                             size="xs"
-                            variant="outline"
-                            colorScheme="red"
-                            onClick={async () => {
-                              if (confirm(`Reset onboarding for ${user.name}?`)) {
-                                await resetOnboarding({ userId: user._id as any });
-                              }
-                            }}
-                          >
-                            Reset
-                          </Button>
-                        </HStack>
+                            variant="ghost"
+                            as={Link}
+                            href={`/admin/users/${user._id}`}
+                          />
+                        </Tooltip>
                       </Td>
                     </Tr>
                   );

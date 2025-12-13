@@ -622,6 +622,72 @@ export default function OnboardingPage() {
                                   step: 'projectCreated',
                                   value: true,
                                 }).catch(console.error);
+
+                                // Generate keywords from URL (non-blocking)
+                                try {
+                                  toast({
+                                    title: 'Generating keywords...',
+                                    description: 'Analyzing your website for SEO opportunities',
+                                    status: 'info',
+                                    duration: 2000,
+                                  });
+
+                                  const kwResult = await generateKeywordsFromUrl({
+                                    projectId: newProjectId as any,
+                                    limit: 30,
+                                  });
+
+                                  if (kwResult.count > 0) {
+                                    toast({
+                                      title: `Generated ${kwResult.count} keywords!`,
+                                      status: 'success',
+                                      duration: 3000,
+                                    });
+                                  }
+
+                                  // Generate clusters if we have enough keywords
+                                  if (kwResult.count >= 10) {
+                                    try {
+                                      await generateClusters({
+                                        projectId: newProjectId as any,
+                                      });
+                                    } catch (clusterError) {
+                                      console.warn(
+                                        'Cluster generation failed (non-blocking):',
+                                        clusterError
+                                      );
+                                    }
+                                  }
+                                } catch (kwError: any) {
+                                  console.warn(
+                                    'Keyword generation failed (non-blocking):',
+                                    kwError
+                                  );
+                                  toast({
+                                    title: 'Keyword generation issue',
+                                    description: kwError?.message || 'Could not generate keywords',
+                                    status: 'warning',
+                                    duration: 5000,
+                                  });
+                                }
+
+                                // Generate preliminary MR score
+                                try {
+                                  const mrResult = await generatePreliminaryScore({
+                                    projectId: newProjectId as any,
+                                  });
+
+                                  if (mrResult?.overall) {
+                                    toast({
+                                      title: `MR Score: ${mrResult.overall}`,
+                                      description: 'Your initial rating is ready!',
+                                      status: 'success',
+                                      duration: 3000,
+                                    });
+                                  }
+                                } catch (mrError: any) {
+                                  console.warn('MR generation failed (non-blocking):', mrError);
+                                }
                               }
                             }
                             nextStep();
