@@ -39,6 +39,8 @@ description: Pre-flight checklist before writing or committing any code
 
 ## Reusability
 
+- [ ] **Max 150 lines per file** - Pages should be ~100 lines (data + layout). If >150, extract components.
+- [ ] **Full extraction always** - Extract every repeatable UI pattern into `components/shared/` or `components/{domain}/`
 - [ ] **Constants extracted** - No inline magic strings/numbers, use `lib/constants/`
 - [ ] **Types extracted** - Shared types go in `types/` directory
 - [ ] **Utils extracted** - Helper functions go in `lib/utils/`

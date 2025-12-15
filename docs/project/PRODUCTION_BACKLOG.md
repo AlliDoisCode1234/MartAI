@@ -667,9 +667,11 @@ gantt
 | ------ | ------------------------------------- | -------- | ------ |
 | UX-001 | Skeleton Loading (35 pages)           | P1       | 8      |
 | UX-002 | Smooth Transitions & Micro-animations | P2       | 5      |
+| UX-003 | Full Component Extraction Audit       | P1       | 8      |
 
 > [!NOTE]
-> **UX-001**: Replace all spinner/loading text with dimension-matched skeleton components. Reusable skeletons created in `components/skeletons/`. Target: Premium, seamless loading experience.
+> **UX-001**: Replace all spinner/loading text with dimension-matched skeleton components.
+> **UX-003**: Audit all 35 pages for component extraction. Target: max 150 lines/page, full reuse of shared components.
 
 ---
 
