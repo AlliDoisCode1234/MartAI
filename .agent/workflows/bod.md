@@ -4,9 +4,12 @@ description: Board Of Directors - Consult the virtual advisory team before major
 
 # Board of Directors Consultation
 
-Read and consult these personas before major decisions:
+Read and consult these personas before major decisions.
 
-## The Board Members
+> **Note**: Board members are discovered dynamically from `docs/personas/*_PERSONA.md` files.
+> To add a new board member, create a new `docs/personas/NAME_PERSONA.md` file following the existing format.
+
+## The Board Members (14 Total)
 
 ### C-Suite Leadership
 
@@ -73,6 +76,12 @@ Read and consult these personas before major decisions:
 - Focus: Type safety, branded types, `as any` justifications
 - Frameworks: Branded types, type guards, generic constraints
 - Ask: "Is this type-safe? Is `as any` documented? Could branded types help?"
+
+#### CONVEX - Platform Expert (docs/CONVEX_PERSONA.md)
+
+- Focus: Convex-native solutions, backend architecture, component ecosystem
+- Frameworks: Query/Mutation/Action decisions, Component tree, Index strategy
+- Ask: "Is there a Convex component for this? Should this be a query or action?"
 
 ---
 

@@ -305,7 +305,6 @@ export const createOnboardingProspect = mutation({
     source: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    console.log('[createOnboardingProspect] Starting with args:', args);
     const now = Date.now();
 
     // Check if prospect already exists by email
@@ -315,7 +314,6 @@ export const createOnboardingProspect = mutation({
       .first();
 
     if (existing) {
-      console.log('[createOnboardingProspect] Found existing prospect:', existing._id);
       // Update existing prospect with new data
       await ctx.db.patch(existing._id, {
         companyName: args.companyName ?? existing.companyName,
@@ -326,7 +324,6 @@ export const createOnboardingProspect = mutation({
       return existing._id;
     }
 
-    console.log('[createOnboardingProspect] Creating new prospect');
     // Create new prospect
     const prospectId = await ctx.db.insert('prospects', {
       email: args.email,
@@ -339,13 +336,11 @@ export const createOnboardingProspect = mutation({
       updatedAt: now,
     });
 
-    console.log('[createOnboardingProspect] Created prospect:', prospectId);
     // Fire-and-forget HubSpot sync (will skip if no API key)
     ctx.scheduler.runAfter(0, api.integrations.hubspot.syncProspectToHubspot, {
       prospectId,
     });
 
-    console.log('[createOnboardingProspect] Done, returning:', prospectId);
     return prospectId;
   },
 });

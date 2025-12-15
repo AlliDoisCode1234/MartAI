@@ -6,6 +6,7 @@ import rag from '@convex-dev/rag/convex.config.js';
 import neutralCost from 'neutral-cost/convex.config.js';
 import aggregate from '@convex-dev/aggregate/convex.config.js';
 import polar from '@convex-dev/polar/convex.config.js';
+import agent from '@convex-dev/agent/convex.config';
 
 const app = defineApp();
 app.use(rateLimiter);
@@ -14,6 +15,7 @@ app.use(workflow);
 app.use(rag);
 app.use(neutralCost);
 app.use(polar);
+app.use(agent);
 
 // Named aggregate instances for efficient KPI counting
 app.use(aggregate, { name: 'aggregateBriefs' });

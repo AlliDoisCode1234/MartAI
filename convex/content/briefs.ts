@@ -1,7 +1,8 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from '../lib/rbac';
 
-// Create brief
+// Create brief (requires project editor access)
 export const createBrief = mutation({
   args: {
     planId: v.optional(v.id('quarterlyPlans')),
@@ -26,6 +27,9 @@ export const createBrief = mutation({
     schemaSuggestion: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Security: Require project access
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
     const { planId, projectId, clusterId, title, scheduledDate, status, ...details } = args;
     return await ctx.db.insert('briefs', {
       planId,
@@ -41,18 +45,30 @@ export const createBrief = mutation({
   },
 });
 
-// Get brief by ID
+// Get brief by ID (requires project viewer access)
 export const getBriefById = query({
   args: { briefId: v.id('briefs') },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.briefId);
+    const brief = await ctx.db.get(args.briefId);
+    if (!brief) return null;
+
+    // Security: Require project access
+    await requireProjectAccess(ctx, brief.projectId, 'viewer');
+
+    return brief;
   },
 });
 
-// Get briefs by plan
+// Get briefs by plan (requires project viewer access via plan)
 export const getBriefsByPlan = query({
   args: { planId: v.id('quarterlyPlans') },
   handler: async (ctx, args) => {
+    const plan = await ctx.db.get(args.planId);
+    if (!plan) return [];
+
+    // Security: Require project access
+    await requireProjectAccess(ctx, plan.projectId, 'viewer');
+
     return await ctx.db
       .query('briefs')
       .withIndex('by_plan', (q) => q.eq('planId', args.planId))
@@ -60,10 +76,13 @@ export const getBriefsByPlan = query({
   },
 });
 
-// Get briefs by project (for public API)
+// Get briefs by project (requires project viewer access)
 export const getBriefsByProject = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
+    // Security: Require project access
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
+
     return await ctx.db
       .query('briefs')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
@@ -71,7 +90,7 @@ export const getBriefsByProject = query({
   },
 });
 
-// Update brief
+// Update brief (requires project editor access)
 export const updateBrief = mutation({
   args: {
     briefId: v.id('briefs'),
@@ -94,6 +113,12 @@ export const updateBrief = mutation({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const brief = await ctx.db.get(args.briefId);
+    if (!brief) throw new Error('Brief not found');
+
+    // Security: Require project access
+    await requireProjectAccess(ctx, brief.projectId, 'editor');
+
     const { briefId, ...updates } = args;
     const cleanUpdates: Record<string, any> = { updatedAt: Date.now() };
 
@@ -107,10 +132,16 @@ export const updateBrief = mutation({
   },
 });
 
-// Delete brief
+// Delete brief (requires project editor access)
 export const deleteBrief = mutation({
   args: { briefId: v.id('briefs') },
   handler: async (ctx, args) => {
+    const brief = await ctx.db.get(args.briefId);
+    if (!brief) throw new Error('Brief not found');
+
+    // Security: Require project access
+    await requireProjectAccess(ctx, brief.projectId, 'editor');
+
     await ctx.db.delete(args.briefId);
   },
 });

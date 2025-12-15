@@ -1,7 +1,7 @@
 import { action, mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
-// Imports moved to keywordActions.ts
+import { requireProjectAccess } from '../lib/rbac';
 
 const keywordInputArg = v.object({
   keyword: v.string(),
@@ -10,7 +10,7 @@ const keywordInputArg = v.object({
   intent: v.optional(v.string()),
 });
 
-// Create keyword cluster
+// Create keyword cluster (requires project editor access)
 export const createCluster = mutation({
   args: {
     projectId: v.id('projects'),
@@ -28,6 +28,9 @@ export const createCluster = mutation({
     createdAt: v.number(),
   },
   handler: async (ctx, args) => {
+    // Security: Require project access
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
     return await ctx.db.insert('keywordClusters', {
       projectId: args.projectId,
       clusterName: args.clusterName,
@@ -44,10 +47,13 @@ export const createCluster = mutation({
   },
 });
 
-// Get clusters by project
+// Get clusters by project (requires project viewer access)
 export const getClustersByProject = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
+    // Security: Require project access
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
+
     return await ctx.db
       .query('keywordClusters')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
@@ -55,10 +61,13 @@ export const getClustersByProject = query({
   },
 });
 
-// Get active clusters (not hidden)
+// Get active clusters (requires project viewer access)
 export const getActiveClusters = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
+    // Security: Require project access
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
+
     const allClusters = await ctx.db
       .query('keywordClusters')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
@@ -68,7 +77,7 @@ export const getActiveClusters = query({
   },
 });
 
-// Update cluster
+// Update cluster (requires project editor access)
 export const updateCluster = mutation({
   args: {
     clusterId: v.id('keywordClusters'),
@@ -86,6 +95,12 @@ export const updateCluster = mutation({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const cluster = await ctx.db.get(args.clusterId);
+    if (!cluster) throw new Error('Cluster not found');
+
+    // Security: Require project access
+    await requireProjectAccess(ctx, cluster.projectId, 'editor');
+
     const { clusterId, ...updates } = args;
     const cleanUpdates: Record<string, any> = { updatedAt: Date.now() };
 
@@ -99,13 +114,19 @@ export const updateCluster = mutation({
   },
 });
 
-// Update cluster status (hide, favorite, etc.)
+// Update cluster status (requires project editor access)
 export const updateClusterStatus = mutation({
   args: {
     clusterId: v.id('keywordClusters'),
     status: v.string(), // active, hidden, favorite
   },
   handler: async (ctx, args) => {
+    const cluster = await ctx.db.get(args.clusterId);
+    if (!cluster) throw new Error('Cluster not found');
+
+    // Security: Require project access
+    await requireProjectAccess(ctx, cluster.projectId, 'editor');
+
     return await ctx.db.patch(args.clusterId, {
       status: args.status,
       updatedAt: Date.now(),
@@ -113,7 +134,7 @@ export const updateClusterStatus = mutation({
   },
 });
 
-// Re-rank clusters (update impact scores)
+// Re-rank clusters (requires project editor access)
 export const rerankClusters = mutation({
   args: {
     projectId: v.id('projects'),
@@ -122,6 +143,9 @@ export const rerankClusters = mutation({
     difficultyWeight: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Security: Require project access
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
     const clusters = await ctx.db
       .query('keywordClusters')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
@@ -160,15 +184,21 @@ export const rerankClusters = mutation({
   },
 });
 
-// Delete cluster
+// Delete cluster (requires project editor access)
 export const deleteCluster = mutation({
   args: { clusterId: v.id('keywordClusters') },
   handler: async (ctx, args) => {
+    const cluster = await ctx.db.get(args.clusterId);
+    if (!cluster) throw new Error('Cluster not found');
+
+    // Security: Require project access
+    await requireProjectAccess(ctx, cluster.projectId, 'editor');
+
     await ctx.db.delete(args.clusterId);
   },
 });
 
-// Merge clusters
+// Merge clusters (requires project editor access on primary cluster)
 export const mergeClusters = mutation({
   args: {
     clusterIds: v.array(v.id('keywordClusters')),
@@ -190,6 +220,9 @@ export const mergeClusters = mutation({
 
     // Base new cluster on the first one (usually the "primary" in a merge)
     const primary = clusters[0];
+
+    // Security: Require project access on primary cluster
+    await requireProjectAccess(ctx, primary.projectId, 'editor');
 
     // Merge keywords (unique)
     const allKeywords = new Set<string>();

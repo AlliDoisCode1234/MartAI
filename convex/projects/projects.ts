@@ -3,6 +3,7 @@ import { v } from 'convex/values';
 
 import { planConfig } from '../subscriptions/subscriptions';
 import { auth } from '../auth';
+import { requireProjectAccess, requireSuperAdmin } from '../lib/rbac';
 
 // Create project
 export const createProject = mutation({
@@ -52,7 +53,7 @@ export const createProject = mutation({
     //   );
     // }
 
-    console.log('🏗️ [Convex] createProject mutation called with:', args);
+    // NOTE: Project limit check temporarily disabled for testing - uncomment before launch
     const projectId = await ctx.db.insert('projects', {
       userId,
       organizationId: args.organizationId,
@@ -65,7 +66,6 @@ export const createProject = mutation({
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
-    console.log('✅ [Convex] Project created with ID:', projectId);
     return projectId;
   },
 });
@@ -117,7 +117,7 @@ export const getProjectById = query({
   },
 });
 
-// Update project
+// Update project (requires project editor access)
 export const updateProject = mutation({
   args: {
     projectId: v.id('projects'),
@@ -130,6 +130,9 @@ export const updateProject = mutation({
     competitors: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    // Security: Require project access
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
     const updates: any = { updatedAt: Date.now() };
     if (args.name !== undefined) updates.name = args.name;
     if (args.websiteUrl !== undefined) updates.websiteUrl = args.websiteUrl;
@@ -139,21 +142,27 @@ export const updateProject = mutation({
   },
 });
 
-// Delete project
+// Delete project (requires project admin access)
 export const deleteProject = mutation({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
+    // Security: Require project admin access for deletion
+    await requireProjectAccess(ctx, args.projectId, 'admin');
+
     await ctx.db.delete(args.projectId);
   },
 });
 
+// Create test project (SUPER ADMIN ONLY - for testing/dogfooding)
+// Security: This is a privileged operation that creates a test user
 export const createTestProject = mutation({
   args: {
     name: v.string(),
     websiteUrl: v.string(),
   },
   handler: async (ctx, args) => {
-    // 1. Create a dummy user if not exists
+    // Security: Only super_admin can create test projects
+    await requireSuperAdmin(ctx);
     const email = 'test-dogfood@martai.com';
     let user = await ctx.db
       .query('users')

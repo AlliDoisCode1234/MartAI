@@ -18,7 +18,15 @@ function filterUserFields(user: any) {
   };
 }
 
-export const current = query({
+/**
+ * Get the currently logged-in user's data.
+ *
+ * Naming Convention:
+ * - `me` = logged-in user (this query)
+ * - `identity` = auth session (auth.getUserId)
+ * - `user` = other users (getById for admins)
+ */
+export const me = query({
   args: {},
   handler: async (ctx) => {
     const userId = await auth.getUserId(ctx);

@@ -1,5 +1,16 @@
 'use client';
 
+/**
+ * useAuth Hook
+ *
+ * Provides authentication actions (signIn, signOut) and auth state.
+ *
+ * Naming Convention:
+ * - `useAuth()` = auth actions (this hook)
+ * - `useMe()` = logged-in user data (use lib/useMe.ts)
+ * - `user` = other users (admin queries)
+ */
+
 import { useConvexAuth, useQuery } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { api } from '@/convex/_generated/api';
@@ -11,8 +22,9 @@ export function useAuth() {
   const { signOut } = useAuthActions();
   const router = useRouter();
 
-  // Fetch current user details
-  const user = useQuery(api.users.current);
+  // DEPRECATED: Use useMe() for user data instead
+  // Keeping for backwards compatibility during migration
+  const user = useQuery(api.users.me);
 
   const logout = useCallback(async () => {
     await signOut();
@@ -20,21 +32,12 @@ export function useAuth() {
   }, [signOut, router]);
 
   return {
-    user,
-    loading: isLoading,
+    // Auth state
     isAuthenticated,
+    loading: isLoading,
     logout,
-    // Legacy support (optional, or remove if unused)
-    token: 'dummy-token', // Some components might check for token existence
-    login: async () => {
-      throw new Error('Use useAuthActions instead');
-    },
-    signup: async () => {
-      throw new Error('Use useAuthActions instead');
-    },
-    updateProfile: async () => {
-      throw new Error('Use Convex mutations instead');
-    },
-    refreshAccessToken: async () => null,
+
+    // DEPRECATED: Use useMe().me instead
+    user,
   };
 }
