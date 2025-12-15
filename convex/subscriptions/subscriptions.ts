@@ -144,7 +144,16 @@ export const upsertSubscription = mutation({
   args: {
     userId: v.id('users'),
     planTier: v.string(),
-    status: v.string(),
+    status: v.union(
+      v.literal('active'),
+      v.literal('trialing'),
+      v.literal('grace_period'),
+      v.literal('maintenance_mode'),
+      v.literal('past_due'),
+      v.literal('cancelled'),
+      v.literal('expired')
+    ),
+    billingCycle: v.optional(v.union(v.literal('monthly'), v.literal('annual'))),
     startsAt: v.number(),
     renewsAt: v.optional(v.number()),
     cancelAt: v.optional(v.number()),
@@ -158,6 +167,7 @@ export const upsertSubscription = mutation({
     const payload = {
       planTier: args.planTier,
       status: args.status,
+      billingCycle: args.billingCycle,
       priceMonthly: config.priceMonthly,
       features: config.features,
       startsAt: args.startsAt,
@@ -199,7 +209,19 @@ export const getSubscriptionByUser = query({
 });
 
 export const listSubscriptions = query({
-  args: { status: v.optional(v.string()) },
+  args: {
+    status: v.optional(
+      v.union(
+        v.literal('active'),
+        v.literal('trialing'),
+        v.literal('grace_period'),
+        v.literal('maintenance_mode'),
+        v.literal('past_due'),
+        v.literal('cancelled'),
+        v.literal('expired')
+      )
+    ),
+  },
   handler: async (ctx, args) => {
     if (args.status) {
       return await ctx.db

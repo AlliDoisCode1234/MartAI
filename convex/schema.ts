@@ -79,9 +79,25 @@ export default defineSchema({
     ),
     // Legacy auth fields (for backward compatibility)
     passwordHash: v.optional(v.string()),
+    // Account status (separate from subscription)
+    accountStatus: v.optional(
+      v.union(
+        v.literal('active'),
+        v.literal('inactive'),
+        v.literal('churned'),
+        v.literal('suspended') // Admin action
+      )
+    ),
+    // Churn tracking
+    churnedAt: v.optional(v.number()),
+    churnReason: v.optional(v.string()),
+    reactivatedAt: v.optional(v.number()),
+    // Payment tracking (synced from subscription)
+    lastPaymentAt: v.optional(v.number()),
   })
     .index('email', ['email'])
-    .index('by_role', ['role']),
+    .index('by_role', ['role'])
+    .index('by_account_status', ['accountStatus']),
 
   // Client/Business information
   clients: defineTable({
@@ -380,8 +396,19 @@ export default defineSchema({
 
   subscriptions: defineTable({
     userId: v.id('users'),
-    planTier: v.string(), // starter, growth, scale
-    status: v.string(), // active, past_due, cancelled
+    planTier: v.string(), // solo, growth, enterprise
+    // Subscription lifecycle status
+    status: v.union(
+      v.literal('active'),
+      v.literal('trialing'),
+      v.literal('grace_period'),
+      v.literal('maintenance_mode'),
+      v.literal('past_due'),
+      v.literal('cancelled'),
+      v.literal('expired')
+    ),
+    // Billing cycle
+    billingCycle: v.optional(v.union(v.literal('monthly'), v.literal('annual'))),
     features: v.object({
       maxUrls: v.number(),
       maxKeywordIdeas: v.number(),
@@ -393,11 +420,22 @@ export default defineSchema({
     startsAt: v.number(),
     renewsAt: v.optional(v.number()),
     cancelAt: v.optional(v.number()),
+    // Polar billing integration
+    polarSubscriptionId: v.optional(v.string()),
+    polarCustomerId: v.optional(v.string()),
+    // Grace period and maintenance mode tracking
+    graceStartedAt: v.optional(v.number()),
+    maintenanceStartedAt: v.optional(v.number()),
+    // Payment tracking
+    lastPaymentAt: v.optional(v.number()),
+    lastPaymentFailedAt: v.optional(v.number()),
+    failedPaymentCount: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index('by_user', ['userId'])
-    .index('by_status', ['status']),
+    .index('by_status', ['status'])
+    .index('by_polar_subscription', ['polarSubscriptionId']),
 
   usageLimits: defineTable({
     userId: v.id('users'),
