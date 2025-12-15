@@ -1,5 +1,14 @@
 'use client';
 
+/**
+ * Admin User Detail Page
+ *
+ * Component Hierarchy:
+ * App → Admin → Users → [id] (this file)
+ *
+ * Single component per file - uses extracted sub-components.
+ */
+
 import { use, useState } from 'react';
 import {
   Box,
@@ -18,7 +27,6 @@ import {
   StatLabel,
   StatNumber,
   StatHelpText,
-  Divider,
   Button,
   Progress,
   Table,
@@ -44,6 +52,7 @@ import {
   AlertTitle,
   AlertDescription,
   IconButton,
+  Select,
 } from '@chakra-ui/react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -52,91 +61,92 @@ import { ChevronRightIcon, CheckCircleIcon, TimeIcon, ExternalLinkIcon } from '@
 import Link from 'next/link';
 import type { Id } from '@/convex/_generated/dataModel';
 
-const STEP_CONFIG = [
-  { key: 'signupCompleted', label: 'Signup', icon: '●' },
-  { key: 'planSelected', label: 'Plan Selected', icon: '◆' },
-  { key: 'paymentCompleted', label: 'Payment', icon: '■' },
-  { key: 'ga4Connected', label: 'GA4 Connected', icon: '○' },
-  { key: 'gscConnected', label: 'GSC Connected', icon: '◇' },
-  { key: 'projectCreated', label: 'Project Created', icon: '▲' },
-] as const;
+// Extracted components
+import { SubscriptionCard } from '@/components/admin/SubscriptionCard';
+import { HealthScoreCard } from '@/components/admin/HealthScoreCard';
 
-type OnboardingSteps = {
-  signupCompleted?: boolean;
-  signupCompletedAt?: number;
-  planSelected?: string;
-  planSelectedAt?: number;
-  paymentCompleted?: boolean;
-  paymentCompletedAt?: number;
-  projectCreated?: boolean;
-  projectCreatedAt?: number;
-  ga4Connected?: boolean;
-  ga4ConnectedAt?: number;
-  gscConnected?: boolean;
-  gscConnectedAt?: number;
-};
-
-type EngagementMilestones = {
-  firstKeywordCreatedAt?: number;
-  firstClusterCreatedAt?: number;
-  firstBriefCreatedAt?: number;
-  firstDraftCreatedAt?: number;
-  firstContentPublishedAt?: number;
-  totalKeywords?: number;
-  totalClusters?: number;
-  totalBriefs?: number;
-  totalDrafts?: number;
-  totalPublished?: number;
-};
-
-function calculateProgress(steps?: OnboardingSteps): number {
-  if (!steps) return 0;
-  const allSteps = STEP_CONFIG.map((s) => s.key);
-  const completed = allSteps.filter((key) => {
-    const value = steps[key as keyof OnboardingSteps];
-    return value === true || (key === 'planSelected' && typeof value === 'string');
-  }).length;
-  return Math.round((completed / allSteps.length) * 100);
-}
+// Shared constants and utils
+import { ONBOARDING_STEP_CONFIG, ROLE_COLORS, ACCOUNT_STATUS_COLORS } from '@/lib/constants/admin';
+import { calculateOnboardingProgress } from '@/lib/utils/onboarding';
+import type { OnboardingSteps, EngagementMilestones, HealthData } from '@/types/admin';
 
 export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const userId = resolvedParams.id as Id<'users'>;
 
-  const user = useQuery(api.admin.getUser, { userId });
+  // Queries
+  const userDetails = useQuery(api.admin.users.getUserDetails, { userId });
   const projects = useQuery(api.projects.projects.getProjectsByUser, { userId });
-  const resetOnboarding = useMutation(api.users.resetOnboarding);
+  const health = useQuery(api.subscriptions.userHealth.computeUserHealth, { userId });
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [isResetting, setIsResetting] = useState(false);
+  // Mutations
+  const resetOnboarding = useMutation(api.users.resetOnboarding);
+  const resetPassword = useMutation(api.admin.users.resetUserPassword);
+  const updateAccountStatus = useMutation(api.admin.users.updateAccountStatus);
+
+  // Modal states
+  const { isOpen: isResetOpen, onOpen: onResetOpen, onClose: onResetClose } = useDisclosure();
+  const {
+    isOpen: isPasswordOpen,
+    onOpen: onPasswordOpen,
+    onClose: onPasswordClose,
+  } = useDisclosure();
+  const { isOpen: isStatusOpen, onOpen: onStatusOpen, onClose: onStatusClose } = useDisclosure();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [newStatus, setNewStatus] = useState<string>('active');
   const toast = useToast();
 
+  // Handlers
   const handleResetOnboarding = async () => {
-    setIsResetting(true);
+    setIsLoading(true);
     try {
       await resetOnboarding({ userId });
-      toast({
-        title: 'Onboarding Reset',
-        description: `Onboarding has been reset for ${user?.name || 'this user'}.`,
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
-      onClose();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to reset onboarding. Please try again.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      toast({ title: 'Onboarding Reset', status: 'success', duration: 3000 });
+      onResetClose();
+    } catch {
+      toast({ title: 'Failed to reset onboarding', status: 'error', duration: 3000 });
     } finally {
-      setIsResetting(false);
+      setIsLoading(false);
     }
   };
 
-  if (!user) {
+  const handleResetPassword = async () => {
+    setIsLoading(true);
+    try {
+      await resetPassword({ userId });
+      toast({
+        title: 'Password Reset',
+        description: 'User must reset via email',
+        status: 'success',
+        duration: 3000,
+      });
+      onPasswordClose();
+    } catch {
+      toast({ title: 'Failed to reset password', status: 'error', duration: 3000 });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStatusChange = async () => {
+    setIsLoading(true);
+    try {
+      await updateAccountStatus({
+        userId,
+        accountStatus: newStatus as 'active' | 'inactive' | 'churned' | 'suspended',
+        reason: newStatus === 'suspended' ? 'Admin action' : undefined,
+      });
+      toast({ title: `Status changed to ${newStatus}`, status: 'success', duration: 3000 });
+      onStatusClose();
+    } catch {
+      toast({ title: 'Failed to change status', status: 'error', duration: 3000 });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!userDetails) {
     return (
       <Container maxW="container.xl">
         <Text>Loading user...</Text>
@@ -144,7 +154,8 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const progress = calculateProgress(user.onboardingSteps as OnboardingSteps);
+  const user = userDetails;
+  const progress = calculateOnboardingProgress(user.onboardingSteps as OnboardingSteps);
   const milestones = user.engagementMilestones as EngagementMilestones | undefined;
 
   return (
@@ -172,17 +183,11 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           <HStack spacing={6} align="start">
             <Avatar size="xl" name={user.name} src={user.image} />
             <Box flex={1}>
-              <HStack mb={2}>
+              <HStack mb={2} flexWrap="wrap" gap={2}>
                 <Heading size="lg">{user.name || 'Unnamed User'}</Heading>
-                <Badge
-                  colorScheme={
-                    user.role === 'super_admin' ? 'purple' : user.role === 'admin' ? 'blue' : 'gray'
-                  }
-                >
-                  {user.role || 'user'}
-                </Badge>
-                <Badge colorScheme={user.onboardingStatus === 'completed' ? 'green' : 'yellow'}>
-                  {user.onboardingStatus === 'completed' ? 'Active' : 'Onboarding'}
+                <Badge colorScheme={ROLE_COLORS[user.role || 'user']}>{user.role || 'user'}</Badge>
+                <Badge colorScheme={ACCOUNT_STATUS_COLORS[user.accountStatus || 'active']}>
+                  {user.accountStatus || 'active'}
                 </Badge>
               </HStack>
               <Text color="gray.600" fontSize="lg">
@@ -203,6 +208,12 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         </CardBody>
       </Card>
 
+      {/* Subscription & Health Row */}
+      <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6} mb={6}>
+        <SubscriptionCard subscription={user.subscription} />
+        <HealthScoreCard health={health as HealthData | null} />
+      </SimpleGrid>
+
       {/* Stats Row */}
       <SimpleGrid columns={{ base: 2, md: 4 }} gap={4} mb={6}>
         <Card>
@@ -219,17 +230,17 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         <Card>
           <CardBody py={3}>
             <Stat size="sm">
-              <StatLabel>Plan</StatLabel>
-              <StatNumber fontSize="md">{user.subscription?.planTier || 'Free'}</StatNumber>
-              <StatHelpText>{user.subscription?.status || 'N/A'}</StatHelpText>
+              <StatLabel>Projects</StatLabel>
+              <StatNumber>{user.projectCount || 0}</StatNumber>
             </Stat>
           </CardBody>
         </Card>
         <Card>
           <CardBody py={3}>
             <Stat size="sm">
-              <StatLabel>Projects</StatLabel>
-              <StatNumber>{projects?.length || 0}</StatNumber>
+              <StatLabel>Health Score</StatLabel>
+              <StatNumber>{health?.overall || '—'}</StatNumber>
+              <StatHelpText>{health?.tier || 'N/A'}</StatHelpText>
             </Stat>
           </CardBody>
         </Card>
@@ -261,7 +272,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
               />
             </Box>
             <VStack spacing={3} align="stretch">
-              {STEP_CONFIG.map((config) => {
+              {ONBOARDING_STEP_CONFIG.map((config) => {
                 const steps = user.onboardingSteps as OnboardingSteps | undefined;
                 const value = steps?.[config.key as keyof OnboardingSteps];
                 const isComplete =
@@ -269,7 +280,6 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 const timestamp = steps?.[`${config.key}At` as keyof OnboardingSteps] as
                   | number
                   | undefined;
-
                 return (
                   <HStack
                     key={config.key}
@@ -313,7 +323,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           </CardHeader>
           <CardBody>
             {!projects ? (
-              <Text color="gray.500">Loading projects...</Text>
+              <Text color="gray.500">Loading...</Text>
             ) : projects.length === 0 ? (
               <Text color="gray.500">No projects yet.</Text>
             ) : (
@@ -328,25 +338,25 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 </Thead>
                 <Tbody>
                   {projects.map(
-                    (project: {
+                    (p: {
                       _id: string;
                       name?: string;
                       websiteUrl?: string;
                       createdAt?: number;
                     }) => (
-                      <Tr key={project._id}>
-                        <Td fontWeight="medium">{project.name}</Td>
+                      <Tr key={p._id}>
+                        <Td fontWeight="medium">{p.name}</Td>
                         <Td fontSize="sm" color="gray.600">
-                          {project.websiteUrl ? new URL(project.websiteUrl).hostname : 'No URL'}
+                          {p.websiteUrl ? new URL(p.websiteUrl).hostname : '—'}
                         </Td>
                         <Td fontSize="sm" color="gray.500">
-                          {project.createdAt ? format(project.createdAt, 'MMM d, yyyy') : 'N/A'}
+                          {p.createdAt ? format(p.createdAt, 'MMM d, yyyy') : '—'}
                         </Td>
                         <Td>
                           <IconButton
                             as={Link}
-                            href={`/projects/${project._id}`}
-                            aria-label="View project"
+                            href={`/projects/${p._id}`}
+                            aria-label="View"
                             icon={<ExternalLinkIcon />}
                             size="xs"
                             variant="ghost"
@@ -362,7 +372,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         </Card>
       </SimpleGrid>
 
-      {/* Engagement Milestones (if available) */}
+      {/* Engagement Milestones */}
       {milestones && (
         <Card mb={6}>
           <CardHeader pb={0}>
@@ -432,46 +442,117 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             <AlertIcon />
             <Box>
               <AlertTitle>Destructive Actions</AlertTitle>
-              <AlertDescription>
-                These actions cannot be easily undone. Use with caution.
-              </AlertDescription>
+              <AlertDescription>These actions cannot be easily undone.</AlertDescription>
             </Box>
           </Alert>
-          <HStack justify="space-between" p={4} bg="red.50" borderRadius="md">
-            <Box>
-              <Text fontWeight="semibold">Reset Onboarding</Text>
-              <Text fontSize="sm" color="gray.600">
-                Clear all onboarding progress and restart the user&apos;s journey.
-              </Text>
-            </Box>
-            <Button colorScheme="red" variant="outline" onClick={onOpen}>
-              Reset Onboarding
-            </Button>
-          </HStack>
+          <VStack spacing={3} align="stretch">
+            <HStack justify="space-between" p={4} bg="red.50" borderRadius="md">
+              <Box>
+                <Text fontWeight="semibold">Reset Onboarding</Text>
+                <Text fontSize="sm" color="gray.600">
+                  Clear all onboarding progress.
+                </Text>
+              </Box>
+              <Button colorScheme="red" variant="outline" onClick={onResetOpen}>
+                Reset
+              </Button>
+            </HStack>
+            <HStack justify="space-between" p={4} bg="red.50" borderRadius="md">
+              <Box>
+                <Text fontWeight="semibold">Reset Password</Text>
+                <Text fontSize="sm" color="gray.600">
+                  User must reset via email.
+                </Text>
+              </Box>
+              <Button colorScheme="red" variant="outline" onClick={onPasswordOpen}>
+                Reset
+              </Button>
+            </HStack>
+            <HStack justify="space-between" p={4} bg="red.50" borderRadius="md">
+              <Box>
+                <Text fontWeight="semibold">Change Account Status</Text>
+                <Text fontSize="sm" color="gray.600">
+                  Suspend, reactivate, or mark churned.
+                </Text>
+              </Box>
+              <Button
+                colorScheme="red"
+                variant="outline"
+                onClick={() => {
+                  setNewStatus(user.accountStatus || 'active');
+                  onStatusOpen();
+                }}
+              >
+                Change
+              </Button>
+            </HStack>
+          </VStack>
         </CardBody>
       </Card>
 
-      {/* Confirmation Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
+      {/* Modals */}
+      <Modal isOpen={isResetOpen} onClose={onResetClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Confirm Reset Onboarding</ModalHeader>
+          <ModalHeader>Reset Onboarding?</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <Text>
-              Are you sure you want to reset onboarding for{' '}
-              <strong>{user.name || user.email}</strong>?
-            </Text>
-            <Text mt={2} color="gray.600" fontSize="sm">
-              This will clear all onboarding steps and force the user to restart their journey.
+              Reset onboarding for <strong>{user.name || user.email}</strong>?
             </Text>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
+            <Button variant="ghost" mr={3} onClick={onResetClose}>
               Cancel
             </Button>
-            <Button colorScheme="red" onClick={handleResetOnboarding} isLoading={isResetting}>
-              Reset Onboarding
+            <Button colorScheme="red" onClick={handleResetOnboarding} isLoading={isLoading}>
+              Reset
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      <Modal isOpen={isPasswordOpen} onClose={onPasswordClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Reset Password?</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text>
+              Reset password for <strong>{user.name || user.email}</strong>?
+            </Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onPasswordClose}>
+              Cancel
+            </Button>
+            <Button colorScheme="red" onClick={handleResetPassword} isLoading={isLoading}>
+              Reset
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      <Modal isOpen={isStatusOpen} onClose={onStatusClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Change Status</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text mb={4}>
+              Status for <strong>{user.name || user.email}</strong>
+            </Text>
+            <Select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="churned">Churned</option>
+              <option value="suspended">Suspended</option>
+            </Select>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onStatusClose}>
+              Cancel
+            </Button>
+            <Button colorScheme="red" onClick={handleStatusChange} isLoading={isLoading}>
+              Change
             </Button>
           </ModalFooter>
         </ModalContent>
