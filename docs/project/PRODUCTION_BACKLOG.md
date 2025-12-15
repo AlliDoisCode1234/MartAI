@@ -646,6 +646,10 @@ gantt
 | ADMIN-005 | Subscription Management              | P1       | 5      |
 | ADMIN-006 | Admin Audit Logs                     | P1       | 5      |
 | ADMIN-007 | BI Dashboard - Engagement Funnel     | P2       | 8      |
+| ADMIN-008 | User Impersonation (Non-Prod Only)   | P1       | 8      |
+
+> [!WARNING]
+> **ADMIN-008 requires BOD review before implementation.** This feature allows admins to log in as users for debugging/support. Security-sensitive - must be blocked in production environment.
 
 ### Integrations & Platform
 
