@@ -18,7 +18,7 @@
 | **RESEND-002** | **Add Magic Link UI**               | 2   | 1      | 🔲 Todo        |
 | BILL-001       | Polar Billing Integration           | 8   | 2      | 🔲 Todo        |
 | BILL-002       | Subscription Limit Enforcement      | 5   | 2      | 🔲 Todo        |
-| ADMIN-002      | Enhance User Detail Page            | 5   | 2      | 🔲 Todo        |
+| ADMIN-002      | Enhance User Detail Page            | 5   | 2      | ✅ Done        |
 | WP-001         | WordPress E2E Testing               | 5   | 3      | 🔲 Todo        |
 | WP-002         | WordPress Settings UI               | 3   | 3      | 🔲 Todo        |
 | SEC-001        | Rotate All Secrets                  | 2   | 3      | 🔲 Todo        |

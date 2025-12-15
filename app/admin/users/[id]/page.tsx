@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import {
   Box,
   Container,
@@ -30,11 +30,25 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
+  useToast,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  IconButton,
 } from '@chakra-ui/react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ChevronRightIcon, CheckCircleIcon, TimeIcon } from '@chakra-ui/icons';
+import { ChevronRightIcon, CheckCircleIcon, TimeIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import type { Id } from '@/convex/_generated/dataModel';
 
@@ -62,6 +76,19 @@ type OnboardingSteps = {
   gscConnectedAt?: number;
 };
 
+type EngagementMilestones = {
+  firstKeywordCreatedAt?: number;
+  firstClusterCreatedAt?: number;
+  firstBriefCreatedAt?: number;
+  firstDraftCreatedAt?: number;
+  firstContentPublishedAt?: number;
+  totalKeywords?: number;
+  totalClusters?: number;
+  totalBriefs?: number;
+  totalDrafts?: number;
+  totalPublished?: number;
+};
+
 function calculateProgress(steps?: OnboardingSteps): number {
   if (!steps) return 0;
   const allSteps = STEP_CONFIG.map((s) => s.key);
@@ -80,6 +107,35 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
   const projects = useQuery(api.projects.projects.getProjectsByUser, { userId });
   const resetOnboarding = useMutation(api.users.resetOnboarding);
 
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isResetting, setIsResetting] = useState(false);
+  const toast = useToast();
+
+  const handleResetOnboarding = async () => {
+    setIsResetting(true);
+    try {
+      await resetOnboarding({ userId });
+      toast({
+        title: 'Onboarding Reset',
+        description: `Onboarding has been reset for ${user?.name || 'this user'}.`,
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+      onClose();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to reset onboarding. Please try again.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   if (!user) {
     return (
       <Container maxW="container.xl">
@@ -89,6 +145,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const progress = calculateProgress(user.onboardingSteps as OnboardingSteps);
+  const milestones = user.engagementMilestones as EngagementMilestones | undefined;
 
   return (
     <Container maxW="container.xl" py={4}>
@@ -124,6 +181,9 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 >
                   {user.role || 'user'}
                 </Badge>
+                <Badge colorScheme={user.onboardingStatus === 'completed' ? 'green' : 'yellow'}>
+                  {user.onboardingStatus === 'completed' ? 'Active' : 'Onboarding'}
+                </Badge>
               </HStack>
               <Text color="gray.600" fontSize="lg">
                 {user.email}
@@ -139,20 +199,6 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 )}
               </HStack>
             </Box>
-            <VStack align="end">
-              <Button
-                size="sm"
-                colorScheme="red"
-                variant="outline"
-                onClick={async () => {
-                  if (confirm(`Reset onboarding for ${user.name}?`)) {
-                    await resetOnboarding({ userId });
-                  }
-                }}
-              >
-                Reset Onboarding
-              </Button>
-            </VStack>
           </HStack>
         </CardBody>
       </Card>
@@ -199,7 +245,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         </Card>
       </SimpleGrid>
 
-      <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
+      <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6} mb={6}>
         {/* Onboarding Journey */}
         <Card>
           <CardHeader pb={0}>
@@ -277,6 +323,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                     <Th>Name</Th>
                     <Th>Website</Th>
                     <Th>Created</Th>
+                    <Th></Th>
                   </Tr>
                 </Thead>
                 <Tbody>
@@ -295,6 +342,16 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                         <Td fontSize="sm" color="gray.500">
                           {project.createdAt ? format(project.createdAt, 'MMM d, yyyy') : 'N/A'}
                         </Td>
+                        <Td>
+                          <IconButton
+                            as={Link}
+                            href={`/projects/${project._id}`}
+                            aria-label="View project"
+                            icon={<ExternalLinkIcon />}
+                            size="xs"
+                            variant="ghost"
+                          />
+                        </Td>
                       </Tr>
                     )
                   )}
@@ -304,6 +361,121 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           </CardBody>
         </Card>
       </SimpleGrid>
+
+      {/* Engagement Milestones (if available) */}
+      {milestones && (
+        <Card mb={6}>
+          <CardHeader pb={0}>
+            <Heading size="md">Engagement Milestones</Heading>
+          </CardHeader>
+          <CardBody>
+            <SimpleGrid columns={{ base: 2, md: 5 }} gap={4}>
+              <Stat size="sm">
+                <StatLabel>Keywords</StatLabel>
+                <StatNumber>{milestones.totalKeywords || 0}</StatNumber>
+                {milestones.firstKeywordCreatedAt && (
+                  <StatHelpText>
+                    First: {format(milestones.firstKeywordCreatedAt, 'MMM d')}
+                  </StatHelpText>
+                )}
+              </Stat>
+              <Stat size="sm">
+                <StatLabel>Clusters</StatLabel>
+                <StatNumber>{milestones.totalClusters || 0}</StatNumber>
+                {milestones.firstClusterCreatedAt && (
+                  <StatHelpText>
+                    First: {format(milestones.firstClusterCreatedAt, 'MMM d')}
+                  </StatHelpText>
+                )}
+              </Stat>
+              <Stat size="sm">
+                <StatLabel>Briefs</StatLabel>
+                <StatNumber>{milestones.totalBriefs || 0}</StatNumber>
+                {milestones.firstBriefCreatedAt && (
+                  <StatHelpText>
+                    First: {format(milestones.firstBriefCreatedAt, 'MMM d')}
+                  </StatHelpText>
+                )}
+              </Stat>
+              <Stat size="sm">
+                <StatLabel>Drafts</StatLabel>
+                <StatNumber>{milestones.totalDrafts || 0}</StatNumber>
+                {milestones.firstDraftCreatedAt && (
+                  <StatHelpText>
+                    First: {format(milestones.firstDraftCreatedAt, 'MMM d')}
+                  </StatHelpText>
+                )}
+              </Stat>
+              <Stat size="sm">
+                <StatLabel>Published</StatLabel>
+                <StatNumber>{milestones.totalPublished || 0}</StatNumber>
+                {milestones.firstContentPublishedAt && (
+                  <StatHelpText>
+                    First: {format(milestones.firstContentPublishedAt, 'MMM d')}
+                  </StatHelpText>
+                )}
+              </Stat>
+            </SimpleGrid>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Danger Zone */}
+      <Card borderColor="red.200" borderWidth={1}>
+        <CardHeader pb={0}>
+          <Heading size="md" color="red.600">
+            Danger Zone
+          </Heading>
+        </CardHeader>
+        <CardBody>
+          <Alert status="warning" variant="left-accent" mb={4}>
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Destructive Actions</AlertTitle>
+              <AlertDescription>
+                These actions cannot be easily undone. Use with caution.
+              </AlertDescription>
+            </Box>
+          </Alert>
+          <HStack justify="space-between" p={4} bg="red.50" borderRadius="md">
+            <Box>
+              <Text fontWeight="semibold">Reset Onboarding</Text>
+              <Text fontSize="sm" color="gray.600">
+                Clear all onboarding progress and restart the user&apos;s journey.
+              </Text>
+            </Box>
+            <Button colorScheme="red" variant="outline" onClick={onOpen}>
+              Reset Onboarding
+            </Button>
+          </HStack>
+        </CardBody>
+      </Card>
+
+      {/* Confirmation Modal */}
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Confirm Reset Onboarding</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text>
+              Are you sure you want to reset onboarding for{' '}
+              <strong>{user.name || user.email}</strong>?
+            </Text>
+            <Text mt={2} color="gray.600" fontSize="sm">
+              This will clear all onboarding steps and force the user to restart their journey.
+            </Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>
+              Cancel
+            </Button>
+            <Button colorScheme="red" onClick={handleResetOnboarding} isLoading={isResetting}>
+              Reset Onboarding
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Container>
   );
 }
