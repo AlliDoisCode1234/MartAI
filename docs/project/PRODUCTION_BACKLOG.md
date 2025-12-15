@@ -22,7 +22,7 @@
 | WP-001         | WordPress E2E Testing               | 5   | 3      | 🔲 Todo        |
 | WP-002         | WordPress Settings UI               | 3   | 3      | 🔲 Todo        |
 | SEC-001        | Rotate All Secrets                  | 2   | 3      | 🔲 Todo        |
-| ADMIN-003      | User Engagement Milestones          | 3   | 3      | 🔲 Todo        |
+| ADMIN-003      | User Engagement Milestones          | 3   | 3      | ✅ Done        |
 | SEC-002        | Security Audit Checklist            | 5   | 4      | 🔲 Todo        |
 | QUAL-001       | Critical Path E2E Testing           | 8   | 4      | 🔲 Todo        |
 

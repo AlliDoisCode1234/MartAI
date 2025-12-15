@@ -1,4 +1,5 @@
 import { mutation, query } from '../_generated/server';
+import { internal } from '../_generated/api';
 import { v } from 'convex/values';
 import { requireProjectAccess } from '../lib/rbac';
 
@@ -19,7 +20,7 @@ export const createKeywords = mutation({
   },
   handler: async (ctx, args) => {
     // Security: Require project access
-    await requireProjectAccess(ctx, args.projectId, 'editor');
+    const project = await requireProjectAccess(ctx, args.projectId, 'editor');
 
     const keywordIds = [];
     for (const kw of args.keywords) {
@@ -36,6 +37,16 @@ export const createKeywords = mutation({
       });
       keywordIds.push(id);
     }
+
+    // Track engagement milestone (ADMIN-003)
+    if (keywordIds.length > 0 && project.userId) {
+      await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
+        userId: project.userId,
+        milestone: 'keyword',
+        incrementTotal: true,
+      });
+    }
+
     return keywordIds;
   },
 });

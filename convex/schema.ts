@@ -57,6 +57,26 @@ export default defineSchema({
     previousProspect: v.optional(v.boolean()),
     prospectConvertedAt: v.optional(v.number()),
     prospectId: v.optional(v.id('prospects')),
+    // Engagement milestones for funnel tracking (ADMIN-003)
+    engagementMilestones: v.optional(
+      v.object({
+        // First-time events (timestamps)
+        firstKeywordCreatedAt: v.optional(v.number()),
+        firstClusterCreatedAt: v.optional(v.number()),
+        firstBriefCreatedAt: v.optional(v.number()),
+        firstDraftCreatedAt: v.optional(v.number()),
+        firstContentPublishedAt: v.optional(v.number()),
+        firstGa4ConnectedAt: v.optional(v.number()),
+        firstGscConnectedAt: v.optional(v.number()),
+        firstWordPressConnectedAt: v.optional(v.number()),
+        // Totals (counters)
+        totalKeywords: v.optional(v.number()),
+        totalClusters: v.optional(v.number()),
+        totalBriefs: v.optional(v.number()),
+        totalDrafts: v.optional(v.number()),
+        totalPublished: v.optional(v.number()),
+      })
+    ),
     // Legacy auth fields (for backward compatibility)
     passwordHash: v.optional(v.string()),
   })
