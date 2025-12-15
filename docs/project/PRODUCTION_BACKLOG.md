@@ -661,6 +661,16 @@ gantt
 | SHOP-001 | Shopify Integration      | P2       | 8      |
 | PERF-001 | Performance Optimization | P2       | 5      |
 
+### UX Polish
+
+| Ticket | Description                           | Priority | Points |
+| ------ | ------------------------------------- | -------- | ------ |
+| UX-001 | Skeleton Loading (35 pages)           | P1       | 8      |
+| UX-002 | Smooth Transitions & Micro-animations | P2       | 5      |
+
+> [!NOTE]
+> **UX-001**: Replace all spinner/loading text with dimension-matched skeleton components. Reusable skeletons created in `components/skeletons/`. Target: Premium, seamless loading experience.
+
 ---
 
 ## Appendix: Story Point Reference

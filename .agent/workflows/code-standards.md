@@ -21,6 +21,21 @@ description: Pre-flight checklist before writing or committing any code
    * App → Parent → ThisComponent
    */
   ```
+- [ ] **Loading skeletons, NOT spinners** - Use Chakra `Skeleton` components that match exact dimensions of content being loaded. No spinner wheels.
+
+  ```tsx
+  // BAD
+  if (!data) return <Spinner />;
+
+  // GOOD
+  if (!data)
+    return (
+      <VStack spacing={4}>
+        <Skeleton height="40px" width="200px" />
+        <Skeleton height="120px" width="100%" />
+      </VStack>
+    );
+  ```
 
 ## Reusability
 

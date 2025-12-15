@@ -64,6 +64,12 @@ import type { Id } from '@/convex/_generated/dataModel';
 // Extracted components
 import { SubscriptionCard } from '@/components/admin/SubscriptionCard';
 import { HealthScoreCard } from '@/components/admin/HealthScoreCard';
+import {
+  UserHeaderSkeleton,
+  StatsSkeleton,
+  CardSkeleton,
+  TableSkeleton,
+} from '@/components/skeletons';
 
 // Shared constants and utils
 import { ONBOARDING_STEP_CONFIG, ROLE_COLORS, ACCOUNT_STATUS_COLORS } from '@/lib/constants/admin';
@@ -148,8 +154,19 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
 
   if (!userDetails) {
     return (
-      <Container maxW="container.xl">
-        <Text>Loading user...</Text>
+      <Container maxW="container.xl" py={4}>
+        <VStack spacing={6} align="stretch">
+          <UserHeaderSkeleton />
+          <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
+            <CardSkeleton hasHeader bodyHeight="120px" lines={4} />
+            <CardSkeleton hasHeader bodyHeight="120px" lines={4} />
+          </SimpleGrid>
+          <StatsSkeleton count={4} />
+          <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
+            <CardSkeleton hasHeader bodyHeight="200px" lines={6} />
+            <TableSkeleton columns={4} rows={3} />
+          </SimpleGrid>
+        </VStack>
       </Container>
     );
   }
