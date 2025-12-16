@@ -6,8 +6,15 @@ import { Password } from '@convex-dev/auth/providers/Password';
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
     Google,
-    Password,
+    Password({
+      // Enable email verification via Resend
+      verify: Resend({
+        from: 'MartAI <noreply@martai.io>',
+      }),
+    }),
+    // Standalone Resend for magic link login
     Resend({
+      id: 'resend',
       from: 'MartAI <noreply@martai.io>',
     }),
   ],
