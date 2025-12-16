@@ -378,11 +378,12 @@ export default defineSchema({
   contentCalendars: defineTable({
     prospectId: v.optional(v.id('prospects')),
     projectId: v.optional(v.id('projects')),
+    briefId: v.optional(v.id('briefs')), // Link to content brief
     title: v.string(),
     contentType: v.string(),
     primaryKeyword: v.optional(v.string()),
     supportingKeywords: v.optional(v.array(v.string())),
-    status: v.string(), // idea, scheduled, published
+    status: v.string(), // idea, scheduled, in_progress, published
     publishDate: v.optional(v.number()),
     notes: v.optional(v.string()),
     heroOffer: v.optional(v.string()),
@@ -392,7 +393,8 @@ export default defineSchema({
     .index('by_project', ['projectId'])
     .index('by_status', ['status'])
     .index('by_prospect', ['prospectId'])
-    .index('by_publish_date', ['publishDate']),
+    .index('by_publish_date', ['publishDate'])
+    .index('by_project_date', ['projectId', 'publishDate']),
 
   subscriptions: defineTable({
     userId: v.id('users'),

@@ -17,6 +17,7 @@ const publicNavItems = [
 const userNavItems = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Strategy', path: '/strategy' },
+  { label: 'Calendar', path: '/calendar' },
   { label: 'Content', path: '/content' },
   { label: 'Integrations', path: '/integrations' },
 ];
@@ -25,6 +26,7 @@ const userNavItems = [
 const adminNavItems = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Strategy', path: '/strategy' },
+  { label: 'Calendar', path: '/calendar' },
   { label: 'Content', path: '/content' },
   { label: 'Integrations', path: '/integrations' },
   { label: 'Admin', path: '/admin' },
