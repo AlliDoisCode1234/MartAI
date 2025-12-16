@@ -686,6 +686,15 @@ gantt
 > **SERP-001**: Auto-run SERP when URL is input during onboarding, store results.
 > **SERP-002**: Display SERP competitor data in strategy, keywords, and content pages.
 
+### Code Quality
+
+| Ticket   | Description               | Priority | Points |
+| -------- | ------------------------- | -------- | ------ |
+| CODE-001 | Extract integration hooks | P2       | 5      |
+
+> [!NOTE]
+> **CODE-001**: Create `useGA4Connection`, `useGSCConnection`, `useCMSConnection` hooks to encapsulate OAuth flows, token parsing, and state management.
+
 ---
 
 ## Appendix: Story Point Reference

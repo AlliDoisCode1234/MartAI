@@ -1,13 +1,56 @@
 'use client';
 
+/**
+ * Content Page
+ *
+ * Component Hierarchy:
+ * App → Content (this file)
+ *
+ * Brief editor and draft generator for content creation.
+ * Uses extracted card components for modularity.
+ */
+
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Container, VStack, Heading, Text, Box, Button, HStack, Card, CardBody, Badge, Alert, AlertIcon, Spinner, Input, Textarea, FormControl, FormLabel, Grid, GridItem, Tabs, TabList, TabPanels, Tab, TabPanel, Progress, Divider } from '@chakra-ui/react';
+import {
+  Container,
+  VStack,
+  Heading,
+  Text,
+  Box,
+  Button,
+  HStack,
+  Card,
+  CardBody,
+  Alert,
+  AlertIcon,
+  Input,
+  Textarea,
+  FormControl,
+  FormLabel,
+  Grid,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Badge,
+} from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
-import { useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useAction } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { LexicalEditorComponent } from '@/src/components/LexicalEditor';
 import type { Brief, Draft } from '@/types';
+
+// Extracted components
+import {
+  TitleOptionsCard,
+  H2OutlineCard,
+  FAQsCard,
+  MetaTagsCard,
+  DraftScoresCard,
+  ContentSkeleton,
+} from '@/src/components/content';
 
 function ContentContent() {
   const { isAuthenticated } = useAuth();
@@ -21,7 +64,6 @@ function ContentContent() {
   const [regenerationNotes, setRegenerationNotes] = useState('');
   const briefId = searchParams?.get('briefId');
 
-  // Form state
   const [formData, setFormData] = useState({
     title: '',
     titleOptions: [] as string[],
@@ -32,6 +74,9 @@ function ContentContent() {
     internalLinks: [] as string[],
     schemaSuggestion: '',
   });
+
+  const generateBriefAction = useAction((api as any).content.briefActions.generateBrief);
+  const generateDraftAction = useAction((api as any).content.draftActions.generateDraft);
 
   useEffect(() => {
     if (briefId) {
@@ -45,9 +90,8 @@ function ContentContent() {
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/briefs?briefId=${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (response.ok) {
         const data = await response.json();
         setBrief(data.brief);
@@ -69,42 +113,12 @@ function ContentContent() {
     }
   };
 
-  const generateBriefAction = useAction((api as any).content.briefActions.generateBrief);
-
-  const handleGenerateBrief = async () => {
-    if (!briefId || !brief) return;
-
-    setGenerating(true);
-    try {
-      const result = await generateBriefAction({
-        briefId: briefId as any,
-        projectId: brief.projectId as any,
-        clusterId: brief.clusterId as any,
-      });
-
-      if (result.success) {
-        await loadBrief(briefId);
-        alert('Brief details generated successfully!');
-      }
-    } catch (error: any) {
-      console.error('Error generating brief:', error);
-      if (error.data?.kind === "RateLimitError") {
-         alert(error.data.message);
-      } else {
-         alert(error.message || 'Failed to generate brief');
-      }
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   const loadDraft = async (briefId: string) => {
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/drafts?briefId=${briefId}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (response.ok) {
         const data = await response.json();
         setDraft(data.draft);
@@ -114,18 +128,35 @@ function ContentContent() {
     }
   };
 
-  const generateDraftAction = useAction((api as any).content.draftActions.generateDraft);
+  const handleGenerateBrief = async () => {
+    if (!briefId || !brief) return;
+    setGenerating(true);
+    try {
+      const result = await generateBriefAction({
+        briefId: briefId as any,
+        projectId: brief.projectId as any,
+        clusterId: brief.clusterId as any,
+      });
+      if (result.success) {
+        await loadBrief(briefId);
+        alert('Brief details generated successfully!');
+      }
+    } catch (error: any) {
+      console.error('Error generating brief:', error);
+      alert(error.data?.message || error.message || 'Failed to generate brief');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handleGenerateDraft = async () => {
     if (!briefId) return;
-
     setGeneratingDraft(true);
     try {
       const result = await generateDraftAction({
-        briefId: briefId as any, // Cast to ID
+        briefId: briefId as any,
         regenerationNotes: regenerationNotes || undefined,
       });
-
       if (result.success) {
         setDraft(result);
         setRegenerationNotes('');
@@ -133,11 +164,7 @@ function ContentContent() {
       }
     } catch (error: any) {
       console.error('Error generating draft:', error);
-      if (error.data?.kind === "RateLimitError") {
-         alert(error.data.message);
-      } else {
-         alert(error.message || 'Failed to generate draft');
-      }
+      alert(error.data?.message || error.message || 'Failed to generate draft');
     } finally {
       setGeneratingDraft(false);
     }
@@ -145,29 +172,21 @@ function ContentContent() {
 
   const handleSave = async () => {
     if (!briefId) return;
-
     setSaving(true);
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/briefs', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          briefId,
-          ...formData,
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ briefId, ...formData }),
       });
-
       if (response.ok) {
         alert('Brief saved successfully!');
         await loadBrief(briefId);
       } else {
         alert('Failed to save brief');
       }
-    } catch (error) {
+    } catch {
       alert('Failed to save brief');
     } finally {
       setSaving(false);
@@ -176,29 +195,21 @@ function ContentContent() {
 
   const handleSaveDraft = async () => {
     if (!draft?._id) return;
-
     setSaving(true);
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/drafts', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          draftId: draft._id,
-          content: draft.content,
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ draftId: draft._id, content: draft.content }),
       });
-
       if (response.ok) {
         alert('Draft saved successfully!');
         if (briefId) await loadDraft(briefId);
       } else {
         alert('Failed to save draft');
       }
-    } catch (error) {
+    } catch {
       alert('Failed to save draft');
     } finally {
       setSaving(false);
@@ -206,24 +217,15 @@ function ContentContent() {
   };
 
   const handleApproveDraft = async () => {
-    if (!draft?._id) return;
-
-    if (!confirm('Approve this draft? It will be locked for editing.')) return;
-
+    if (!draft?._id || !confirm('Approve this draft? It will be locked for editing.')) return;
     setSaving(true);
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/drafts', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          draftId: draft._id,
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ draftId: draft._id }),
       });
-
       if (response.ok) {
         alert('Draft approved!');
         if (briefId) {
@@ -233,77 +235,36 @@ function ContentContent() {
       } else {
         alert('Failed to approve draft');
       }
-    } catch (error) {
+    } catch {
       alert('Failed to approve draft');
     } finally {
       setSaving(false);
     }
   };
 
-  const addTitleOption = () => {
-    setFormData({
-      ...formData,
-      titleOptions: [...formData.titleOptions, ''],
-    });
-  };
-
-  const updateTitleOption = (index: number, value: string) => {
-    const updated = [...formData.titleOptions];
+  // Array update helpers
+  const updateArray = <T,>(arr: T[], index: number, value: T) => {
+    const updated = [...arr];
     updated[index] = value;
-    setFormData({ ...formData, titleOptions: updated });
+    return updated;
   };
 
-  const addH2Section = () => {
-    setFormData({
-      ...formData,
-      h2Outline: [...formData.h2Outline, ''],
-    });
-  };
-
-  const updateH2Section = (index: number, value: string) => {
-    const updated = [...formData.h2Outline];
-    updated[index] = value;
-    setFormData({ ...formData, h2Outline: updated });
-  };
-
-  const addFAQ = () => {
-    setFormData({
-      ...formData,
-      faqs: [...formData.faqs, { question: '', answer: '' }],
-    });
-  };
-
-  const updateFAQ = (index: number, field: 'question' | 'answer', value: string) => {
-    const updated = [...formData.faqs];
-    updated[index] = { ...updated[index], [field]: value };
-    setFormData({ ...formData, faqs: updated });
-  };
-
-  const addInternalLink = () => {
-    setFormData({
-      ...formData,
-      internalLinks: [...formData.internalLinks, ''],
-    });
-  };
-
-  const updateInternalLink = (index: number, value: string) => {
-    const updated = [...formData.internalLinks];
-    updated[index] = value;
-    setFormData({ ...formData, internalLinks: updated });
-  };
-
-  if (!isAuthenticated) {
+  if (!isAuthenticated)
     return (
-      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
+      <Box
+        minH="calc(100vh - 64px)"
+        bg="brand.light"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
         <Alert status="warning" maxW="md">
           <AlertIcon />
           Please sign in to view content briefs
         </Alert>
       </Box>
     );
-  }
-
-  if (!briefId) {
+  if (!briefId)
     return (
       <Box minH="calc(100vh - 64px)" bg="brand.light">
         <Container maxW="container.xl" py={12}>
@@ -314,19 +275,15 @@ function ContentContent() {
         </Container>
       </Box>
     );
-  }
-
-  if (loading) {
-    return (
-      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
-        <Spinner size="xl" color="brand.orange" />
-      </Box>
-    );
-  }
+  if (loading) return <ContentSkeleton />;
 
   return (
     <Box minH="calc(100vh - 64px)" bg="brand.light">
-      <Container maxW="container.xl" py={{ base: 8, md: 12 }} px={{ base: 4, sm: 6, md: 8, lg: 12 }}>
+      <Container
+        maxW="container.xl"
+        py={{ base: 8, md: 12 }}
+        px={{ base: 4, sm: 6, md: 8, lg: 12 }}
+      >
         <VStack spacing={8} align="stretch">
           <HStack justify="space-between">
             <VStack align="start" spacing={2}>
@@ -335,7 +292,8 @@ function ContentContent() {
               </Heading>
               {brief?.cluster && (
                 <Text color="gray.600">
-                  {brief.title} • {brief.cluster.clusterName} • {new Date(brief.scheduledDate || 0).toLocaleDateString()}
+                  {brief.title} • {brief.cluster.clusterName} •{' '}
+                  {new Date(brief.scheduledDate || 0).toLocaleDateString()}
                 </Text>
               )}
             </VStack>
@@ -374,7 +332,7 @@ function ContentContent() {
             </HStack>
           </HStack>
 
-          {/* SEO Checklist */}
+          {/* SEO Checklist Alert */}
           {brief?.seoCheck && (
             <Alert status={brief.seoCheck.valid ? 'success' : 'warning'} borderRadius="md">
               <AlertIcon />
@@ -385,7 +343,9 @@ function ContentContent() {
                 {brief.seoCheck.issues.length > 0 && (
                   <Box>
                     {brief.seoCheck.issues.map((issue, i) => (
-                      <Text key={i} fontSize="sm">• {issue}</Text>
+                      <Text key={i} fontSize="sm">
+                        • {issue}
+                      </Text>
                     ))}
                   </Box>
                 )}
@@ -398,348 +358,255 @@ function ContentContent() {
               <Tab>Brief</Tab>
               <Tab>Draft {draft && `(${draft.status})`}</Tab>
             </TabList>
-
             <TabPanels>
               {/* Brief Tab */}
               <TabPanel px={0}>
                 <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={6}>
-                  {/* Main Brief Editor */}
                   <VStack spacing={6} align="stretch">
-              {/* Title Options */}
-              <Card>
-                <CardBody>
-                  <VStack align="stretch" spacing={4}>
-                    <HStack justify="space-between">
-                      <Heading size="md">Title Options</Heading>
-                      <Button size="sm" onClick={addTitleOption}>+ Add</Button>
-                    </HStack>
-                    {formData.titleOptions.map((title, index) => (
-                      <Input
-                        key={index}
-                        value={title}
-                        onChange={(e) => updateTitleOption(index, e.target.value)}
-                        placeholder={`Title option ${index + 1}`}
-                      />
-                    ))}
-                    {formData.titleOptions.length === 0 && (
-                      <Text color="gray.500" fontSize="sm" fontStyle="italic">
-                        Click "Generate Brief Details" or add title options manually
-                      </Text>
-                    )}
-                  </VStack>
-                </CardBody>
-              </Card>
-
-              {/* H2 Outline */}
-              <Card>
-                <CardBody>
-                  <VStack align="stretch" spacing={4}>
-                    <HStack justify="space-between">
-                      <Heading size="md">H2 Outline</Heading>
-                      <Button size="sm" onClick={addH2Section}>+ Add</Button>
-                    </HStack>
-                    {formData.h2Outline.map((section, index) => (
-                      <Input
-                        key={index}
-                        value={section}
-                        onChange={(e) => updateH2Section(index, e.target.value)}
-                        placeholder={`H2 Section ${index + 1}`}
-                      />
-                    ))}
-                    {formData.h2Outline.length === 0 && (
-                      <Text color="gray.500" fontSize="sm" fontStyle="italic">
-                        Add main content sections
-                      </Text>
-                    )}
-                  </VStack>
-                </CardBody>
-              </Card>
-
-              {/* FAQs */}
-              <Card>
-                <CardBody>
-                  <VStack align="stretch" spacing={4}>
-                    <HStack justify="space-between">
-                      <Heading size="md">FAQs</Heading>
-                      <Button size="sm" onClick={addFAQ}>+ Add</Button>
-                    </HStack>
-                    {formData.faqs.map((faq, index) => (
-                      <VStack key={index} align="stretch" spacing={2}>
-                        <Input
-                          value={faq.question}
-                          onChange={(e) => updateFAQ(index, 'question', e.target.value)}
-                          placeholder="Question"
-                        />
-                        <Textarea
-                          value={faq.answer}
-                          onChange={(e) => updateFAQ(index, 'answer', e.target.value)}
-                          placeholder="Answer"
-                          rows={2}
-                        />
-                      </VStack>
-                    ))}
-                    {formData.faqs.length === 0 && (
-                      <Text color="gray.500" fontSize="sm" fontStyle="italic">
-                        Add frequently asked questions
-                      </Text>
-                    )}
-                  </VStack>
-                </CardBody>
-              </Card>
-            </VStack>
-
-            {/* Sidebar - Meta & Links */}
-            <VStack spacing={6} align="stretch">
-              {/* Meta Tags */}
-              <Card>
-                <CardBody>
-                  <VStack align="stretch" spacing={4}>
-                    <Heading size="md">Meta Tags</Heading>
-                    <FormControl>
-                      <FormLabel>Meta Title</FormLabel>
-                      <Input
-                        value={formData.metaTitle}
-                        onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
-                        placeholder="50-60 characters"
-                      />
-                      <Text fontSize="xs" color={formData.metaTitle.length > 60 ? 'red.500' : 'gray.500'}>
-                        {formData.metaTitle.length}/60
-                      </Text>
-                    </FormControl>
-                    <FormControl>
-                      <FormLabel>Meta Description</FormLabel>
-                      <Textarea
-                        value={formData.metaDescription}
-                        onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
-                        placeholder="150-160 characters"
-                        rows={3}
-                      />
-                      <Text fontSize="xs" color={formData.metaDescription.length > 160 ? 'red.500' : 'gray.500'}>
-                        {formData.metaDescription.length}/160
-                      </Text>
-                    </FormControl>
-                  </VStack>
-                </CardBody>
-              </Card>
-
-              {/* Internal Links */}
-              <Card>
-                <CardBody>
-                  <VStack align="stretch" spacing={4}>
-                    <HStack justify="space-between">
-                      <Heading size="md">Internal Links</Heading>
-                      <Button size="sm" onClick={addInternalLink}>+ Add</Button>
-                    </HStack>
-                    {formData.internalLinks.map((link, index) => (
-                      <Input
-                        key={index}
-                        value={link}
-                        onChange={(e) => updateInternalLink(index, e.target.value)}
-                        placeholder="Related topic or page"
-                      />
-                    ))}
-                    {formData.internalLinks.length === 0 && (
-                      <Text color="gray.500" fontSize="sm" fontStyle="italic">
-                        Suggest related content to link to
-                      </Text>
-                    )}
-                  </VStack>
-                </CardBody>
-              </Card>
-
-              {/* Schema Suggestion */}
-              <Card>
-                <CardBody>
-                  <VStack align="stretch" spacing={4}>
-                    <Heading size="md">Schema Suggestion</Heading>
-                    <Input
-                      value={formData.schemaSuggestion}
-                      onChange={(e) => setFormData({ ...formData, schemaSuggestion: e.target.value })}
-                      placeholder="e.g., FAQPage, HowTo, Article"
+                    <TitleOptionsCard
+                      titles={formData.titleOptions}
+                      onAdd={() =>
+                        setFormData({ ...formData, titleOptions: [...formData.titleOptions, ''] })
+                      }
+                      onUpdate={(i, v) =>
+                        setFormData({
+                          ...formData,
+                          titleOptions: updateArray(formData.titleOptions, i, v),
+                        })
+                      }
                     />
-                    <Text fontSize="sm" color="gray.600">
-                      Recommended schema.org type for this content
-                    </Text>
+                    <H2OutlineCard
+                      sections={formData.h2Outline}
+                      onAdd={() =>
+                        setFormData({ ...formData, h2Outline: [...formData.h2Outline, ''] })
+                      }
+                      onUpdate={(i, v) =>
+                        setFormData({
+                          ...formData,
+                          h2Outline: updateArray(formData.h2Outline, i, v),
+                        })
+                      }
+                    />
+                    <FAQsCard
+                      faqs={formData.faqs}
+                      onAdd={() =>
+                        setFormData({
+                          ...formData,
+                          faqs: [...formData.faqs, { question: '', answer: '' }],
+                        })
+                      }
+                      onUpdate={(i, f, v) => {
+                        const updated = [...formData.faqs];
+                        updated[i] = { ...updated[i], [f]: v };
+                        setFormData({ ...formData, faqs: updated });
+                      }}
+                    />
                   </VStack>
-                </CardBody>
-              </Card>
-            </VStack>
-          </Grid>
-        </TabPanel>
-
-        {/* Draft Tab */}
-        <TabPanel px={0}>
-          {!draft ? (
-            <Alert status="info" borderRadius="md">
-              <AlertIcon />
-              <VStack align="start" spacing={2}>
-                <Text fontWeight="semibold">No draft yet</Text>
-                <Text fontSize="sm">
-                  Generate a draft from your brief to create the full content.
-                </Text>
-                <Button
-                  onClick={handleGenerateDraft}
-                  isLoading={generatingDraft}
-                  size="sm"
-                  bg="brand.orange"
-                  color="white"
-                  isDisabled={!brief?.h2Outline || brief.h2Outline.length === 0}
-                >
-                  Generate Draft
-                </Button>
-              </VStack>
-            </Alert>
-          ) : (
-            <VStack spacing={6} align="stretch">
-              {/* Draft Scores */}
-              <Card>
-                <CardBody>
-                  <Grid templateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }} gap={4}>
-                    <Box>
-                      <Text fontSize="sm" color="gray.600">Quality Score</Text>
-                      <Progress value={draft.qualityScore || 0} colorScheme="green" size="lg" mb={2} />
-                      <Text fontWeight="bold">{draft.qualityScore || 0}/100</Text>
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" color="gray.600">Tone Score</Text>
-                      <Progress value={draft.toneScore || 0} colorScheme="blue" size="lg" mb={2} />
-                      <Text fontWeight="bold">{draft.toneScore || 0}/100</Text>
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" color="gray.600">Word Count</Text>
-                      <Text fontSize="2xl" fontWeight="bold">{draft.wordCount || (draft.content ? draft.content.split(/\s+/).filter(w => w.length > 0).length : 0)}</Text>
-                      <Text fontSize="xs" color={(draft.wordCount || (draft.content ? draft.content.split(/\s+/).filter(w => w.length > 0).length : 0)) < 800 ? 'red.500' : 'green.500'}>
-                        {(draft.wordCount || (draft.content ? draft.content.split(/\s+/).filter(w => w.length > 0).length : 0)) < 800 ? 'Below minimum (800)' : 'Good length'}
-                      </Text>
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" color="gray.600">SEO Status</Text>
-                      {draft.seoCheck && (
-                        <>
-                          <Badge colorScheme={draft.seoCheck.valid ? 'green' : 'yellow'} mb={2} display="block" w="fit-content">
-                            {draft.seoCheck.checklist?.filter(c => c.passed).length || 0}/{draft.seoCheck.checklist?.length || 0}
-                          </Badge>
-                          <Text fontSize="xs" color={draft.seoCheck.valid ? 'green.500' : 'yellow.500'}>
-                            {draft.seoCheck.valid ? 'All checks passed' : 'Needs attention'}
+                  <VStack spacing={6} align="stretch">
+                    <MetaTagsCard
+                      metaTitle={formData.metaTitle}
+                      metaDescription={formData.metaDescription}
+                      onMetaTitleChange={(v) => setFormData({ ...formData, metaTitle: v })}
+                      onMetaDescriptionChange={(v) =>
+                        setFormData({ ...formData, metaDescription: v })
+                      }
+                    />
+                    <Card>
+                      <CardBody>
+                        <VStack align="stretch" spacing={4}>
+                          <HStack justify="space-between">
+                            <Heading size="md">Internal Links</Heading>
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                setFormData({
+                                  ...formData,
+                                  internalLinks: [...formData.internalLinks, ''],
+                                })
+                              }
+                            >
+                              + Add
+                            </Button>
+                          </HStack>
+                          {formData.internalLinks.map((link, index) => (
+                            <Input
+                              key={index}
+                              value={link}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  internalLinks: updateArray(
+                                    formData.internalLinks,
+                                    index,
+                                    e.target.value
+                                  ),
+                                })
+                              }
+                              placeholder="Related topic or page"
+                            />
+                          ))}
+                          {formData.internalLinks.length === 0 && (
+                            <Text color="gray.500" fontSize="sm" fontStyle="italic">
+                              Suggest related content to link to
+                            </Text>
+                          )}
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                    <Card>
+                      <CardBody>
+                        <VStack align="stretch" spacing={4}>
+                          <Heading size="md">Schema Suggestion</Heading>
+                          <Input
+                            value={formData.schemaSuggestion}
+                            onChange={(e) =>
+                              setFormData({ ...formData, schemaSuggestion: e.target.value })
+                            }
+                            placeholder="e.g., FAQPage, HowTo, Article"
+                          />
+                          <Text fontSize="sm" color="gray.600">
+                            Recommended schema.org type for this content
                           </Text>
-                        </>
-                      )}
-                    </Box>
-                  </Grid>
-                </CardBody>
-              </Card>
-
-              {/* Issues & Strengths */}
-              {(draft.issues && draft.issues.length > 0) || (draft.strengths && draft.strengths.length > 0) ? (
-                <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={4}>
-                  {draft.issues && draft.issues.length > 0 && (
-                    <Alert status="warning" borderRadius="md">
-                      <AlertIcon />
-                      <VStack align="start" spacing={1}>
-                        <Text fontWeight="semibold">Issues</Text>
-                        {draft.issues.map((issue, i) => (
-                          <Text key={i} fontSize="sm">• {issue}</Text>
-                        ))}
-                      </VStack>
-                    </Alert>
-                  )}
-                  {draft.strengths && draft.strengths.length > 0 && (
-                    <Alert status="success" borderRadius="md">
-                      <AlertIcon />
-                      <VStack align="start" spacing={1}>
-                        <Text fontWeight="semibold">Strengths</Text>
-                        {draft.strengths.map((strength, i) => (
-                          <Text key={i} fontSize="sm">• {strength}</Text>
-                        ))}
-                      </VStack>
-                    </Alert>
-                  )}
-                </Grid>
-              ) : null}
-
-              {/* SEO Checklist */}
-              {draft.seoCheck && (
-                <Card>
-                  <CardBody>
-                    <VStack align="stretch" spacing={3}>
-                      <Heading size="sm">SEO Checklist</Heading>
-                      {draft.seoCheck.checklist?.map((item, i) => (
-                        <HStack key={i} justify="space-between">
-                          <Text fontSize="sm">{item.item}</Text>
-                          <Badge colorScheme={item.passed ? 'green' : 'red'}>
-                            {item.passed ? '✓' : '✗'} {item.note || ''}
-                          </Badge>
-                        </HStack>
-                      ))}
-                    </VStack>
-                  </CardBody>
-                </Card>
-              )}
-
-              {/* Regeneration Notes */}
-              <Card>
-                <CardBody>
-                  <VStack align="stretch" spacing={3}>
-                    <FormLabel>Regeneration Notes (optional)</FormLabel>
-                    <Textarea
-                      value={regenerationNotes}
-                      onChange={(e) => setRegenerationNotes(e.target.value)}
-                      placeholder="Add notes for re-generation (e.g., 'Make it more technical', 'Add more examples')"
-                      rows={3}
-                    />
+                        </VStack>
+                      </CardBody>
+                    </Card>
                   </VStack>
-                </CardBody>
-              </Card>
+                </Grid>
+              </TabPanel>
 
-              {/* Draft Content Editor */}
-              <Card>
-                <CardBody>
-                  <VStack align="stretch" spacing={4}>
-                    <HStack justify="space-between">
-                      <Heading size="md">Draft Content Editor</Heading>
-                      <Badge colorScheme={draft.status === 'approved' ? 'green' : 'gray'}>
-                        {draft.status}
-                      </Badge>
-                    </HStack>
-                    <LexicalEditorComponent
-                      value={draft.content || ''}
-                      onChange={(markdown) => setDraft({ ...draft, content: markdown })}
-                      placeholder="Draft content will appear here..."
-                      minHeight="500px"
-                      isReadOnly={draft.status === 'approved'}
-                    />
-                    <HStack>
-                      <Button
-                        onClick={handleSaveDraft}
-                        isLoading={saving}
-                        isDisabled={draft.status === 'approved'}
-                      >
-                        Save Draft
-                      </Button>
+              {/* Draft Tab */}
+              <TabPanel px={0}>
+                {!draft ? (
+                  <Alert status="info" borderRadius="md">
+                    <AlertIcon />
+                    <VStack align="start" spacing={2}>
+                      <Text fontWeight="semibold">No draft yet</Text>
+                      <Text fontSize="sm">
+                        Generate a draft from your brief to create the full content.
+                      </Text>
                       <Button
                         onClick={handleGenerateDraft}
                         isLoading={generatingDraft}
-                        variant="outline"
-                      >
-                        Re-generate
-                      </Button>
-                      <Button
-                        onClick={handleApproveDraft}
-                        bg="green.500"
+                        size="sm"
+                        bg="brand.orange"
                         color="white"
-                        isDisabled={draft.status === 'approved'}
+                        isDisabled={!brief?.h2Outline || brief.h2Outline.length === 0}
                       >
-                        Approve Draft
+                        Generate Draft
                       </Button>
-                    </HStack>
+                    </VStack>
+                  </Alert>
+                ) : (
+                  <VStack spacing={6} align="stretch">
+                    <DraftScoresCard draft={draft} />
+                    {(draft.issues?.length || draft.strengths?.length) && (
+                      <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={4}>
+                        {(draft.issues?.length ?? 0) > 0 && (
+                          <Alert status="warning" borderRadius="md">
+                            <AlertIcon />
+                            <VStack align="start" spacing={1}>
+                              <Text fontWeight="semibold">Issues</Text>
+                              {draft.issues?.map((issue, i) => (
+                                <Text key={i} fontSize="sm">
+                                  • {issue}
+                                </Text>
+                              ))}
+                            </VStack>
+                          </Alert>
+                        )}
+                        {(draft.strengths?.length ?? 0) > 0 && (
+                          <Alert status="success" borderRadius="md">
+                            <AlertIcon />
+                            <VStack align="start" spacing={1}>
+                              <Text fontWeight="semibold">Strengths</Text>
+                              {draft.strengths?.map((strength, i) => (
+                                <Text key={i} fontSize="sm">
+                                  • {strength}
+                                </Text>
+                              ))}
+                            </VStack>
+                          </Alert>
+                        )}
+                      </Grid>
+                    )}
+                    {draft.seoCheck && (
+                      <Card>
+                        <CardBody>
+                          <VStack align="stretch" spacing={3}>
+                            <Heading size="sm">SEO Checklist</Heading>
+                            {draft.seoCheck.checklist?.map((item, i) => (
+                              <HStack key={i} justify="space-between">
+                                <Text fontSize="sm">{item.item}</Text>
+                                <Badge colorScheme={item.passed ? 'green' : 'red'}>
+                                  {item.passed ? '✓' : '✗'} {item.note || ''}
+                                </Badge>
+                              </HStack>
+                            ))}
+                          </VStack>
+                        </CardBody>
+                      </Card>
+                    )}
+                    <Card>
+                      <CardBody>
+                        <VStack align="stretch" spacing={3}>
+                          <FormLabel>Regeneration Notes (optional)</FormLabel>
+                          <Textarea
+                            value={regenerationNotes}
+                            onChange={(e) => setRegenerationNotes(e.target.value)}
+                            placeholder="Add notes for re-generation (e.g., 'Make it more technical', 'Add more examples')"
+                            rows={3}
+                          />
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                    <Card>
+                      <CardBody>
+                        <VStack align="stretch" spacing={4}>
+                          <HStack justify="space-between">
+                            <Heading size="md">Draft Content Editor</Heading>
+                            <Badge colorScheme={draft.status === 'approved' ? 'green' : 'gray'}>
+                              {draft.status}
+                            </Badge>
+                          </HStack>
+                          <LexicalEditorComponent
+                            value={draft.content || ''}
+                            onChange={(markdown) => setDraft({ ...draft, content: markdown })}
+                            placeholder="Draft content will appear here..."
+                            minHeight="500px"
+                            isReadOnly={draft.status === 'approved'}
+                          />
+                          <HStack>
+                            <Button
+                              onClick={handleSaveDraft}
+                              isLoading={saving}
+                              isDisabled={draft.status === 'approved'}
+                            >
+                              Save Draft
+                            </Button>
+                            <Button
+                              onClick={handleGenerateDraft}
+                              isLoading={generatingDraft}
+                              variant="outline"
+                            >
+                              Re-generate
+                            </Button>
+                            <Button
+                              onClick={handleApproveDraft}
+                              bg="green.500"
+                              color="white"
+                              isDisabled={draft.status === 'approved'}
+                            >
+                              Approve Draft
+                            </Button>
+                          </HStack>
+                        </VStack>
+                      </CardBody>
+                    </Card>
                   </VStack>
-                </CardBody>
-              </Card>
-            </VStack>
-          )}
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
+                )}
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
         </VStack>
       </Container>
     </Box>
@@ -748,11 +615,7 @@ function ContentContent() {
 
 export default function ContentPage() {
   return (
-    <Suspense fallback={
-      <Box minH="calc(100vh - 64px)" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
-        <Spinner size="xl" color="brand.orange" />
-      </Box>
-    }>
+    <Suspense fallback={<ContentSkeleton />}>
       <ContentContent />
     </Suspense>
   );
