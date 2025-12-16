@@ -9,14 +9,12 @@
  */
 
 import { Container, VStack, Heading, Text, Box, Divider, Badge } from '@chakra-ui/react';
-import { useQuery } from 'convex/react';
-import { api } from '../../convex/_generated/api';
 import { WordPressConnect } from '@/src/components/settings/WordPressConnect';
+import { useProject } from '@/lib/hooks';
 
 export default function SettingsPage() {
-  // Get user's active project (first project for now)
-  const projects = useQuery(api.projects.getProjectsByUser);
-  const activeProject = projects?.[0];
+  // Get user's active project using useProject hook
+  const { project: activeProject, isLoading } = useProject(null, { autoSelect: true });
 
   return (
     <Box minH="calc(100vh - 64px)" bg="brand.light">
