@@ -33,8 +33,8 @@ import { useAuth } from '@/lib/useAuth';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { assertProjectId } from '@/lib/typeGuards';
 import { InsightList } from '@/src/components/insights';
+import { useProject } from '@/lib/hooks';
 
 // Strategy components
 import {
@@ -67,8 +67,6 @@ function StrategyContent() {
 
   // State
   const [generating, setGenerating] = useState(false);
-  const [projectId, setProjectId] = useState<string | null>(null);
-  const [projectsLoading, setProjectsLoading] = useState(true);
   const [strategyMode, setStrategyMode] = useState<StrategyMode>('guided');
   const [isClusterModalOpen, setIsClusterModalOpen] = useState(false);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -80,29 +78,14 @@ function StrategyContent() {
     setStrategyMode(getSavedStrategyMode());
   }, []);
 
-  // Queries
-  const projects = useQuery(
-    api.projects.projects.getProjectsByUser,
-    user?._id ? { userId: user._id as unknown as Id<'users'> } : 'skip'
-  );
-  const projectIdForQuery = projectId
-    ? (() => {
-        try {
-          assertProjectId(projectId);
-          return projectId as unknown as Id<'projects'>;
-        } catch {
-          return null;
-        }
-      })()
-    : null;
-  const strategyData = useQuery(
-    api.seo.strategy.getStrategyByProject,
-    projectIdForQuery ? { projectId: projectIdForQuery } : 'skip'
-  );
-  const gscConnection = useQuery(
-    api.integrations.gscConnections.getGSCConnection,
-    projectIdForQuery ? { projectId: projectIdForQuery } : 'skip'
-  );
+  // Use enhanced useProject hook with autoSelect
+  const {
+    projectId,
+    strategyData,
+    gscConnection,
+    isLoading: projectLoading,
+  } = useProject(null, { autoSelect: true });
+  const typedProjectId = projectId as Id<'projects'> | null;
 
   // Mutations & Actions
   const createKeywordsMutation = useMutation(api.seo.keywords.createKeywords);
@@ -135,57 +118,26 @@ function StrategyContent() {
     if (user && user.onboardingStatus !== 'completed') router.replace('/onboarding');
   }, [authLoading, isAuthenticated, router, user]);
 
-  // Project ID resolution
-  useEffect(() => {
-    if (authLoading || !isAuthenticated || projects === undefined) {
-      setProjectsLoading(projects === undefined);
-      return;
-    }
-    setProjectsLoading(false);
-    const storedId =
-      typeof window !== 'undefined' ? localStorage.getItem('currentProjectId') : null;
-    if (!projects?.length) {
-      if (storedId) {
-        try {
-          assertProjectId(storedId);
-          setProjectId(storedId);
-          return;
-        } catch {
-          localStorage.removeItem('currentProjectId');
-        }
-      }
-      setProjectId(null);
-      return;
-    }
-    const matched = storedId ? projects.find((p: any) => p._id === storedId) : null;
-    const next = matched ?? projects[0];
-    const nextId = next._id as string;
-    if (nextId !== projectId) {
-      setProjectId(nextId);
-      localStorage.setItem('currentProjectId', nextId);
-    }
-  }, [projects, authLoading, isAuthenticated, projectId]);
-
   // Auto-discover keywords
   useEffect(() => {
     if (
-      projectIdForQuery &&
+      typedProjectId &&
       strategyData !== undefined &&
       keywordCount === 0 &&
       !hasAttemptedAutoDiscovery.current &&
       !generating
     ) {
       hasAttemptedAutoDiscovery.current = true;
-      generateKeywordsFromUrlAction({ projectId: projectIdForQuery }).catch(() => {});
+      generateKeywordsFromUrlAction({ projectId: typedProjectId }).catch(() => {});
     }
-  }, [projectIdForQuery, strategyData, keywordCount, generating, generateKeywordsFromUrlAction]);
+  }, [typedProjectId, strategyData, keywordCount, generating, generateKeywordsFromUrlAction]);
 
   // Handlers
   const handleGenerateClusters = async () => {
-    if (!projectIdForQuery) return;
+    if (!typedProjectId) return;
     setGenerating(true);
     try {
-      await generateClustersAction({ projectId: projectIdForQuery, importFromGSC: true });
+      await generateClustersAction({ projectId: typedProjectId, importFromGSC: true });
       setIsClusterModalOpen(false);
     } catch (e) {
       console.error(e);
@@ -195,14 +147,14 @@ function StrategyContent() {
   };
 
   const handleGeneratePlan = async (formData: typeof DEFAULT_PLAN_FORM) => {
-    if (!projectIdForQuery || clusters.length === 0) return;
+    if (!typedProjectId || clusters.length === 0) return;
     setGenerating(true);
     try {
       const goalPayload: { traffic?: number; leads?: number } = {};
       if (formData.trafficGoal) goalPayload.traffic = parseInt(formData.trafficGoal, 10);
       if (formData.leadsGoal) goalPayload.leads = parseInt(formData.leadsGoal, 10);
       await generatePlanAction({
-        projectId: projectIdForQuery,
+        projectId: typedProjectId,
         contentVelocity: formData.contentVelocity,
         startDate: new Date(formData.startDate).getTime(),
         goals: Object.keys(goalPayload).length ? goalPayload : undefined,
@@ -216,10 +168,10 @@ function StrategyContent() {
   };
 
   const handleImportFromGSC = async () => {
-    if (!projectIdForQuery) return;
+    if (!typedProjectId) return;
     setGenerating(true);
     try {
-      await generateClustersAction({ projectId: projectIdForQuery, importFromGSC: true });
+      await generateClustersAction({ projectId: typedProjectId, importFromGSC: true });
     } catch (e) {
       console.error(e);
     } finally {
@@ -228,10 +180,10 @@ function StrategyContent() {
   };
 
   const handleGenerateFromUrl = async () => {
-    if (!projectIdForQuery) return;
+    if (!typedProjectId) return;
     setGenerating(true);
     try {
-      await generateKeywordsFromUrlAction({ projectId: projectIdForQuery, limit: 30 });
+      await generateKeywordsFromUrlAction({ projectId: typedProjectId, limit: 30 });
     } catch (e) {
       console.error(e);
     } finally {
@@ -240,11 +192,11 @@ function StrategyContent() {
   };
 
   const handleAddKeywordsManually = async (keywords: string[]) => {
-    if (!projectIdForQuery) return;
+    if (!typedProjectId) return;
     setGenerating(true);
     try {
       await createKeywordsMutation({
-        projectId: projectIdForQuery,
+        projectId: typedProjectId,
         keywords: keywords.map((k) => ({ keyword: k })),
       });
     } catch (e) {
@@ -255,17 +207,16 @@ function StrategyContent() {
   };
 
   const handleAddKeyword = async (keyword: string) => {
-    if (!projectIdForQuery) return;
+    if (!typedProjectId) return;
     try {
-      await createKeywordsMutation({ projectId: projectIdForQuery, keywords: [{ keyword }] });
+      await createKeywordsMutation({ projectId: typedProjectId, keywords: [{ keyword }] });
     } catch (e) {
       console.error(e);
     }
   };
 
   // Loading states
-  if ((projectsLoading && !projectId) || (projectIdForQuery && strategyData === undefined))
-    return <StrategySkeleton />;
+  if (projectLoading || (typedProjectId && strategyData === undefined)) return <StrategySkeleton />;
   if (!projectId)
     return (
       <Container maxW="container.xl" py={12}>
@@ -404,8 +355,8 @@ function StrategyContent() {
           )}
 
           {/* Keywords Preview */}
-          {projectIdForQuery && keywordCount > 0 && (
-            <KeywordsPreview projectId={projectIdForQuery} maxPreview={15} />
+          {typedProjectId && keywordCount > 0 && (
+            <KeywordsPreview projectId={typedProjectId} maxPreview={15} />
           )}
 
           {/* Stats */}
@@ -417,17 +368,17 @@ function StrategyContent() {
           />
 
           {/* Insights */}
-          {projectIdForQuery && (
+          {typedProjectId && (
             <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
               <InsightList
-                projectId={projectIdForQuery}
+                projectId={typedProjectId}
                 type="cluster_suggestion"
                 title="Cluster Suggestions"
                 maxItems={4}
                 columns={1}
               />
               <InsightList
-                projectId={projectIdForQuery}
+                projectId={typedProjectId}
                 type="brief_suggestion"
                 title="Brief Ideas"
                 maxItems={4}

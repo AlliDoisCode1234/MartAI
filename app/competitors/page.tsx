@@ -10,7 +10,7 @@
  * Limit: 1 SERP per project (upsell for more).
  */
 
-import { useState, useEffect, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -33,7 +33,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { SerpAnalyzer } from '@/src/components/SerpAnalyzer';
-import { assertProjectId } from '@/lib/typeGuards';
+import { useProject } from '@/lib/hooks';
 
 // Extracted components
 import { CompetitorStatsCard, UpsellCard, CompetitorsSkeleton } from '@/src/components/competitors';
@@ -41,76 +41,24 @@ import { CompetitorStatsCard, UpsellCard, CompetitorsSkeleton } from '@/src/comp
 const MotionBox = motion(Box);
 
 function CompetitorsContent() {
-  const { isAuthenticated, loading: authLoading, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
-  const [projectId, setProjectId] = useState<string | null>(null);
-  const [projectsLoading, setProjectsLoading] = useState(true);
   const cardBg = useColorModeValue('white', 'gray.800');
 
-  const projects = useQuery(
-    api.projects.projects.getProjectsByUser,
-    user?._id ? { userId: user._id as unknown as Id<'users'> } : 'skip'
-  );
+  // Use enhanced useProject hook with autoSelect
+  const { projectId, isLoading: projectLoading } = useProject(null, { autoSelect: true });
 
-  const projectIdForQuery =
-    projectId !== null
-      ? (() => {
-          try {
-            assertProjectId(projectId);
-            return projectId as unknown as Id<'projects'>;
-          } catch {
-            return null;
-          }
-        })()
-      : null;
+  const typedProjectId = projectId as Id<'projects'> | null;
   const limitCheck = useQuery(
     api.seo.serpAnalysis.canAnalyze,
-    projectIdForQuery ? { projectId: projectIdForQuery } : 'skip'
+    typedProjectId ? { projectId: typedProjectId } : 'skip'
   );
   const existingAnalyses = useQuery(
     api.seo.serpAnalysis.getByProject,
-    projectIdForQuery ? { projectId: projectIdForQuery } : 'skip'
+    typedProjectId ? { projectId: typedProjectId } : 'skip'
   );
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (!isAuthenticated) router.replace('/auth/login');
-  }, [authLoading, isAuthenticated, router]);
-
-  useEffect(() => {
-    if (authLoading || !isAuthenticated) return;
-    if (projects === undefined) {
-      setProjectsLoading(true);
-      return;
-    }
-    setProjectsLoading(false);
-    if (!projects || projects.length === 0) {
-      setProjectId(null);
-      return;
-    }
-    const storedId =
-      typeof window !== 'undefined' ? window.localStorage.getItem('currentProjectId') : null;
-    let normalizedStored: string | null = null;
-    if (storedId) {
-      try {
-        assertProjectId(storedId);
-        normalizedStored = storedId;
-      } catch {
-        window.localStorage.removeItem('currentProjectId');
-      }
-    }
-    const matchedProject = normalizedStored
-      ? projects.find((proj: any) => (proj._id as unknown as string) === normalizedStored)
-      : null;
-    const nextProject = matchedProject ?? projects[0];
-    const nextId = (nextProject._id as unknown as string) ?? nextProject._id.toString();
-    if (nextId !== projectId) {
-      setProjectId(nextId);
-      if (typeof window !== 'undefined') window.localStorage.setItem('currentProjectId', nextId);
-    }
-  }, [projects, authLoading, isAuthenticated, projectId]);
-
-  if (projectsLoading && !projectId) return <CompetitorsSkeleton />;
+  if (projectLoading) return <CompetitorsSkeleton />;
   if (!projectId)
     return (
       <Container maxW="container.xl" py={12}>
@@ -193,13 +141,13 @@ function CompetitorsContent() {
             />
           </SimpleGrid>
 
-          {projectIdForQuery && (
+          {typedProjectId && (
             <MotionBox
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              <SerpAnalyzer projectId={projectIdForQuery} />
+              <SerpAnalyzer projectId={typedProjectId} />
             </MotionBox>
           )}
           {limitCheck && !limitCheck.canAnalyze && (

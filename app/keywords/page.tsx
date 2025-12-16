@@ -1,7 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+/**
+ * Keywords Page
+ *
+ * Component Hierarchy:
+ * App → KeywordsPage
+ *
+ * Keyword research and management with filtering and pagination.
+ */
 
+import { useState } from 'react';
 import { Link } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import {
@@ -22,49 +30,29 @@ import {
   Td,
   Alert,
   AlertIcon,
-  Spinner,
+  Skeleton,
 } from '@chakra-ui/react';
-import { useQuery, usePaginatedQuery, useConvexAuth } from 'convex/react';
+import { usePaginatedQuery, useConvexAuth } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
+import { useProject } from '@/lib/hooks';
 
 export default function KeywordsPage() {
-  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  const user = useQuery(api.users.current);
+  const { isLoading: authLoading } = useConvexAuth();
 
-  // Project Logic
-  const projects = useQuery(
-    api.projects.projects.getProjectsByUser,
-    user?._id ? { userId: user._id } : 'skip'
-  );
-  const projectList = (projects ?? []) as Array<{ _id: Id<'projects'>; name?: string }>;
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-
-  // Initialize selected project
-  useEffect(() => {
-    if (projectList.length > 0 && !selectedProjectId) {
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('currentProjectId');
-        const match = projectList.find((p) => p._id === stored);
-        setSelectedProjectId(match ? match._id : projectList[0]._id);
-      } else {
-        setSelectedProjectId(projectList[0]._id);
-      }
-    }
-  }, [projectList, selectedProjectId]);
+  // Use enhanced useProject hook with autoSelect
+  const { projectId, project, isLoading: projectLoading } = useProject(null, { autoSelect: true });
 
   // Paginated Query
   const { results, status, loadMore } = usePaginatedQuery(
     api.seo.keywords.getKeywords,
-    selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip',
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip',
     { initialNumItems: 50 }
   );
 
   const [filter, setFilter] = useState({ status: 'all', priority: 'all' });
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
-  // Simple Client-side Filtering (on loaded items)
-  // Ideally this happens server-side, but requires complex indexing
   const filteredKeywords = (results || []).filter((kw) => {
     if (filter.status !== 'all' && kw.status !== filter.status) return false;
     if (filter.priority !== 'all' && kw.priority !== filter.priority) return false;
@@ -98,21 +86,18 @@ export default function KeywordsPage() {
   };
 
   const handleCreatePage = async (platform: 'wordpress' | 'shopify') => {
-    // Logic for create page (kept as placeholder or needs update to fetch details from DB if needed)
-    // Since specific keyword details might be sufficient from the row, we can keep using 'filteredKeywords'
     alert('Automation integration requires updated backend logic.');
   };
 
-  if (authLoading || (user && !projects)) {
+  if (authLoading || projectLoading) {
     return (
-      <Box
-        minH="calc(100vh - 64px)"
-        bg="brand.light"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <Spinner size="xl" color="brand.orange" />
+      <Box minH="calc(100vh - 64px)" bg="brand.light" p={8}>
+        <Container maxW="container.xl">
+          <VStack spacing={4} align="stretch">
+            <Skeleton height="40px" width="300px" />
+            <Skeleton height="200px" />
+          </VStack>
+        </Container>
       </Box>
     );
   }
@@ -130,12 +115,8 @@ export default function KeywordsPage() {
               <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="gray.800">
                 Keyword Research
               </Heading>
-              <Text color="gray.500">
-                Project:{' '}
-                {projectList.find((p) => p._id === selectedProjectId)?.name || 'Loading...'}
-              </Text>
+              <Text color="gray.500">Project: {project?.name || 'Loading...'}</Text>
             </VStack>
-
             <HStack>
               <Button
                 bg="brand.orange"
@@ -213,13 +194,12 @@ export default function KeywordsPage() {
                             type="checkbox"
                             checked={selectedKeywords.includes(keyword._id)}
                             onChange={(e) => {
-                              if (e.target.checked) {
+                              if (e.target.checked)
                                 setSelectedKeywords([...selectedKeywords, keyword._id]);
-                              } else {
+                              else
                                 setSelectedKeywords(
                                   selectedKeywords.filter((id) => id !== keyword._id)
                                 );
-                              }
                             }}
                           />
                         </Td>

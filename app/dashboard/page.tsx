@@ -10,7 +10,7 @@
  * Uses extracted components for modularity.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, VStack, Grid } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
@@ -18,6 +18,7 @@ import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { FiTrendingUp, FiTarget, FiZap, FiActivity } from 'react-icons/fi';
+import { useProject } from '@/lib/hooks';
 
 // Dashboard components
 import {
@@ -43,30 +44,20 @@ export default function DashboardPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery(api.users.current);
-  const [projectsLoading, setProjectsLoading] = useState(true);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
-  // Queries
-  const projects = useQuery(
-    api.projects.projects.getProjectsByUser,
-    user?._id ? { userId: user._id } : 'skip'
-  );
-  const projectList = (projects ?? []) as Array<{ _id: Id<'projects'>; name?: string }>;
-  const strategy = useQuery(
-    api.seo.strategy.getStrategyByProject,
-    selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip'
-  );
+  // Use enhanced useProject hook with autoSelect
+  const {
+    projectId,
+    project,
+    ga4Connection,
+    mrScore,
+    strategyData,
+    isLoading: projectLoading,
+  } = useProject(null, { autoSelect: true });
+
   const latestAiReport = useQuery(
     api.ai.reports.getLatestAiReport,
-    selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip'
-  );
-  const ga4Connection = useQuery(
-    api.integrations.ga4Connections.getGA4Connection,
-    selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip'
-  );
-  const mrScore = useQuery(
-    api.analytics.martaiRatingQueries.getLatestScore,
-    selectedProjectId ? { projectId: selectedProjectId as Id<'projects'> } : 'skip'
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
 
   // Auth redirect
@@ -75,41 +66,10 @@ export default function DashboardPage() {
     if (!isAuthenticated) router.replace('/auth/login');
   }, [isAuthenticated, authLoading, router]);
 
-  // Project selection
-  useEffect(() => {
-    if (authLoading || !isAuthenticated || projects === undefined) {
-      setProjectsLoading(projects === undefined);
-      return;
-    }
-    setProjectsLoading(false);
-    if (!projectList?.length) {
-      setSelectedProjectId(null);
-      return;
-    }
-    const storedId =
-      typeof window !== 'undefined' ? localStorage.getItem('currentProjectId') : null;
-    const matched = storedId ? projectList.find((p) => (p._id as string) === storedId) : null;
-    const next = matched ?? projectList[0];
-    const nextId = next._id as string;
-    if (!selectedProjectId || nextId !== selectedProjectId) setSelectedProjectId(nextId);
-    if (typeof window !== 'undefined') localStorage.setItem('currentProjectId', nextId);
-  }, [projects, authLoading, isAuthenticated, selectedProjectId, projectList]);
+  const stats = strategyData?.stats ?? null;
+  const loadingDashboard = authLoading || projectLoading;
 
-  // Derived data
-  const project = useMemo(() => {
-    if (!projectList?.length) return null;
-    if (!selectedProjectId) return projectList[0];
-    return projectList.find((p) => (p._id as string) === selectedProjectId) ?? projectList[0];
-  }, [projectList, selectedProjectId]);
-
-  const stats = strategy?.stats ?? null;
-  const loadingDashboard =
-    authLoading || projectsLoading || (selectedProjectId !== null && strategy === undefined);
-
-  // Loading skeleton
   if (loadingDashboard) return <DashboardSkeleton />;
-
-  // Empty state
   if (!project) return <WelcomeEmptyState />;
 
   const containerVariants = {
@@ -120,16 +80,9 @@ export default function DashboardPage() {
   return (
     <Container maxW="container.xl" py={8}>
       <VStack spacing={8} align="stretch">
-        {/* Hero */}
         <DashboardHero userName={user?.name} projectName={project.name || 'Your Project'} />
+        <IntegrationPromptBanner isConnected={!!ga4Connection} projectId={projectId || undefined} />
 
-        {/* Integration Banner */}
-        <IntegrationPromptBanner
-          isConnected={!!ga4Connection}
-          projectId={selectedProjectId || undefined}
-        />
-
-        {/* MartAI Rating + Stats Grid */}
         <Grid templateColumns={{ base: '1fr', lg: '300px 1fr' }} gap={6}>
           <MartAIRatingWidget
             score={
@@ -193,37 +146,34 @@ export default function DashboardPage() {
           </MotionGrid>
         </Grid>
 
-        {/* Charts */}
         <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
           <TrafficChart data={MOCK_TRAFFIC_DATA} />
           <KeywordGrowthChart data={MOCK_TRAFFIC_DATA} />
         </Grid>
 
-        {/* Top Keywords */}
         <TopKeywordsCard keywords={MOCK_KEYWORD_PERFORMANCE} />
 
-        {/* Insights */}
-        {selectedProjectId && (
+        {projectId && (
           <Grid
             templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }}
             gap={6}
           >
             <InsightList
-              projectId={selectedProjectId as Id<'projects'>}
+              projectId={projectId as Id<'projects'>}
               type="quick_win"
               title="Quick Wins"
               maxItems={3}
               columns={1}
             />
             <InsightList
-              projectId={selectedProjectId as Id<'projects'>}
+              projectId={projectId as Id<'projects'>}
               type="content_gap"
               title="Content Gaps"
               maxItems={3}
               columns={1}
             />
             <InsightList
-              projectId={selectedProjectId as Id<'projects'>}
+              projectId={projectId as Id<'projects'>}
               type="semantic_opportunity"
               title="Opportunities"
               maxItems={3}
@@ -232,7 +182,6 @@ export default function DashboardPage() {
           </Grid>
         )}
 
-        {/* Intelligence */}
         <IntelligenceCard report={latestAiReport ?? null} />
       </VStack>
     </Container>
