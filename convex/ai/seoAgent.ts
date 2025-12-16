@@ -3,10 +3,11 @@
  *
  * Uses @convex-dev/agent for conversational AI with memory.
  * Mart is the SEO expert persona with tools for keyword/content generation.
- *
- * NOTE: Run `npx convex dev --once` to generate types after adding agent component.
- * Then update this file to use the generated components.agent type.
  */
+
+import { Agent } from '@convex-dev/agent';
+import { components } from '../_generated/api';
+import { openai } from '@ai-sdk/openai';
 
 // Mart's system instructions (from MART_PERSONA.md)
 export const MART_INSTRUCTIONS = `You are Mart, a Senior SEO Analyst with 15+ years of experience.
@@ -36,23 +37,16 @@ When responding:
 - Format responses for clarity (use lists, headers)
 `;
 
-// Agent configuration (used after Convex types are generated)
+// Agent configuration
 export const SEO_AGENT_CONFIG = {
-  model: 'gpt-4o-mini',
-  embeddingModel: 'text-embedding-3-small',
+  model: 'gpt-4o-mini' as const,
+  embeddingModel: 'text-embedding-3-small' as const,
   instructions: MART_INSTRUCTIONS,
 };
 
-/**
- * After running `npx convex dev --once`, uncomment and use:
- *
- * import { Agent } from '@convex-dev/agent';
- * import { components } from '../_generated/api';
- * import { openai } from '@ai-sdk/openai';
- *
- * export const seoAgent = new Agent(components.agent, {
- *   chat: openai.chat(SEO_AGENT_CONFIG.model),
- *   textEmbedding: openai.embedding(SEO_AGENT_CONFIG.embeddingModel),
- *   instructions: SEO_AGENT_CONFIG.instructions,
- * });
- */
+// Initialize the SEO Agent with Convex components
+export const seoAgent = new Agent(components.agent, {
+  name: 'martSeoAgent',
+  languageModel: openai.chat(SEO_AGENT_CONFIG.model),
+  instructions: SEO_AGENT_CONFIG.instructions,
+});

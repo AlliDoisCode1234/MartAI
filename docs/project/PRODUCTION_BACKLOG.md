@@ -14,7 +14,7 @@
 | AUTH-002        | Fix Onboarding Keyword/MR           | 3   | 1      | ✅ Done |
 | ADMIN-001       | Fix View User Button                | 1   | 1      | ✅ Done |
 | **RESEND-001**  | **Set Resend API Key**              | 1   | 1      | ✅ Done |
-| **AGENT-001**   | **Generate Convex Types for Agent** | 1   | 1      | 🔲 Todo |
+| **AGENT-001**   | **Generate Convex Types for Agent** | 1   | 1      | ✅ Done |
 | **RESEND-002**  | **Add Magic Link UI**               | 2   | 1      | ✅ Done |
 | BILL-001        | Polar Billing Integration           | 8   | 2      | 🔲 Todo |
 | BILL-002        | Subscription Limit Enforcement      | 5   | 2      | 🔲 Todo |
