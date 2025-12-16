@@ -151,29 +151,20 @@ export default function OnboardingPage() {
             console.error
           );
           await updateOnboardingStep({ step: 'projectCreated', value: true }).catch(console.error);
-          // Generate keywords (non-blocking)
+          // Generate keywords (non-blocking, silent - user sees results on reveal page)
           try {
-            toast({ title: 'Generating keywords...', status: 'info', duration: 2000 });
-            const kwResult = await generateKeywordsFromUrl({
+            await generateKeywordsFromUrl({
               projectId: newProjectId as any,
               limit: 30,
             });
-            if (kwResult.count > 0)
-              toast({
-                title: `Generated ${kwResult.count} keywords!`,
-                status: 'success',
-                duration: 3000,
-              });
-            if (kwResult.count >= 10)
-              await generateClusters({ projectId: newProjectId as any }).catch(console.warn);
+            // Generate clusters if enough keywords
+            await generateClusters({ projectId: newProjectId as any }).catch(console.warn);
           } catch (kwError: any) {
             console.warn('Keyword generation failed:', kwError);
           }
-          // Generate MR score (non-blocking)
+          // Generate MR score (non-blocking, silent)
           try {
-            const mrResult = await generatePreliminaryScore({ projectId: newProjectId as any });
-            if (mrResult?.overall)
-              toast({ title: `MR Score: ${mrResult.overall}`, status: 'success', duration: 3000 });
+            await generatePreliminaryScore({ projectId: newProjectId as any });
           } catch (mrError) {
             console.warn('MR generation failed:', mrError);
           }

@@ -11,7 +11,7 @@
 | ID             | Title                               | Pts | Sprint | Status         |
 | -------------- | ----------------------------------- | --- | ------ | -------------- |
 | ENV-001        | Environment Variable Setup          | 2   | 1      | ✅ Done        |
-| AUTH-002       | Fix Onboarding Keyword/MR           | 3   | 1      | 🔄 In Progress |
+| AUTH-002       | Fix Onboarding Keyword/MR           | 3   | 1      | ✅ Done        |
 | ADMIN-001      | Fix View User Button                | 1   | 1      | ✅ Done        |
 | **RESEND-001** | **Set Resend API Key**              | 1   | 1      | 🔲 Todo        |
 | **AGENT-001**  | **Generate Convex Types for Agent** | 1   | 1      | 🔲 Todo        |
@@ -25,7 +25,8 @@
 | ADMIN-003      | User Engagement Milestones          | 3   | 3      | ✅ Done        |
 | SEC-002        | Security Audit Checklist            | 5   | 4      | 🔲 Todo        |
 | QUAL-001       | Critical Path E2E Testing           | 8   | 4      | 🔲 Todo        |
-| **PROJ-001**   | **Project Type + SERP Gating**      | 5   | 2      | 🔲 Todo        |
+| **PROJ-001**   | **Project Type + SERP Gating**      | 5   | 2      | ✅ Done        |
+| **CODE-002**   | **useProject Hook Migration**       | 3   | 1      | ✅ Done        |
 
 ---
 
