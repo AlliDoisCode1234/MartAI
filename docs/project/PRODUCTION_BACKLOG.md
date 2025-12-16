@@ -8,25 +8,27 @@
 
 ## Ticket Summary
 
-| ID             | Title                               | Pts | Sprint | Status         |
-| -------------- | ----------------------------------- | --- | ------ | -------------- |
-| ENV-001        | Environment Variable Setup          | 2   | 1      | ✅ Done        |
-| AUTH-002       | Fix Onboarding Keyword/MR           | 3   | 1      | ✅ Done        |
-| ADMIN-001      | Fix View User Button                | 1   | 1      | ✅ Done        |
-| **RESEND-001** | **Set Resend API Key**              | 1   | 1      | 🔲 Todo        |
-| **AGENT-001**  | **Generate Convex Types for Agent** | 1   | 1      | 🔲 Todo        |
-| **RESEND-002** | **Add Magic Link UI**               | 2   | 1      | 🔲 Todo        |
-| BILL-001       | Polar Billing Integration           | 8   | 2      | 🔲 Todo        |
-| BILL-002       | Subscription Limit Enforcement      | 5   | 2      | 🔲 Todo        |
-| ADMIN-002      | Enhance User Detail Page            | 5   | 2      | ✅ Done        |
-| WP-001         | WordPress E2E Testing               | 5   | 3      | 🔲 Todo        |
-| WP-002         | WordPress Settings UI               | 3   | 3      | 🔲 Todo        |
-| SEC-001        | Rotate All Secrets                  | 2   | 3      | 🔲 Todo        |
-| ADMIN-003      | User Engagement Milestones          | 3   | 3      | ✅ Done        |
-| SEC-002        | Security Audit Checklist            | 5   | 4      | 🔲 Todo        |
-| QUAL-001       | Critical Path E2E Testing           | 8   | 4      | 🔲 Todo        |
-| **PROJ-001**   | **Project Type + SERP Gating**      | 5   | 2      | ✅ Done        |
-| **CODE-002**   | **useProject Hook Migration**       | 3   | 1      | ✅ Done        |
+| ID              | Title                               | Pts | Sprint | Status  |
+| --------------- | ----------------------------------- | --- | ------ | ------- |
+| ENV-001         | Environment Variable Setup          | 2   | 1      | ✅ Done |
+| AUTH-002        | Fix Onboarding Keyword/MR           | 3   | 1      | ✅ Done |
+| ADMIN-001       | Fix View User Button                | 1   | 1      | ✅ Done |
+| **RESEND-001**  | **Set Resend API Key**              | 1   | 1      | 🔲 Todo |
+| **AGENT-001**   | **Generate Convex Types for Agent** | 1   | 1      | 🔲 Todo |
+| **RESEND-002**  | **Add Magic Link UI**               | 2   | 1      | 🔲 Todo |
+| BILL-001        | Polar Billing Integration           | 8   | 2      | 🔲 Todo |
+| BILL-002        | Subscription Limit Enforcement      | 5   | 2      | 🔲 Todo |
+| ADMIN-002       | Enhance User Detail Page            | 5   | 2      | ✅ Done |
+| WP-001          | WordPress E2E Testing               | 5   | 3      | 🔲 Todo |
+| WP-002          | WordPress Settings UI               | 3   | 3      | 🔲 Todo |
+| SEC-001         | Rotate All Secrets                  | 2   | 3      | 🔲 Todo |
+| ADMIN-003       | User Engagement Milestones          | 3   | 3      | ✅ Done |
+| SEC-002         | Security Audit Checklist            | 5   | 4      | 🔲 Todo |
+| QUAL-001        | Critical Path E2E Testing           | 8   | 4      | 🔲 Todo |
+| **PROJ-001**    | **Project Type + SERP Gating**      | 5   | 2      | ✅ Done |
+| **CODE-002**    | **useProject Hook Migration**       | 3   | 1      | ✅ Done |
+| **PROFILE-001** | **User Profile Page**               | 2   | 1      | ✅ Done |
+| NOTIFY-001      | Notification System                 | 5   | 4      | 🔲 Todo |
 
 ---
 

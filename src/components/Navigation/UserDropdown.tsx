@@ -50,7 +50,7 @@ export const UserDropdown: FC = () => {
         </HStack>
       </MenuButton>
       <MenuList>
-        <MenuItem as={Link} href="/dashboard/profile" icon={<Icon as={FiUser} />}>
+        <MenuItem as={Link} href="/profile" icon={<Icon as={FiUser} />}>
           Profile
         </MenuItem>
         <MenuItem as={Link} href="/settings" icon={<Icon as={FiSettings} />}>
