@@ -31,6 +31,7 @@ import {
   IntelligenceCard,
   DashboardSkeleton,
   TopKeywordsCard,
+  QuickWinsCard,
 } from '@/src/components/dashboard';
 import { IntegrationPromptBanner } from '@/src/components/analytics/IntegrationPromptBanner';
 import { InsightList } from '@/src/components/insights';
@@ -151,7 +152,10 @@ export default function DashboardPage() {
           <KeywordGrowthChart data={MOCK_TRAFFIC_DATA} />
         </Grid>
 
-        <TopKeywordsCard keywords={MOCK_KEYWORD_PERFORMANCE} />
+        <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={6}>
+          <TopKeywordsCard keywords={MOCK_KEYWORD_PERFORMANCE} />
+          {projectId && <QuickWinsCard projectId={projectId as Id<'projects'>} />}
+        </Grid>
 
         {projectId && (
           <Grid

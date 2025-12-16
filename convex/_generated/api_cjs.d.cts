@@ -44,6 +44,7 @@ import type * as content_draftActions from "../content/draftActions.js";
 import type * as content_drafts from "../content/drafts.js";
 import type * as content_quarterlyPlanActions from "../content/quarterlyPlanActions.js";
 import type * as content_quarterlyPlans from "../content/quarterlyPlans.js";
+import type * as content_quickWins from "../content/quickWins.js";
 import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as http_checkScheduledPosts from "../http/checkScheduledPosts.js";
@@ -152,6 +153,7 @@ declare const fullApi: ApiFromModules<{
   "content/drafts": typeof content_drafts;
   "content/quarterlyPlanActions": typeof content_quarterlyPlanActions;
   "content/quarterlyPlans": typeof content_quarterlyPlans;
+  "content/quickWins": typeof content_quickWins;
   crons: typeof crons;
   http: typeof http;
   "http/checkScheduledPosts": typeof http_checkScheduledPosts;

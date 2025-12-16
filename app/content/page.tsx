@@ -50,6 +50,7 @@ import {
   MetaTagsCard,
   DraftScoresCard,
   ContentSkeleton,
+  ContentStudioLanding,
 } from '@/src/components/content';
 
 function ContentContent() {
@@ -265,16 +266,7 @@ function ContentContent() {
       </Box>
     );
   if (!briefId)
-    return (
-      <Box minH="calc(100vh - 64px)" bg="brand.light">
-        <Container maxW="container.xl" py={12}>
-          <Alert status="info">
-            <AlertIcon />
-            Select a brief from your quarterly plan to edit
-          </Alert>
-        </Container>
-      </Box>
-    );
+    return <ContentStudioLanding />;
   if (loading) return <ContentSkeleton />;
 
   return (

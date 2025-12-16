@@ -11,3 +11,5 @@ export { FAQsCard } from './FAQsCard';
 export { MetaTagsCard } from './MetaTagsCard';
 export { DraftScoresCard } from './DraftScoresCard';
 export { ContentSkeleton } from './ContentSkeleton';
+export { TemplateCard } from './TemplateCard';
+export { ContentStudioLanding } from './ContentStudioLanding';

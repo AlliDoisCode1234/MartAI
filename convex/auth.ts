@@ -3,19 +3,19 @@ import Google from '@auth/core/providers/google';
 import Resend from '@auth/core/providers/resend';
 import { Password } from '@convex-dev/auth/providers/Password';
 
+// TODO: Change to 'MartAI <noreply@martai.io>' after verifying domain at https://resend.com/domains
+const RESEND_FROM = 'MartAI <onboarding@resend.dev>';
+
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
     Google,
-    Password({
-      // Enable email verification via Resend
-      verify: Resend({
-        from: 'MartAI <noreply@martai.io>',
-      }),
-    }),
+    // TODO: Re-enable email verification for production after domain is verified
+    // Password({ verify: Resend({ from: RESEND_FROM }) }),
+    Password, // No email verification for dev
     // Standalone Resend for magic link login
     Resend({
       id: 'resend',
-      from: 'MartAI <noreply@martai.io>',
+      from: RESEND_FROM,
     }),
   ],
 });
