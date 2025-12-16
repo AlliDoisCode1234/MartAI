@@ -38,14 +38,8 @@ import { useProject } from '@/lib/hooks';
 
 // Strategy components
 import {
-  StrategyStepper,
-  NextStepCard,
-  StrategyModeToggle,
-  SkipWizardLink,
   KeywordSourceModal,
   KeywordsPreview,
-  StrategyDashboard,
-  getSavedStrategyMode,
   StrategyStatCards,
   PlanSummaryCard,
   ContentCalendarCard,
@@ -53,7 +47,8 @@ import {
   GeneratePlanModal,
   GenerateClustersModal,
   StrategySkeleton,
-  type StrategyMode,
+  PrimaryCTA,
+  ProgressBadge,
 } from '@/src/components/strategy';
 
 // Constants
@@ -67,16 +62,10 @@ function StrategyContent() {
 
   // State
   const [generating, setGenerating] = useState(false);
-  const [strategyMode, setStrategyMode] = useState<StrategyMode>('guided');
   const [isClusterModalOpen, setIsClusterModalOpen] = useState(false);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isKeywordModalOpen, setIsKeywordModalOpen] = useState(false);
   const hasAttemptedAutoDiscovery = useRef(false);
-
-  // Load saved mode preference
-  useEffect(() => {
-    setStrategyMode(getSavedStrategyMode());
-  }, []);
 
   // Use enhanced useProject hook with autoSelect
   const {
@@ -258,101 +247,24 @@ function StrategyContent() {
                 </Heading>
                 <Text color="gray.600">AI-powered content planning and keyword insights</Text>
               </VStack>
-              <StrategyModeToggle mode={strategyMode} onModeChange={setStrategyMode} />
+              <ProgressBadge currentStage={currentStage} />
             </HStack>
           </MotionBox>
 
-          {/* DIY Mode Dashboard */}
-          {strategyMode === 'diy' && (
-            <StrategyDashboard
-              projectId={projectId}
-              keywordCount={keywordCount}
-              clusterCount={clusterCount}
-              planExists={!!plan}
-              briefCount={briefCount}
-              draftCount={draftCount}
-              onImportKeywords={() => setIsKeywordModalOpen(true)}
-              onAddKeyword={handleAddKeyword}
-              existingKeywords={existingKeywords}
-              onGenerateClusters={handleGenerateClusters}
-              onGeneratePlan={() => setIsPlanModalOpen(true)}
-              onStartWizard={() => setStrategyMode('guided')}
-              clusters={clusters.map((c: any) => ({
-                _id: c._id,
-                clusterName: c.clusterName,
-                keywords: c.keywords || [],
-                intent: c.intent || 'informational',
-                status: c.status || 'active',
-              }))}
-              briefs={(plan?.briefs || []).map((b: any) => ({
-                _id: b._id,
-                title: b.title,
-                status: b.status,
-                scheduledDate: b.scheduledDate,
-              }))}
-              isGenerating={generating}
-            />
-          )}
-
-          {/* Guided Mode Stepper */}
-          {strategyMode === 'guided' && (
-            <>
-              <StrategyStepper currentStage={currentStage} />
-              <NextStepCard
-                stage={currentStage}
-                keywordCount={keywordCount}
-                clusterCount={clusterCount}
-                briefCount={briefCount}
-                draftCount={draftCount}
-                isLoading={generating}
-                onAction={() => {
-                  if (currentStage === 1) setIsKeywordModalOpen(true);
-                  else if (currentStage === 2) setIsClusterModalOpen(true);
-                  else if (currentStage === 3) setIsPlanModalOpen(true);
-                  else if (currentStage === 4 && plan?.briefs?.[0]?._id)
-                    window.location.href = `/content?briefId=${plan.briefs[0]._id}`;
-                }}
-              />
-              <SkipWizardLink onClick={() => setStrategyMode('diy')} />
-            </>
-          )}
-
-          {/* Quick Actions */}
-          {(strategyMode === 'diy' || currentStage >= 2) && (
-            <HStack spacing={3} justify={strategyMode === 'diy' ? 'flex-start' : 'flex-end'}>
-              <Tooltip
-                label={keywordCount < 10 ? 'Add at least 10 keywords first' : ''}
-                isDisabled={keywordCount >= 10}
-                hasArrow
-              >
-                <Button
-                  onClick={() => setIsClusterModalOpen(true)}
-                  variant={strategyMode === 'diy' ? 'solid' : 'outline'}
-                  bg={strategyMode === 'diy' ? 'brand.orange' : undefined}
-                  color={strategyMode === 'diy' ? 'white' : undefined}
-                  leftIcon={<Icon as={FiLayers} />}
-                  isDisabled={keywordCount < 10}
-                >
-                  Generate Topic Clusters
-                </Button>
-              </Tooltip>
-              <Tooltip
-                label={clusterCount === 0 ? 'Generate topic clusters first' : ''}
-                isDisabled={clusterCount > 0}
-                hasArrow
-              >
-                <Button
-                  bg="brand.orange"
-                  color="white"
-                  onClick={() => setIsPlanModalOpen(true)}
-                  isDisabled={clusters.length === 0}
-                  leftIcon={<Icon as={FiCalendar} />}
-                >
-                  Generate Quarterly Plan
-                </Button>
-              </Tooltip>
-            </HStack>
-          )}
+          {/* Primary Action Card */}
+          <PrimaryCTA
+            stage={currentStage as 1 | 2 | 3 | 4}
+            keywordCount={keywordCount}
+            clusterCount={clusterCount}
+            briefCount={briefCount}
+            isLoading={generating}
+            onAction={() => {
+              if (currentStage === 1) setIsKeywordModalOpen(true);
+              else if (currentStage === 2) setIsClusterModalOpen(true);
+              else if (currentStage === 3) setIsPlanModalOpen(true);
+              else if (currentStage === 4) router.push('/content');
+            }}
+          />
 
           {/* Keywords Preview */}
           {typedProjectId && keywordCount > 0 && (

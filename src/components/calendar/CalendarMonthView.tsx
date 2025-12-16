@@ -13,7 +13,7 @@
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Grid, GridItem, Text, VStack, HStack, IconButton, Heading } from '@chakra-ui/react';
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiPlus } from 'react-icons/fi';
 import { CalendarItemCard } from './CalendarItemCard';
 
 type CalendarItem = {
@@ -138,7 +138,26 @@ export function CalendarMonthView({ items, currentDate, onPrevMonth, onNextMonth
               borderRadius="md"
               border="1px solid"
               borderColor={isToday ? 'orange.300' : 'gray.200'}
+              position="relative"
+              role="group"
             >
+              {/* Hover add button */}
+              <IconButton
+                aria-label="Add content"
+                icon={<FiPlus />}
+                size="xs"
+                colorScheme="orange"
+                variant="solid"
+                position="absolute"
+                top={1}
+                right={1}
+                opacity={0}
+                _groupHover={{ opacity: 1 }}
+                transition="opacity 0.2s"
+                onClick={() => router.push(`/content?date=${date.getTime()}`)}
+                zIndex={1}
+              />
+
               <Text
                 fontSize="sm"
                 fontWeight={isToday ? 'bold' : 'normal'}

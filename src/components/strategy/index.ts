@@ -27,3 +27,7 @@ export { ClusterGrid } from './ClusterGrid';
 export { GeneratePlanModal } from './GeneratePlanModal';
 export { GenerateClustersModal } from './GenerateClustersModal';
 export { StrategySkeleton } from './StrategySkeleton';
+
+// New simplified UX components
+export { PrimaryCTA } from './PrimaryCTA';
+export { ProgressBadge } from './ProgressBadge';

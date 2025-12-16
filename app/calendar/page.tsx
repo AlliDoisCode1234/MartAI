@@ -6,9 +6,10 @@
  * Component Hierarchy:
  * App → CalendarPage (this file)
  *   ├── CalendarMonthView
+ *   ├── CalendarWeekView
  *   └── CalendarListView
  *
- * 12-week content calendar with month/list view toggle.
+ * 12-week content calendar with month/week/list view toggle.
  */
 
 import { useState, useMemo } from 'react';
@@ -24,20 +25,21 @@ import {
   Alert,
   AlertIcon,
 } from '@chakra-ui/react';
-import { FiGrid, FiList, FiCalendar } from 'react-icons/fi';
+import { FiGrid, FiList, FiCalendar, FiColumns } from 'react-icons/fi';
+import { addWeeks, subWeeks } from 'date-fns';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/lib/useAuth';
 import { useProject } from '@/lib/hooks';
-import { CalendarMonthView, CalendarListView } from '@/src/components/calendar';
+import { CalendarMonthView, CalendarWeekView, CalendarListView } from '@/src/components/calendar';
 import { CardSkeleton } from '@/components/skeletons';
 
-type ViewMode = 'month' | 'list';
+type ViewMode = 'month' | 'week' | 'list';
 
 export default function CalendarPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { projectId, isLoading: projectLoading } = useProject(null, { autoSelect: true });
-  const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Calculate date range for current view (3 months window)
@@ -66,6 +68,14 @@ export default function CalendarPage() {
 
   const handleToday = () => {
     setCurrentDate(new Date());
+  };
+
+  const handlePrevWeek = () => {
+    setCurrentDate(subWeeks(currentDate, 1));
+  };
+
+  const handleNextWeek = () => {
+    setCurrentDate(addWeeks(currentDate, 1));
   };
 
   // Loading state
@@ -148,6 +158,13 @@ export default function CalendarPage() {
                   Month
                 </Button>
                 <Button
+                  leftIcon={<FiColumns />}
+                  isActive={viewMode === 'week'}
+                  onClick={() => setViewMode('week')}
+                >
+                  Week
+                </Button>
+                <Button
                   leftIcon={<FiList />}
                   isActive={viewMode === 'list'}
                   onClick={() => setViewMode('list')}
@@ -160,16 +177,24 @@ export default function CalendarPage() {
 
           {/* Calendar View */}
           <Box bg="white" p={6} borderRadius="lg" shadow="sm">
-            {viewMode === 'month' ? (
+            {viewMode === 'month' && (
               <CalendarMonthView
                 items={items}
                 currentDate={currentDate}
                 onPrevMonth={handlePrevMonth}
                 onNextMonth={handleNextMonth}
               />
-            ) : (
-              <CalendarListView items={items} />
             )}
+            {viewMode === 'week' && (
+              <CalendarWeekView
+                items={items}
+                currentDate={currentDate}
+                onPrevWeek={handlePrevWeek}
+                onNextWeek={handleNextWeek}
+                onGoToToday={handleToday}
+              />
+            )}
+            {viewMode === 'list' && <CalendarListView items={items} />}
           </Box>
         </VStack>
       </Container>
