@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Box,
@@ -19,43 +19,30 @@ import {
   Textarea,
   VStack,
   useToast,
-} from "@chakra-ui/react";
-import { AddIcon, CloseIcon } from "@chakra-ui/icons";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  useFieldArray,
-  useForm,
-  useWatch,
-} from "react-hook-form";
+} from '@chakra-ui/react';
+import { AddIcon, CloseIcon } from '@chakra-ui/icons';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import {
   ProspectDetailsValues,
   UrlEntryValues,
   prospectDetailsSchema,
-} from "@/lib/validation/prospectSchemas";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
-import { assertProspectId } from "@/lib/typeGuards";
-
-const supportOptions = [
-  "Website Creation/Rebuild",
-  "Social Media Strategy/Content",
-  "SEO or Website Traffic",
-  "Branding and Design",
-  "Email Marketing",
-  "Marketing Consultation",
-  "Paid Advertising",
-  "Other",
-];
+} from '@/lib/validation/prospectSchemas';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
+import { assertProspectId } from '@/lib/typeGuards';
+import { SUPPORT_OPTIONS, AUTOSAVE_DELAY } from '@/lib/constants/apply';
+import { ApplyHeader, ApplyFormCard, ApplySkeleton } from '@/src/components/apply';
 
 const defaultUrl: UrlEntryValues = {
-  label: "Website",
-  value: "",
+  label: 'Website',
+  value: '',
 };
 
-const autosaveDelay = 900;
+const autosaveDelay = AUTOSAVE_DELAY;
 
 export default function ProspectDetailsPage() {
   const router = useRouter();
@@ -69,49 +56,47 @@ export default function ProspectDetailsPage() {
 
   const form = useForm<ProspectDetailsValues>({
     resolver: zodResolver(prospectDetailsSchema),
-    mode: "onBlur",
+    mode: 'onBlur',
     defaultValues: {
-      businessName: "",
-      topPriority: "",
-      marketingTried: "",
-      goals: "",
+      businessName: '',
+      topPriority: '',
+      marketingTried: '',
+      goals: '',
       supportNeeds: [],
-      idealOutcome: "",
-      additionalNotes: "",
-      hearAbout: "",
-      sendSms: "",
+      idealOutcome: '',
+      additionalNotes: '',
+      hearAbout: '',
+      sendSms: '',
       urls: [defaultUrl],
     },
   });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "urls",
+    name: 'urls',
   });
 
   const watchValues = useWatch({ control: form.control }) as ProspectDetailsValues;
 
   const saveProspectDetails = useMutation(api.prospects.prospects.saveProspectDetails);
-  const completeProspectIntake = useMutation(
-    api.prospects.prospects.completeProspectIntake,
-  );
+  const completeProspectIntake = useMutation(api.prospects.prospects.completeProspectIntake);
   const prospectRecord = useQuery(
     api.prospects.prospects.getProspect,
-    prospectId ? { prospectId: prospectId as Id<"prospects"> } : "skip",
+    prospectId ? { prospectId: prospectId as Id<'prospects'> } : 'skip'
   );
 
   useEffect(() => {
-    const queryId = params.get("prospectId");
-    const stored = sessionStorage.getItem("prospectId");
+    const queryId = params.get('prospectId');
+    const stored = sessionStorage.getItem('prospectId');
     const id = queryId || stored;
 
     if (!id) {
       toast({
-        title: "Complete step one first",
-        description: "We need your basic info before the deep dive.",
-        status: "warning",
+        title: 'Complete step one first',
+        description: 'We need your basic info before the deep dive.',
+        status: 'warning',
       });
-      router.push("/apply");
+      router.push('/apply');
       return;
     }
 
@@ -119,16 +104,16 @@ export default function ProspectDetailsPage() {
       const typed = assertProspectId(id);
       const idString = typed as unknown as string;
       setProspectId(idString);
-      sessionStorage.setItem("prospectId", idString);
+      sessionStorage.setItem('prospectId', idString);
       setWaitingForPrefill(true);
     } catch {
-      sessionStorage.removeItem("prospectId");
+      sessionStorage.removeItem('prospectId');
       toast({
-        title: "Invalid prospect link",
-        description: "Please restart your application.",
-        status: "error",
+        title: 'Invalid prospect link',
+        description: 'Please restart your application.',
+        status: 'error',
       });
-      router.push("/apply");
+      router.push('/apply');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -139,28 +124,28 @@ export default function ProspectDetailsPage() {
 
     if (!prospectRecord) {
       toast({
-        title: "Prospect not found",
-        description: "Start over so we can capture your details.",
-        status: "error",
+        title: 'Prospect not found',
+        description: 'Start over so we can capture your details.',
+        status: 'error',
       });
       setWaitingForPrefill(false);
       setInitializing(false);
-      router.push("/apply");
+      router.push('/apply');
       return;
     }
 
     const detail = prospectRecord.detail;
     const urls = prospectRecord.urls || [];
     form.reset({
-      businessName: detail?.businessName || prospectRecord.prospect?.companyName || "",
-      topPriority: detail?.topPriority || "",
-      marketingTried: detail?.marketingTried || "",
-      goals: detail?.goals || "",
+      businessName: detail?.businessName || prospectRecord.prospect?.companyName || '',
+      topPriority: detail?.topPriority || '',
+      marketingTried: detail?.marketingTried || '',
+      goals: detail?.goals || '',
       supportNeeds: detail?.supportNeeds || [],
-      idealOutcome: detail?.idealOutcome || "",
-      additionalNotes: detail?.additionalNotes || "",
-      hearAbout: detail?.hearAbout || "",
-      sendSms: detail?.sendSms || "",
+      idealOutcome: detail?.idealOutcome || '',
+      additionalNotes: detail?.additionalNotes || '',
+      hearAbout: detail?.hearAbout || '',
+      sendSms: detail?.sendSms || '',
       urls:
         urls.length > 0
           ? urls.map((entry: any) => ({ label: entry.label, value: entry.url }))
@@ -175,22 +160,22 @@ export default function ProspectDetailsPage() {
     async (values: ProspectDetailsValues) => {
       if (!prospectId) return;
       await saveProspectDetails({
-        prospectId: prospectId as Id<"prospects">,
+        prospectId: prospectId as Id<'prospects'>,
         ...values,
       });
     },
-    [prospectId, saveProspectDetails],
+    [prospectId, saveProspectDetails]
   );
 
   const submitDetails = useCallback(
     async (values: ProspectDetailsValues) => {
       if (!prospectId) return;
       return completeProspectIntake({
-        prospectId: prospectId as Id<"prospects">,
+        prospectId: prospectId as Id<'prospects'>,
         ...values,
       });
     },
-    [prospectId, completeProspectIntake],
+    [prospectId, completeProspectIntake]
   );
 
   useEffect(() => {
@@ -205,7 +190,7 @@ export default function ProspectDetailsPage() {
       try {
         await saveDetailsDraft(watchValues as ProspectDetailsValues);
       } catch (error) {
-        console.warn("Autosave (details) failed", error);
+        console.warn('Autosave (details) failed', error);
       }
     }, autosaveDelay);
 
@@ -218,16 +203,16 @@ export default function ProspectDetailsPage() {
     try {
       await submitDetails(values);
       toast({
-        title: "Discovery received",
-        description: "Watch your inbox—we’re crafting a custom brief.",
-        status: "success",
+        title: 'Discovery received',
+        description: 'Watch your inbox—we’re crafting a custom brief.',
+        status: 'success',
       });
-      router.push("/thank-you");
+      router.push('/thank-you');
     } catch (error: any) {
       toast({
-        title: "Unable to submit",
-        description: error?.message || "Please try again.",
-        status: "error",
+        title: 'Unable to submit',
+        description: error?.message || 'Please try again.',
+        status: 'error',
       });
     } finally {
       setLoading(false);
@@ -237,13 +222,13 @@ export default function ProspectDetailsPage() {
   const addUrlRow = () => {
     if (fields.length >= 10) {
       toast({
-        title: "Link limit reached",
-        description: "You can add up to 10 links per application.",
-        status: "info",
+        title: 'Link limit reached',
+        description: 'You can add up to 10 links per application.',
+        status: 'info',
       });
       return;
     }
-    append({ label: "", value: "" });
+    append({ label: '', value: '' });
   };
 
   if (initializing) {
@@ -271,63 +256,51 @@ export default function ProspectDetailsPage() {
             <VStack spacing={8} align="stretch">
               <FormControl isInvalid={!!form.formState.errors.businessName}>
                 <FormLabel>Business or brand name *</FormLabel>
-                <Input placeholder="The Makeshift Chef" {...form.register("businessName")} />
-                <FormErrorMessage>
-                  {form.formState.errors.businessName?.message}
-                </FormErrorMessage>
+                <Input placeholder="The Makeshift Chef" {...form.register('businessName')} />
+                <FormErrorMessage>{form.formState.errors.businessName?.message}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={!!form.formState.errors.topPriority}>
                 <FormLabel>What is your top priority or challenge right now?</FormLabel>
-                <Textarea rows={4} {...form.register("topPriority")} />
-                <FormErrorMessage>
-                  {form.formState.errors.topPriority?.message}
-                </FormErrorMessage>
+                <Textarea rows={4} {...form.register('topPriority')} />
+                <FormErrorMessage>{form.formState.errors.topPriority?.message}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={!!form.formState.errors.marketingTried}>
                 <FormLabel>What marketing efforts have you already tried?</FormLabel>
-                <Textarea rows={4} {...form.register("marketingTried")} />
-                <FormErrorMessage>
-                  {form.formState.errors.marketingTried?.message}
-                </FormErrorMessage>
+                <Textarea rows={4} {...form.register('marketingTried')} />
+                <FormErrorMessage>{form.formState.errors.marketingTried?.message}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={!!form.formState.errors.goals}>
                 <FormLabel>What goal do you hope to reach in the next 3–6 months?</FormLabel>
-                <Textarea rows={3} {...form.register("goals")} />
-                <FormErrorMessage>
-                  {form.formState.errors.goals?.message}
-                </FormErrorMessage>
+                <Textarea rows={3} {...form.register('goals')} />
+                <FormErrorMessage>{form.formState.errors.goals?.message}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={!!form.formState.errors.supportNeeds}>
                 <FormLabel>What marketing support are you looking for?</FormLabel>
                 <CheckboxGroup
-                  value={form.watch("supportNeeds")}
+                  value={form.watch('supportNeeds')}
                   onChange={(values) =>
-                    form.setValue("supportNeeds", values as string[], { shouldDirty: true })
+                    form.setValue('supportNeeds', values as string[], { shouldDirty: true })
                   }
                 >
                   <VStack align="flex-start">
-                    {supportOptions.map((option) => (
+                    {SUPPORT_OPTIONS.map((option) => (
                       <Checkbox key={option} value={option}>
                         {option}
                       </Checkbox>
                     ))}
                   </VStack>
                 </CheckboxGroup>
-                <FormErrorMessage>
-                  {form.formState.errors.supportNeeds?.message}
-                </FormErrorMessage>
+                <FormErrorMessage>{form.formState.errors.supportNeeds?.message}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={!!form.formState.errors.idealOutcome}>
                 <FormLabel>What’s your ideal outcome from this consultation?</FormLabel>
-                <Textarea rows={3} {...form.register("idealOutcome")} />
-                <FormErrorMessage>
-                  {form.formState.errors.idealOutcome?.message}
-                </FormErrorMessage>
+                <Textarea rows={3} {...form.register('idealOutcome')} />
+                <FormErrorMessage>{form.formState.errors.idealOutcome?.message}</FormErrorMessage>
               </FormControl>
 
               <Box>
@@ -379,32 +352,26 @@ export default function ProspectDetailsPage() {
 
               <FormControl isInvalid={!!form.formState.errors.hearAbout}>
                 <FormLabel>How did you hear about MartAI? *</FormLabel>
-                <Input placeholder="Podcast, friend, Instagram, etc." {...form.register("hearAbout")} />
-                <FormErrorMessage>
-                  {form.formState.errors.hearAbout?.message}
-                </FormErrorMessage>
+                <Input
+                  placeholder="Podcast, friend, Instagram, etc."
+                  {...form.register('hearAbout')}
+                />
+                <FormErrorMessage>{form.formState.errors.hearAbout?.message}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={!!form.formState.errors.sendSms}>
                 <FormLabel>Send text updates to</FormLabel>
-                <Input placeholder="(555) 987-6543" {...form.register("sendSms")} />
-                <FormErrorMessage>
-                  {form.formState.errors.sendSms?.message}
-                </FormErrorMessage>
+                <Input placeholder="(555) 987-6543" {...form.register('sendSms')} />
+                <FormErrorMessage>{form.formState.errors.sendSms?.message}</FormErrorMessage>
               </FormControl>
 
               <FormControl>
                 <FormLabel>Anything else we should know?</FormLabel>
-                <Textarea rows={3} {...form.register("additionalNotes")} />
+                <Textarea rows={3} {...form.register('additionalNotes')} />
               </FormControl>
 
               <VStack align="flex-start" spacing={3}>
-                <Button
-                  type="submit"
-                  colorScheme="orange"
-                  size="lg"
-                  isLoading={loading}
-                >
+                <Button type="submit" colorScheme="orange" size="lg" isLoading={loading}>
                   Submit discovery form
                 </Button>
                 <Text fontSize="sm" color="gray.500">
@@ -419,4 +386,3 @@ export default function ProspectDetailsPage() {
     </Container>
   );
 }
-
