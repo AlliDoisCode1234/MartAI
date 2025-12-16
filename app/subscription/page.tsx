@@ -254,8 +254,11 @@ export default function SubscriptionPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
+                  h="full"
+                  display="flex"
+                  flexDirection="column"
                 >
-                  <VStack align="stretch" spacing={4}>
+                  <VStack align="stretch" spacing={4} flex={1}>
                     <VStack align="start" spacing={1}>
                       <HStack justify="space-between" w="full">
                         <Heading size="md">{plan.name}</Heading>
@@ -269,7 +272,7 @@ export default function SubscriptionPage() {
                       </HStack>
                     </VStack>
                     <Divider />
-                    <VStack align="start" spacing={2}>
+                    <VStack align="start" spacing={2} flex={1}>
                       {plan.features.map((feat) => (
                         <HStack key={feat}>
                           <Icon as={FiCheck} color="green.500" />
@@ -282,6 +285,7 @@ export default function SubscriptionPage() {
                       variant={plan.id === tier ? 'outline' : 'solid'}
                       isDisabled={plan.id === tier}
                       w="full"
+                      mt="auto"
                     >
                       {plan.id === tier ? 'Current Plan' : 'Upgrade'}
                     </Button>

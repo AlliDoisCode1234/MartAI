@@ -152,21 +152,33 @@ export default function OnboardingPage() {
           );
           await updateOnboardingStep({ step: 'projectCreated', value: true }).catch(console.error);
           // Generate keywords (non-blocking, silent - user sees results on reveal page)
+          // TODO: Remove debug logs before launch
           try {
-            await generateKeywordsFromUrl({
+            console.log('[ONBOARDING DEBUG] Calling generateKeywordsFromUrl...', {
+              projectId: newProjectId,
+            });
+            const kwResult = await generateKeywordsFromUrl({
               projectId: newProjectId as any,
               limit: 30,
             });
+            console.log('[ONBOARDING DEBUG] generateKeywordsFromUrl SUCCESS:', kwResult);
             // Generate clusters if enough keywords
-            await generateClusters({ projectId: newProjectId as any }).catch(console.warn);
+            console.log('[ONBOARDING DEBUG] Calling generateClusters...');
+            await generateClusters({ projectId: newProjectId as any }).catch((e) => {
+              console.warn('[ONBOARDING DEBUG] generateClusters FAILED:', e);
+            });
+            console.log('[ONBOARDING DEBUG] generateClusters completed');
           } catch (kwError: any) {
-            console.warn('Keyword generation failed:', kwError);
+            console.warn('[ONBOARDING DEBUG] generateKeywordsFromUrl FAILED:', kwError);
           }
           // Generate MR score (non-blocking, silent)
+          // TODO: Remove debug logs before launch
           try {
-            await generatePreliminaryScore({ projectId: newProjectId as any });
+            console.log('[ONBOARDING DEBUG] Calling generatePreliminaryScore...');
+            const mrResult = await generatePreliminaryScore({ projectId: newProjectId as any });
+            console.log('[ONBOARDING DEBUG] generatePreliminaryScore SUCCESS:', mrResult);
           } catch (mrError) {
-            console.warn('MR generation failed:', mrError);
+            console.warn('[ONBOARDING DEBUG] generatePreliminaryScore FAILED:', mrError);
           }
         }
       }

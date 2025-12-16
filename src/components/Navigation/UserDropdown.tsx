@@ -56,7 +56,7 @@ export const UserDropdown: FC = () => {
         <MenuItem as={Link} href="/settings" icon={<Icon as={FiSettings} />}>
           Settings
         </MenuItem>
-        <MenuItem as={Link} href="/settings/billing" icon={<Icon as={FiCreditCard} />}>
+        <MenuItem as={Link} href="/subscription" icon={<Icon as={FiCreditCard} />}>
           Billing
         </MenuItem>
         {isAdmin && (
