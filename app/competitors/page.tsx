@@ -18,16 +18,12 @@ import {
   Heading,
   Text,
   Box,
-  Spinner,
   Alert,
   AlertIcon,
-  Card,
-  CardBody,
   HStack,
   Icon,
   SimpleGrid,
   Button,
-  Badge,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
@@ -39,14 +35,17 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { SerpAnalyzer } from '@/src/components/SerpAnalyzer';
 import { assertProjectId } from '@/lib/typeGuards';
 
+// Extracted components
+import { CompetitorStatsCard, UpsellCard, CompetitorsSkeleton } from '@/src/components/competitors';
+
 const MotionBox = motion(Box);
-const MotionCard = motion(Card);
 
 function CompetitorsContent() {
   const { isAuthenticated, loading: authLoading, user } = useAuth();
   const router = useRouter();
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectsLoading, setProjectsLoading] = useState(true);
+  const cardBg = useColorModeValue('white', 'gray.800');
 
   const projects = useQuery(
     api.projects.projects.getProjectsByUser,
@@ -64,45 +63,33 @@ function CompetitorsContent() {
           }
         })()
       : null;
-
   const limitCheck = useQuery(
     api.seo.serpAnalysis.canAnalyze,
     projectIdForQuery ? { projectId: projectIdForQuery } : 'skip'
   );
-
   const existingAnalyses = useQuery(
     api.seo.serpAnalysis.getByProject,
     projectIdForQuery ? { projectId: projectIdForQuery } : 'skip'
   );
 
-  const cardBg = useColorModeValue('white', 'gray.800');
-
-  // Auth redirect
   useEffect(() => {
     if (authLoading) return;
-    if (!isAuthenticated) {
-      router.replace('/auth/login');
-    }
+    if (!isAuthenticated) router.replace('/auth/login');
   }, [authLoading, isAuthenticated, router]);
 
-  // Project loading
   useEffect(() => {
     if (authLoading || !isAuthenticated) return;
     if (projects === undefined) {
       setProjectsLoading(true);
       return;
     }
-
     setProjectsLoading(false);
-
     if (!projects || projects.length === 0) {
       setProjectId(null);
       return;
     }
-
     const storedId =
       typeof window !== 'undefined' ? window.localStorage.getItem('currentProjectId') : null;
-
     let normalizedStored: string | null = null;
     if (storedId) {
       try {
@@ -112,42 +99,19 @@ function CompetitorsContent() {
         window.localStorage.removeItem('currentProjectId');
       }
     }
-
     const matchedProject = normalizedStored
       ? projects.find((proj: any) => (proj._id as unknown as string) === normalizedStored)
       : null;
-
     const nextProject = matchedProject ?? projects[0];
     const nextId = (nextProject._id as unknown as string) ?? nextProject._id.toString();
-
     if (nextId !== projectId) {
       setProjectId(nextId);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('currentProjectId', nextId);
-      }
+      if (typeof window !== 'undefined') window.localStorage.setItem('currentProjectId', nextId);
     }
   }, [projects, authLoading, isAuthenticated, projectId]);
 
-  // Loading state
-  if (projectsLoading && !projectId) {
-    return (
-      <Box
-        minH="calc(100vh - 64px)"
-        bg="brand.light"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <VStack spacing={4}>
-          <Spinner size="xl" color="brand.orange" />
-          <Text color="gray.600">Loading competitors...</Text>
-        </VStack>
-      </Box>
-    );
-  }
-
-  // No project
-  if (!projectId) {
+  if (projectsLoading && !projectId) return <CompetitorsSkeleton />;
+  if (!projectId)
     return (
       <Container maxW="container.xl" py={12}>
         <VStack spacing={6}>
@@ -159,10 +123,7 @@ function CompetitorsContent() {
         </VStack>
       </Container>
     );
-  }
-
-  // Not authenticated
-  if (!isAuthenticated) {
+  if (!isAuthenticated)
     return (
       <Box
         minH="calc(100vh - 64px)"
@@ -177,7 +138,6 @@ function CompetitorsContent() {
         </Alert>
       </Box>
     );
-  }
 
   return (
     <Box minH="calc(100vh - 64px)" bg="brand.light">
@@ -187,7 +147,6 @@ function CompetitorsContent() {
         px={{ base: 4, sm: 6, md: 8, lg: 12 }}
       >
         <VStack spacing={8} align="stretch">
-          {/* Hero Header */}
           <MotionBox
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -204,93 +163,36 @@ function CompetitorsContent() {
             </VStack>
           </MotionBox>
 
-          {/* Stats Cards */}
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-            <MotionCard
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              bg={cardBg}
-              borderRadius="xl"
-              boxShadow="sm"
-            >
-              <CardBody>
-                <HStack spacing={3}>
-                  <Box p={3} borderRadius="lg" bg="blue.100">
-                    <Icon as={FiSearch} color="blue.600" boxSize={5} />
-                  </Box>
-                  <Box>
-                    <Text fontSize="2xl" fontWeight="bold">
-                      {existingAnalyses?.length || 0}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500">
-                      Keywords Analyzed
-                    </Text>
-                  </Box>
-                </HStack>
-              </CardBody>
-            </MotionCard>
-
-            <MotionCard
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              bg={cardBg}
-              borderRadius="xl"
-              boxShadow="sm"
-            >
-              <CardBody>
-                <HStack spacing={3}>
-                  <Box p={3} borderRadius="lg" bg="green.100">
-                    <Icon as={FiTrendingUp} color="green.600" boxSize={5} />
-                  </Box>
-                  <Box>
-                    <Text fontSize="2xl" fontWeight="bold">
-                      {existingAnalyses?.[0]?.results?.length || 0}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500">
-                      Competitors Found
-                    </Text>
-                  </Box>
-                </HStack>
-              </CardBody>
-            </MotionCard>
-
-            <MotionCard
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              bg={cardBg}
-              borderRadius="xl"
-              boxShadow="sm"
-            >
-              <CardBody>
-                <HStack spacing={3}>
-                  <Box
-                    p={3}
-                    borderRadius="lg"
-                    bg={limitCheck?.canAnalyze ? 'purple.100' : 'orange.100'}
-                  >
-                    <Icon
-                      as={limitCheck?.canAnalyze ? FiSearch : FiLock}
-                      color={limitCheck?.canAnalyze ? 'purple.600' : 'orange.600'}
-                      boxSize={5}
-                    />
-                  </Box>
-                  <Box>
-                    <Text fontSize="2xl" fontWeight="bold">
-                      {limitCheck?.remaining || 0}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500">
-                      Analyses Remaining
-                    </Text>
-                  </Box>
-                </HStack>
-              </CardBody>
-            </MotionCard>
+            <CompetitorStatsCard
+              icon={FiSearch}
+              iconBg="blue.100"
+              iconColor="blue.600"
+              value={existingAnalyses?.length || 0}
+              label="Keywords Analyzed"
+              delay={0.1}
+              cardBg={cardBg}
+            />
+            <CompetitorStatsCard
+              icon={FiTrendingUp}
+              iconBg="green.100"
+              iconColor="green.600"
+              value={existingAnalyses?.[0]?.results?.length || 0}
+              label="Competitors Found"
+              delay={0.2}
+              cardBg={cardBg}
+            />
+            <CompetitorStatsCard
+              icon={limitCheck?.canAnalyze ? FiSearch : FiLock}
+              iconBg={limitCheck?.canAnalyze ? 'purple.100' : 'orange.100'}
+              iconColor={limitCheck?.canAnalyze ? 'purple.600' : 'orange.600'}
+              value={limitCheck?.remaining || 0}
+              label="Analyses Remaining"
+              delay={0.3}
+              cardBg={cardBg}
+            />
           </SimpleGrid>
 
-          {/* SERP Analyzer */}
           {projectIdForQuery && (
             <MotionBox
               initial={{ opacity: 0 }}
@@ -300,38 +202,8 @@ function CompetitorsContent() {
               <SerpAnalyzer projectId={projectIdForQuery} />
             </MotionBox>
           )}
-
-          {/* Upsell Card */}
           {limitCheck && !limitCheck.canAnalyze && (
-            <MotionCard
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              bg="linear-gradient(135deg, #F7941E 0%, #E0183C 100%)"
-              borderRadius="xl"
-              color="white"
-            >
-              <CardBody>
-                <VStack spacing={4} align="start">
-                  <HStack>
-                    <Icon as={FiLock} boxSize={6} />
-                    <Heading size="md">Unlock Unlimited SERP Analysis</Heading>
-                  </HStack>
-                  <Text>
-                    Upgrade to Growth or Pro to analyze unlimited keywords and discover more
-                    competitor insights.
-                  </Text>
-                  <Button
-                    bg="white"
-                    color="brand.orange"
-                    _hover={{ bg: 'gray.100' }}
-                    onClick={() => router.push('/pricing')}
-                  >
-                    View Plans
-                  </Button>
-                </VStack>
-              </CardBody>
-            </MotionCard>
+            <UpsellCard onViewPlans={() => router.push('/pricing')} />
           )}
         </VStack>
       </Container>
@@ -341,19 +213,7 @@ function CompetitorsContent() {
 
 export default function CompetitorsPage() {
   return (
-    <Suspense
-      fallback={
-        <Box
-          minH="calc(100vh - 64px)"
-          bg="brand.light"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <Spinner size="xl" color="brand.orange" />
-        </Box>
-      }
-    >
+    <Suspense fallback={<CompetitorsSkeleton />}>
       <CompetitorsContent />
     </Suspense>
   );
