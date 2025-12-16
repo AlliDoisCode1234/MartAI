@@ -673,6 +673,19 @@ gantt
 > **UX-001**: Replace all spinner/loading text with dimension-matched skeleton components.
 > **UX-003**: Audit all 35 pages for component extraction. Target: max 150 lines/page, full reuse of shared components.
 
+### SERP & Competitor Analysis
+
+| Ticket   | Description                      | Priority | Points |
+| -------- | -------------------------------- | -------- | ------ |
+| SERP-001 | SERP during onboarding URL input | P1       | 5      |
+| SERP-002 | Flow SERP data to strategy pages | P1       | 5      |
+| SERP-003 | Admin portal URL analyzer tool   | P1       | 3      |
+
+> [!NOTE]
+> **Business Model**: Members analyze competitor URLs by creating new projects. Each project = 1 URL through analyzer. Project limits tied to subscription tier (upsell path).
+> **SERP-001**: Auto-run SERP when URL is input during onboarding, store results.
+> **SERP-002**: Display SERP competitor data in strategy, keywords, and content pages.
+
 ---
 
 ## Appendix: Story Point Reference

@@ -18,3 +18,12 @@ export {
   saveStrategyMode,
   type StrategyMode,
 } from './StrategyModeToggle';
+
+// Newly extracted components
+export { StrategyStatCards } from './StrategyStatCards';
+export { PlanSummaryCard } from './PlanSummaryCard';
+export { ContentCalendarCard } from './ContentCalendarCard';
+export { ClusterGrid } from './ClusterGrid';
+export { GeneratePlanModal } from './GeneratePlanModal';
+export { GenerateClustersModal } from './GenerateClustersModal';
+export { StrategySkeleton } from './StrategySkeleton';
