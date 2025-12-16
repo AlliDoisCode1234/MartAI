@@ -22,13 +22,14 @@ import {
   StatNumber,
   StatHelpText,
   useColorModeValue,
-  Spinner,
+  Skeleton,
   Icon,
 } from '@chakra-ui/react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { FiDollarSign, FiActivity, FiCpu, FiTrendingUp } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
+import { StatsSkeleton, TableSkeleton } from '@/components/skeletons';
 
 export default function AdminCostsPage() {
   const summary = useQuery(api.admin.costs.getAICostSummary);
@@ -50,9 +51,10 @@ export default function AdminCostsPage() {
   if (!summary) {
     return (
       <Container maxW="container.xl" py={8}>
-        <VStack spacing={8}>
-          <Spinner size="xl" color="brand.orange" />
-          <Text>Loading cost data...</Text>
+        <VStack spacing={8} align="stretch">
+          <Skeleton height="40px" width="200px" borderRadius="md" />
+          <StatsSkeleton count={4} />
+          <TableSkeleton rows={5} columns={4} />
         </VStack>
       </Container>
     );

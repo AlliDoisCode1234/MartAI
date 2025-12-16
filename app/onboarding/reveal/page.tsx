@@ -2,17 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Box,
-  Container,
-  VStack,
-  Heading,
-  Text,
-  Button,
-  Spinner,
-  Alert,
-  AlertIcon,
-} from '@chakra-ui/react';
+import { Box, Container, VStack, Heading, Text, Button, Alert, AlertIcon } from '@chakra-ui/react';
+import { PageLoadingSkeleton } from '@/components/skeletons';
 import { useAuth } from '@/lib/useAuth';
 import { KeywordReveal } from '@/src/components/KeywordReveal';
 import type { KeywordCluster } from '@/types';
@@ -189,14 +180,7 @@ export default function OnboardingRevealPage() {
 
   // Show loading state while auth is loading or clusters are loading
   if (authLoading || loading) {
-    return (
-      <Box minH="100vh" bg="brand.light" display="flex" alignItems="center" justifyContent="center">
-        <VStack spacing={4}>
-          <Spinner size="xl" color="brand.orange" thickness="4px" speed="0.8s" />
-          <Text color="gray.600">Discovering your keyword opportunities...</Text>
-        </VStack>
-      </Box>
-    );
+    return <PageLoadingSkeleton showHeader={false} />;
   }
 
   if (error) {

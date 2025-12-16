@@ -54,7 +54,7 @@ export function ConfirmModal({
         <ModalHeader>{title}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Text dangerouslySetInnerHTML={{ __html: message }} />
+          <Text whiteSpace="pre-wrap">{message}</Text>
           {children}
         </ModalBody>
         <ModalFooter>

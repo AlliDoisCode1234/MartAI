@@ -19,7 +19,7 @@ import {
   StatHelpText,
   Button,
   HStack,
-  Spinner,
+  Skeleton,
   Accordion,
   AccordionItem,
   AccordionButton,
@@ -38,14 +38,21 @@ export default function KeywordDetailPage() {
 
   if (keyword === undefined) {
     return (
-      <Box
-        minH="calc(100vh - 64px)"
-        bg="brand.light"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <Spinner size="xl" color="brand.orange" />
+      <Box minH="calc(100vh - 64px)" bg="brand.light">
+        <Container maxW="container.xl" py={{ base: 8, md: 12 }}>
+          <VStack spacing={6} align="stretch">
+            <Skeleton height="32px" width="100px" borderRadius="md" />
+            <Skeleton height="48px" width="300px" borderRadius="md" />
+            <Grid templateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }} gap={6}>
+              {[1, 2, 3, 4].map((i) => (
+                <GridItem key={i}>
+                  <Skeleton height="120px" borderRadius="lg" />
+                </GridItem>
+              ))}
+            </Grid>
+            <Skeleton height="200px" borderRadius="lg" />
+          </VStack>
+        </Container>
       </Box>
     );
   }
