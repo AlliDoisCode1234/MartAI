@@ -1,5 +1,15 @@
 'use client';
 
+/**
+ * Integrations Page
+ *
+ * Component Hierarchy:
+ * App → Integrations (this file)
+ *
+ * Connect analytics and CMS platforms.
+ * Uses extracted modal components for modularity.
+ */
+
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -8,108 +18,121 @@ import {
   Heading,
   Text,
   Box,
-  Button,
-  HStack,
   Grid,
   GridItem,
-  Card,
-  CardBody,
   Alert,
   AlertIcon,
-  Badge,
-  Spinner,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  ModalFooter,
-  FormControl,
-  FormLabel,
-  Input,
   useDisclosure,
 } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
-import { useAction, useMutation, useQuery } from 'convex/react';
+import { useAction, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { AnalyticsSetupWizard } from '@/src/components/analytics/AnalyticsSetupWizard';
 
-type Integration = {
-  platform: string;
-  connected: boolean;
-  siteUrl?: string;
-  propertyName?: string;
-  lastSync?: string;
-};
+// Extracted components
+import {
+  IntegrationCard,
+  GA4Modal,
+  GSCModal,
+  CMSModal,
+  IntegrationsSkeleton,
+} from '@/src/components/integrations';
+import {
+  DEFAULT_INTEGRATIONS,
+  type Integration,
+  type OAuthTokens,
+} from '@/lib/constants/integrations';
 
 function IntegrationsContent() {
   const { user, isAuthenticated } = useAuth();
   const searchParams = useSearchParams();
-  const [integrations, setIntegrations] = useState<Integration[]>([
-    { platform: 'ga4', connected: false },
-    { platform: 'gsc', connected: false },
-    { platform: 'wordpress', connected: false },
-    { platform: 'shopify', connected: false },
-    { platform: 'webflow', connected: false },
-  ]);
+  const [integrations, setIntegrations] = useState<Integration[]>(DEFAULT_INTEGRATIONS);
   const [loading, setLoading] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
 
+  // Modal states
+  const {
+    isOpen: isGA4ModalOpen,
+    onOpen: onGA4ModalOpen,
+    onClose: onGA4ModalClose,
+  } = useDisclosure();
+  const {
+    isOpen: isGSCModalOpen,
+    onOpen: onGSCModalOpen,
+    onClose: onGSCModalClose,
+  } = useDisclosure();
+  const {
+    isOpen: isCMSModalOpen,
+    onOpen: onCMSModalOpen,
+    onClose: onCMSModalClose,
+  } = useDisclosure();
+
+  // Form states
+  const [ga4PropertyId, setGA4PropertyId] = useState('');
+  const [gscSiteUrl, setGscSiteUrl] = useState('');
+  const [ga4Tokens, setGA4Tokens] = useState<OAuthTokens | null>(null);
+  const [gscTokens, setGscTokens] = useState<OAuthTokens | null>(null);
+  const [cmsPlatform, setCmsPlatform] = useState<'wordpress' | 'shopify' | 'webflow' | null>(null);
+  const [cmsCredentials, setCmsCredentials] = useState<any>({});
+  const [testResult, setTestResult] = useState<{
+    valid: boolean;
+    error?: string;
+    canPublish?: boolean;
+  } | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
+
+  // Mutations
+  const generateAuthUrl = useAction(api.integrations.google.generateAuthUrl);
+  const upsertGA4Connection = useMutation(api.integrations.ga4Connections.upsertGA4Connection);
+  const upsertGSCConnection = useMutation(api.integrations.gscConnections.upsertGSCConnection);
+
+  // OAuth callback handling
   useEffect(() => {
-    // Check for OAuth callback success/error
     const success = searchParams?.get('success');
-    const error = searchParams?.get('error');
     const property = searchParams?.get('property');
     const site = searchParams?.get('site');
-
-    if (success === 'ga4' && property) {
+    if (success === 'ga4' && property)
       setIntegrations((prev) =>
         prev.map((i) =>
           i.platform === 'ga4' ? { ...i, connected: true, propertyName: property } : i
         )
       );
-    }
-
-    if (success === 'gsc' && site) {
+    if (success === 'gsc' && site)
       setIntegrations((prev) =>
         prev.map((i) => (i.platform === 'gsc' ? { ...i, connected: true, siteUrl: site } : i))
       );
-    }
-
-    if (error) {
-      console.error('OAuth error:', error);
-    }
-
-    // Get project ID from localStorage or create temp
     const storedProject = localStorage.getItem('currentProjectId');
-    if (storedProject) {
-      setProjectId(storedProject);
-    } else {
-      // For now, use a temp project ID
-      const tempId = `project-${Date.now()}`;
-      setProjectId(tempId);
-      localStorage.setItem('currentProjectId', tempId);
+    setProjectId(storedProject || `project-${Date.now()}`);
+  }, [searchParams]);
+
+  // Check for GA4 setup tokens
+  useEffect(() => {
+    const setup = searchParams?.get('setup');
+    const tokens = searchParams?.get('tokens');
+    if (setup === 'ga4' && tokens) {
+      try {
+        const decoded = JSON.parse(atob(decodeURIComponent(tokens)));
+        setGA4Tokens(decoded);
+        setShowWizard(true);
+        window.history.replaceState({}, '', '/integrations');
+      } catch (e) {
+        console.error('Failed to parse GA4 tokens:', e);
+      }
     }
   }, [searchParams]);
 
-  const generateAuthUrl = useAction(api.integrations.google.generateAuthUrl);
-
+  // Handlers
   const handleConnectGA4 = async () => {
     if (!projectId || !isAuthenticated) {
       alert('Please complete onboarding first');
       return;
     }
-
     setLoading(true);
     try {
       const authUrl = await generateAuthUrl({ projectId: projectId as any });
-      if (authUrl) {
-        window.location.href = authUrl;
-      } else {
-        alert('Failed to initiate GA4 connection');
-      }
+      if (authUrl) window.location.href = authUrl;
+      else alert('Failed to initiate GA4 connection');
     } catch (error) {
       console.error(error);
       alert('Failed to connect GA4');
@@ -118,67 +141,11 @@ function IntegrationsContent() {
     }
   };
 
-  const handleConnectGSC = async () => {
-    if (!projectId || !isAuthenticated) {
-      alert('Please complete onboarding first');
-      return;
-    }
-    // GSC uses same Google Auth flow
-    handleConnectGA4();
-  };
-
-  const [testResult, setTestResult] = useState<{
-    valid: boolean;
-    error?: string;
-    canPublish?: boolean;
-  } | null>(null);
-
-  // GA4 Property ID Modal state
-  const {
-    isOpen: isGA4ModalOpen,
-    onOpen: onGA4ModalOpen,
-    onClose: onGA4ModalClose,
-  } = useDisclosure();
-  const [ga4PropertyId, setGA4PropertyId] = useState('');
-  const [ga4Tokens, setGA4Tokens] = useState<{
-    accessToken: string;
-    refreshToken: string;
-    projectId: string;
-  } | null>(null);
-
-  // Mutation to save GA4 connection
-  const upsertGA4Connection = useMutation(api.integrations.ga4Connections.upsertGA4Connection);
-
-  // State for the new guided wizard
-  const [showWizard, setShowWizard] = useState(false);
-
-  // Check for GA4 setup tokens in URL (after OAuth callback)
-  useEffect(() => {
-    const setup = searchParams?.get('setup');
-    const tokens = searchParams?.get('tokens');
-
-    if (setup === 'ga4' && tokens) {
-      try {
-        // Decode base64 tokens
-        const decoded = JSON.parse(atob(decodeURIComponent(tokens)));
-        setGA4Tokens(decoded);
-        // Show the guided wizard instead of simple modal
-        setShowWizard(true);
-
-        // Clean URL
-        window.history.replaceState({}, '', '/integrations');
-      } catch (e) {
-        console.error('Failed to parse GA4 tokens:', e);
-      }
-    }
-  }, [searchParams]);
-
   const handleSaveGA4Connection = async () => {
     if (!ga4PropertyId || !ga4Tokens) {
       alert('Please enter a Property ID');
       return;
     }
-
     setLoading(true);
     try {
       await upsertGA4Connection({
@@ -188,7 +155,6 @@ function IntegrationsContent() {
         accessToken: ga4Tokens.accessToken,
         refreshToken: ga4Tokens.refreshToken,
       });
-
       setIntegrations((prev) =>
         prev.map((i) =>
           i.platform === 'ga4'
@@ -196,51 +162,26 @@ function IntegrationsContent() {
             : i
         )
       );
-
       onGA4ModalClose();
-      setGA4Tokens(null);
-      setGA4PropertyId('');
-
-      // After GA4 is connected, prompt for GSC
-      // The same tokens work for GSC since we requested both scopes
       if (ga4Tokens) {
-        setGscTokens({
-          accessToken: ga4Tokens.accessToken,
-          refreshToken: ga4Tokens.refreshToken,
-          projectId: ga4Tokens.projectId,
-        });
+        setGscTokens(ga4Tokens);
         onGSCModalOpen();
       }
+      setGA4Tokens(null);
+      setGA4PropertyId('');
     } catch (error) {
       console.error('Failed to save GA4 connection:', error);
-      alert('Failed to save connection. Please try again.');
+      alert('Failed to save connection.');
     } finally {
       setLoading(false);
     }
   };
-
-  // GSC Site URL Modal state
-  const {
-    isOpen: isGSCModalOpen,
-    onOpen: onGSCModalOpen,
-    onClose: onGSCModalClose,
-  } = useDisclosure();
-  const [gscSiteUrl, setGscSiteUrl] = useState('');
-  const [gscTokens, setGscTokens] = useState<{
-    accessToken: string;
-    refreshToken: string;
-    projectId: string;
-  } | null>(null);
-
-  // Mutation to save GSC connection
-  const upsertGSCConnection = useMutation(api.integrations.gscConnections.upsertGSCConnection);
 
   const handleSaveGSCConnection = async () => {
     if (!gscSiteUrl || !gscTokens) {
       alert('Please enter your site URL');
       return;
     }
-
     setLoading(true);
     try {
       await upsertGSCConnection({
@@ -249,29 +190,19 @@ function IntegrationsContent() {
         accessToken: gscTokens.accessToken,
         refreshToken: gscTokens.refreshToken,
       });
-
       setIntegrations((prev) =>
         prev.map((i) => (i.platform === 'gsc' ? { ...i, connected: true, siteUrl: gscSiteUrl } : i))
       );
-
       onGSCModalClose();
       setGscTokens(null);
       setGscSiteUrl('');
     } catch (error) {
       console.error('Failed to save GSC connection:', error);
-      alert('Failed to save connection. Please try again.');
+      alert('Failed to save connection.');
     } finally {
       setLoading(false);
     }
   };
-
-  const {
-    isOpen: isCMSModalOpen,
-    onOpen: onCMSModalOpen,
-    onClose: onCMSModalClose,
-  } = useDisclosure();
-  const [cmsPlatform, setCmsPlatform] = useState<'wordpress' | 'shopify' | 'webflow' | null>(null);
-  const [cmsCredentials, setCmsCredentials] = useState<any>({});
 
   const handleConnectCMS = (platform: 'wordpress' | 'shopify' | 'webflow') => {
     setCmsPlatform(platform);
@@ -280,30 +211,19 @@ function IntegrationsContent() {
     onCMSModalOpen();
   };
 
-  const handleTestConnection = async () => {
+  const handleTestCMS = async () => {
     if (!projectId || !cmsPlatform) return;
-
     setLoading(true);
     setTestResult(null);
-
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/cms/test', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          platform: cmsPlatform,
-          projectId,
-          credentials: cmsCredentials,
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ platform: cmsPlatform, projectId, credentials: cmsCredentials }),
       });
-
       const result = await response.json();
       setTestResult(result);
-
       if (result.valid && result.canPublish) {
         setIntegrations((prev) =>
           prev.map((i) =>
@@ -325,52 +245,8 @@ function IntegrationsContent() {
     }
   };
 
-  const handleConnectWordPress = () => handleConnectCMS('wordpress');
-  const handleConnectShopify = () => handleConnectCMS('shopify');
-  const handleConnectWebflow = () => handleConnectCMS('webflow');
-
-  const getIntegrationInfo = (platform: string) => {
-    switch (platform) {
-      case 'ga4':
-        return {
-          name: 'Google Analytics 4',
-          description: 'Connect your GA4 property to track traffic, sessions, and user behavior',
-          color: 'orange',
-        };
-      case 'gsc':
-        return {
-          name: 'Google Search Console',
-          description: 'Connect Search Console to import top queries and track rankings',
-          color: 'blue',
-        };
-      case 'wordpress':
-        return {
-          name: 'WordPress',
-          description: 'Connect your WordPress site to automatically publish SEO-optimized content',
-          color: 'orange',
-        };
-      case 'shopify':
-        return {
-          name: 'Shopify',
-          description: 'Connect your Shopify store to automatically publish SEO-optimized content',
-          color: 'teal',
-        };
-      case 'webflow':
-        return {
-          name: 'Webflow',
-          description: 'Connect your Webflow site to automatically publish SEO-optimized content',
-          color: 'purple',
-        };
-      default:
-        return { name: platform, description: '', color: 'gray' };
-    }
-  };
-
-  // Handler for the guided wizard completion
   const handleWizardComplete = async (data: { ga4PropertyId: string; gscSiteUrl?: string }) => {
     if (!ga4Tokens) return;
-
-    // Save GA4 connection
     await upsertGA4Connection({
       projectId: ga4Tokens.projectId as Id<'projects'>,
       propertyId: data.ga4PropertyId,
@@ -378,7 +254,6 @@ function IntegrationsContent() {
       accessToken: ga4Tokens.accessToken,
       refreshToken: ga4Tokens.refreshToken,
     });
-
     setIntegrations((prev) =>
       prev.map((i) =>
         i.platform === 'ga4'
@@ -386,8 +261,6 @@ function IntegrationsContent() {
           : i
       )
     );
-
-    // Save GSC connection if provided
     if (data.gscSiteUrl) {
       await upsertGSCConnection({
         projectId: ga4Tokens.projectId as Id<'projects'>,
@@ -395,15 +268,21 @@ function IntegrationsContent() {
         accessToken: ga4Tokens.accessToken,
         refreshToken: ga4Tokens.refreshToken,
       });
-
       setIntegrations((prev) =>
         prev.map((i) =>
           i.platform === 'gsc' ? { ...i, connected: true, siteUrl: data.gscSiteUrl } : i
         )
       );
     }
-
     setGA4Tokens(null);
+  };
+
+  const getConnectHandler = (platform: string) => {
+    if (platform === 'ga4' || platform === 'gsc') return handleConnectGA4;
+    if (platform === 'wordpress') return () => handleConnectCMS('wordpress');
+    if (platform === 'shopify') return () => handleConnectCMS('shopify');
+    if (platform === 'webflow') return () => handleConnectCMS('webflow');
+    return () => {};
   };
 
   if (!isAuthenticated) {
@@ -434,71 +313,24 @@ function IntegrationsContent() {
           <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="gray.800">
             Data Connections
           </Heading>
-
           <Text color="gray.600">
             Connect your analytics and CMS platforms to enable automated SEO insights and content
             publishing.
           </Text>
 
           <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
-            {integrations.map((integration) => {
-              const info = getIntegrationInfo(integration.platform);
-              return (
-                <GridItem key={integration.platform}>
-                  <Card>
-                    <CardBody>
-                      <VStack align="stretch" spacing={4}>
-                        <HStack justify="space-between">
-                          <Heading size="md">{info.name}</Heading>
-                          <Badge colorScheme={integration.connected ? 'green' : 'gray'}>
-                            {integration.connected ? 'Connected' : 'Not Connected'}
-                          </Badge>
-                        </HStack>
-                        <Text color="gray.600" fontSize="sm">
-                          {info.description}
-                        </Text>
-                        {integration.connected && (
-                          <VStack align="stretch" spacing={1}>
-                            {integration.propertyName && (
-                              <Text fontSize="sm" color="green.600">
-                                Property: {integration.propertyName}
-                              </Text>
-                            )}
-                            {integration.siteUrl && (
-                              <Text fontSize="sm" color="green.600">
-                                Site: {integration.siteUrl}
-                              </Text>
-                            )}
-                            {integration.lastSync && (
-                              <Text fontSize="xs" color="gray.500">
-                                Last sync: {integration.lastSync}
-                              </Text>
-                            )}
-                          </VStack>
-                        )}
-                        <Button
-                          colorScheme={info.color as any}
-                          onClick={() => {
-                            if (integration.platform === 'ga4') handleConnectGA4();
-                            else if (integration.platform === 'gsc') handleConnectGSC();
-                            else if (integration.platform === 'wordpress') handleConnectWordPress();
-                            else if (integration.platform === 'shopify') handleConnectShopify();
-                            else if (integration.platform === 'webflow') handleConnectWebflow();
-                          }}
-                          isDisabled={loading}
-                          isLoading={loading}
-                        >
-                          {integration.connected ? 'Reconnect' : `Connect ${info.name}`}
-                        </Button>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-                </GridItem>
-              );
-            })}
+            {integrations.map((integration) => (
+              <GridItem key={integration.platform}>
+                <IntegrationCard
+                  integration={integration}
+                  onConnect={getConnectHandler(integration.platform)}
+                  loading={loading}
+                />
+              </GridItem>
+            ))}
           </Grid>
 
-          {/* Guided Analytics Setup Wizard */}
+          {/* Wizards and Modals */}
           {ga4Tokens && (
             <AnalyticsSetupWizard
               isOpen={showWizard}
@@ -510,259 +342,32 @@ function IntegrationsContent() {
               tokens={ga4Tokens}
             />
           )}
-
-          {/* CMS Connection Modal */}
-          <Modal isOpen={isCMSModalOpen} onClose={onCMSModalClose} size="lg">
-            <ModalOverlay />
-            <ModalContent>
-              <ModalHeader>
-                Connect{' '}
-                {cmsPlatform === 'wordpress'
-                  ? 'WordPress'
-                  : cmsPlatform === 'shopify'
-                    ? 'Shopify'
-                    : 'Webflow'}
-              </ModalHeader>
-              <ModalCloseButton />
-              <ModalBody>
-                <VStack spacing={4}>
-                  {cmsPlatform === 'wordpress' && (
-                    <>
-                      <FormControl>
-                        <FormLabel>Site URL</FormLabel>
-                        <Input
-                          placeholder="https://yoursite.com"
-                          value={cmsCredentials.siteUrl || ''}
-                          onChange={(e) =>
-                            setCmsCredentials({ ...cmsCredentials, siteUrl: e.target.value })
-                          }
-                        />
-                      </FormControl>
-                      <FormControl>
-                        <FormLabel>Username</FormLabel>
-                        <Input
-                          placeholder="WordPress username"
-                          value={cmsCredentials.username || ''}
-                          onChange={(e) =>
-                            setCmsCredentials({ ...cmsCredentials, username: e.target.value })
-                          }
-                        />
-                      </FormControl>
-                      <FormControl>
-                        <FormLabel>Application Password</FormLabel>
-                        <Input
-                          type="password"
-                          placeholder="WordPress application password"
-                          value={cmsCredentials.password || ''}
-                          onChange={(e) =>
-                            setCmsCredentials({ ...cmsCredentials, password: e.target.value })
-                          }
-                        />
-                      </FormControl>
-                    </>
-                  )}
-                  {cmsPlatform === 'shopify' && (
-                    <>
-                      <FormControl>
-                        <FormLabel>Shop Domain</FormLabel>
-                        <Input
-                          placeholder="your-shop"
-                          value={cmsCredentials.shopDomain || ''}
-                          onChange={(e) =>
-                            setCmsCredentials({ ...cmsCredentials, shopDomain: e.target.value })
-                          }
-                        />
-                        <Text fontSize="xs" color="gray.500" mt={1}>
-                          Enter your shop name without .myshopify.com
-                        </Text>
-                      </FormControl>
-                      <FormControl>
-                        <FormLabel>Access Token</FormLabel>
-                        <Input
-                          type="password"
-                          placeholder="Shopify admin API access token"
-                          value={cmsCredentials.accessToken || ''}
-                          onChange={(e) =>
-                            setCmsCredentials({ ...cmsCredentials, accessToken: e.target.value })
-                          }
-                        />
-                      </FormControl>
-                    </>
-                  )}
-                  {cmsPlatform === 'webflow' && (
-                    <>
-                      <FormControl>
-                        <FormLabel>Site ID</FormLabel>
-                        <Input
-                          placeholder="Webflow site ID"
-                          value={cmsCredentials.siteId || ''}
-                          onChange={(e) =>
-                            setCmsCredentials({ ...cmsCredentials, siteId: e.target.value })
-                          }
-                        />
-                      </FormControl>
-                      <FormControl>
-                        <FormLabel>Access Token</FormLabel>
-                        <Input
-                          type="password"
-                          placeholder="Webflow API access token"
-                          value={cmsCredentials.accessToken || ''}
-                          onChange={(e) =>
-                            setCmsCredentials({ ...cmsCredentials, accessToken: e.target.value })
-                          }
-                        />
-                      </FormControl>
-                      <FormControl>
-                        <FormLabel>Collection ID (Optional)</FormLabel>
-                        <Input
-                          placeholder="CMS collection ID for pages"
-                          value={cmsCredentials.collectionId || ''}
-                          onChange={(e) =>
-                            setCmsCredentials({ ...cmsCredentials, collectionId: e.target.value })
-                          }
-                        />
-                      </FormControl>
-                    </>
-                  )}
-
-                  {testResult && (
-                    <Alert status={testResult.valid && testResult.canPublish ? 'success' : 'error'}>
-                      <AlertIcon />
-                      {testResult.valid && testResult.canPublish
-                        ? 'Connection successful! You have publishing rights.'
-                        : testResult.error || 'Connection failed or insufficient permissions'}
-                    </Alert>
-                  )}
-                </VStack>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="ghost" mr={3} onClick={onCMSModalClose}>
-                  Cancel
-                </Button>
-                <Button
-                  bg="brand.orange"
-                  color="white"
-                  onClick={handleTestConnection}
-                  isLoading={loading}
-                >
-                  Test Connection
-                </Button>
-              </ModalFooter>
-            </ModalContent>
-          </Modal>
-
-          {/* GA4 Property ID Modal */}
-          <Modal isOpen={isGA4ModalOpen} onClose={onGA4ModalClose} size="lg">
-            <ModalOverlay />
-            <ModalContent>
-              <ModalHeader>Complete GA4 Connection</ModalHeader>
-              <ModalCloseButton />
-              <ModalBody>
-                <VStack spacing={4} align="stretch">
-                  <Alert status="success" borderRadius="md">
-                    <AlertIcon />
-                    Google authorization successful! Now enter your GA4 Property ID.
-                  </Alert>
-
-                  <FormControl isRequired>
-                    <FormLabel>GA4 Property ID</FormLabel>
-                    <Input
-                      placeholder="123456789"
-                      value={ga4PropertyId}
-                      onChange={(e) => setGA4PropertyId(e.target.value)}
-                    />
-                  </FormControl>
-
-                  <Box bg="gray.50" p={4} borderRadius="md">
-                    <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                      📖 How to find your Property ID:
-                    </Text>
-                    <VStack align="start" spacing={1} fontSize="sm" color="gray.600">
-                      <Text>
-                        1. Go to <strong>Google Analytics</strong>
-                      </Text>
-                      <Text>
-                        2. Click the <strong>Admin</strong> (gear icon) in the bottom left
-                      </Text>
-                      <Text>
-                        3. Under <strong>Property</strong>, click <strong>Property Settings</strong>
-                      </Text>
-                      <Text>
-                        4. Copy the <strong>Property ID</strong> (numbers only)
-                      </Text>
-                    </VStack>
-                  </Box>
-                </VStack>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="ghost" mr={3} onClick={onGA4ModalClose}>
-                  Cancel
-                </Button>
-                <Button
-                  colorScheme="blue"
-                  onClick={handleSaveGA4Connection}
-                  isLoading={loading}
-                  isDisabled={!ga4PropertyId}
-                >
-                  Connect GA4
-                </Button>
-              </ModalFooter>
-            </ModalContent>
-          </Modal>
-
-          {/* GSC Site URL Modal */}
-          <Modal isOpen={isGSCModalOpen} onClose={onGSCModalClose} size="lg">
-            <ModalOverlay />
-            <ModalContent>
-              <ModalHeader>Connect Google Search Console</ModalHeader>
-              <ModalCloseButton />
-              <ModalBody>
-                <VStack spacing={4} align="stretch">
-                  <Alert status="success" borderRadius="md">
-                    <AlertIcon />
-                    GA4 connected! Now add your Search Console site.
-                  </Alert>
-
-                  <FormControl isRequired>
-                    <FormLabel>Site URL</FormLabel>
-                    <Input
-                      placeholder="https://example.com or sc-domain:example.com"
-                      value={gscSiteUrl}
-                      onChange={(e) => setGscSiteUrl(e.target.value)}
-                    />
-                  </FormControl>
-
-                  <Box bg="gray.50" p={4} borderRadius="md">
-                    <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                      📖 Site URL Format:
-                    </Text>
-                    <VStack align="start" spacing={1} fontSize="sm" color="gray.600">
-                      <Text>
-                        • For URL-prefix property: <strong>https://example.com/</strong>
-                      </Text>
-                      <Text>
-                        • For Domain property: <strong>sc-domain:example.com</strong>
-                      </Text>
-                      <Text>The URL must match exactly what's in Search Console.</Text>
-                    </VStack>
-                  </Box>
-                </VStack>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="ghost" mr={3} onClick={onGSCModalClose}>
-                  Skip for now
-                </Button>
-                <Button
-                  colorScheme="green"
-                  onClick={handleSaveGSCConnection}
-                  isLoading={loading}
-                  isDisabled={!gscSiteUrl}
-                >
-                  Connect GSC
-                </Button>
-              </ModalFooter>
-            </ModalContent>
-          </Modal>
+          <GA4Modal
+            isOpen={isGA4ModalOpen}
+            onClose={onGA4ModalClose}
+            propertyId={ga4PropertyId}
+            onPropertyIdChange={setGA4PropertyId}
+            onSave={handleSaveGA4Connection}
+            loading={loading}
+          />
+          <GSCModal
+            isOpen={isGSCModalOpen}
+            onClose={onGSCModalClose}
+            siteUrl={gscSiteUrl}
+            onSiteUrlChange={setGscSiteUrl}
+            onSave={handleSaveGSCConnection}
+            loading={loading}
+          />
+          <CMSModal
+            isOpen={isCMSModalOpen}
+            onClose={onCMSModalClose}
+            platform={cmsPlatform}
+            credentials={cmsCredentials}
+            onCredentialsChange={setCmsCredentials}
+            onTest={handleTestCMS}
+            testResult={testResult}
+            loading={loading}
+          />
 
           <Alert status="info" borderRadius="md">
             <AlertIcon />
@@ -771,16 +376,13 @@ function IntegrationsContent() {
                 Setup Instructions:
               </Text>
               <Text fontSize="sm">
-                <strong>GA4/GSC:</strong> Click connect to authorize with Google. You'll be
-                redirected to Google to grant permissions.
+                <strong>GA4/GSC:</strong> Click connect to authorize with Google.
               </Text>
               <Text fontSize="sm">
-                <strong>WordPress:</strong> Create an Application Password in WordPress (Users →
-                Your Profile → Application Passwords).
+                <strong>WordPress:</strong> Create an Application Password in WordPress.
               </Text>
               <Text fontSize="sm">
-                <strong>Shopify:</strong> Create a Private App with content write permissions and
-                get the access token.
+                <strong>Shopify:</strong> Create a Private App with content write permissions.
               </Text>
             </VStack>
           </Alert>
@@ -792,19 +394,7 @@ function IntegrationsContent() {
 
 export default function IntegrationsPage() {
   return (
-    <Suspense
-      fallback={
-        <Box
-          minH="calc(100vh - 64px)"
-          bg="brand.light"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <Spinner size="xl" color="brand.orange" />
-        </Box>
-      }
-    >
+    <Suspense fallback={<IntegrationsSkeleton />}>
       <IntegrationsContent />
     </Suspense>
   );
