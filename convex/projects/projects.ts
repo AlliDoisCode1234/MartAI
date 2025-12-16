@@ -13,6 +13,8 @@ export const createProject = mutation({
     industry: v.optional(v.string()),
     // Phase 3: Organization support
     organizationId: v.optional(v.id('organizations')),
+    // PROJ-001: Project type (defaults to 'own')
+    projectType: v.optional(v.union(v.literal('own'), v.literal('competitor'))),
     // Context fields from onboarding
     targetAudience: v.optional(v.string()),
     businessGoals: v.optional(v.string()),
@@ -60,6 +62,10 @@ export const createProject = mutation({
       name: args.name,
       websiteUrl: args.websiteUrl,
       industry: args.industry,
+      // PROJ-001: Set project type and lock URL
+      projectType: args.projectType ?? 'own',
+      urlLocked: true, // URL cannot be changed after creation
+      serpAnalysisUsed: false, // Track SERP quota usage
       targetAudience: args.targetAudience,
       businessGoals: args.businessGoals,
       competitors: args.competitors,
@@ -132,6 +138,14 @@ export const updateProject = mutation({
   handler: async (ctx, args) => {
     // Security: Require project access
     await requireProjectAccess(ctx, args.projectId, 'editor');
+
+    // PROJ-001: Check if URL is locked before allowing URL changes
+    if (args.websiteUrl !== undefined) {
+      const project = await ctx.db.get(args.projectId);
+      if (project?.urlLocked) {
+        throw new Error('URL_LOCKED: Website URL cannot be changed after project creation.');
+      }
+    }
 
     const updates: any = { updatedAt: Date.now() };
     if (args.name !== undefined) updates.name = args.name;

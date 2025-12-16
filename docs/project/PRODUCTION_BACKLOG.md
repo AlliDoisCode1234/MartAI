@@ -25,6 +25,7 @@
 | ADMIN-003      | User Engagement Milestones          | 3   | 3      | ✅ Done        |
 | SEC-002        | Security Audit Checklist            | 5   | 4      | 🔲 Todo        |
 | QUAL-001       | Critical Path E2E Testing           | 8   | 4      | 🔲 Todo        |
+| **PROJ-001**   | **Project Type + SERP Gating**      | 5   | 2      | 🔲 Todo        |
 
 ---
 
@@ -685,6 +686,25 @@ gantt
 > **Business Model**: Members analyze competitor URLs by creating new projects. Each project = 1 URL through analyzer. Project limits tied to subscription tier (upsell path).
 > **SERP-001**: Auto-run SERP when URL is input during onboarding, store results.
 > **SERP-002**: Display SERP competitor data in strategy, keywords, and content pages.
+
+### Project Type & SERP Gating (PROJ-001)
+
+| Field    | Value |
+| -------- | ----- |
+| Priority | P1    |
+| Points   | 5     |
+| Sprint   | 2     |
+
+**Requirements:**
+
+1. Add `projectType: 'own' | 'competitor'` field to projects schema
+2. Lock URL after project creation (no editing allowed)
+3. 1 SERP analysis per project included in subscription
+4. Additional SERP = one-off charge through Polar
+5. `own` = full features (content gen, strategy, analytics)
+6. `competitor` = limited view (SERP data only, no generation)
+
+**NO FREE TIER** - All features require paid subscription.
 
 ### Code Quality
 

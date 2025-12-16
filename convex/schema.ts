@@ -458,6 +458,12 @@ export default defineSchema({
     name: v.string(),
     websiteUrl: v.string(),
     industry: v.optional(v.string()),
+    // PROJ-001: Project type differentiates own vs competitor projects
+    projectType: v.optional(v.union(v.literal('own'), v.literal('competitor'))),
+    // URL locked after creation - cannot be changed (PROJ-001)
+    urlLocked: v.optional(v.boolean()),
+    // SERP analysis quota tracking (1 per project included)
+    serpAnalysisUsed: v.optional(v.boolean()),
     // Additional context fields from onboarding
     targetAudience: v.optional(v.string()),
     businessGoals: v.optional(v.string()),
@@ -466,7 +472,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index('by_user', ['userId'])
-    .index('by_org', ['organizationId']),
+    .index('by_org', ['organizationId'])
+    .index('by_type', ['projectType']),
 
   // GA4 Connections
   ga4Connections: defineTable({

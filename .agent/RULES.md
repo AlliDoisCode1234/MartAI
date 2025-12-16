@@ -1,5 +1,22 @@
 # RULES
 
+## Auto-Apply Workflows
+
+On EVERY response, internally apply these workflows and show status at end of response:
+
+- ✅ = workflow applies to this response
+- ➖ = workflow does not apply
+
+| Workflow              | Purpose                                          |
+| --------------------- | ------------------------------------------------ |
+| `/bod`                | Board of Directors consultation for decisions    |
+| `/code-standards`     | Component structure, reusability, data handling  |
+| `/code-review`        | Type safety, build check, quality, commit format |
+| `/security-audit`     | Auth, input validation, secrets, dependencies    |
+| `/security-rules`     | Mutation/query checks, RBAC, rate limiting       |
+| `/martai`             | Comprehensive MartAI dev workflow                |
+| `/debugging-workflow` | Root cause investigation before fixes            |
+
 After editing `convex/schema.ts`, ALWAYS run: `npx convex dev --once`
 PowerShell doesn't support `&&` - use separate commands or semicolons
 Prefer Convex components over custom solutions (check `convex.config.ts` first)
