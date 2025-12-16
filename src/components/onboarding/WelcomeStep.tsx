@@ -63,6 +63,8 @@ export function WelcomeStep({ formData, onFormChange, onNext, loading }: Props) 
             <FormControl>
               <FormLabel>Business Name (optional)</FormLabel>
               <Input
+                type="text"
+                autoComplete="organization"
                 placeholder="e.g., Acme Corp"
                 value={formData.businessName}
                 onChange={(e) => onFormChange({ ...formData, businessName: e.target.value })}
@@ -73,6 +75,8 @@ export function WelcomeStep({ formData, onFormChange, onNext, loading }: Props) 
             <FormControl isRequired>
               <FormLabel>Website URL</FormLabel>
               <Input
+                type="url"
+                autoComplete="url"
                 placeholder="https://yourwebsite.com"
                 value={formData.website}
                 onChange={(e) => onFormChange({ ...formData, website: e.target.value })}

@@ -131,7 +131,7 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
           transition={{ delay: 0.8 }}
         >
           <Badge
-            bg={tierConfig.bgGradient}
+            bgGradient={tierConfig.bgGradient}
             color="white"
             fontSize="md"
             px={4}

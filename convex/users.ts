@@ -37,6 +37,9 @@ export const me = query({
   },
 });
 
+// Alias for backward compatibility - some components use api.users.current
+export const current = me;
+
 export const completeOnboarding = mutation({
   args: {},
   handler: async (ctx) => {
