@@ -6,9 +6,8 @@
  * Component Hierarchy:
  * App → Calendar → KeywordPlanTable (this file)
  *
- * Spreadsheet-style table view for content calendar items.
- * Shows keyword, volume, difficulty, status, content title, and competitor.
- * Matches helps2.com content calendar format.
+ * Spreadsheet-style table view matching helps2 content calendar format.
+ * Columns: # | Page Type | Exact Title To Use | Status | Primary Keyword(s) | Notes
  */
 
 import {
@@ -23,87 +22,74 @@ import {
   Text,
   HStack,
   Button,
-  Icon,
   Heading,
+  Wrap,
+  WrapItem,
 } from '@chakra-ui/react';
-import { FiDownload, FiExternalLink } from 'react-icons/fi';
+import { FiDownload } from 'react-icons/fi';
+
+type TargetKeyword = {
+  keyword: string;
+  volume?: number;
+};
 
 type CalendarItem = {
   _id: string;
   title: string;
   status: string;
-  contentType: string;
+  pageType?: string;
+  targetKeywords?: TargetKeyword[];
   primaryKeyword?: string;
-  publishDate?: number;
-};
-
-type KeywordMetric = {
-  keyword: string;
-  searchVolume?: number;
-  difficulty?: number;
+  notes?: string;
 };
 
 type Props = {
   items: CalendarItem[];
-  keywords: KeywordMetric[];
 };
 
-function getDifficultyColor(difficulty: number): string {
-  if (difficulty <= 30) return 'green';
-  if (difficulty <= 60) return 'yellow';
-  return 'red';
+const PAGE_TYPE_COLORS: Record<string, string> = {
+  homepage: 'blue',
+  service: 'purple',
+  blog: 'green',
+  about: 'orange',
+  product: 'teal',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  published: 'green',
+  scheduled: 'blue',
+  draft: 'yellow',
+  idea: 'gray',
+  in_progress: 'orange',
+};
+
+function formatKeywordsWithVolume(keywords?: TargetKeyword[], primaryKeyword?: string): string {
+  if (keywords && keywords.length > 0) {
+    return keywords
+      .map((k) => (k.volume ? `${k.keyword} - ${k.volume}` : k.keyword))
+      .join(', ');
+  }
+  return primaryKeyword || '';
 }
 
-function formatVolume(volume: number): string {
-  if (volume >= 1000) return `${(volume / 1000).toFixed(1)}K`;
-  return volume.toString();
-}
-
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-export function KeywordPlanTable({ items, keywords }: Props) {
-  // Build keyword lookup map
-  const keywordMap = new Map<string, KeywordMetric>();
-  keywords.forEach((k) => keywordMap.set(k.keyword.toLowerCase(), k));
-
-  // Enrich items with keyword metrics
-  const enrichedItems = items.map((item) => {
-    const kwMetric = item.primaryKeyword
-      ? keywordMap.get(item.primaryKeyword.toLowerCase())
-      : undefined;
-    return {
-      ...item,
-      volume: kwMetric?.searchVolume,
-      difficulty: kwMetric?.difficulty,
-    };
-  });
-
-  // Sort by volume descending
-  const sortedItems = [...enrichedItems].sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0));
-
+export function KeywordPlanTable({ items }: Props) {
   const handleExport = () => {
-    const headers = ['Keyword', 'Volume', 'Difficulty', 'Status', 'Content Title', 'Scheduled'];
-    const rows = sortedItems.map((item) => [
-      item.primaryKeyword ?? '',
-      item.volume?.toString() ?? '',
-      item.difficulty?.toString() ?? '',
-      item.status,
+    const headers = ['#', 'Page Type', 'Exact Title To Use', 'Status', 'Primary Keyword(s)', 'Notes'];
+    const rows = items.map((item, index) => [
+      (index + 1).toString(),
+      item.pageType || 'blog',
       item.title,
-      item.publishDate ? formatDate(item.publishDate) : '',
+      item.status,
+      formatKeywordsWithVolume(item.targetKeywords, item.primaryKeyword),
+      item.notes || '',
     ]);
 
-    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+    const csv = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'content-calendar.csv';
+    a.download = 'seo-content-calendar.csv';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -111,8 +97,8 @@ export function KeywordPlanTable({ items, keywords }: Props) {
   return (
     <Box bg="white" borderRadius="lg" boxShadow="sm" overflow="hidden">
       <HStack justify="space-between" p={4} borderBottom="1px solid" borderColor="gray.200">
-        <Heading size="md">Keyword Content Plan</Heading>
-        <Button size="sm" leftIcon={<FiDownload />} onClick={handleExport}>
+        <Heading size="md">SEO Content Calendar</Heading>
+        <Button size="sm" leftIcon={<FiDownload />} onClick={handleExport} colorScheme="purple">
           Export CSV
         </Button>
       </HStack>
@@ -121,70 +107,58 @@ export function KeywordPlanTable({ items, keywords }: Props) {
         <Table variant="simple" size="sm">
           <Thead bg="gray.50">
             <Tr>
-              <Th>Keyword</Th>
-              <Th isNumeric>Volume</Th>
-              <Th isNumeric>KD</Th>
+              <Th w="50px">#</Th>
+              <Th>Page Type</Th>
+              <Th>Exact Title To Use</Th>
               <Th>Status</Th>
-              <Th>Content Title</Th>
-              <Th>Scheduled</Th>
+              <Th>Primary Keyword(s)</Th>
+              <Th>Notes</Th>
             </Tr>
           </Thead>
           <Tbody>
-            {sortedItems.map((item) => (
+            {items.map((item, index) => (
               <Tr key={item._id} _hover={{ bg: 'gray.50' }}>
-                <Td>
-                  {item.primaryKeyword ? (
-                    <Text fontWeight="medium" color="purple.600">
-                      {item.primaryKeyword}
-                    </Text>
-                  ) : (
-                    <Text color="gray.400" fontStyle="italic">
-                      No keyword
-                    </Text>
-                  )}
-                </Td>
-                <Td isNumeric>
-                  {item.volume ? (
-                    <Badge colorScheme="purple">{formatVolume(item.volume)}</Badge>
-                  ) : (
-                    <Text color="gray.400">—</Text>
-                  )}
-                </Td>
-                <Td isNumeric>
-                  {item.difficulty !== undefined ? (
-                    <Badge colorScheme={getDifficultyColor(item.difficulty)}>
-                      {item.difficulty}
-                    </Badge>
-                  ) : (
-                    <Text color="gray.400">—</Text>
-                  )}
+                <Td fontWeight="bold" color="gray.500">
+                  {index + 1}
                 </Td>
                 <Td>
-                  <Badge
-                    colorScheme={
-                      item.status === 'published'
-                        ? 'green'
-                        : item.status === 'draft'
-                          ? 'yellow'
-                          : 'gray'
-                    }
-                  >
-                    {item.status}
+                  <Badge colorScheme={PAGE_TYPE_COLORS[item.pageType || 'blog'] || 'gray'}>
+                    {item.pageType || 'Blog'}
                   </Badge>
                 </Td>
                 <Td>
-                  <Text noOfLines={1} maxW="300px">
+                  <Text fontWeight="medium" maxW="400px">
                     {item.title}
                   </Text>
                 </Td>
                 <Td>
-                  {item.publishDate ? (
-                    <Text fontSize="sm" color="gray.600">
-                      {formatDate(item.publishDate)}
-                    </Text>
-                  ) : (
-                    <Text color="gray.400">—</Text>
-                  )}
+                  <Badge colorScheme={STATUS_COLORS[item.status] || 'gray'}>
+                    {item.status}
+                  </Badge>
+                </Td>
+                <Td>
+                  <Wrap spacing={1}>
+                    {item.targetKeywords && item.targetKeywords.length > 0 ? (
+                      item.targetKeywords.map((kw, i) => (
+                        <WrapItem key={i}>
+                          <Badge variant="subtle" colorScheme="purple" fontSize="xs">
+                            {kw.keyword}{kw.volume ? ` - ${kw.volume}` : ''}
+                          </Badge>
+                        </WrapItem>
+                      ))
+                    ) : item.primaryKeyword ? (
+                      <Badge variant="subtle" colorScheme="purple" fontSize="xs">
+                        {item.primaryKeyword}
+                      </Badge>
+                    ) : (
+                      <Text color="gray.400" fontSize="xs">—</Text>
+                    )}
+                  </Wrap>
+                </Td>
+                <Td>
+                  <Text fontSize="sm" color="gray.600" noOfLines={2} maxW="200px">
+                    {item.notes || '—'}
+                  </Text>
                 </Td>
               </Tr>
             ))}
@@ -192,11 +166,12 @@ export function KeywordPlanTable({ items, keywords }: Props) {
         </Table>
       </Box>
 
-      {sortedItems.length === 0 && (
+      {items.length === 0 && (
         <Box p={8} textAlign="center" color="gray.500">
-          <Text>No content items scheduled. Add content to see your keyword plan.</Text>
+          <Text>No content items scheduled. Add content to see your SEO calendar.</Text>
         </Box>
       )}
     </Box>
   );
 }
+

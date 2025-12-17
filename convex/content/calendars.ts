@@ -7,8 +7,18 @@ const calendarPayload = {
   briefId: v.optional(v.id('briefs')),
   title: v.string(),
   contentType: v.string(),
+  pageType: v.optional(v.string()), // homepage | service | blog | about | product
   primaryKeyword: v.optional(v.string()),
   supportingKeywords: v.optional(v.array(v.string())),
+  targetKeywords: v.optional(
+    v.array(
+      v.object({
+        keywordId: v.optional(v.id('keywords')),
+        keyword: v.string(),
+        volume: v.optional(v.number()),
+      })
+    )
+  ),
   status: v.optional(v.string()),
   publishDate: v.optional(v.number()),
   notes: v.optional(v.string()),

@@ -40,6 +40,7 @@ import type * as content_calendars from "../content/calendars.js";
 import type * as content_content from "../content/content.js";
 import type * as content_contentCheckQueries from "../content/contentCheckQueries.js";
 import type * as content_contentChecks from "../content/contentChecks.js";
+import type * as content_contentTemplates from "../content/contentTemplates.js";
 import type * as content_draftActions from "../content/draftActions.js";
 import type * as content_drafts from "../content/drafts.js";
 import type * as content_quarterlyPlanActions from "../content/quarterlyPlanActions.js";
@@ -149,6 +150,7 @@ declare const fullApi: ApiFromModules<{
   "content/content": typeof content_content;
   "content/contentCheckQueries": typeof content_contentCheckQueries;
   "content/contentChecks": typeof content_contentChecks;
+  "content/contentTemplates": typeof content_contentTemplates;
   "content/draftActions": typeof content_draftActions;
   "content/drafts": typeof content_drafts;
   "content/quarterlyPlanActions": typeof content_quarterlyPlanActions;

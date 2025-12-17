@@ -379,13 +379,23 @@ export default defineSchema({
     prospectId: v.optional(v.id('prospects')),
     projectId: v.optional(v.id('projects')),
     briefId: v.optional(v.id('briefs')), // Link to content brief
-    title: v.string(),
+    title: v.string(), // "Exact Title To Use"
     contentType: v.string(),
+    pageType: v.optional(v.string()), // homepage | service | blog | about | product
     primaryKeyword: v.optional(v.string()),
     supportingKeywords: v.optional(v.array(v.string())),
+    targetKeywords: v.optional(
+      v.array(
+        v.object({
+          keywordId: v.optional(v.id('keywords')), // Link to keyword table
+          keyword: v.string(),
+          volume: v.optional(v.number()),
+        })
+      )
+    ),
     status: v.string(), // idea, scheduled, in_progress, published
     publishDate: v.optional(v.number()),
-    notes: v.optional(v.string()),
+    notes: v.optional(v.string()), // Content pillar, theme, notes
     heroOffer: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -394,7 +404,8 @@ export default defineSchema({
     .index('by_status', ['status'])
     .index('by_prospect', ['prospectId'])
     .index('by_publish_date', ['publishDate'])
-    .index('by_project_date', ['projectId', 'publishDate']),
+    .index('by_project_date', ['projectId', 'publishDate'])
+    .index('by_page_type', ['projectId', 'pageType']),
 
   subscriptions: defineTable({
     userId: v.id('users'),
@@ -848,6 +859,30 @@ export default defineSchema({
   })
     .index('by_name', ['name'])
     .index('by_default', ['isDefault']),
+
+  // Content Templates (AI prompts + SEO checklists per page type)
+  contentTemplates: defineTable({
+    projectId: v.optional(v.id('projects')), // null = global template
+    pageType: v.string(), // blog | service | homepage | about | product
+    name: v.string(),
+    promptTemplate: v.string(), // AI prompt with {{placeholders}}
+    seoChecklist: v.optional(
+      v.array(
+        v.object({
+          rule: v.string(),
+          value: v.optional(v.string()),
+        })
+      )
+    ),
+    wordCountTarget: v.optional(v.number()),
+    isDefault: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_project', ['projectId'])
+    .index('by_page_type', ['pageType'])
+    .index('by_default', ['isDefault']),
+
   // Global Keyword Library (Admin Managed)
   keywordLibrary: defineTable({
     keyword: v.string(),
