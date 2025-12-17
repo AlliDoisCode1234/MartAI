@@ -33,6 +33,7 @@ import { useAuth } from '@/lib/useAuth';
 import { useProject } from '@/lib/hooks';
 import { CalendarMonthView, CalendarWeekView, CalendarListView } from '@/src/components/calendar';
 import { CardSkeleton } from '@/components/skeletons';
+import { EmptyState } from '@/src/components/feedback';
 
 type ViewMode = 'month' | 'week' | 'list';
 
@@ -120,10 +121,7 @@ export default function CalendarPage() {
         alignItems="center"
         justifyContent="center"
       >
-        <Alert status="info" maxW="md">
-          <AlertIcon />
-          Complete onboarding to create your content calendar
-        </Alert>
+        <EmptyState type="calendar" onAction={() => (window.location.href = '/strategy')} />
       </Box>
     );
   }

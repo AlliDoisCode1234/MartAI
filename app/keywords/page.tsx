@@ -36,6 +36,7 @@ import { usePaginatedQuery, useConvexAuth } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useProject } from '@/lib/hooks';
+import { EmptyState } from '@/src/components/feedback';
 
 export default function KeywordsPage() {
   const { isLoading: authLoading } = useConvexAuth();
@@ -138,11 +139,7 @@ export default function KeywordsPage() {
           </HStack>
 
           {!results || results.length === 0 ? (
-            <Alert status="info" borderRadius="md">
-              <AlertIcon />
-              No keywords found for this project. Run an analysis in the Dashboard to generate
-              ideas.
-            </Alert>
+            <EmptyState type="keywords" onAction={() => (window.location.href = '/strategy')} />
           ) : (
             <>
               <HStack spacing={4}>
