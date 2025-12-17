@@ -20,6 +20,7 @@ import type * as analytics_adhoc from "../analytics/adhoc.js";
 import type * as analytics_aggregations from "../analytics/aggregations.js";
 import type * as analytics_analytics from "../analytics/analytics.js";
 import type * as analytics_competitors from "../analytics/competitors.js";
+import type * as analytics_eventTracking from "../analytics/eventTracking.js";
 import type * as analytics_events from "../analytics/events.js";
 import type * as analytics_gscKeywords from "../analytics/gscKeywords.js";
 import type * as analytics_insights from "../analytics/insights.js";
@@ -130,6 +131,7 @@ declare const fullApi: ApiFromModules<{
   "analytics/aggregations": typeof analytics_aggregations;
   "analytics/analytics": typeof analytics_analytics;
   "analytics/competitors": typeof analytics_competitors;
+  "analytics/eventTracking": typeof analytics_eventTracking;
   "analytics/events": typeof analytics_events;
   "analytics/gscKeywords": typeof analytics_gscKeywords;
   "analytics/insights": typeof analytics_insights;
