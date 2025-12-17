@@ -6,19 +6,29 @@
  * Component Hierarchy:
  * App → Dashboard (this file)
  *
- * Main dashboard view with project stats, charts, and insights.
- * Uses extracted components for modularity.
+ * Unified dashboard with MART guidance, stats, charts, and insights.
+ * Merged from previous Home + Dashboard pages.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Container, VStack, Grid } from '@chakra-ui/react';
+import {
+  Container,
+  VStack,
+  Grid,
+  HStack,
+  Heading,
+  SimpleGrid,
+  Box,
+  Button,
+} from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { FiTrendingUp, FiTarget, FiZap, FiActivity } from 'react-icons/fi';
+import { FiTrendingUp, FiTarget, FiZap, FiActivity, FiPlus } from 'react-icons/fi';
 import { useProject } from '@/lib/hooks';
+import Link from 'next/link';
 
 // Dashboard components
 import {
@@ -35,11 +45,20 @@ import {
 } from '@/src/components/dashboard';
 import { IntegrationPromptBanner } from '@/src/components/analytics/IntegrationPromptBanner';
 import { InsightList } from '@/src/components/insights';
+import {
+  MartCharacter,
+  TutorialCard,
+  POST_ONBOARDING_STEPS,
+  WHATS_NEXT_STEPS,
+  type TutorialStep,
+} from '@/src/components/assistant';
+import { KeywordsPreview, TopicsPreview } from '@/src/components/strategy';
 
 // Constants
 import { MOCK_TRAFFIC_DATA, MOCK_KEYWORD_PERFORMANCE } from '@/lib/constants/dashboard';
 
 const MotionGrid = motion(Grid);
+const MotionBox = motion(Box);
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -61,6 +80,11 @@ export default function DashboardPage() {
     projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
 
+  const keywords = useQuery(
+    api.seo.keywords.getKeywordsByProject,
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+  );
+
   // Auth redirect
   useEffect(() => {
     if (authLoading) return;
@@ -69,6 +93,36 @@ export default function DashboardPage() {
 
   const stats = strategyData?.stats ?? null;
   const loadingDashboard = authLoading || projectLoading;
+
+  // Determine user state for MART guidance
+  const hasClusters = (strategyData?.clusters?.length ?? 0) > 0;
+  const hasGA4 = !!ga4Connection;
+  const isNewUser = !hasGA4 && !hasClusters;
+  const userName = user?.name?.split(' ')[0] || 'there';
+
+  // Build tutorial steps based on state
+  const tutorialSteps = useMemo((): TutorialStep[] => {
+    if (!hasClusters) {
+      return POST_ONBOARDING_STEPS.map((step) => ({
+        ...step,
+        completed:
+          (step.id === 'view-keywords' && (keywords?.length ?? 0) > 0) ||
+          (step.id === 'create-clusters' && hasClusters),
+      }));
+    }
+    return WHATS_NEXT_STEPS;
+  }, [hasClusters, keywords?.length]);
+
+  // MART's contextual message
+  const getMartMessage = () => {
+    if (isNewUser) {
+      return `Hey ${userName}! Let's get your SEO strategy off the ground. Here's what to focus on first:`;
+    }
+    if (mrScore && mrScore.overall >= 70) {
+      return `Nice work, ${userName}! Your MR score is looking great. Here are ways to keep the momentum:`;
+    }
+    return `Welcome back, ${userName}! Here's what I'd focus on next to boost your SEO:`;
+  };
 
   if (loadingDashboard) return <DashboardSkeleton />;
   if (!project) return <WelcomeEmptyState />;
@@ -82,6 +136,12 @@ export default function DashboardPage() {
     <Container maxW="container.xl" py={8}>
       <VStack spacing={8} align="stretch">
         <DashboardHero userName={user?.name} projectName={project.name || 'Your Project'} />
+
+        {/* MART Guidance Section */}
+        <MotionBox initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <MartCharacter message={getMartMessage()} size="md" />
+        </MotionBox>
+
         <IntegrationPromptBanner isConnected={!!ga4Connection} projectId={projectId || undefined} />
 
         <Grid templateColumns={{ base: '1fr', lg: '300px 1fr' }} gap={6}>
@@ -120,9 +180,9 @@ export default function DashboardPage() {
             />
             <StatCard
               label="Ranking Keywords"
-              value="480"
+              value={keywords?.length ?? 0}
               trend="increase"
-              trendValue="70 new this month"
+              trendValue="Tracked keywords"
               icon={FiTarget}
               iconColor="blue.500"
               iconBg="blue.50"
@@ -146,6 +206,33 @@ export default function DashboardPage() {
             />
           </MotionGrid>
         </Grid>
+
+        {/* What's Next Section */}
+        <Box>
+          <HStack justify="space-between" mb={4}>
+            <Heading size="md" color="gray.700">
+              {isNewUser ? 'Getting Started' : "What's Next"}
+            </Heading>
+            <Link href="/projects/new">
+              <Button colorScheme="orange" leftIcon={<FiPlus />} size="sm">
+                New Project
+              </Button>
+            </Link>
+          </HStack>
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+            {tutorialSteps.slice(0, 4).map((step, i) => (
+              <TutorialCard key={step.id} step={step} index={i} />
+            ))}
+          </SimpleGrid>
+        </Box>
+
+        {/* Keywords & Topics Preview */}
+        {projectId && (
+          <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
+            <KeywordsPreview projectId={projectId as Id<'projects'>} maxPreview={8} />
+            <TopicsPreview projectId={projectId as Id<'projects'>} maxPreview={4} />
+          </Grid>
+        )}
 
         <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
           <TrafficChart data={MOCK_TRAFFIC_DATA} />
