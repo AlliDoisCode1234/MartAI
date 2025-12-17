@@ -94,6 +94,8 @@ export default defineSchema({
     reactivatedAt: v.optional(v.number()),
     // Payment tracking (synced from subscription)
     lastPaymentAt: v.optional(v.number()),
+    // Stripe customer ID for billing
+    stripeCustomerId: v.optional(v.string()),
   })
     .index('email', ['email'])
     .index('by_role', ['role'])
@@ -433,9 +435,9 @@ export default defineSchema({
     startsAt: v.number(),
     renewsAt: v.optional(v.number()),
     cancelAt: v.optional(v.number()),
-    // Polar billing integration
-    polarSubscriptionId: v.optional(v.string()),
-    polarCustomerId: v.optional(v.string()),
+    // Stripe billing integration
+    stripeSubscriptionId: v.optional(v.string()),
+    stripeCustomerId: v.optional(v.string()),
     // Grace period and maintenance mode tracking
     graceStartedAt: v.optional(v.number()),
     maintenanceStartedAt: v.optional(v.number()),
@@ -448,7 +450,7 @@ export default defineSchema({
   })
     .index('by_user', ['userId'])
     .index('by_status', ['status'])
-    .index('by_polar_subscription', ['polarSubscriptionId']),
+    .index('by_stripe_subscription', ['stripeSubscriptionId']),
 
   usageLimits: defineTable({
     userId: v.id('users'),

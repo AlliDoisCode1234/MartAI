@@ -1,6 +1,6 @@
 'use client';
 
-import { type FC } from 'react';
+import { type FC, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -16,12 +16,22 @@ import {
 import { motion } from 'framer-motion';
 import { ArrowForwardIcon, CheckCircleIcon, StarIcon, SettingsIcon } from '@chakra-ui/icons';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/useAuth';
 
 const MotionBox = motion(Box);
 const MotionStack = motion(Stack);
 
 export const HomePage: FC = () => {
   const router = useRouter();
+  const { isAuthenticated, loading } = useAuth();
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.replace('/home');
+    }
+  }, [isAuthenticated, loading, router]);
+
   const bgGradient = useColorModeValue(
     'radial(brand.orange 1px, transparent 1px)',
     'radial(brand.orange 1px, transparent 1px)'
@@ -30,6 +40,15 @@ export const HomePage: FC = () => {
     'linear(to-r, brand.orange, brand.red)',
     'linear(to-r, brand.orange, brand.red)'
   );
+
+  // Show loading or redirect in progress
+  if (loading || isAuthenticated) {
+    return (
+      <Box minH="100vh" display="flex" alignItems="center" justifyContent="center">
+        <Text color="gray.500">Loading...</Text>
+      </Box>
+    );
+  }
 
   return (
     <Box position="relative" overflow="hidden">

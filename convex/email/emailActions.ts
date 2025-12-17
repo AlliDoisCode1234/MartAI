@@ -116,7 +116,50 @@ const EMAIL_TEMPLATES: Record<
 };
 
 /**
- * Send a transactional email
+ * Internal function to send email (can be called from other actions)
+ */
+async function sendEmailInternal(args: {
+  to: string;
+  template: string;
+  data?: Record<string, unknown>;
+}): Promise<{ success: boolean; skipped?: boolean; id?: string }> {
+  const template = EMAIL_TEMPLATES[args.template];
+  if (!template) {
+    throw new Error(`Unknown email template: ${args.template}`);
+  }
+
+  // Skip in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Email] Would send:', {
+      to: args.to,
+      template: args.template,
+      subject: template.subject,
+    });
+    return { success: true, skipped: true };
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: args.to,
+      subject: template.subject,
+      html: template.getHtml(args.data || {}),
+    });
+
+    if (error) {
+      console.error('[Email] Error:', error);
+      throw new Error(error.message);
+    }
+
+    return { success: true, id: data?.id };
+  } catch (error) {
+    console.error('[Email] Failed to send:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send a transactional email (public action)
  */
 export const sendEmail = action({
   args: {
@@ -124,40 +167,8 @@ export const sendEmail = action({
     template: v.string(),
     data: v.optional(v.any()),
   },
-  handler: async (ctx, args) => {
-    const template = EMAIL_TEMPLATES[args.template];
-    if (!template) {
-      throw new Error(`Unknown email template: ${args.template}`);
-    }
-
-    // Skip in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Email] Would send:', {
-        to: args.to,
-        template: args.template,
-        subject: template.subject,
-      });
-      return { success: true, skipped: true };
-    }
-
-    try {
-      const { data, error } = await resend.emails.send({
-        from: FROM_EMAIL,
-        to: args.to,
-        subject: template.subject,
-        html: template.getHtml(args.data || {}),
-      });
-
-      if (error) {
-        console.error('[Email] Error:', error);
-        throw new Error(error.message);
-      }
-
-      return { success: true, id: data?.id };
-    } catch (error) {
-      console.error('[Email] Failed to send:', error);
-      throw error;
-    }
+  handler: async (_ctx, args) => {
+    return await sendEmailInternal(args);
   },
 });
 
@@ -169,8 +180,8 @@ export const sendWelcomeEmail = action({
     email: v.string(),
     name: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    return await sendEmail(ctx, {
+  handler: async (_ctx, args) => {
+    return await sendEmailInternal({
       to: args.email,
       template: 'welcome',
       data: { name: args.name },
@@ -186,8 +197,8 @@ export const sendPhaseUnlockEmail = action({
     email: v.string(),
     phaseName: v.string(),
   },
-  handler: async (ctx, args) => {
-    return await sendEmail(ctx, {
+  handler: async (_ctx, args) => {
+    return await sendEmailInternal({
       to: args.email,
       template: 'phase_unlock',
       data: { phaseName: args.phaseName },

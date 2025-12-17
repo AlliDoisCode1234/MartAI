@@ -1,8 +1,9 @@
 import { httpRouter } from 'convex/server';
 import { checkScheduledPosts } from './http/checkScheduledPosts';
 import { publishScheduledPost } from './http/publishScheduledPost';
-import { polar } from './polar';
 import { auth } from './auth';
+import { components } from './_generated/api';
+import { registerRoutes } from '@convex-dev/stripe';
 
 const http = httpRouter();
 
@@ -20,7 +21,9 @@ http.route({
   handler: publishScheduledPost,
 });
 
-// Polar billing webhooks (defaults to /polar/events)
-polar.registerRoutes(http);
+// Stripe billing webhooks
+registerRoutes(http, components.stripe, {
+  webhookPath: '/stripe/webhook',
+});
 
 export default http;

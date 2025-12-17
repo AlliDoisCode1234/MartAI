@@ -229,7 +229,7 @@ export const canPerformAction = query({
 
 /**
  * Transition subscription to grace period on payment failure
- * Called by Polar webhook handler
+ * Called by Stripe webhook handler
  */
 export const transitionToGracePeriod = internalMutation({
   args: { subscriptionId: v.id('subscriptions') },
@@ -278,7 +278,7 @@ export const transitionToMaintenanceMode = internalMutation({
 
 /**
  * Reactivate subscription on successful payment
- * Called by Polar webhook handler
+ * Called by Stripe webhook handler
  */
 export const reactivateSubscription = internalMutation({
   args: { subscriptionId: v.id('subscriptions') },
@@ -309,7 +309,7 @@ export const reactivateSubscription = internalMutation({
 
 /**
  * Cancel subscription
- * Called by Polar webhook or user action
+ * Called by Stripe webhook or user action
  */
 export const cancelSubscription = internalMutation({
   args: {

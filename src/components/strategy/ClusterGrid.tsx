@@ -43,15 +43,17 @@ export function ClusterGrid({ clusters, maxDisplay = 6 }: Props) {
       <Heading size="lg">Target Topics (Keyword Clusters)</Heading>
       <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={6}>
         {clusters.slice(0, maxDisplay).map((cluster, index) => (
-          <GridItem key={cluster._id || index}>
-            <Card>
+          <GridItem key={cluster._id || index} display="flex">
+            <Card h="100%" w="100%" minH="100px">
               <CardBody>
-                <VStack align="stretch" spacing={2}>
-                  <HStack justify="space-between">
-                    <Heading size="sm" noOfLines={2}>
+                <VStack align="stretch" spacing={2} h="100%" justify="space-between">
+                  <HStack justify="space-between" align="flex-start">
+                    <Heading size="sm" noOfLines={2} flex="1" mr={2}>
                       {cluster.clusterName}
                     </Heading>
-                    <Badge colorScheme={getIntentColor(cluster.intent)}>{cluster.intent}</Badge>
+                    <Badge colorScheme={getIntentColor(cluster.intent)} flexShrink={0}>
+                      {cluster.intent}
+                    </Badge>
                   </HStack>
                   <Text fontSize="xs" color="gray.500">
                     Impact: {cluster.impactScore.toFixed(2)} | {cluster.keywords.length} keywords
