@@ -31,6 +31,7 @@ import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/lib/useAuth';
 import { FiArrowLeft } from 'react-icons/fi';
 import Link from 'next/link';
+import { sanitizeErrorMessage } from '@/lib/errorSanitizer';
 
 // Extracted components
 import { ProjectBasicsStep, ProjectContextStep } from '@/src/components/projects';
@@ -94,7 +95,7 @@ export default function NewProjectPage() {
     } catch (error: any) {
       toast({
         title: 'Failed to create project',
-        description: error.message || 'Please try again.',
+        description: sanitizeErrorMessage(error, 'Please try again.'),
         status: 'error',
         duration: 5000,
       });

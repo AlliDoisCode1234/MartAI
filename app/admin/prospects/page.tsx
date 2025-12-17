@@ -33,6 +33,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ExternalLinkIcon, ViewIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
 import type { Id } from '@/convex/_generated/dataModel';
+import { sanitizeErrorMessage } from '@/lib/errorSanitizer';
 
 type ProspectData = {
   _id: string;
@@ -63,7 +64,7 @@ export default function AdminProspectsPage() {
       toast({
         status: 'error',
         title: 'Analysis failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
+        description: sanitizeErrorMessage(error, 'Analysis failed'),
       });
     } finally {
       setRunningId(null);

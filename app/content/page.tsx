@@ -52,6 +52,7 @@ import {
   ContentStudioLanding,
 } from '@/src/components/content';
 import { trackEvent, ANALYTICS_EVENTS } from '@/src/lib/analyticsEvents';
+import { sanitizeErrorMessage } from '@/lib/errorSanitizer';
 
 function ContentContent() {
   const { isAuthenticated } = useAuth();
@@ -145,7 +146,7 @@ function ContentContent() {
       }
     } catch (error: any) {
       console.error('Error generating brief:', error);
-      alert(error.data?.message || error.message || 'Failed to generate brief');
+      alert(sanitizeErrorMessage(error, 'Failed to generate brief'));
     } finally {
       setGenerating(false);
     }
@@ -166,7 +167,7 @@ function ContentContent() {
       }
     } catch (error: any) {
       console.error('Error generating draft:', error);
-      alert(error.data?.message || error.message || 'Failed to generate draft');
+      alert(sanitizeErrorMessage(error, 'Failed to generate draft'));
     } finally {
       setGeneratingDraft(false);
     }

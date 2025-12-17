@@ -128,17 +128,15 @@ export function useUserPhase(options: UseUserPhaseOptions = {}): UseUserPhaseRes
     projectId ? { projectId } : 'skip'
   );
 
-  // Fetch GSC connection
+  // Fetch GSC connection (optional - doesn't block flow)
   const gscConnection = useQuery(
-    api.integrations.gscConnections.getConnection,
+    api.integrations.gscConnections.getGSCConnection,
     projectId ? { projectId } : 'skip'
   );
 
-  // Fetch GA4 connection
-  const ga4Connection = useQuery(
-    api.integrations.ga4Connections.getConnection,
-    projectId ? { projectId } : 'skip'
-  );
+  // GA4 uses same OAuth flow - check project for GA4 property ID as indicator
+  // GA4 connection is optional and doesn't block flow
+  const ga4Connection = project?.gaPropertyId ? { connected: true } : null;
 
   // Check if loading
   const isLoading: boolean =
