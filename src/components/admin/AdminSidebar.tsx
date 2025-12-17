@@ -1,30 +1,28 @@
-"use client";
+'use client';
 
-import {
-  Box,
-  VStack,
-  Text,
-  Link,
-  Icon,
-  Flex,
-  useColorModeValue,
-} from "@chakra-ui/react";
-import NextLink from "next/link";
-import { usePathname } from "next/navigation";
-import { FiHome, FiUsers, FiActivity, FiSettings } from "react-icons/fi";
+import { Box, VStack, Text, Link, Icon, Flex, useColorModeValue } from '@chakra-ui/react';
+import NextLink from 'next/link';
+import { usePathname } from 'next/navigation';
+import { FiHome, FiUsers, FiActivity, FiSettings, FiBarChart2 } from 'react-icons/fi';
+import { useAuth } from '@/lib/useAuth';
 
 const NAV_ITEMS = [
-  { name: "Dashboard", icon: FiHome, path: "/admin" },
-  { name: "Prospects", icon: FiUsers, path: "/admin/prospects" },
-  { name: "Users", icon: FiUsers, path: "/admin/users" },
-  { name: "Keywords", icon: FiActivity, path: "/admin/keywords" },
-  { name: "Analysis", icon: FiActivity, path: "/admin/analysis" },
+  { name: 'Dashboard', icon: FiHome, path: '/admin', roles: ['admin', 'super_admin'] },
+  { name: 'Prospects', icon: FiUsers, path: '/admin/prospects', roles: ['admin', 'super_admin'] },
+  { name: 'Users', icon: FiUsers, path: '/admin/users', roles: ['admin', 'super_admin'] },
+  { name: 'Keywords', icon: FiActivity, path: '/admin/keywords', roles: ['admin', 'super_admin'] },
+  { name: 'Analysis', icon: FiActivity, path: '/admin/analysis', roles: ['admin', 'super_admin'] },
+  { name: 'Analytics', icon: FiBarChart2, path: '/admin/analytics', roles: ['super_admin'] },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const bg = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const bg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const { user } = useAuth();
+
+  // Filter nav items based on user role
+  const visibleNavItems = NAV_ITEMS.filter((item) => item.roles.includes(user?.role || ''));
 
   return (
     <Box
@@ -50,28 +48,26 @@ export function AdminSidebar() {
         </Box>
 
         <VStack align="stretch" spacing={2}>
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = pathname === item.path;
             return (
               <Link
                 key={item.path}
                 as={NextLink}
                 href={item.path}
-                _hover={{ textDecoration: "none" }}
+                _hover={{ textDecoration: 'none' }}
               >
                 <Flex
                   align="center"
                   p={3}
                   borderRadius="md"
-                  bg={isActive ? "purple.50" : "transparent"}
-                  color={isActive ? "purple.600" : "gray.600"}
-                  _hover={{ bg: "purple.50", color: "purple.600" }}
+                  bg={isActive ? 'purple.50' : 'transparent'}
+                  color={isActive ? 'purple.600' : 'gray.600'}
+                  _hover={{ bg: 'purple.50', color: 'purple.600' }}
                   transition="all 0.2s"
                 >
                   <Icon as={item.icon} mr={3} boxSize={5} />
-                  <Text fontWeight={isActive ? "semibold" : "medium"}>
-                    {item.name}
-                  </Text>
+                  <Text fontWeight={isActive ? 'semibold' : 'medium'}>{item.name}</Text>
                 </Flex>
               </Link>
             );

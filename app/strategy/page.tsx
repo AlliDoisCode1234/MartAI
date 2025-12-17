@@ -35,6 +35,7 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { InsightList } from '@/src/components/insights';
 import { useProject } from '@/lib/hooks';
+import { trackEvent, ANALYTICS_EVENTS } from '@/src/lib/analyticsEvents';
 
 // Strategy components
 import {
@@ -127,6 +128,7 @@ function StrategyContent() {
     setGenerating(true);
     try {
       await generateClustersAction({ projectId: typedProjectId, importFromGSC: true });
+      trackEvent(ANALYTICS_EVENTS.CLUSTERS_GENERATED, { projectId: typedProjectId });
       setIsClusterModalOpen(false);
     } catch (e) {
       console.error(e);
@@ -161,6 +163,7 @@ function StrategyContent() {
     setGenerating(true);
     try {
       await generateClustersAction({ projectId: typedProjectId, importFromGSC: true });
+      trackEvent(ANALYTICS_EVENTS.KEYWORDS_IMPORTED, { projectId: typedProjectId, source: 'gsc' });
     } catch (e) {
       console.error(e);
     } finally {
@@ -187,6 +190,10 @@ function StrategyContent() {
       await createKeywordsMutation({
         projectId: typedProjectId,
         keywords: keywords.map((k) => ({ keyword: k })),
+      });
+      trackEvent(ANALYTICS_EVENTS.KEYWORDS_ADDED_MANUAL, {
+        projectId: typedProjectId,
+        count: keywords.length,
       });
     } catch (e) {
       console.error(e);

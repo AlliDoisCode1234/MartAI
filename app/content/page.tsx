@@ -42,7 +42,6 @@ import { api } from '@/convex/_generated/api';
 import { LexicalEditorComponent } from '@/src/components/LexicalEditor';
 import type { Brief, Draft } from '@/types';
 
-// Extracted components
 import {
   TitleOptionsCard,
   H2OutlineCard,
@@ -52,6 +51,7 @@ import {
   ContentSkeleton,
   ContentStudioLanding,
 } from '@/src/components/content';
+import { trackEvent, ANALYTICS_EVENTS } from '@/src/lib/analyticsEvents';
 
 function ContentContent() {
   const { isAuthenticated } = useAuth();
@@ -140,6 +140,7 @@ function ContentContent() {
       });
       if (result.success) {
         await loadBrief(briefId);
+        trackEvent(ANALYTICS_EVENTS.BRIEF_CREATED, { briefId });
         alert('Brief details generated successfully!');
       }
     } catch (error: any) {
@@ -228,6 +229,7 @@ function ContentContent() {
         body: JSON.stringify({ draftId: draft._id }),
       });
       if (response.ok) {
+        trackEvent(ANALYTICS_EVENTS.BRIEF_COMPLETED, { briefId });
         alert('Draft approved!');
         if (briefId) {
           await loadDraft(briefId);
@@ -265,8 +267,7 @@ function ContentContent() {
         </Alert>
       </Box>
     );
-  if (!briefId)
-    return <ContentStudioLanding />;
+  if (!briefId) return <ContentStudioLanding />;
   if (loading) return <ContentSkeleton />;
 
   return (
