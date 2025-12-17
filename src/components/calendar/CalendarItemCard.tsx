@@ -6,12 +6,12 @@
  * Component Hierarchy:
  * App → Calendar → CalendarMonthView/WeekView/ListView → CalendarItemCard (this file)
  *
- * Compact card for calendar cells showing title, status, and content type.
- * Includes hover tooltip with details.
+ * Compact card for calendar cells showing title, status, content type, and keyword metrics.
+ * Includes hover tooltip with full details.
  */
 
 import { Box, Text, Badge, HStack, Icon, Tooltip, VStack } from '@chakra-ui/react';
-import { FiFileText, FiVideo, FiImage, FiMic, FiClock } from 'react-icons/fi';
+import { FiFileText, FiVideo, FiImage, FiMic, FiClock, FiSearch } from 'react-icons/fi';
 
 type Props = {
   id: string;
@@ -19,6 +19,9 @@ type Props = {
   status: string;
   contentType: string;
   publishDate?: number;
+  primaryKeyword?: string;
+  keywordVolume?: number;
+  keywordDifficulty?: number;
   onClick?: () => void;
 };
 
@@ -47,7 +50,28 @@ function formatDate(timestamp: number): string {
   });
 }
 
-export function CalendarItemCard({ id, title, status, contentType, publishDate, onClick }: Props) {
+function formatVolume(volume: number): string {
+  if (volume >= 1000) return `${(volume / 1000).toFixed(1)}K`;
+  return volume.toString();
+}
+
+function getDifficultyColor(difficulty: number): string {
+  if (difficulty <= 30) return 'green';
+  if (difficulty <= 60) return 'yellow';
+  return 'red';
+}
+
+export function CalendarItemCard({
+  id,
+  title,
+  status,
+  contentType,
+  publishDate,
+  primaryKeyword,
+  keywordVolume,
+  keywordDifficulty,
+  onClick,
+}: Props) {
   const IconComponent = CONTENT_TYPE_ICONS[contentType.toLowerCase()] || FiFileText;
   const statusColor = STATUS_COLORS[status] || 'gray';
 
@@ -64,6 +88,22 @@ export function CalendarItemCard({ id, title, status, contentType, publishDate, 
           {contentType}
         </Badge>
       </HStack>
+      {primaryKeyword && (
+        <HStack spacing={1} fontSize="xs" color="gray.300">
+          <Icon as={FiSearch} />
+          <Text fontWeight="medium">{primaryKeyword}</Text>
+          {keywordVolume && (
+            <Badge colorScheme="purple" size="xs">
+              {formatVolume(keywordVolume)} vol
+            </Badge>
+          )}
+          {keywordDifficulty !== undefined && (
+            <Badge colorScheme={getDifficultyColor(keywordDifficulty)} size="xs">
+              KD {keywordDifficulty}
+            </Badge>
+          )}
+        </HStack>
+      )}
       {publishDate && (
         <HStack spacing={1} fontSize="xs" color="gray.300">
           <Icon as={FiClock} />
@@ -101,6 +141,11 @@ export function CalendarItemCard({ id, title, status, contentType, publishDate, 
           <Badge size="xs" colorScheme={statusColor} fontSize="2xs">
             {status}
           </Badge>
+          {primaryKeyword && keywordVolume && (
+            <Badge size="xs" colorScheme="purple" fontSize="2xs">
+              {formatVolume(keywordVolume)}
+            </Badge>
+          )}
         </HStack>
         <Text fontSize="xs" fontWeight="medium" noOfLines={2} color="gray.700">
           {title}
