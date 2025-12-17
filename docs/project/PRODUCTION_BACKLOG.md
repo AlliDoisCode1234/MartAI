@@ -31,6 +31,13 @@
 | NOTIFY-001      | Notification System                   | 5   | 4      | 🔲 Todo        |
 | **CAL-001**     | **Content Calendar Feature**          | 8   | 2      | ✅ Done        |
 | **QW-001**      | **Quick Wins Dashboard Card**         | 3   | 2      | 🔜 In Progress |
+| **UX-001**      | **Phase-Based User Flow**             | 8   | 2      | 🔲 Todo        |
+| **UX-002**      | **Mart Guide Component**              | 5   | 3      | 🔲 Todo        |
+| **UX-003**      | **Empty State Designs**               | 5   | 3      | 🔲 Todo        |
+| **UX-004**      | **Error Handling Flows**              | 3   | 3      | 🔲 Todo        |
+| **UX-005**      | **Accessibility (WCAG 2.1 AA)**       | 5   | 4      | 🔲 Todo        |
+| **UX-006**      | **Analytics Event Tracking**          | 3   | 4      | 🔲 Todo        |
+| **UX-007**      | **Email Notification Triggers**       | 5   | 4      | 🔲 Todo        |
 | BLOG-001        | Public Blog for SEO/Content Marketing | 8   | 5      | 🔲 Todo        |
 
 ---
@@ -720,6 +727,270 @@ gantt
 
 > [!NOTE]
 > **CODE-001**: Create `useGA4Connection`, `useGSCConnection`, `useCMSConnection` hooks to encapsulate OAuth flows, token parsing, and state management.
+
+---
+
+#### UX-001: Phase-Based User Flow
+
+| Field            | Value                           |
+| ---------------- | ------------------------------- |
+| **Priority**     | P0                              |
+| **Story Points** | 8                               |
+| **Dependencies** | None                            |
+| **LDD**          | `docs/project/USER_FLOW_LDD.md` |
+
+**User Story**:
+
+> As a MartAI user, I want a guided flow for my first project and DIY mode for subsequent projects so that I learn the platform without being slowed down once I'm experienced.
+
+**Definition of Ready**:
+
+- [x] LDD approved (see `docs/project/USER_FLOW_LDD.md`)
+- [x] Multi-project flow documented
+- [ ] Current sidebar navigation reviewed
+- [ ] Phase transitions defined
+
+**Acceptance Criteria**:
+
+```gherkin
+# First Project (Guided Mode)
+Given I am a new user with no completed projects
+When I complete onboarding
+Then I should only see routes available for my current phase
+And I should see "Next Step" CTAs guiding me forward
+And Mart should appear to explain each new page
+
+# Subsequent Projects (DIY Mode)
+Given I have completed at least one project
+When I create a new project
+Then all routes should be unlocked immediately
+And I should see a "Need Help?" toggle to re-enable guidance
+```
+
+**Definition of Done**:
+
+- [ ] `useUserPhase` hook created (per-project phases)
+- [ ] `hasCompletedFirstProject` flag tracked per user
+- [ ] Sidebar gating implemented (guided mode)
+- [ ] DIY mode unlocks all routes after first project
+- [ ] "Need Help?" toggle re-enables guided flow
+- [ ] Next Step CTAs on all core pages
+- [ ] Mart guide component integrated
+- [ ] Phase transitions tested E2E
+
+---
+
+#### UX-002: Mart Guide Component
+
+| Field            | Value                           |
+| ---------------- | ------------------------------- |
+| **Priority**     | P1                              |
+| **Story Points** | 5                               |
+| **Dependencies** | UX-001                          |
+| **LDD**          | `docs/project/USER_FLOW_LDD.md` |
+
+**User Story**:
+
+> As a new user, I want a friendly guide (Mart) to explain each page so I understand what to do next.
+
+**Acceptance Criteria**:
+
+```gherkin
+Given I visit a page for the first time
+When the page loads
+Then Mart appears with a welcome message
+And suggests the next action
+And I can dismiss Mart
+
+Given I complete a milestone
+When the phase transitions
+Then Mart celebrates with animation
+```
+
+**Definition of Done**:
+
+- [ ] `MartGuide` component created
+- [ ] 6 trigger moments implemented (per LDD)
+- [ ] Dismiss + "Don't show again" options
+- [ ] Celebration animations on milestones
+- [ ] Accessible (ARIA labels, focusable)
+
+---
+
+#### UX-003: Empty State Designs
+
+| Field            | Value                           |
+| ---------------- | ------------------------------- |
+| **Priority**     | P1                              |
+| **Story Points** | 5                               |
+| **Dependencies** | None                            |
+| **LDD**          | `docs/project/USER_FLOW_LDD.md` |
+
+**User Story**:
+
+> As a new user with no data, I want helpful empty states so I know what to do next instead of seeing blank pages.
+
+**Acceptance Criteria**:
+
+```gherkin
+Given I visit /keywords with no keywords
+When the page loads
+Then I see "No keywords yet" message with Mart illustration
+And I see "Add Keywords" or "Connect GSC" CTA
+
+Given I visit /calendar with no briefs
+When the page loads
+Then I see "Your calendar is clear" message
+And I see "Schedule Brief" CTA
+```
+
+**Definition of Done**:
+
+- [ ] Empty states for: /keywords, /strategy, /calendar, /analytics, /content
+- [ ] Each has: message, Mart illustration, CTA
+- [ ] CTAs navigate to correct action
+
+---
+
+#### UX-004: Error Handling Flows
+
+| Field            | Value                           |
+| ---------------- | ------------------------------- |
+| **Priority**     | P1                              |
+| **Story Points** | 3                               |
+| **Dependencies** | None                            |
+| **LDD**          | `docs/project/USER_FLOW_LDD.md` |
+
+**User Story**:
+
+> As a user encountering an error, I want helpful error messages so I can recover without frustration.
+
+**Acceptance Criteria**:
+
+```gherkin
+Given GSC OAuth fails
+When an error occurs
+Then I see "Couldn't connect to Google" message
+And I see "Retry" button and "Help" link
+
+Given AI generation times out
+When the request fails
+Then I see "Taking longer than expected" message
+And the task continues in background
+```
+
+**Definition of Done**:
+
+- [ ] Error states for: OAuth, AI timeout, WordPress, network, rate limit
+- [ ] Friendly, non-blaming copy
+- [ ] Clear recovery actions
+- [ ] Errors announced to screen readers
+
+---
+
+#### UX-005: Accessibility (WCAG 2.1 AA)
+
+| Field            | Value                           |
+| ---------------- | ------------------------------- |
+| **Priority**     | P0                              |
+| **Story Points** | 5                               |
+| **Dependencies** | None                            |
+| **LDD**          | `docs/project/USER_FLOW_LDD.md` |
+
+**User Story**:
+
+> As a user with disabilities, I want the app to be fully accessible so I can use it with assistive technology.
+
+**Acceptance Criteria**:
+
+```gherkin
+Given I use keyboard only
+When I tab through the app
+Then all interactive elements are focusable
+And focus order is logical
+
+Given I use a screen reader
+When I navigate the app
+Then all buttons and icons have ARIA labels
+And errors are announced
+```
+
+**Definition of Done**:
+
+- [ ] All interactive elements keyboard focusable
+- [ ] Visible focus indicators
+- [ ] ARIA labels on all buttons, icons, form fields
+- [ ] Color contrast ≥ 4.5:1
+- [ ] Skip to main content link
+- [ ] Alt text on all images
+- [ ] Errors announced to screen readers
+
+---
+
+#### UX-006: Analytics Event Tracking
+
+| Field            | Value                           |
+| ---------------- | ------------------------------- |
+| **Priority**     | P1                              |
+| **Story Points** | 3                               |
+| **Dependencies** | None                            |
+| **LDD**          | `docs/project/USER_FLOW_LDD.md` |
+
+**User Story**:
+
+> As a product manager, I want to track user events so I can analyze the funnel and identify dropoffs.
+
+**Acceptance Criteria**:
+
+```gherkin
+Given a user completes signup
+When the account is created
+Then "signup_complete" event is fired
+
+Given a user unlocks a new phase
+When the phase transition occurs
+Then "phase_transition" event is fired with phase name
+```
+
+**Definition of Done**:
+
+- [ ] 9 key events implemented (per LDD)
+- [ ] Events sent to analytics provider (Vercel Analytics or similar)
+- [ ] Dashboard for funnel visualization
+
+---
+
+#### UX-007: Email Notification Triggers
+
+| Field            | Value                           |
+| ---------------- | ------------------------------- |
+| **Priority**     | P1                              |
+| **Story Points** | 5                               |
+| **Dependencies** | RESEND-001                      |
+| **LDD**          | `docs/project/USER_FLOW_LDD.md` |
+
+**User Story**:
+
+> As a user, I want to receive helpful emails that celebrate my progress and remind me to return.
+
+**Acceptance Criteria**:
+
+```gherkin
+Given I create an account
+When signup completes
+Then I receive a welcome email
+
+Given I haven't logged in for 7 days
+When the cron job runs
+Then I receive a re-engagement email
+```
+
+**Definition of Done**:
+
+- [ ] 6 email triggers implemented (per LDD)
+- [ ] Emails styled with MartAI branding
+- [ ] Unsubscribe option in each email
+- [ ] Cron job for inactive user detection
 
 ---
 
