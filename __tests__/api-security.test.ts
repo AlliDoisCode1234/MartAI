@@ -6,6 +6,7 @@
  * due to Next.js import incompatibility with Jest's Node environment.
  */
 
+import { describe, it, expect } from 'vitest';
 import {
   extractApiKey,
   hashApiKey,

@@ -7,6 +7,7 @@
  * - MR score shows a number (not "-")
  */
 
+import { describe, it, expect } from 'vitest';
 import {
   calculateKeywordScore,
   calculateClusterScore,
