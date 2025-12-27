@@ -3,7 +3,7 @@
 import { Box, VStack, Text, Link, Icon, Flex, useColorModeValue } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiHome, FiUsers, FiActivity, FiSettings, FiBarChart2 } from 'react-icons/fi';
+import { FiHome, FiUsers, FiActivity, FiSettings, FiBarChart2, FiCpu } from 'react-icons/fi';
 import { useAuth } from '@/lib/useAuth';
 
 const NAV_ITEMS = [
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { name: 'Prospects', icon: FiUsers, path: '/admin/prospects', roles: ['admin', 'super_admin'] },
   { name: 'Users', icon: FiUsers, path: '/admin/users', roles: ['admin', 'super_admin'] },
   { name: 'Keywords', icon: FiActivity, path: '/admin/keywords', roles: ['admin', 'super_admin'] },
+  { name: 'AI Providers', icon: FiCpu, path: '/admin/ai-providers', roles: ['super_admin'] },
   { name: 'Analysis', icon: FiActivity, path: '/admin/analysis', roles: ['admin', 'super_admin'] },
   { name: 'Analytics', icon: FiBarChart2, path: '/admin/analytics', roles: ['super_admin'] },
 ];

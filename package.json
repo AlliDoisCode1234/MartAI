@@ -5,6 +5,7 @@
   "homepage": "https://AlliDoisCode1234.github.io/MartAI",
   "dependencies": {
     "@ai-sdk/openai": "^2.0.86",
+    "@anthropic-ai/sdk": "^0.71.2",
     "@auth/core": "^0.37.0",
     "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^2.10.9",
@@ -24,6 +25,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.9.0",
     "@lexical/html": "^0.38.2",
     "@lexical/link": "^0.38.2",

@@ -314,6 +314,17 @@ export const updateAccountStatus = mutation({
 });
 
 /**
+ * Hash a token using SHA-256
+ */
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
  * Send password reset email (Admin only)
  * Generates a secure token and triggers email
  */
@@ -340,9 +351,8 @@ export const sendPasswordResetEmail = mutation({
         .padStart(2, '0')
     ).join('');
 
-    // Simple hash for storage (in production, use crypto.subtle.digest)
-    // For now, we'll store a derived token and compare in the reset flow
-    const tokenHash = rawToken; // TODO: Hash with crypto in production
+    // Hash token with SHA-256 for secure storage
+    const tokenHash = await hashToken(rawToken);
     const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
 
     // Get admin who triggered this
@@ -354,7 +364,7 @@ export const sendPasswordResetEmail = mutation({
           .first()
       : null;
 
-    // Store token
+    // Store hashed token (never store raw token)
     await ctx.db.insert('passwordResetTokens', {
       userId: args.userId,
       tokenHash,
@@ -366,7 +376,7 @@ export const sendPasswordResetEmail = mutation({
     // Log action (no PII per security rules)
     console.log(`[AdminPasswordReset] Reset email triggered for user ${args.userId}`);
 
-    // Return token for email action (called separately)
+    // Return raw token for email (sent to user, not stored)
     return {
       success: true,
       email: user.email,

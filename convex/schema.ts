@@ -1185,4 +1185,91 @@ export default defineSchema({
     .index('by_user', ['userId'])
     .index('by_token_hash', ['tokenHash'])
     .index('by_expires', ['expiresAt']),
+
+  // ========================================
+  // MULTI-AGENT AI INFRASTRUCTURE
+  // ========================================
+
+  // AI Providers (OpenAI, Anthropic, Google, etc.)
+  aiProviders: defineTable({
+    name: v.string(), // 'openai', 'anthropic', 'google'
+    displayName: v.string(), // 'OpenAI', 'Anthropic Claude'
+    apiKeyEnvVar: v.string(), // 'OPENAI_API_KEY'
+    isEnabled: v.boolean(),
+    priority: v.number(), // Lower = preferred (1-100)
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_name', ['name'])
+    .index('by_enabled', ['isEnabled'])
+    .index('by_priority', ['priority']),
+
+  // AI Models per provider
+  aiModels: defineTable({
+    providerId: v.id('aiProviders'),
+    modelId: v.string(), // 'gpt-4o', 'claude-3-sonnet'
+    displayName: v.string(), // 'GPT-4o', 'Claude 3 Sonnet'
+    capabilities: v.array(v.string()), // ['chat', 'embeddings', 'vision']
+    contextWindow: v.number(), // 128000
+    costPer1kInputTokens: v.number(), // In cents
+    costPer1kOutputTokens: v.number(),
+    isEnabled: v.boolean(),
+    priority: v.number(), // Within provider
+    createdAt: v.number(),
+  })
+    .index('by_provider', ['providerId'])
+    .index('by_model', ['modelId']),
+
+  // Provider health metrics
+  aiProviderHealth: defineTable({
+    providerId: v.id('aiProviders'),
+    status: v.union(
+      v.literal('healthy'),
+      v.literal('degraded'),
+      v.literal('unhealthy'),
+      v.literal('circuit_open')
+    ),
+    // Rolling metrics (15-minute window)
+    avgLatencyMs: v.number(),
+    errorRate: v.number(), // 0.0 to 1.0
+    successCount: v.number(),
+    errorCount: v.number(),
+    // Circuit breaker state
+    circuitState: v.union(v.literal('closed'), v.literal('open'), v.literal('half_open')),
+    circuitOpenUntil: v.optional(v.number()),
+    consecutiveFailures: v.number(),
+    consecutiveSuccesses: v.number(),
+    // Last events
+    lastSuccessAt: v.optional(v.number()),
+    lastErrorAt: v.optional(v.number()),
+    lastErrorMessage: v.optional(v.string()),
+    lastHealthCheckAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_provider', ['providerId'])
+    .index('by_status', ['status']),
+
+  // AI routing decision logs
+  aiRoutingLogs: defineTable({
+    traceId: v.string(),
+    taskType: v.string(), // 'brief', 'draft', 'embeddings', 'chat'
+    requestedProvider: v.optional(v.string()),
+    selectedProvider: v.string(),
+    selectedModel: v.string(),
+    strategy: v.string(), // 'balanced', 'fastest', 'cheapest'
+    fallbackUsed: v.boolean(),
+    fallbackChain: v.optional(v.array(v.string())),
+    latencyMs: v.number(),
+    tokensIn: v.optional(v.number()),
+    tokensOut: v.optional(v.number()),
+    cost: v.optional(v.number()),
+    status: v.union(v.literal('success'), v.literal('error')),
+    errorMessage: v.optional(v.string()),
+    userId: v.optional(v.id('users')),
+    createdAt: v.number(),
+  })
+    .index('by_trace', ['traceId'])
+    .index('by_provider', ['selectedProvider'])
+    .index('by_status', ['status'])
+    .index('by_date', ['createdAt']),
 });

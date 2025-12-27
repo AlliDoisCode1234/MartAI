@@ -1,5 +1,3 @@
-import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
 import { components } from '../../_generated/api';
 import { ActionCtx } from '../../_generated/server';
 
@@ -170,71 +168,35 @@ ${prompt}`;
   }
 
   /**
-   * Model fallback chain: try premium first, then fall back to cheaper models
-   */
-  private static readonly MODEL_FALLBACK_CHAIN = ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'];
-
-  /**
-   * Call LLM with retry and model fallback
+   * Call LLM with automatic multi-provider failover
+   * Uses the AI router for intelligent provider selection and failover
    */
   private async callLLM(
     modelName: string,
     prompt: string,
     temperature: number,
-    maxRetries: number = 3
+    _maxRetries: number = 3
   ): Promise<{ text: string; usage: any; modelUsed: string }> {
-    // Build fallback chain starting from requested model
-    const startIndex = IntelligenceService.MODEL_FALLBACK_CHAIN.indexOf(modelName);
-    const fallbackChain =
-      startIndex >= 0
-        ? IntelligenceService.MODEL_FALLBACK_CHAIN.slice(startIndex)
-        : [modelName, ...IntelligenceService.MODEL_FALLBACK_CHAIN];
+    const { api } = require('../../_generated/api');
 
-    let lastError: Error | null = null;
+    try {
+      // Use the multi-agent router for automatic failover
+      const result = await this.ctx.runAction(api.ai.router.router.generateWithFallback, {
+        prompt,
+        temperature,
+        strategy: 'balanced',
+        userId: undefined, // Can be passed from outer context if needed
+      });
 
-    for (const currentModel of fallbackChain) {
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          const model = openai(currentModel as any);
-          const result = await generateText({
-            model,
-            prompt,
-            temperature,
-          });
-
-          if (currentModel !== modelName) {
-            console.log(
-              `[IntelligenceService] Used fallback model: ${currentModel} (requested: ${modelName})`
-            );
-          }
-
-          return { text: result.text, usage: result.usage, modelUsed: currentModel };
-        } catch (error: any) {
-          lastError = error;
-          const isRateLimit = error?.message?.includes('rate') || error?.status === 429;
-          const isServerError = error?.status >= 500;
-
-          console.warn(
-            `[IntelligenceService] LLM call failed (model: ${currentModel}, attempt: ${attempt}/${maxRetries}):`,
-            error?.message || error
-          );
-
-          // For rate limits or server errors, wait with exponential backoff
-          if ((isRateLimit || isServerError) && attempt < maxRetries) {
-            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10s
-            await new Promise((resolve) => setTimeout(resolve, delay));
-          } else if (attempt === maxRetries) {
-            // Max retries reached for this model, try next in fallback chain
-            break;
-          }
-        }
-      }
+      return {
+        text: result.content,
+        usage: result.usage,
+        modelUsed: `${result.provider}/${result.model}`,
+      };
+    } catch (error: any) {
+      console.error('[IntelligenceService] Multi-provider failover exhausted:', error.message);
+      throw error;
     }
-
-    // All models and retries exhausted
-    throw new Error(
-      `[IntelligenceService] All LLM models failed. Last error: ${lastError?.message || 'Unknown error'}`
-    );
   }
 
   private async critiqueDraft(

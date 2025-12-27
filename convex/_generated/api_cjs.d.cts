@@ -9,12 +9,22 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as admin_cleanup from "../admin/cleanup.js";
 import type * as admin_costs from "../admin/costs.js";
 import type * as admin_users from "../admin/users.js";
 import type * as aiStorage from "../aiStorage.js";
 import type * as ai_analysis from "../ai/analysis.js";
+import type * as ai_health_circuitBreaker from "../ai/health/circuitBreaker.js";
+import type * as ai_health_healthActions from "../ai/health/healthActions.js";
 import type * as ai_personas from "../ai/personas.js";
+import type * as ai_providers_anthropic from "../ai/providers/anthropic.js";
+import type * as ai_providers_google from "../ai/providers/google.js";
+import type * as ai_providers_index from "../ai/providers/index.js";
+import type * as ai_providers_openai from "../ai/providers/openai.js";
+import type * as ai_providers_seed from "../ai/providers/seed.js";
+import type * as ai_providers_types from "../ai/providers/types.js";
 import type * as ai_reports from "../ai/reports.js";
+import type * as ai_router_router from "../ai/router/router.js";
 import type * as ai_seoAgent from "../ai/seoAgent.js";
 import type * as analytics_adhoc from "../analytics/adhoc.js";
 import type * as analytics_aggregations from "../analytics/aggregations.js";
@@ -32,6 +42,7 @@ import type * as analytics_sync from "../analytics/sync.js";
 import type * as apiAccessRequests from "../apiAccessRequests.js";
 import type * as apiKeys from "../apiKeys.js";
 import type * as auth from "../auth.js";
+import type * as auth_passwordReset from "../auth/passwordReset.js";
 import type * as cache from "../cache.js";
 import type * as config_thresholds from "../config/thresholds.js";
 import type * as content_briefActions from "../content/briefActions.js";
@@ -121,12 +132,22 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  "admin/cleanup": typeof admin_cleanup;
   "admin/costs": typeof admin_costs;
   "admin/users": typeof admin_users;
   aiStorage: typeof aiStorage;
   "ai/analysis": typeof ai_analysis;
+  "ai/health/circuitBreaker": typeof ai_health_circuitBreaker;
+  "ai/health/healthActions": typeof ai_health_healthActions;
   "ai/personas": typeof ai_personas;
+  "ai/providers/anthropic": typeof ai_providers_anthropic;
+  "ai/providers/google": typeof ai_providers_google;
+  "ai/providers/index": typeof ai_providers_index;
+  "ai/providers/openai": typeof ai_providers_openai;
+  "ai/providers/seed": typeof ai_providers_seed;
+  "ai/providers/types": typeof ai_providers_types;
   "ai/reports": typeof ai_reports;
+  "ai/router/router": typeof ai_router_router;
   "ai/seoAgent": typeof ai_seoAgent;
   "analytics/adhoc": typeof analytics_adhoc;
   "analytics/aggregations": typeof analytics_aggregations;
@@ -144,6 +165,7 @@ declare const fullApi: ApiFromModules<{
   apiAccessRequests: typeof apiAccessRequests;
   apiKeys: typeof apiKeys;
   auth: typeof auth;
+  "auth/passwordReset": typeof auth_passwordReset;
   cache: typeof cache;
   "config/thresholds": typeof config_thresholds;
   "content/briefActions": typeof content_briefActions;
