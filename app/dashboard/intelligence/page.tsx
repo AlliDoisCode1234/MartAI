@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Badge,
@@ -20,13 +20,13 @@ import {
   Text,
   VStack,
   Stack,
-} from "@chakra-ui/react";
-import { formatDistanceToNow } from "date-fns";
-import { useAuth } from "@/lib/useAuth";
-import { LoadingState } from "@/src/components/shared";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
+} from '@chakra-ui/react';
+import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '@/lib/useAuth';
+import { LoadingState } from '@/src/components/shared';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 
 export default function IntelligencePage() {
   const router = useRouter();
@@ -36,18 +36,18 @@ export default function IntelligencePage() {
 
   const projects = useQuery(
     api.projects.projects.getProjectsByUser,
-    user?._id ? { userId: user._id as unknown as Id<"users"> } : "skip",
+    user?._id ? { userId: user._id as unknown as Id<'users'> } : 'skip'
   );
-  const projectList = (projects ?? []) as Array<{ _id: Id<"projects">; name?: string }>;
+  const projectList = (projects ?? []) as Array<{ _id: Id<'projects'>; name?: string }>;
 
   const latestReport = useQuery(
     api.ai.reports.getLatestAiReport,
-    projectId ? { projectId: projectId as Id<"projects"> } : "skip",
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
 
   const recentReports = useQuery(
     api.ai.reports.listAiReports,
-    projectId ? { projectId: projectId as Id<"projects">, limit: 10 } : "skip",
+    projectId ? { projectId: projectId as Id<'projects'>, limit: 10 } : 'skip'
   );
   type AiReport = {
     _id: string;
@@ -79,7 +79,7 @@ export default function IntelligencePage() {
       return;
     }
     if (!isAuthenticated) {
-      router.replace("/auth/login");
+      router.replace('/auth/login');
     }
   }, [authLoading, isAuthenticated, router]);
 
@@ -99,7 +99,7 @@ export default function IntelligencePage() {
     }
 
     const storedId =
-      typeof window !== "undefined" ? window.localStorage.getItem("currentProjectId") : null;
+      typeof window !== 'undefined' ? window.localStorage.getItem('currentProjectId') : null;
 
     const matched = storedId
       ? projectList.find((proj) => (proj._id as unknown as string) === storedId)
@@ -110,8 +110,8 @@ export default function IntelligencePage() {
 
     if (nextId !== projectId) {
       setProjectId(nextId);
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("currentProjectId", nextId);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('currentProjectId', nextId);
       }
     }
   }, [projects, authLoading, isAuthenticated, projectId]);
@@ -137,12 +137,8 @@ export default function IntelligencePage() {
       <Container maxW="container.xl" py={12}>
         <VStack spacing={6}>
           <Heading size="lg">No project found</Heading>
-          <Text>Create a project to see MartAI intelligence insights.</Text>
-          <Button
-            bg="brand.orange"
-            color="white"
-            onClick={() => router.push("/onboarding")}
-          >
+          <Text>Create a project to see Phoo intelligence insights.</Text>
+          <Button bg="brand.orange" color="white" onClick={() => router.push('/onboarding')}>
             Create Project
           </Button>
         </VStack>
@@ -155,9 +151,7 @@ export default function IntelligencePage() {
       <VStack align="stretch" spacing={8}>
         <Box>
           <Heading size="xl">Intelligence</Heading>
-          <Text color="gray.600">
-            Latest MartAI crawl + keyword intelligence for {project.name}.
-          </Text>
+          <Text color="gray.600">Latest Phoo crawl + keyword intelligence for {project.name}.</Text>
         </Box>
 
         <Card variant="outline">
@@ -166,11 +160,14 @@ export default function IntelligencePage() {
               <Box>
                 <Heading size="md">Latest Report</Heading>
                 <Text color="gray.600">
-                  Generated {latestReportData ? formatDistanceToNow(latestReportData.createdAt, { addSuffix: true }) : "—"}
+                  Generated{' '}
+                  {latestReportData
+                    ? formatDistanceToNow(latestReportData.createdAt, { addSuffix: true })
+                    : '—'}
                 </Text>
               </Box>
-              <Badge colorScheme={latestReportData?.status === "completed" ? "green" : "orange"}>
-                {latestReportData?.status ?? "pending"}
+              <Badge colorScheme={latestReportData?.status === 'completed' ? 'green' : 'orange'}>
+                {latestReportData?.status ?? 'pending'}
               </Badge>
             </HStack>
 
@@ -178,25 +175,25 @@ export default function IntelligencePage() {
               <Stack spacing={4}>
                 {latestReportData.summary && <Text>{latestReportData.summary}</Text>}
                 <Divider />
-                <Grid templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }} gap={4}>
+                <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={4}>
                   <Stat>
                     <StatLabel>Coverage Score</StatLabel>
-                    <StatNumber>{latestReportData.metrics?.coverageScore ?? "—"}</StatNumber>
+                    <StatNumber>{latestReportData.metrics?.coverageScore ?? '—'}</StatNumber>
                   </Stat>
                   <Stat>
                     <StatLabel>Backlinks Proxy</StatLabel>
-                    <StatNumber>{latestReportData.metrics?.backlinksProxy ?? "—"}</StatNumber>
+                    <StatNumber>{latestReportData.metrics?.backlinksProxy ?? '—'}</StatNumber>
                   </Stat>
                   <Stat>
                     <StatLabel>Organic Keywords</StatLabel>
-                    <StatNumber>{latestReportData.metrics?.organicKeywords ?? "—"}</StatNumber>
+                    <StatNumber>{latestReportData.metrics?.organicKeywords ?? '—'}</StatNumber>
                   </Stat>
                   <Stat>
                     <StatLabel>Traffic Estimate</StatLabel>
                     <StatNumber>
                       {latestReportData.metrics?.trafficEstimate
                         ? latestReportData.metrics.trafficEstimate.toLocaleString()
-                        : "—"}
+                        : '—'}
                     </StatNumber>
                   </Stat>
                 </Grid>
@@ -206,40 +203,67 @@ export default function IntelligencePage() {
                     <Text fontSize="sm" color="gray.600">
                       Confidence
                     </Text>
-                    <Heading size="lg">{latestReportData.confidence?.score ?? "—"}%</Heading>
+                    <Heading size="lg">{latestReportData.confidence?.score ?? '—'}%</Heading>
                   </Box>
                   {latestReportData.dataSources?.length ? (
                     <Text fontSize="sm" color="gray.500">
-                      Sources: {latestReportData.dataSources.join(", ")}
+                      Sources: {latestReportData.dataSources.join(', ')}
                     </Text>
-            ) : null}
+                  ) : null}
                 </HStack>
 
                 {latestReportData.crawlData && (
                   <>
                     <Divider />
                     <Box>
-                      <Heading size="md" mb={4}>Site Crawl Data</Heading>
-                      <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
+                      <Heading size="md" mb={4}>
+                        Site Crawl Data
+                      </Heading>
+                      <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
                         <Box>
-                          <Text fontWeight="bold" color="gray.600">Page Title</Text>
-                          <Text mb={2}>{latestReportData.crawlData.title || "—"}</Text>
-                          
-                          <Text fontWeight="bold" color="gray.600">Meta Description</Text>
-                          <Text mb={2}>{latestReportData.crawlData.description || "—"}</Text>
-                          
-                          <Text fontWeight="bold" color="gray.600">Word Count</Text>
-                          <Text mb={2}>{latestReportData.crawlData.wordCount?.toLocaleString() || "0"} words</Text>
+                          <Text fontWeight="bold" color="gray.600">
+                            Page Title
+                          </Text>
+                          <Text mb={2}>{latestReportData.crawlData.title || '—'}</Text>
+
+                          <Text fontWeight="bold" color="gray.600">
+                            Meta Description
+                          </Text>
+                          <Text mb={2}>{latestReportData.crawlData.description || '—'}</Text>
+
+                          <Text fontWeight="bold" color="gray.600">
+                            Word Count
+                          </Text>
+                          <Text mb={2}>
+                            {latestReportData.crawlData.wordCount?.toLocaleString() || '0'} words
+                          </Text>
                         </Box>
                         <Box>
-                          <Text fontWeight="bold" color="gray.600">Load Time</Text>
-                          <Text mb={2}>{latestReportData.crawlData.loadTime || "—"} ms</Text>
+                          <Text fontWeight="bold" color="gray.600">
+                            Load Time
+                          </Text>
+                          <Text mb={2}>{latestReportData.crawlData.loadTime || '—'} ms</Text>
 
-                          <Text fontWeight="bold" color="gray.600">Headings ({latestReportData.crawlData.headings?.length || 0})</Text>
-                          <Box maxH="150px" overflowY="auto" border="1px solid" borderColor="gray.100" borderRadius="md" p={2}>
+                          <Text fontWeight="bold" color="gray.600">
+                            Headings ({latestReportData.crawlData.headings?.length || 0})
+                          </Text>
+                          <Box
+                            maxH="150px"
+                            overflowY="auto"
+                            border="1px solid"
+                            borderColor="gray.100"
+                            borderRadius="md"
+                            p={2}
+                          >
                             {latestReportData.crawlData.headings?.map((h, i) => (
-                              <Text key={i} fontSize="sm" isTruncated>• {h}</Text>
-                            )) || <Text fontSize="sm" color="gray.500">No headings found</Text>}
+                              <Text key={i} fontSize="sm" isTruncated>
+                                • {h}
+                              </Text>
+                            )) || (
+                              <Text fontSize="sm" color="gray.500">
+                                No headings found
+                              </Text>
+                            )}
                           </Box>
                         </Box>
                       </Grid>
@@ -250,12 +274,13 @@ export default function IntelligencePage() {
             ) : (
               <Stack spacing={3}>
                 <Text color="gray.600">
-                  No intelligence report yet. Run the analysis flow from the Admin portal to populate insights here.
+                  No intelligence report yet. Run the analysis flow from the Admin portal to
+                  populate insights here.
                 </Text>
                 <Button
                   alignSelf="flex-start"
                   variant="outline"
-                  onClick={() => router.push("/admin")}
+                  onClick={() => router.push('/admin')}
                 >
                   Open Admin Portal
                 </Button>
@@ -272,12 +297,16 @@ export default function IntelligencePage() {
             {reportList && reportList.length > 0 ? (
               <VStack align="stretch" spacing={4}>
                 {reportList.map((report) => (
-                  <Box key={report._id} border="1px solid" borderColor="gray.100" borderRadius="md" p={4}>
+                  <Box
+                    key={report._id}
+                    border="1px solid"
+                    borderColor="gray.100"
+                    borderRadius="md"
+                    p={4}
+                  >
                     <HStack justify="space-between">
-                      <Text fontWeight="semibold">
-                        Report {report._id.slice(-6)}
-                      </Text>
-                      <Badge colorScheme={report.status === "completed" ? "green" : "orange"}>
+                      <Text fontWeight="semibold">Report {report._id.slice(-6)}</Text>
+                      <Badge colorScheme={report.status === 'completed' ? 'green' : 'orange'}>
                         {report.status}
                       </Badge>
                     </HStack>
@@ -301,4 +330,3 @@ export default function IntelligencePage() {
     </Container>
   );
 }
-

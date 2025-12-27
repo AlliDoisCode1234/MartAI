@@ -96,7 +96,7 @@ export default function LoginPage() {
               color="gray.800"
               textAlign="center"
             >
-              Welcome to MartAI
+              Welcome to Phoo
             </Heading>
             <Text color="gray.600" textAlign="center">
               Sign in to your account to continue

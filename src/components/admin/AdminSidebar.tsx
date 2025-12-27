@@ -40,7 +40,7 @@ export function AdminSidebar() {
       <VStack align="stretch" spacing={8}>
         <Box px={4}>
           <Text fontSize="xl" fontWeight="bold" color="purple.600">
-            MartAI Admin
+            Phoo Admin
           </Text>
           <Text fontSize="xs" color="gray.500">
             CRM & Intelligence

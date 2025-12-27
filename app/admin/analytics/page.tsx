@@ -87,21 +87,24 @@ export default function AdminAnalyticsPage() {
   }, [authLoading, user, router]);
 
   // Queries (will fail on backend too if not super_admin)
+  // Only run queries when user is confirmed to be super_admin
+  const isSuperAdmin = user && user.role === 'super_admin';
+
   const funnelData = useQuery(
     api.analytics.eventTracking.getFunnelMetrics,
-    user?.role === 'super_admin' ? { startDate } : 'skip'
+    isSuperAdmin ? { startDate } : 'skip'
   );
   const topEvents = useQuery(
     api.analytics.eventTracking.getTopEvents,
-    user?.role === 'super_admin' ? { days } : 'skip'
+    isSuperAdmin ? { days } : 'skip'
   );
   const recentEvents = useQuery(
     api.analytics.eventTracking.getRecentEvents,
-    user?.role === 'super_admin' ? { limit: 20 } : 'skip'
+    isSuperAdmin ? { limit: 20 } : 'skip'
   );
   const trendData = useQuery(
     api.analytics.eventTracking.getEventTrends,
-    user?.role === 'super_admin' ? { days, groupBy: 'day' } : 'skip'
+    isSuperAdmin ? { days, groupBy: 'day' } : 'skip'
   );
 
   // Access denied state

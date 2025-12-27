@@ -93,8 +93,8 @@ export const HomePage: FC = () => {
               mx="auto"
               lineHeight="1.6"
             >
-              Stop drowning in data dashboards. MartAI is an intelligent agent that audits your
-              site, builds your strategy, writes your content, and publishes it for you.
+              Stop drowning in data dashboards. Phoo is an intelligent agent that audits your site,
+              builds your strategy, writes your content, and publishes it for you.
               <br />
               <Text as="span" fontWeight="bold">
                 Outcomes, not just analytics.
@@ -122,7 +122,7 @@ export const HomePage: FC = () => {
               boxShadow="xl"
               _hover={{ transform: 'translateY(-2px)', boxShadow: '2xl' }}
             >
-              Hire MartAI
+              Hire Phoo
             </Button>
             <Button
               size="lg"
@@ -143,19 +143,19 @@ export const HomePage: FC = () => {
             <FeatureCard
               icon={SettingsIcon}
               title="Autonomous Strategy"
-              description="Mart analyzes 10,000+ keywords and builds a 12-week content calendar focused on 'Easy Wins' and revenue."
+              description="Phoo analyzes 10,000+ keywords and builds a 12-week content calendar focused on 'Easy Wins' and revenue."
               delay={0.4}
             />
             <FeatureCard
               icon={StarIcon}
               title="Agentic Writing"
-              description="From cluster to published post in minutes. Mart writes high-ranking content in your brand voice."
+              description="From cluster to published post in minutes. Phoo writes high-ranking content in your brand voice."
               delay={0.5}
             />
             <FeatureCard
               icon={CheckCircleIcon}
               title="Done-For-You Growth"
-              description="Integrated directly with WordPress & Shopify. You approve, Mart publishes. No more copy-pasting."
+              description="Integrated directly with WordPress & Shopify. You approve, Phoo publishes. No more copy-pasting."
               delay={0.6}
             />
           </SimpleGrid>

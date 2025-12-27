@@ -41,9 +41,9 @@ export const Layout: FC<Props> = ({ children }) => {
   // Track first visits for Mart guide
   const isFirstVisit = useFirstVisit(pathname || '/');
 
-  // Pages where we hide Mart
-  const hideMartPages = ['/onboarding', '/auth', '/admin'];
-  const showMart = !hideMartPages.some((p) => pathname?.startsWith(p));
+  // Pages where we hide Mart (marketing page, onboarding, auth, admin)
+  const hideMartPages = ['/', '/onboarding', '/auth', '/admin', '/apply', '/thank-you'];
+  const showMart = !hideMartPages.some((p) => pathname === p || pathname?.startsWith(p + '/'));
 
   return (
     <Box minH="100vh" w="100%" bg="brand.light">

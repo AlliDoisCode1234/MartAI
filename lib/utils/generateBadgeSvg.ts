@@ -1,7 +1,7 @@
 /**
  * Generate SVG Badge Utility
  *
- * Creates MR Score badge as SVG for embedding on external sites.
+ * Creates PR Score badge as SVG for embedding on external sites.
  * Generates backlinks when users embed badges.
  */
 
@@ -46,9 +46,9 @@ export function generateBadgeSvg({ score, style = 'compact', theme = 'light' }: 
   return `
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="48" viewBox="0 0 180 48">
   <rect width="180" height="48" rx="6" fill="${bgColor}" stroke="#e5e7eb" stroke-width="1"/>
-  <text x="12" y="22" font-family="system-ui, sans-serif" font-size="12" fill="${textColor}">MR Score</text>
+  <text x="12" y="22" font-family="system-ui, sans-serif" font-size="12" fill="${textColor}">PR Score</text>
   <text x="12" y="38" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="${scoreColor}">${score}</text>
   <text x="50" y="38" font-family="system-ui, sans-serif" font-size="12" fill="#f59e0b">${stars}</text>
-  <text x="112" y="38" font-family="system-ui, sans-serif" font-size="8" fill="#9ca3af">MartAI</text>
+  <text x="112" y="38" font-family="system-ui, sans-serif" font-size="8" fill="#9ca3af">Phoo</text>
 </svg>`.trim();
 }

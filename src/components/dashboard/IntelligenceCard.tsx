@@ -68,7 +68,7 @@ export function IntelligenceCard({ report }: Props) {
         <HStack justify="space-between" mb={6} align="flex-start">
           <Box>
             <Heading size="md" mb={1}>
-              MartAI Intelligence
+              Phoo Intelligence
             </Heading>
             <Text color="gray.500" fontSize="sm">
               Latest automated crawl & keyword intelligence for this project.

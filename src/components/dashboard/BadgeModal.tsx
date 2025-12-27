@@ -52,8 +52,8 @@ export function BadgeModal({ isOpen, onClose, projectId, currentScore }: Props) 
   const badgeUrl = `${baseUrl}/api/badge/${projectId}?style=${style}&theme=${theme}`;
   const profileUrl = `${baseUrl}/profile/${projectId}`;
 
-  const htmlCode = `<a href="${profileUrl}" target="_blank"><img src="${badgeUrl}" alt="MR Score Badge" /></a>`;
-  const markdownCode = `[![MR Score](${badgeUrl})](${profileUrl})`;
+  const htmlCode = `<a href="${profileUrl}" target="_blank"><img src="${badgeUrl}" alt="PR Score Badge" /></a>`;
+  const markdownCode = `[![PR Score](${badgeUrl})](${profileUrl})`;
 
   const handleCopy = async (code: string) => {
     await navigator.clipboard.writeText(code);
@@ -70,7 +70,7 @@ export function BadgeModal({ isOpen, onClose, projectId, currentScore }: Props) 
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Get Your MR Score Badge</ModalHeader>
+        <ModalHeader>Get Your PR Score Badge</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
           <VStack spacing={5} align="stretch">
@@ -82,7 +82,7 @@ export function BadgeModal({ isOpen, onClose, projectId, currentScore }: Props) 
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={badgeUrl}
-                alt="MR Score Badge Preview"
+                alt="PR Score Badge Preview"
                 style={{ display: 'inline-block' }}
               />
             </Box>

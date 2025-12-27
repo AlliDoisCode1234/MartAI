@@ -44,7 +44,7 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
       >
         <VStack spacing={6}>
           <Box w="180px" h="180px" borderRadius="full" bg="gray.200" />
-          <Text color={textMuted}>Calculating MartAI Rating...</Text>
+          <Text color={textMuted}>Calculating Phoo Rating...</Text>
         </VStack>
       </Box>
     );
@@ -66,7 +66,7 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
           <Icon as={FiAward} boxSize={16} color="gray.400" />
           <VStack spacing={2}>
             <Text fontSize="lg" fontWeight="bold" color={textMuted}>
-              No MartAI Rating Yet
+              No Phoo Rating Yet
             </Text>
             <Text fontSize="sm" color={textMuted} textAlign="center" maxW="280px">
               Connect GA4 & Search Console to see your SEO health score
@@ -94,7 +94,7 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
       <VStack spacing={8}>
         <HStack justify="space-between" w="full">
           <Text fontSize="lg" fontWeight="bold" letterSpacing="tight">
-            MartAI Rating
+            Phoo Rating
           </Text>
           <ChangeIndicator current={score.overall} previous={score.previousScore} />
         </HStack>

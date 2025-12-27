@@ -36,7 +36,7 @@ export const UserDropdown: FC = () => {
     <Menu>
       <MenuButton>
         <HStack spacing={3} cursor="pointer" _hover={{ opacity: 0.8 }}>
-          <Avatar size="sm" name={user.name} bg="brand.orange" color="white">
+          <Avatar size="sm" bg="brand.orange" color="white" fontWeight="bold">
             {initials}
           </Avatar>
           <VStack align="start" spacing={0} display={{ base: 'none', md: 'flex' }}>

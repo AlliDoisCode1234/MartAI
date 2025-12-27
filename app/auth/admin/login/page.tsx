@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Container,
   VStack,
@@ -15,24 +15,24 @@ import {
   Alert,
   AlertIcon,
   Link,
-} from "@chakra-ui/react";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+} from '@chakra-ui/react';
+import { useAuthActions } from '@convex-dev/auth/react';
+import { useConvexAuth, useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { signIn } = useAuthActions();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery((api as any).users?.current);
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
-    if (isAuthenticated && user?.role === "admin") {
-      router.replace("/admin");
+    if (isAuthenticated && user?.role === 'admin') {
+      router.replace('/admin');
     }
   }, [authLoading, isAuthenticated, user?.role, router]);
 
@@ -42,19 +42,18 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      await signIn("password", {
+      await signIn('password', {
         email: formData.email,
         password: formData.password,
-        flow: "signIn",
+        flow: 'signIn',
       });
-      
+
       // The redirect happens automatically or we can check user role in useEffect
-      // But for admin login we might want to verify role immediately? 
+      // But for admin login we might want to verify role immediately?
       // Auth actions don't return user object directly usually.
       // We rely on the router.replace in useEffect once user is loaded.
-      
     } catch (err) {
-      setError("Failed to login. Please check your credentials.");
+      setError('Failed to login. Please check your credentials.');
       setLoading(false);
     }
   };
@@ -65,7 +64,7 @@ export default function AdminLoginPage() {
         <Box bg="white" p={8} borderRadius="lg" shadow="md">
           <VStack spacing={6} align="stretch">
             <Heading size="lg" textAlign="center">
-              MartAI Admin Portal
+              Phoo Admin Portal
             </Heading>
             <Text textAlign="center" color="gray.600">
               Restricted access. Admin credentials required.
@@ -91,7 +90,7 @@ export default function AdminLoginPage() {
                         email: e.target.value.toLowerCase(),
                       })
                     }
-                    placeholder="admin@martai.com"
+                    placeholder="admin@phoo.ai"
                     disabled={loading}
                   />
                 </FormControl>
@@ -101,9 +100,7 @@ export default function AdminLoginPage() {
                   <Input
                     type="password"
                     value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="Enter your password"
                     disabled={loading}
                   />
@@ -122,7 +119,7 @@ export default function AdminLoginPage() {
             </form>
 
             <Text textAlign="center" color="gray.600" fontSize="sm">
-              Need the member experience instead?{" "}
+              Need the member experience instead?{' '}
               <Link href="/auth/login" color="brand.orange" fontWeight="semibold">
                 Go to member login
               </Link>
@@ -133,4 +130,3 @@ export default function AdminLoginPage() {
     </Box>
   );
 }
-

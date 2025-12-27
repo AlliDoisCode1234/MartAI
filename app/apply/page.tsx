@@ -283,7 +283,7 @@ export default function ApplyPage() {
                 <FormErrorMessage>{form.formState.errors.timeline?.message}</FormErrorMessage>
               </FormControl>
               <FormControl>
-                <FormLabel>How did you hear about MartAI?</FormLabel>
+                <FormLabel>How did you hear about Phoo?</FormLabel>
                 <Input placeholder="Referral, podcast, social, etc." {...form.register('source')} />
               </FormControl>
               <Button

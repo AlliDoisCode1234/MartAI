@@ -80,7 +80,7 @@ export const POST_ONBOARDING_STEPS: TutorialStep[] = [
   {
     id: 'view-dashboard',
     title: 'Track Your Progress',
-    description: 'See your SEO performance and MartAI Rating insights.',
+    description: 'See your SEO performance and Phoo Rating insights.',
     icon: FiTrendingUp,
     action: { label: 'View Dashboard', href: '/dashboard' },
     gradient: 'linear(to-br, teal.400, green.400)',
@@ -99,8 +99,8 @@ export const WHATS_NEXT_STEPS: TutorialStep[] = [
   },
   {
     id: 'improve-mr',
-    title: 'Improve Your MR Score',
-    description: "Your MartAI Rating shows overall SEO health. Let's boost it!",
+    title: 'Improve Your PR Score',
+    description: "Your Phoo Rating shows overall SEO health. Let's boost it!",
     icon: FiTrendingUp,
     action: { label: 'View Dashboard', href: '/dashboard' },
     gradient: 'linear(to-br, teal.400, green.400)',

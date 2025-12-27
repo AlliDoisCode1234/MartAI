@@ -24,6 +24,7 @@ import {
   FiRefreshCw,
 } from 'react-icons/fi';
 import type { IconType } from 'react-icons';
+import { MartCharacter } from '@/src/components/assistant';
 
 const MotionBox = motion(Box);
 
@@ -92,16 +93,15 @@ export function EmptyState({ type, onAction, customMessage, customCta }: Props) 
         <Box
           w="120px"
           h="120px"
-          borderRadius="full"
-          bg="orange.50"
           display="flex"
           alignItems="center"
           justifyContent="center"
+          position="relative"
         >
-          <VStack spacing={1}>
-            <Text fontSize="4xl">🦊</Text>
+          <MartCharacter size="xs" showBubble={false} />
+          <Box position="absolute" bottom={0} right={0}>
             <Icon as={config.icon} boxSize={6} color="orange.400" />
-          </VStack>
+          </Box>
         </Box>
 
         {/* Message */}

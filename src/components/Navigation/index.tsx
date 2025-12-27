@@ -108,7 +108,7 @@ export const Navigation: FC = () => {
         <HStack justify="space-between" h={16}>
           <Link href={isAuthenticated ? '/dashboard' : '/'} style={{ textDecoration: 'none' }}>
             <Text fontSize="xl" fontWeight="bold" color="brand.orange">
-              MartAI
+              Phoo
             </Text>
           </Link>
           <HStack spacing={8}>

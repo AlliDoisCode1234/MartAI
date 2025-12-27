@@ -80,7 +80,7 @@ export type TimestampMs = Brand<number, 'TimestampMs'>;
 /** Percentage (0-100 range) */
 export type Percentage = Brand<number, 'Percentage'>;
 
-/** MR Score (0-100 range) - MartAI Rating */
+/** PR Score (0-100 range) - Phoo Rating */
 export type MRScore = Brand<number, 'MRScore'>;
 
 /** Search volume (positive integer) */

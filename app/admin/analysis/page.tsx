@@ -50,7 +50,7 @@ export default function AnalysisPage() {
     <Container maxW="container.xl">
       <Box mb={8}>
         <Heading size="lg">Analysis Tool</Heading>
-        <Text color="gray.600">Manually trigger MartAI intelligence on any URL.</Text>
+        <Text color="gray.600">Manually trigger Phoo intelligence on any URL.</Text>
       </Box>
 
       <Card maxW="2xl">

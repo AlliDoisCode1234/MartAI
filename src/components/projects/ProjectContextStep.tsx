@@ -73,7 +73,7 @@ export function ProjectContextStep({ register, onBack, isSubmitting }: Props) {
             </Badge>
           </HStack>
           <Text color="gray.500" fontSize="sm" mt={-4}>
-            Help Mart understand your business better for tailored insights
+            Help Phoo understand your business better for tailored insights
           </Text>
 
           <FormControl>

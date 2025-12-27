@@ -1,5 +1,5 @@
 /**
- * MR Score Badge API Route
+ * PR Score Badge API Route
  *
  * Public endpoint that returns SVG badge for embedding.
  * GET /api/badge/{projectId}?style=compact|full&theme=light|dark

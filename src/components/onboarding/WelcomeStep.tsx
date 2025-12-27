@@ -50,10 +50,10 @@ export function WelcomeStep({ formData, onFormChange, onNext, loading }: Props) 
             </Box>
             <Box>
               <Heading size="lg" mb={2}>
-                Welcome to MartAI
+                Welcome to Phoo
               </Heading>
               <Text color="gray.600">
-                I'm Mart, your AI marketing manager. Enter your website below and I'll analyze it to
+                I'm Phoo, your AI marketing manager. Enter your website below and I'll analyze it to
                 find keyword opportunities and create your SEO strategy.
               </Text>
             </Box>

@@ -1168,4 +1168,21 @@ export default defineSchema({
     .index('by_event', ['event'])
     .index('by_timestamp', ['timestamp'])
     .index('by_track_id', ['trackId']),
+
+  // ========================================
+  // PASSWORD RESET TOKENS
+  // ========================================
+  passwordResetTokens: defineTable({
+    userId: v.id('users'),
+    // Token hash (never store raw token)
+    tokenHash: v.string(),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    // Admin-triggered flag
+    triggeredBy: v.optional(v.id('users')),
+  })
+    .index('by_user', ['userId'])
+    .index('by_token_hash', ['tokenHash'])
+    .index('by_expires', ['expiresAt']),
 });

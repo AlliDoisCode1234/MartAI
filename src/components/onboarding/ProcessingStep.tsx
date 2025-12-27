@@ -27,7 +27,7 @@ export function ProcessingStep() {
       <Box bg="white" p={12} borderRadius="2xl" shadow="lg" textAlign="center">
         <VStack spacing={6}>
           <MartCharacter state="loading" size="lg" showBubble={false} />
-          <Heading size="lg">Mart is analyzing your site...</Heading>
+          <Heading size="lg">Phoo is analyzing your site...</Heading>
           <Text color="gray.600">
             Finding keywords, analyzing competitors, and building your strategy.
           </Text>

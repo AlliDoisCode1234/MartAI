@@ -33,7 +33,23 @@ export const me = query({
     if (userId === null) {
       return null;
     }
-    return await ctx.db.get(userId);
+    const user = await ctx.db.get(userId);
+    if (!user) return null;
+
+    // Return safe fields only - never expose passwordHash
+    return {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      role: user.role,
+      membershipTier: user.membershipTier,
+      createdAt: user.createdAt ?? user._creationTime,
+      onboardingStatus: user.onboardingStatus,
+      onboardingSteps: user.onboardingSteps,
+      // Boolean flag for password (never return actual hash)
+      hasPassword: !!user.passwordHash,
+    };
   },
 });
 

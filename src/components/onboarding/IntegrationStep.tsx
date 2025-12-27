@@ -79,11 +79,11 @@ export function IntegrationStep({
               Preliminary Score Ready!
             </Badge>
             <Heading size="lg" mb={2}>
-              Boost Your MR Score
+              Boost Your PR Score
             </Heading>
             <Text color="gray.600">
-              Connect Google Analytics to unlock accurate traffic data and improve your MartAI
-              Rating by up to 30%.
+              Connect Google Analytics to unlock accurate traffic data and improve your Phoo Rating
+              by up to 30%.
             </Text>
           </Box>
 
@@ -94,7 +94,7 @@ export function IntegrationStep({
                 <Box>
                   <Text fontWeight="semibold">Why Connect GA4?</Text>
                   <Text fontSize="sm" color="gray.600">
-                    Real traffic data lets Mart understand your actual audience, find better
+                    Real traffic data lets Phoo understand your actual audience, find better
                     keywords, and create more targeted content strategies.
                   </Text>
                 </Box>
@@ -112,7 +112,7 @@ export function IntegrationStep({
                       Google Analytics Connected
                     </Text>
                     <Text fontSize="sm" color="gray.600">
-                      Your GA4 data will be used to enhance your MR Score
+                      Your GA4 data will be used to enhance your PR Score
                     </Text>
                   </Box>
                 </HStack>
@@ -148,7 +148,7 @@ export function IntegrationStep({
               <VStack fontSize="sm" color="gray.600" spacing={1}>
                 <Text>Real traffic data instead of estimates</Text>
                 <Text>Accurate user behavior insights</Text>
-                <Text>Up to 30% more accurate MR Score</Text>
+                <Text>Up to 30% more accurate PR Score</Text>
               </VStack>
             </VStack>
           </Box>

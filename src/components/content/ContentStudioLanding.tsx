@@ -57,8 +57,8 @@ export function ContentStudioLanding({ onTemplateSelect }: Props) {
     if (onTemplateSelect) {
       onTemplateSelect(template);
     } else {
-      // Default behavior: navigate to strategy to create brief
-      router.push(`/strategy?template=${template.id}`);
+      // Navigate to content page with template pre-selected
+      router.push(`/content?templateId=${template.id}`);
     }
   };
 

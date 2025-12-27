@@ -29,7 +29,7 @@ interface Props {
   onModeChange: (mode: StrategyMode) => void;
 }
 
-const STORAGE_KEY = 'martai_strategy_mode';
+const STORAGE_KEY = 'phoo_strategy_mode';
 
 /**
  * Get saved mode from localStorage

@@ -13,15 +13,30 @@ export const HeroSection: FC = () => (
         Your Answer to All Your Lead Generation and Revenue Problems
       </Heading>
       <Text fontSize="lg" color="gray.600" lineHeight="tall">
-        MartAI automates your SEO content system — from strategy to execution — to generate consistent traffic, leads, and sales.
+        Phoo automates your SEO content system — from strategy to execution — to generate consistent
+        traffic, leads, and sales.
       </Text>
       <HStack spacing={4} mt={2}>
         <Link href="/onboarding">
-          <Button bg="brand.orange" color="white" size="lg" borderRadius="md" px={6} py={3} _hover={{ bg: '#E8851A' }}>
+          <Button
+            bg="brand.orange"
+            color="white"
+            size="lg"
+            borderRadius="md"
+            px={6}
+            py={3}
+            _hover={{ bg: '#E8851A' }}
+          >
             See My Growth Plan →
           </Button>
         </Link>
-        <Button variant="outline" borderColor="gray.300" color="gray.700" size="lg" borderRadius="md">
+        <Button
+          variant="outline"
+          borderColor="gray.300"
+          color="gray.700"
+          size="lg"
+          borderRadius="md"
+        >
           Watch Demo
         </Button>
       </HStack>
@@ -31,4 +46,3 @@ export const HeroSection: FC = () => (
     </VStack>
   </Box>
 );
-

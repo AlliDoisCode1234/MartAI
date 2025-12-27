@@ -33,7 +33,7 @@ export function NeedHelpToggle({ isGuidedMode, onToggle }: Props) {
     toast({
       title: newValue ? 'Guided mode enabled' : 'Guided mode disabled',
       description: newValue
-        ? 'Mart will guide you through each step.'
+        ? 'Phoo will guide you through each step.'
         : "You're in pro mode. All features unlocked.",
       status: newValue ? 'info' : 'success',
       duration: 3000,

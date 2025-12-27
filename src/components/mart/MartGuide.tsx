@@ -26,6 +26,7 @@ import {
 } from '@chakra-ui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiArrowRight, FiMessageCircle } from 'react-icons/fi';
+import { MartCharacter } from '@/src/components/assistant';
 
 const MotionBox = motion(Box);
 
@@ -43,7 +44,7 @@ const MART_MESSAGES: Record<string, { greeting: string; tip: string; action?: st
   },
   '/keywords': {
     greeting: "Let's find keywords that rank!",
-    tip: 'Focus on high MR Score keywords for quick wins.',
+    tip: 'Focus on high PR Score keywords for quick wins.',
     action: 'Import from GSC',
   },
   '/calendar': {
@@ -65,10 +66,10 @@ const MART_MESSAGES: Record<string, { greeting: string; tip: string; action?: st
 
 // Celebration messages for phase transitions
 const CELEBRATIONS: Record<number, { title: string; message: string }> = {
-  3: { title: '🎉 Discovery Unlocked!', message: 'You can now access keywords and strategy.' },
-  4: { title: '🚀 Planning Mode!', message: 'Calendar is now available. Time to schedule!' },
-  5: { title: '✍️ Creation Time!', message: 'Content studio unlocked. Start writing!' },
-  6: { title: '🏆 Full Access!', message: "You've unlocked everything. Welcome to pro mode!" },
+  3: { title: 'Discovery Unlocked!', message: 'You can now access keywords and strategy.' },
+  4: { title: 'Planning Mode!', message: 'Calendar is now available. Time to schedule!' },
+  5: { title: 'Creation Time!', message: 'Content studio unlocked. Start writing!' },
+  6: { title: 'Full Access!', message: "You've unlocked everything. Welcome to pro mode!" },
 };
 
 interface Props {
@@ -168,19 +169,11 @@ export function MartGuide({
             borderColor="orange.100"
           >
             <HStack spacing={2}>
-              <Box
-                w="32px"
-                h="32px"
-                borderRadius="full"
-                bg="orange.400"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Text fontSize="lg">🦊</Text>
+              <Box w="40px" h="40px" display="flex" alignItems="center" justifyContent="center">
+                <MartCharacter size="xs" showBubble={false} />
               </Box>
               <Text fontWeight="semibold" color="orange.700">
-                Mart
+                Phoo
               </Text>
             </HStack>
             <IconButton
@@ -232,7 +225,7 @@ function MartMinimized({ onOpen }: { onOpen: () => void }) {
       whileHover={{ scale: 1.1 }}
     >
       <IconButton
-        aria-label="Open Mart Guide"
+        aria-label="Open Phoo Guide"
         icon={<FiMessageCircle />}
         colorScheme="orange"
         borderRadius="full"
@@ -251,10 +244,10 @@ export function useFirstVisit(pageKey: string): boolean {
   const [isFirstVisit, setIsFirstVisit] = useState(false);
 
   useEffect(() => {
-    const visitedPages = JSON.parse(localStorage.getItem('martai_visited_pages') || '[]');
+    const visitedPages = JSON.parse(localStorage.getItem('phoo_visited_pages') || '[]');
     if (!visitedPages.includes(pageKey)) {
       setIsFirstVisit(true);
-      localStorage.setItem('martai_visited_pages', JSON.stringify([...visitedPages, pageKey]));
+      localStorage.setItem('phoo_visited_pages', JSON.stringify([...visitedPages, pageKey]));
     }
   }, [pageKey]);
 

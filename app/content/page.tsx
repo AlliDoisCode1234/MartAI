@@ -53,6 +53,7 @@ import {
 } from '@/src/components/content';
 import { trackEvent, ANALYTICS_EVENTS } from '@/src/lib/analyticsEvents';
 import { sanitizeErrorMessage } from '@/lib/errorSanitizer';
+import { CONTENT_TEMPLATES } from '@/lib/constants/contentTemplates';
 
 function ContentContent() {
   const { isAuthenticated } = useAuth();
@@ -65,6 +66,8 @@ function ContentContent() {
   const [saving, setSaving] = useState(false);
   const [regenerationNotes, setRegenerationNotes] = useState('');
   const briefId = searchParams?.get('briefId');
+  const templateId = searchParams?.get('templateId');
+  const selectedTemplate = templateId ? CONTENT_TEMPLATES.find((t) => t.id === templateId) : null;
 
   const [formData, setFormData] = useState({
     title: '',
@@ -268,7 +271,71 @@ function ContentContent() {
         </Alert>
       </Box>
     );
-  if (!briefId) return <ContentStudioLanding />;
+
+  // No briefId and no templateId - show landing
+  if (!briefId && !templateId) return <ContentStudioLanding />;
+
+  // Template selected - show template-based brief creation form
+  if (!briefId && selectedTemplate) {
+    return (
+      <Box minH="calc(100vh - 64px)" bg="brand.light">
+        <Container maxW="container.lg" py={{ base: 8, md: 12 }} px={{ base: 4, md: 8 }}>
+          <VStack spacing={8} align="stretch">
+            <VStack spacing={2} textAlign="center">
+              <Badge colorScheme={selectedTemplate.color} fontSize="sm" px={3} py={1}>
+                {selectedTemplate.useCase}
+              </Badge>
+              <Heading size="xl">{selectedTemplate.name}</Heading>
+              <Text color="gray.600">{selectedTemplate.description}</Text>
+            </VStack>
+
+            <Card>
+              <CardBody>
+                <VStack align="stretch" spacing={4}>
+                  <Heading size="md">Template Structure</Heading>
+                  <Text fontSize="sm" color="gray.600">
+                    This template includes the following sections:
+                  </Text>
+                  {selectedTemplate.structure.map((section, i) => (
+                    <HStack key={i} spacing={3}>
+                      <Badge colorScheme="gray">{i + 1}</Badge>
+                      <Text>{section}</Text>
+                    </HStack>
+                  ))}
+                </VStack>
+              </CardBody>
+            </Card>
+
+            <Alert status="info" borderRadius="md">
+              <AlertIcon />
+              <VStack align="start" spacing={1}>
+                <Text fontWeight="semibold">Coming Soon</Text>
+                <Text fontSize="sm">
+                  Create a content brief from this template by going to Strategy → select a cluster
+                  → Create Brief.
+                </Text>
+              </VStack>
+            </Alert>
+
+            <HStack spacing={4}>
+              <Button variant="ghost" onClick={() => window.history.back()}>
+                Back to Templates
+              </Button>
+              <Button
+                bg="brand.orange"
+                color="white"
+                _hover={{ bg: '#E8851A' }}
+                onClick={() => (window.location.href = '/strategy')}
+              >
+                Go to Strategy
+              </Button>
+            </HStack>
+          </VStack>
+        </Container>
+      </Box>
+    );
+  }
+
   if (loading) return <ContentSkeleton />;
 
   return (

@@ -6,7 +6,7 @@
  * Component Hierarchy:
  * App → Projects/New (this file)
  *
- * Add a website to analyze and grow with MartAI.
+ * Add a website to analyze and grow with Phoo.
  * Uses extracted step form components.
  */
 
@@ -134,7 +134,7 @@ export default function NewProjectPage() {
               Create New Project
             </Heading>
             <Text color="gray.600" mt={2}>
-              Add a website to analyze and grow with MartAI
+              Add a website to analyze and grow with Phoo
             </Text>
           </MotionBox>
 

@@ -113,6 +113,26 @@ const EMAIL_TEMPLATES: Record<
       </div>
     `,
   },
+
+  password_reset: {
+    subject: 'Reset your Phoo password',
+    getHtml: (data) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #F99F2A;">Password Reset Requested</h1>
+        <p>Hi${data.name ? ` ${data.name}` : ''},</p>
+        <p>We received a request to reset your password. Click the button below to set a new password:</p>
+        <a href="${APP_URL}/auth/reset-password?token=${data.token}" style="display: inline-block; background: #F99F2A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 16px;">
+          Reset Password
+        </a>
+        <p style="color: #666; margin-top: 24px; font-size: 14px;">
+          This link will expire in 1 hour. If you didn't request this, you can safely ignore this email.
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 16px;">
+          — The Phoo Team
+        </p>
+      </div>
+    `,
+  },
 };
 
 /**
@@ -202,6 +222,25 @@ export const sendPhaseUnlockEmail = action({
       to: args.email,
       template: 'phase_unlock',
       data: { phaseName: args.phaseName },
+    });
+  },
+});
+
+/**
+ * Send password reset email
+ * Called by admin mutation after generating reset token
+ */
+export const sendPasswordResetEmail = action({
+  args: {
+    email: v.string(),
+    name: v.optional(v.string()),
+    token: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    return await sendEmailInternal({
+      to: args.email,
+      template: 'password_reset',
+      data: { name: args.name, token: args.token },
     });
   },
 });

@@ -16,15 +16,15 @@ export const seedPersonas = internalMutation({
   handler: async (ctx) => {
     const existingMart = await ctx.db
       .query('personas')
-      .withIndex('by_name', (q) => q.eq('name', 'Mart'))
+      .withIndex('by_name', (q) => q.eq('name', 'Phoo'))
       .first();
 
     if (!existingMart) {
       await ctx.db.insert('personas', {
-        name: 'Mart',
+        name: 'Phoo',
         role: 'Senior SEO Analyst',
         tone: 'Direct, Data-Driven, Authoritative',
-        systemPrompt: `You are Mart, a Senior SEO Analyst at MartAI. 
+        systemPrompt: `You are Phoo, a Senior SEO Analyst at Phoo. 
         
         Your Core Traits:
         1. **Direct & Blunt**: You cut through the fluff. You don't use corporate jargon unless necessary.
@@ -40,7 +40,7 @@ export const seedPersonas = internalMutation({
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
-      console.log('Seeded "Mart" persona.');
+      console.log('Seeded "Phoo" persona.');
     }
   },
 });

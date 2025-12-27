@@ -110,3 +110,126 @@ await requireSuperAdmin(ctx);
 3. **Investigate**: Trace data flow to identify scope
 4. **Remediate**: Patch vulnerability, rotate secrets
 5. **Document**: Log in `docs/SECURITY_INCIDENTS.md`
+
+---
+
+## API Endpoint Security
+
+> [!IMPORTANT]
+> Convex backends are already public APIs. A reverse proxy is NOT required.
+> Vercel/Convex provide DDoS protection, SSL termination, and auto-scaling.
+> Security MUST be enforced within Convex functions, not at network edge.
+
+### Before Writing Any HTTP Action / API Route
+
+- [ ] **API Key OR Session Auth**: Does it check for valid authentication?
+- [ ] **Permission Check**: Does it verify the caller has required permissions?
+- [ ] **Rate Limiting**: Is `checkApiRateLimit` called before expensive operations?
+- [ ] **Input Validation**: Are all inputs validated (Convex validators + additional)?
+- [ ] **Response Filtering**: Does it return only safe fields (no keyHash, etc.)?
+
+### API Key Authentication Pattern
+
+```typescript
+// 1. Extract API key from request
+const apiKey = extractApiKey(request);
+if (!apiKey) {
+  return unauthorizedResponse('Missing API key', requestId);
+}
+
+// 2. Hash key for lookup (NEVER store raw keys)
+const keyHash = hashApiKey(apiKey);
+
+// 3. Validate against database
+const validation = await ctx.runQuery(api.apiKeys.validateApiKey, { keyHash });
+if (!validation) {
+  return unauthorizedResponse('Invalid API key', requestId);
+}
+
+// 4. Check specific permission
+if (!hasPermission(validation, 'write')) {
+  return forbiddenResponse('Insufficient permissions', requestId);
+}
+
+// 5. Record usage for analytics
+await ctx.runMutation(api.apiKeys.recordApiKeyUsage, { keyId: validation.keyId });
+```
+
+### API Response Standards
+
+```typescript
+// Success response format
+{
+  success: true,
+  data: { ... },
+  meta: {
+    requestId: "req_1234...",
+    timestamp: "2025-12-27T..."
+  }
+}
+
+// Error response format
+{
+  success: false,
+  error: {
+    code: "unauthorized" | "forbidden" | "not_found" | "rate_limited" | "validation_error",
+    message: "Human-readable message"
+  },
+  meta: {
+    requestId: "req_1234...",
+    timestamp: "2025-12-27T..."
+  }
+}
+```
+
+### Required Security Headers
+
+All API responses MUST include:
+
+| Header                      | Value                                 | Purpose                   |
+| --------------------------- | ------------------------------------- | ------------------------- |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | Force HTTPS               |
+| `X-Content-Type-Options`    | `nosniff`                             | Prevent MIME sniffing     |
+| `X-Frame-Options`           | `DENY`                                | Prevent clickjacking      |
+| `X-XSS-Protection`          | `1; mode=block`                       | Legacy XSS protection     |
+| `X-Request-ID`              | `req_...`                             | Request tracing           |
+| `X-RateLimit-Limit`         | `100`                                 | Rate limit info           |
+| `X-RateLimit-Remaining`     | `99`                                  | Remaining requests        |
+| `Cache-Control`             | `no-store`                            | Don't cache API responses |
+
+### API Logging Rules
+
+**Log these (structured, no PII)**:
+
+- Request ID
+- Endpoint path
+- HTTP method
+- Response status code
+- Response time (ms)
+- API key ID (not the key itself)
+- Rate limit status
+
+**NEVER log**:
+
+- Full API key
+- Request body with user data
+- Response body with sensitive data
+- User emails or identifiers
+
+### Defense in Depth Architecture
+
+```text
+Client Request
+     ↓
+Vercel Edge (DDoS protection, SSL termination)
+     ↓
+Next.js Middleware (Security headers, CORS)
+     ↓
+API Route (API key extraction, rate limit check)
+     ↓
+Convex Function (Auth, RBAC, input validation)
+     ↓
+Data Layer (Ownership check, field filtering)
+```
+
+Each layer adds protection. Never skip inner layers because outer layers "should" catch issues.

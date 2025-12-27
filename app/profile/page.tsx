@@ -28,8 +28,8 @@ import {
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useSubscription } from '@/lib/hooks';
+import { useAuth } from '@/lib/useAuth';
 import { FiMail, FiCalendar, FiShield, FiCreditCard, FiLogOut } from 'react-icons/fi';
-import { useAuthActions } from '@convex-dev/auth/react';
 
 export default function ProfilePage() {
   const user = useQuery(api.users.current);
@@ -43,12 +43,12 @@ export default function ProfilePage() {
     reportsRemaining,
     isLoading: subLoading,
   } = useSubscription();
-  const { signOut } = useAuthActions();
+  const { logout } = useAuth();
   const toast = useToast();
 
   const handleSignOut = async () => {
-    await signOut();
-    toast({ title: 'Signed out successfully', status: 'success' });
+    toast({ title: 'Signing out...', status: 'info' });
+    await logout();
   };
 
   if (!user) {

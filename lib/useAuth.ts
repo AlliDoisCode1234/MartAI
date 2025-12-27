@@ -27,8 +27,9 @@ export function useAuth() {
   const user = useQuery(api.users.me);
 
   const logout = useCallback(async () => {
+    // Navigate first to prevent authenticated queries from running after signOut
+    router.push('/');
     await signOut();
-    router.push('/auth/login');
   }, [signOut, router]);
 
   return {

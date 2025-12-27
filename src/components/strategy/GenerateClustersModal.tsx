@@ -42,7 +42,7 @@ export function GenerateClustersModal({ isOpen, onClose, onGenerate, isLoading }
           <VStack align="stretch" spacing={3}>
             <Text fontWeight="bold">What are Topic Clusters?</Text>
             <Text>
-              MartAI analyzes your keyword data to find groups of related terms that should cover a
+              Phoo analyzes your keyword data to find groups of related terms that should cover a
               single topic. This helps you build authority by covering a subject in depth rather
               than targeting isolated keywords.
             </Text>

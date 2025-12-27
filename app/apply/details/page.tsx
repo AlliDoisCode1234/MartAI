@@ -247,7 +247,7 @@ export default function ProspectDetailsPage() {
             Deep dive discovery
           </Heading>
           <Text color="gray.600" mt={2}>
-            Give MartAI the context it needs to spin up keyword research, offers, and messaging.
+            Give Phoo the context it needs to spin up keyword research, offers, and messaging.
           </Text>
         </Box>
 
@@ -351,7 +351,7 @@ export default function ProspectDetailsPage() {
               <Divider />
 
               <FormControl isInvalid={!!form.formState.errors.hearAbout}>
-                <FormLabel>How did you hear about MartAI? *</FormLabel>
+                <FormLabel>How did you hear about Phoo? *</FormLabel>
                 <Input
                   placeholder="Podcast, friend, Instagram, etc."
                   {...form.register('hearAbout')}
@@ -375,7 +375,7 @@ export default function ProspectDetailsPage() {
                   Submit discovery form
                 </Button>
                 <Text fontSize="sm" color="gray.500">
-                  We’ll review everything, run it through MartAI’s intelligence layer, and follow up
+                  We’ll review everything, run it through Phoo’s intelligence layer, and follow up
                   with a tailored plan.
                 </Text>
               </VStack>

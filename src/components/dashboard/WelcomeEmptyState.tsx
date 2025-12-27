@@ -24,7 +24,7 @@ export function WelcomeEmptyState() {
     <Container maxW="container.xl" py={20}>
       <VStack spacing={8} textAlign="center">
         <Heading size="2xl" bgGradient={heroGradient} bgClip="text">
-          Welcome to MartAI
+          Welcome to Phoo
         </Heading>
         <Text fontSize="xl" color="gray.500" maxW="lg">
           Automate your SEO strategy with AI-powered insights. Create your first project to get

@@ -6,15 +6,19 @@
  * Component Hierarchy:
  * App → Settings (this file)
  * └── WordPressConnect
+ * └── ChangePasswordForm
  */
 
-import { Container, VStack, Heading, Text, Box, Divider, Badge } from '@chakra-ui/react';
+import { Container, VStack, Heading, Text, Box, Divider, Badge, Spinner } from '@chakra-ui/react';
 import { WordPressConnect } from '@/src/components/settings/WordPressConnect';
+import { ChangePasswordForm } from '@/src/components/settings/ChangePasswordForm';
 import { useProject } from '@/lib/hooks';
+import { useMe } from '@/lib/useMe';
 
 export default function SettingsPage() {
   // Get user's active project using useProject hook
   const { project: activeProject, isLoading } = useProject(null, { autoSelect: true });
+  const { me, loading: meLoading } = useMe();
 
   return (
     <Box minH="calc(100vh - 64px)" bg="brand.light">
@@ -36,7 +40,7 @@ export default function SettingsPage() {
                   Integrations
                 </Heading>
                 <Text color="gray.600" fontSize="sm">
-                  Connect your CMS platforms to publish content directly from MartAI
+                  Connect your CMS platforms to publish content directly from Phoo
                 </Text>
               </Box>
 
@@ -73,7 +77,7 @@ export default function SettingsPage() {
             </VStack>
           </Box>
 
-          {/* Account Section Placeholder */}
+          {/* Account Section */}
           <Box bg="white" p={6} borderRadius="lg" shadow="md">
             <VStack align="stretch" spacing={4}>
               <Box>
@@ -81,11 +85,34 @@ export default function SettingsPage() {
                   Account
                 </Heading>
                 <Text color="gray.600" fontSize="sm">
-                  Manage your account settings
+                  Manage your account settings and password
                 </Text>
               </Box>
               <Divider />
-              <Text color="gray.500">Account settings coming soon...</Text>
+
+              {meLoading ? (
+                <Box py={8} textAlign="center">
+                  <Spinner size="lg" color="brand.orange" />
+                </Box>
+              ) : me ? (
+                <VStack align="stretch" spacing={4}>
+                  <Box>
+                    <Text fontSize="sm" color="gray.500" mb={1}>
+                      Email
+                    </Text>
+                    <Text fontWeight="medium">{me.email}</Text>
+                  </Box>
+                  <Divider />
+                  <Box>
+                    <Text fontSize="sm" color="gray.500" mb={3}>
+                      Password
+                    </Text>
+                    <ChangePasswordForm userEmail={me.email || ''} hasPassword={me.hasPassword} />
+                  </Box>
+                </VStack>
+              ) : (
+                <Text color="gray.500">Unable to load account information</Text>
+              )}
             </VStack>
           </Box>
         </VStack>

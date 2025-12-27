@@ -50,10 +50,10 @@ export interface EmailTemplate {
 export const EMAIL_TEMPLATES: Record<EmailTrigger, EmailTemplate> = {
   [EMAIL_TRIGGERS.WELCOME]: {
     trigger: EMAIL_TRIGGERS.WELCOME,
-    subject: "Welcome to MartAI! Let's grow your traffic 🚀",
+    subject: "Welcome to Phoo! Let's grow your traffic",
     preheader: 'Your SEO journey starts here',
     martMessage:
-      "Hey! I'm Mart, your AI SEO assistant. I'm excited to help you rank higher and drive more traffic. Let's get started!",
+      "Hey! I'm Phoo, your AI SEO assistant. I'm excited to help you rank higher and drive more traffic. Let's get started!",
     ctaLabel: 'Start Your First Project',
     ctaUrl: '/onboarding',
   },
@@ -167,7 +167,7 @@ export const EMAIL_TEMPLATES: Record<EmailTrigger, EmailTemplate> = {
 
   [EMAIL_TRIGGERS.PASSWORD_RESET]: {
     trigger: EMAIL_TRIGGERS.PASSWORD_RESET,
-    subject: 'Reset your MartAI password',
+    subject: 'Reset your Phoo password',
     preheader: 'Password reset link inside',
     martMessage: 'No worries, it happens to the best of us! Click below to reset your password.',
     ctaLabel: 'Reset Password',

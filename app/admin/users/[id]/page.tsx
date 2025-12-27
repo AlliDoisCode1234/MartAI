@@ -21,7 +21,7 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { ChevronRightIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
@@ -61,7 +61,8 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
 
   // Mutations
   const resetOnboarding = useMutation(api.users.resetOnboarding);
-  const resetPassword = useMutation(api.admin.users.resetUserPassword);
+  const sendResetEmail = useMutation(api.admin.users.sendPasswordResetEmail);
+  const sendEmail = useAction(api.email.emailActions.sendPasswordResetEmail);
   const updateStatus = useMutation(api.admin.users.updateAccountStatus);
 
   // Modals
@@ -89,11 +90,24 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
   const handlePassword = async () => {
     setIsLoading(true);
     try {
-      await resetPassword({ userId });
-      toast({ title: 'Password Reset', status: 'success' });
+      // Generate token and get user details
+      const result = await sendResetEmail({ userId });
+      if (result.success && result.email && result.token) {
+        // Send the email
+        await sendEmail({
+          email: result.email,
+          name: result.name,
+          token: result.token,
+        });
+        toast({
+          title: 'Reset Email Sent',
+          description: `Password reset email sent to ${result.email}`,
+          status: 'success',
+        });
+      }
       passwordModal.onClose();
-    } catch {
-      toast({ title: 'Failed', status: 'error' });
+    } catch (err) {
+      toast({ title: 'Failed to send email', status: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -197,9 +211,9 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             onClick={resetModal.onOpen}
           />
           <DangerAction
-            title="Reset Password"
-            description="User must reset via email."
-            buttonLabel="Reset"
+            title="Send Reset Email"
+            description="Send password reset link via email."
+            buttonLabel="Send"
             onClick={passwordModal.onOpen}
           />
           <DangerAction
@@ -228,9 +242,9 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         isOpen={passwordModal.isOpen}
         onClose={passwordModal.onClose}
         onConfirm={handlePassword}
-        title="Reset Password?"
-        message={`Reset for <strong>${user.name || user.email}</strong>?`}
-        confirmLabel="Reset"
+        title="Send Password Reset Email?"
+        message={`Send a password reset email to <strong>${user.email || user.name}</strong>? They will receive a link to set a new password.`}
+        confirmLabel="Send Email"
         isLoading={isLoading}
       />
       <ConfirmModal

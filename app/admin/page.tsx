@@ -22,7 +22,7 @@ export default function AdminDashboardPage() {
     <Container maxW="container.xl">
       <Box mb={8}>
         <Heading size="lg">Admin Dashboard</Heading>
-        <Text color="gray.600">Welcome to the MartAI CRM & Intelligence Portal.</Text>
+        <Text color="gray.600">Welcome to the Phoo CRM & Intelligence Portal.</Text>
       </Box>
 
       <SimpleGrid columns={{ base: 1, md: 3 }} gap={6} mb={8}>

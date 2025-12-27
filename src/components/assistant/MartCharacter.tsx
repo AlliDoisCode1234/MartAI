@@ -28,7 +28,7 @@ interface Particle {
 
 interface MartCharacterProps {
   message?: string;
-  size?: 'sm' | 'md' | 'lg' | 'full';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'full';
   showBubble?: boolean;
   state?: 'idle' | 'thinking' | 'active' | 'loading';
 }
@@ -48,10 +48,11 @@ export function MartCharacter({
   const mouseRef = useRef({ x: 0, y: 0 });
 
   const sizeMap = {
-    sm: { canvas: 200, ball: 40, particles: 150 },
-    md: { canvas: 280, ball: 55, particles: 200 },
-    lg: { canvas: 380, ball: 75, particles: 280 },
-    full: { canvas: 450, ball: 95, particles: 350 },
+    xs: { canvas: 60, ball: 15, particles: 40 },
+    sm: { canvas: 120, ball: 25, particles: 80 },
+    md: { canvas: 200, ball: 40, particles: 150 },
+    lg: { canvas: 280, ball: 55, particles: 200 },
+    full: { canvas: 380, ball: 75, particles: 280 },
   };
 
   const config = sizeMap[size];
