@@ -22,7 +22,6 @@ import {
   HStack,
   Icon,
   Progress,
-  SimpleGrid,
   Skeleton,
   Text,
   VStack,
@@ -64,7 +63,7 @@ export default function PhooRatingCard({ projectId }: Props) {
 
   if (!rating) {
     return (
-      <Card bg="whiteAlpha.50" borderRadius="xl" boxShadow="lg">
+      <Card bg="white" borderRadius="xl" boxShadow="lg">
         <CardBody>
           <VStack spacing={4}>
             <Skeleton height="120px" width="120px" borderRadius="full" />
@@ -79,7 +78,7 @@ export default function PhooRatingCard({ projectId }: Props) {
   const colorScheme = STATUS_COLORS[rating.status] || 'gray';
 
   return (
-    <Card bg="whiteAlpha.50" borderRadius="xl" boxShadow="lg" overflow="hidden">
+    <Card bg="white" borderRadius="xl" boxShadow="lg" overflow="hidden">
       <CardBody>
         <VStack spacing={6} align="stretch">
           {/* Header with Circular Progress */}
@@ -88,15 +87,15 @@ export default function PhooRatingCard({ projectId }: Props) {
               value={rating.rating}
               size="120px"
               thickness="8px"
-              color={`${colorScheme}.400`}
-              trackColor="whiteAlpha.200"
+              color={`${colorScheme}.500`}
+              trackColor="gray.100"
             >
               <CircularProgressLabel>
                 <VStack spacing={0}>
-                  <Text fontSize="2xl" fontWeight="bold" color="white">
+                  <Text fontSize="2xl" fontWeight="bold" color="gray.800">
                     {rating.rating}
                   </Text>
-                  <Text fontSize="xs" color="whiteAlpha.600">
+                  <Text fontSize="xs" color="gray.500">
                     / 100
                   </Text>
                 </VStack>
@@ -106,9 +105,9 @@ export default function PhooRatingCard({ projectId }: Props) {
             <HStack>
               <Icon
                 as={rating.rating >= 50 ? FiCheckCircle : FiAlertCircle}
-                color={`${colorScheme}.400`}
+                color={`${colorScheme}.500`}
               />
-              <Text fontSize="lg" fontWeight="semibold" color={`${colorScheme}.400`}>
+              <Text fontSize="lg" fontWeight="semibold" color={`${colorScheme}.600`}>
                 {rating.status}
               </Text>
             </HStack>
@@ -116,7 +115,7 @@ export default function PhooRatingCard({ projectId }: Props) {
 
           {/* Breakdown */}
           <VStack align="stretch" spacing={3}>
-            <Heading size="sm" color="whiteAlpha.800">
+            <Heading size="sm" color="gray.700">
               Score Breakdown
             </Heading>
             {rating.breakdown.map(
@@ -132,12 +131,12 @@ export default function PhooRatingCard({ projectId }: Props) {
                   <Box key={item.component}>
                     <HStack justify="space-between" mb={1}>
                       <HStack spacing={2}>
-                        <Icon as={ComponentIcon} color="whiteAlpha.600" boxSize={4} />
-                        <Text fontSize="sm" color="whiteAlpha.700">
+                        <Icon as={ComponentIcon} color="gray.500" boxSize={4} />
+                        <Text fontSize="sm" color="gray.600">
                           {item.component}
                         </Text>
                       </HStack>
-                      <Text fontSize="sm" fontWeight="medium" color="white">
+                      <Text fontSize="sm" fontWeight="medium" color="gray.800">
                         {item.score}
                       </Text>
                     </HStack>
@@ -146,9 +145,9 @@ export default function PhooRatingCard({ projectId }: Props) {
                       size="sm"
                       borderRadius="full"
                       colorScheme={item.score >= 70 ? 'green' : item.score >= 40 ? 'yellow' : 'red'}
-                      bg="whiteAlpha.100"
+                      bg="gray.100"
                     />
-                    <Text fontSize="xs" color="whiteAlpha.500" mt={1}>
+                    <Text fontSize="xs" color="gray.500" mt={1}>
                       {item.details}
                     </Text>
                   </Box>
@@ -159,19 +158,19 @@ export default function PhooRatingCard({ projectId }: Props) {
 
           {/* Top Opportunity */}
           <Box
-            bg="whiteAlpha.100"
+            bg={`${colorScheme}.50`}
             borderRadius="lg"
             p={4}
             borderLeft="3px solid"
-            borderColor={`${colorScheme}.400`}
+            borderColor={`${colorScheme}.500`}
           >
             <HStack spacing={2} mb={2}>
-              <Icon as={FiTrendingUp} color={`${colorScheme}.400`} />
-              <Text fontSize="sm" fontWeight="semibold" color={`${colorScheme}.400`}>
+              <Icon as={FiTrendingUp} color={`${colorScheme}.500`} />
+              <Text fontSize="sm" fontWeight="semibold" color={`${colorScheme}.600`}>
                 Top Opportunity
               </Text>
             </HStack>
-            <Text fontSize="sm" color="whiteAlpha.800">
+            <Text fontSize="sm" color="gray.700">
               {rating.topOpportunity}
             </Text>
           </Box>
@@ -179,18 +178,13 @@ export default function PhooRatingCard({ projectId }: Props) {
           {/* Insights */}
           {rating.insights.length > 0 && (
             <VStack align="stretch" spacing={2}>
-              <Text
-                fontSize="xs"
-                fontWeight="medium"
-                color="whiteAlpha.600"
-                textTransform="uppercase"
-              >
+              <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
                 Insights
               </Text>
               {rating.insights.map((insight: string, index: number) => (
                 <HStack key={index} align="start" spacing={2}>
-                  <Box w="4px" h="4px" bg="whiteAlpha.400" borderRadius="full" mt={2} />
-                  <Text fontSize="sm" color="whiteAlpha.700">
+                  <Box w="4px" h="4px" bg="gray.400" borderRadius="full" mt={2} />
+                  <Text fontSize="sm" color="gray.600">
                     {insight}
                   </Text>
                 </HStack>

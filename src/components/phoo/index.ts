@@ -7,3 +7,5 @@
 
 export { default as PhooRatingCard } from './PhooRatingCard';
 export { default as PhooChatWidget } from './PhooChatWidget';
+export { default as PhooFab } from './PhooFab';
+export { default as PhooChatDrawer } from './PhooChatDrawer';

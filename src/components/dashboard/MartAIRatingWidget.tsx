@@ -131,15 +131,15 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
           transition={{ delay: 0.8 }}
         >
           <Badge
-            bgGradient={tierConfig.bgGradient}
-            color="white"
-            fontSize="md"
+            bg={tierConfig.bgColor}
+            color={tierConfig.textColor}
+            fontSize="sm"
             px={4}
-            py={2}
+            py={1.5}
             borderRadius="full"
-            boxShadow="md"
+            fontWeight="medium"
           >
-            {tierConfig.emoji} {tierConfig.label}
+            {tierConfig.label}
           </Badge>
         </MotionBox>
 

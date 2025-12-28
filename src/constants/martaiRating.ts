@@ -1,54 +1,70 @@
-import { FiEye, FiTrendingUp, FiMousePointer, FiActivity, FiZap, FiFileText } from 'react-icons/fi';
+import {
+  FiEye,
+  FiTrendingUp,
+  FiMousePointer,
+  FiActivity,
+  FiZap,
+  FiFileText,
+  FiAward,
+  FiStar,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiXCircle,
+} from 'react-icons/fi';
+import type { IconType } from 'react-icons';
 
 /**
  * MartAI Rating tier configuration
  * Used for badge display and styling based on score tier
+ *
+ * NOTE: Uses icons instead of emojis for accessibility and color contrast.
+ * Background colors are chosen for high contrast with white text.
  */
 export const TIER_CONFIG: Record<
   string,
-  { label: string; emoji: string; color: string; bgGradient: string }
+  { label: string; icon: IconType; textColor: string; bgColor: string }
 > = {
   top_performer: {
     label: 'Top Performer',
-    emoji: '🏆',
-    color: 'yellow.400',
-    bgGradient: 'linear(135deg, #FFD700 0%, #FFA500 100%)',
+    icon: FiAward,
+    textColor: 'white',
+    bgColor: 'purple.500',
   },
   super: {
     label: 'Super',
-    emoji: '⭐',
-    color: 'purple.400',
-    bgGradient: 'linear(135deg, #9F7AEA 0%, #ED64A6 100%)',
+    icon: FiStar,
+    textColor: 'white',
+    bgColor: 'teal.500',
   },
   excellent: {
     label: 'Excellent',
-    emoji: '🌟',
-    color: 'green.400',
-    bgGradient: 'linear(135deg, #38A169 0%, #319795 100%)',
+    icon: FiStar,
+    textColor: 'white',
+    bgColor: 'green.500',
   },
   really_good: {
     label: 'Really Good',
-    emoji: '✅',
-    color: 'green.300',
-    bgGradient: 'linear(135deg, #68D391 0%, #48BB78 100%)',
+    icon: FiCheckCircle,
+    textColor: 'white',
+    bgColor: 'green.400',
   },
   good: {
     label: 'Good',
-    emoji: '🔵',
-    color: 'blue.400',
-    bgGradient: 'linear(135deg, #4299E1 0%, #00B5D8 100%)',
+    icon: FiCheckCircle,
+    textColor: 'white',
+    bgColor: 'blue.500',
   },
   fair: {
     label: 'Fair',
-    emoji: '🟡',
-    color: 'yellow.500',
-    bgGradient: 'linear(135deg, #ECC94B 0%, #ED8936 100%)',
+    icon: FiAlertCircle,
+    textColor: 'gray.800',
+    bgColor: 'yellow.300',
   },
   needs_work: {
     label: 'Needs Work',
-    emoji: '🔴',
-    color: 'red.400',
-    bgGradient: 'linear(135deg, #F56565 0%, #ED8936 100%)',
+    icon: FiXCircle,
+    textColor: 'white',
+    bgColor: 'red.500',
   },
 };
 

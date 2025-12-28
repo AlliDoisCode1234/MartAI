@@ -29,6 +29,7 @@ import { FiSend, FiMessageCircle } from 'react-icons/fi';
 import { useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
+import MarkdownContent from '@/src/components/shared/MarkdownContent';
 
 interface Props {
   projectId?: Id<'projects'>;
@@ -110,6 +111,11 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
         response = result.response;
       }
 
+      // Don't add blank responses
+      if (!response || response.trim() === '') {
+        response = "I'm still thinking... please try again in a moment.";
+      }
+
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
@@ -140,16 +146,24 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
   };
 
   return (
-    <Card bg="whiteAlpha.50" borderRadius="xl" boxShadow="lg" h="full" minH="500px">
+    <Card bg="white" borderRadius="xl" boxShadow="lg" h="full" minH="500px">
       <CardBody display="flex" flexDirection="column" p={0}>
         {/* Header */}
-        <Flex p={4} borderBottom="1px solid" borderColor="whiteAlpha.100" align="center" gap={3}>
-          <Avatar size="sm" bg="brand.primary" icon={<FiMessageCircle />} name="Phoo" />
+        <Flex
+          p={4}
+          borderBottom="1px solid"
+          borderColor="gray.200"
+          align="center"
+          gap={3}
+          bg="brand.teal"
+          borderTopRadius="xl"
+        >
+          <Avatar size="sm" bg="white" color="brand.teal" icon={<FiMessageCircle />} name="Phoo" />
           <VStack align="start" spacing={0}>
             <Heading size="sm" color="white">
               Phoo
             </Heading>
-            <Text fontSize="xs" color="whiteAlpha.600">
+            <Text fontSize="xs" color="whiteAlpha.800">
               {isAuthenticated ? 'Your SEO Assistant' : 'Ask me about Phoo'}
             </Text>
           </VStack>
@@ -162,10 +176,11 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
           p={4}
           spacing={4}
           align="stretch"
+          bg="gray.50"
           css={{
             '&::-webkit-scrollbar': { width: '4px' },
             '&::-webkit-scrollbar-thumb': {
-              background: 'rgba(255,255,255,0.2)',
+              background: 'rgba(0,0,0,0.2)',
               borderRadius: '4px',
             },
           }}
@@ -177,29 +192,51 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
               justify={message.role === 'user' ? 'flex-end' : 'flex-start'}
             >
               {message.role === 'assistant' && (
-                <Avatar size="xs" bg="brand.primary" icon={<FiMessageCircle />} name="Phoo" />
+                <Avatar
+                  size="xs"
+                  bg="brand.teal"
+                  color="white"
+                  icon={<FiMessageCircle />}
+                  name="Phoo"
+                />
               )}
               <Box
                 maxW="80%"
-                bg={message.role === 'user' ? 'brand.primary' : 'whiteAlpha.100'}
-                color="white"
+                bg={message.role === 'user' ? 'brand.teal' : 'white'}
+                color={message.role === 'user' ? 'white' : 'gray.800'}
                 px={4}
                 py={2}
                 borderRadius="lg"
                 borderBottomRightRadius={message.role === 'user' ? 'sm' : 'lg'}
                 borderBottomLeftRadius={message.role === 'assistant' ? 'sm' : 'lg'}
+                boxShadow="sm"
               >
-                <Text fontSize="sm" whiteSpace="pre-wrap">
-                  {message.content}
-                </Text>
+                {message.role === 'user' ? (
+                  <Text fontSize="sm" whiteSpace="pre-wrap">
+                    {message.content}
+                  </Text>
+                ) : (
+                  <MarkdownContent content={message.content} fontSize="sm" color="gray.800" />
+                )}
               </Box>
             </HStack>
           ))}
           {isLoading && (
             <HStack align="start">
-              <Avatar size="xs" bg="brand.primary" icon={<FiMessageCircle />} name="Phoo" />
-              <Box bg="whiteAlpha.100" px={4} py={2} borderRadius="lg">
-                <Spinner size="sm" color="white" />
+              <Avatar
+                size="xs"
+                bg="brand.teal"
+                color="white"
+                icon={<FiMessageCircle />}
+                name="Phoo"
+              />
+              <Box bg="white" px={4} py={2} borderRadius="lg" boxShadow="sm">
+                <HStack spacing={2}>
+                  <Spinner size="xs" color="brand.teal" />
+                  <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                    Phoo is typing...
+                  </Text>
+                </HStack>
               </Box>
             </HStack>
           )}
@@ -207,24 +244,32 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
         </VStack>
 
         {/* Input */}
-        <HStack p={4} borderTop="1px solid" borderColor="whiteAlpha.100">
+        <HStack
+          p={4}
+          borderTop="1px solid"
+          borderColor="gray.200"
+          bg="white"
+          borderBottomRadius="xl"
+        >
           <Input
             placeholder={isAuthenticated ? 'Ask Phoo anything...' : 'Ask about our platform...'}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            bg="whiteAlpha.100"
+            bg="gray.100"
             border="none"
-            color="white"
-            _placeholder={{ color: 'whiteAlpha.500' }}
-            _focus={{ bg: 'whiteAlpha.200', boxShadow: 'none' }}
+            color="gray.800"
+            _placeholder={{ color: 'gray.500' }}
+            _focus={{ bg: 'gray.200', boxShadow: 'none' }}
           />
           <IconButton
             aria-label="Send message"
             icon={<FiSend />}
             onClick={handleSend}
             isLoading={isLoading}
-            colorScheme="brand"
+            bg="brand.teal"
+            color="white"
+            _hover={{ bg: 'brand.teal', opacity: 0.9 }}
             isDisabled={!input.trim()}
           />
         </HStack>

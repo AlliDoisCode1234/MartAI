@@ -36,13 +36,13 @@ const publicNavItems: NavItem[] = [
   { label: 'Pricing', path: '/pricing' },
 ];
 
-// User navigation (logged in, non-admin) with phase requirements
+// User navigation (logged in, non-admin) - all pages accessible for exploration
 const userNavItems: NavItem[] = [
-  { label: 'Dashboard', path: '/dashboard', minPhase: 3 },
-  { label: 'Strategy', path: '/strategy', minPhase: 3 },
-  { label: 'Calendar', path: '/calendar', minPhase: 4 },
-  { label: 'Content', path: '/content', minPhase: 5 },
-  { label: 'Integrations', path: '/integrations', minPhase: 2 },
+  { label: 'Dashboard', path: '/dashboard' },
+  { label: 'Strategy', path: '/strategy' },
+  { label: 'Calendar', path: '/calendar' },
+  { label: 'Content', path: '/content' },
+  { label: 'Integrations', path: '/integrations' },
 ];
 
 // Admin navigation (logged in, admin)

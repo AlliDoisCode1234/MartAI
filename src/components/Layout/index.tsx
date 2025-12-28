@@ -8,20 +8,21 @@
  *   ├── Navigation
  *   ├── SkipLink (Accessibility)
  *   ├── MainContent
- *   ├── MartGuide
+ *   ├── PhooFab (bottom-left chat FAB)
+ *   ├── PhooChatDrawer (guest marketing)
  *   ├── NextStepCTA
  *   └── GoogleOneTap
  *
  * Reference: docs/project/USER_FLOW_LDD.md
  */
 
-import { type FC, type ReactNode } from 'react';
-import { Box } from '@chakra-ui/react';
+import { type FC, type ReactNode, useState } from 'react';
+import { Box, useDisclosure } from '@chakra-ui/react';
 import { usePathname } from 'next/navigation';
 import { Navigation } from '../Navigation';
 import { GoogleOneTap } from '../auth/GoogleOneTap';
-import { MartGuide, useFirstVisit } from '../mart';
 import { NextStepCTA } from '../Navigation/NextStepCTA';
+import { PhooFab, PhooChatDrawer } from '@/src/components/phoo';
 import { SkipLink, MainContent } from '@/src/lib/accessibility';
 import { useUserPhase } from '@/lib/useUserPhase';
 import { useProject } from '@/lib/hooks/useProject';
@@ -34,16 +35,16 @@ type Props = {
 export const Layout: FC<Props> = ({ children }) => {
   const pathname = usePathname();
   const { projectId } = useProject(null, { autoSelect: true });
-  const { phase, hasCompletedFirstProject, phaseInfo } = useUserPhase({
+  const { phase, hasCompletedFirstProject } = useUserPhase({
     projectId: projectId as Id<'projects'> | null,
   });
 
-  // Track first visits for Mart guide
-  const isFirstVisit = useFirstVisit(pathname || '/');
+  // PhooFab drawer state for guest users
+  const { isOpen: isDrawerOpen, onOpen: onOpenDrawer, onClose: onCloseDrawer } = useDisclosure();
 
-  // Pages where we hide Mart (marketing page, onboarding, auth, admin)
-  const hideMartPages = ['/', '/onboarding', '/auth', '/admin', '/apply', '/thank-you'];
-  const showMart = !hideMartPages.some((p) => pathname === p || pathname?.startsWith(p + '/'));
+  // Pages where we hide PhooFab (marketing page, onboarding, auth, admin)
+  const hidePhooPages = ['/', '/onboarding', '/auth', '/admin', '/apply', '/thank-you'];
+  const showPhoo = !hidePhooPages.some((p) => pathname === p || pathname?.startsWith(p + '/'));
 
   return (
     <Box minH="100vh" w="100%" bg="brand.light">
@@ -52,13 +53,14 @@ export const Layout: FC<Props> = ({ children }) => {
       <GoogleOneTap />
       <MainContent>{children}</MainContent>
 
-      {/* Mart Guide - shows on first visit to each page */}
-      {showMart && (
-        <MartGuide currentPath={pathname || '/'} phase={phase} isFirstVisit={isFirstVisit} />
-      )}
+      {/* PhooFab - floating chat button (bottom-left) */}
+      {showPhoo && <PhooFab onOpenDrawer={onOpenDrawer} />}
 
-      {/* Next Step CTA - guides users through phases */}
-      {showMart && (
+      {/* PhooChatDrawer - for guest users only */}
+      <PhooChatDrawer isOpen={isDrawerOpen} onClose={onCloseDrawer} />
+
+      {/* Next Step CTA - guides users through phases (bottom-right) */}
+      {showPhoo && (
         <NextStepCTA phase={phase} hasCompletedFirstProject={hasCompletedFirstProject} />
       )}
     </Box>
