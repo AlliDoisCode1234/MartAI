@@ -125,6 +125,23 @@ ${prompt}`;
     );
     await this.logCost(critiqueUsage, modelName, traceId, options.userId);
 
+    // Early exit if no changes needed
+    const critiqueNormalized = critique.toLowerCase().trim();
+    if (
+      critiqueNormalized.includes('no changes needed') ||
+      critiqueNormalized.includes('no changes required') ||
+      critiqueNormalized.includes('no improvements') ||
+      critiqueNormalized === ''
+    ) {
+      console.log(`[IntelligenceService] Trace ${traceId} Complete - No refinement needed.`);
+      return {
+        content: draft,
+        traceId,
+        cost: 0,
+        issues: [critique],
+      };
+    }
+
     // 3. Refinement
     console.log(`[IntelligenceService] Refining (Trace: ${traceId})...`);
     const { text: refined, usage: refinedUsage } = await this.refineDraft(
