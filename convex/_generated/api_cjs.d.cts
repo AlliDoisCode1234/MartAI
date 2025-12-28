@@ -89,6 +89,10 @@ import type * as organizations_teamMembers from "../organizations/teamMembers.js
 import type * as phoo_agent_chat from "../phoo/agent/chat.js";
 import type * as phoo_agent_index from "../phoo/agent/index.js";
 import type * as phoo_agent_phoo from "../phoo/agent/phoo.js";
+import type * as phoo_brain_health from "../phoo/brain/health.js";
+import type * as phoo_brain_index from "../phoo/brain/index.js";
+import type * as phoo_brain_providers from "../phoo/brain/providers.js";
+import type * as phoo_brain_router from "../phoo/brain/router.js";
 import type * as phoo_index from "../phoo/index.js";
 import type * as phoo_lib_index from "../phoo/lib/index.js";
 import type * as phoo_lib_rating from "../phoo/lib/rating.js";
@@ -218,6 +222,10 @@ declare const fullApi: ApiFromModules<{
   "phoo/agent/chat": typeof phoo_agent_chat;
   "phoo/agent/index": typeof phoo_agent_index;
   "phoo/agent/phoo": typeof phoo_agent_phoo;
+  "phoo/brain/health": typeof phoo_brain_health;
+  "phoo/brain/index": typeof phoo_brain_index;
+  "phoo/brain/providers": typeof phoo_brain_providers;
+  "phoo/brain/router": typeof phoo_brain_router;
   "phoo/index": typeof phoo_index;
   "phoo/lib/index": typeof phoo_lib_index;
   "phoo/lib/rating": typeof phoo_lib_rating;

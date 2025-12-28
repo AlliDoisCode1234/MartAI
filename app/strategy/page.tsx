@@ -36,6 +36,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { InsightList } from '@/src/components/insights';
 import { useProject } from '@/lib/hooks';
 import { trackEvent, ANALYTICS_EVENTS } from '@/src/lib/analyticsEvents';
+import { PhooRatingCard } from '@/src/components/phoo';
 
 // Strategy components
 import {
@@ -286,23 +287,26 @@ function StrategyContent() {
             keywordCount={keywordCount}
           />
 
-          {/* Insights */}
+          {/* Insights + Phoo Rating */}
           {typedProjectId && (
-            <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
-              <InsightList
-                projectId={typedProjectId}
-                type="cluster_suggestion"
-                title="Cluster Suggestions"
-                maxItems={4}
-                columns={1}
-              />
-              <InsightList
-                projectId={typedProjectId}
-                type="brief_suggestion"
-                title="Brief Ideas"
-                maxItems={4}
-                columns={1}
-              />
+            <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={6}>
+              <VStack spacing={6}>
+                <InsightList
+                  projectId={typedProjectId}
+                  type="cluster_suggestion"
+                  title="Cluster Suggestions"
+                  maxItems={4}
+                  columns={1}
+                />
+                <InsightList
+                  projectId={typedProjectId}
+                  type="brief_suggestion"
+                  title="Brief Ideas"
+                  maxItems={4}
+                  columns={1}
+                />
+              </VStack>
+              <PhooRatingCard projectId={typedProjectId} />
             </Grid>
           )}
 
