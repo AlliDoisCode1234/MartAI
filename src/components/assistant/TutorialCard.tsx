@@ -52,7 +52,7 @@ export const ONBOARDING_STEPS: TutorialStep[] = [
   {
     id: 'generate-clusters',
     title: 'Generate Topic Clusters',
-    description: 'Let Mart analyze your keywords and group them into topics.',
+    description: 'Let Phoo analyze your keywords and group them into topics.',
     icon: FiLayers,
     action: { label: 'Go to Strategy', href: '/strategy' },
     gradient: 'linear(to-br, purple.400, purple.600)',

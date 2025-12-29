@@ -53,20 +53,25 @@ export const generateDraft = action({
       tier = (user.membershipTier as MembershipTier) || 'free';
     }
 
-    // Check rate limit
-    const rateLimitKey = getRateLimitKey('generateDraft', tier);
-    // rateLimitKey is dynamic (tier-based) so we need type assertion
-    const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
-      key: userId as string,
-    });
+    // DEV MODE: Skip rate limiting for development/testing
+    const isDevMode = process.env.CONVEX_DEV_MODE === 'true';
 
-    if (!ok) {
-      const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
-      throw new ConvexError({
-        kind: 'RateLimitError',
-        message: `Rate limit exceeded. You can generate ${tier === 'free' ? '3 drafts per day' : tier === 'admin' ? '100 drafts per hour' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
-        retryAfter,
+    if (!isDevMode) {
+      // Check rate limit
+      const rateLimitKey = getRateLimitKey('generateDraft', tier);
+      // rateLimitKey is dynamic (tier-based) so we need type assertion
+      const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
+        key: userId as string,
       });
+
+      if (!ok) {
+        const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
+        throw new ConvexError({
+          kind: 'RateLimitError',
+          message: `Rate limit exceeded. You can generate ${tier === 'free' ? '3 drafts per day' : tier === 'admin' ? '100 drafts per hour' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
+          retryAfter,
+        });
+      }
     }
 
     // Get brief
@@ -257,7 +262,7 @@ export const generateDraft = action({
 
       // Append critique issues to draft result issues if any
       if (generationResult.issues) {
-        draftResult.issues.push(...generationResult.issues.map((i) => `Mart's Critique: ${i}`));
+        draftResult.issues.push(...generationResult.issues.map((i) => `Phoo's Critique: ${i}`));
       }
     } catch (e) {
       console.error('Intelligence Service generation failed, falling back to legacy generator:', e);

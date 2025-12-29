@@ -62,20 +62,25 @@ export const generatePlan = action({
       tier = (user.membershipTier as MembershipTier) || 'free';
     }
 
-    // Check rate limit
-    const rateLimitKey = getRateLimitKey('createQuarterlyPlan', tier);
-    // rateLimitKey is dynamic (tier-based) so we need type assertion
-    const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
-      key: userId as string,
-    });
+    // DEV MODE: Skip rate limiting for development/testing
+    const isDevMode = process.env.CONVEX_DEV_MODE === 'true';
 
-    if (!ok) {
-      const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
-      throw new ConvexError({
-        kind: 'RateLimitError',
-        message: `Rate limit exceeded. You can generate ${tier === 'free' ? '1 plan per day' : tier === 'admin' ? '50 plans per day' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
-        retryAfter,
+    if (!isDevMode) {
+      // Check rate limit
+      const rateLimitKey = getRateLimitKey('createQuarterlyPlan', tier);
+      // rateLimitKey is dynamic (tier-based) so we need type assertion
+      const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
+        key: userId as string,
       });
+
+      if (!ok) {
+        const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
+        throw new ConvexError({
+          kind: 'RateLimitError',
+          message: `Rate limit exceeded. You can generate ${tier === 'free' ? '1 plan per day' : tier === 'admin' ? '50 plans per day' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
+          retryAfter,
+        });
+      }
     }
 
     if (args.contentVelocity < 1 || args.contentVelocity > 7) {

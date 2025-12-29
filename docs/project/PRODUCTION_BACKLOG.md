@@ -25,6 +25,7 @@
 | ADMIN-003       | User Engagement Milestones            | 3   | 3      | ✅ Done        |
 | SEC-002         | Security Audit Checklist              | 5   | 4      | 🔲 Todo        |
 | QUAL-001        | Critical Path E2E Testing             | 8   | 4      | 🔲 Todo        |
+| **TEST-001**    | **Unit Test Coverage Roadmap**        | 8   | 3      | 🔲 Todo        |
 | **PROJ-001**    | **Project Type + SERP Gating**        | 5   | 2      | ✅ Done        |
 | **CODE-002**    | **useProject Hook Migration**         | 3   | 1      | ✅ Done        |
 | **PROFILE-001** | **User Profile Page**                 | 2   | 1      | ✅ Done        |
@@ -537,6 +538,76 @@ Then I have verified:
 - [ ] All items verified
 - [ ] Any issues fixed
 - [ ] Sign-off from team lead
+
+---
+
+#### TEST-001: Unit Test Coverage Roadmap
+
+| Field            | Value                             |
+| ---------------- | --------------------------------- |
+| **Priority**     | P1                                |
+| **Story Points** | 8                                 |
+| **Dependencies** | None                              |
+| **LDD**          | `docs/business/BUSINESS_LOGIC.md` |
+
+**User Story**:
+
+> As a development team, we want comprehensive unit test coverage so that we can refactor with confidence and catch bugs before production.
+
+**Current State**:
+
+| Type      | Count   | Tested  | Coverage |
+| --------- | ------- | ------- | -------- |
+| Queries   | 119     | ~25     | **21%**  |
+| Mutations | 114     | ~30     | **26%**  |
+| Actions   | 48      | ~10     | **21%**  |
+| **Total** | **281** | **~65** | **23%**  |
+
+**Definition of Ready**:
+
+- [x] Current coverage analyzed
+- [x] BUSINESS_LOGIC.md created with test plan
+- [ ] Testing priorities defined
+
+**Acceptance Criteria**:
+
+```gherkin
+# P0: Core Business Logic (Target: 80%)
+Given I am testing core business logic
+When I run the test suite
+Then the following modules have 80%+ coverage:
+  - Keywords CRUD
+  - Clusters CRUD
+  - Briefs CRUD
+  - Phoo Rating calculation
+  - Phase transitions
+  - M1 workflow
+
+# P1: Security (Target: 100%)
+Given I am testing security-critical functions
+When I run the test suite
+Then the following have 100% coverage:
+  - RBAC data isolation
+  - Authentication flows
+  - Rate limit enforcement
+  - API key validation
+
+# P2: Integrations (Target: 50%)
+Given I am testing integrations
+When I run the test suite
+Then the following have 50%+ coverage:
+  - OAuth flows (GA4, GSC)
+  - WordPress publishing
+  - Webhook handlers
+```
+
+**Definition of Done**:
+
+- [ ] Core logic tests at 80%+ coverage
+- [ ] Security tests at 100% coverage
+- [ ] Integration tests at 50%+ coverage
+- [ ] All tests pass in CI
+- [ ] Coverage report generated
 
 ---
 

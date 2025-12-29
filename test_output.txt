@@ -1,0 +1,29 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.16 [39m[90mC:/Users/josia/Desktop/Anti_MartAI/MartAI[39m
+
+ [31m❯[39m __tests__/convex/security/apiKeys.test.ts [2m([22m[2m19 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 30[2mms[22m[39m
+       [32m✓[39m API keys are isolated by user[32m 6[2mms[22m[39m
+       [32m✓[39m API keys are isolated by project[32m 1[2mms[22m[39m
+       [32m✓[39m returns key info for valid active key[32m 2[2mms[22m[39m
+       [32m✓[39m returns null for non-existent key hash[32m 1[2mms[22m[39m
+       [32m✓[39m returns null for revoked key[32m 1[2mms[22m[39m
+       [32m✓[39m returns null for expired key[32m 1[2mms[22m[39m
+       [32m✓[39m validates unexpired key (expiration in future)[32m 1[2mms[22m[39m
+       [32m✓[39m key with read permission only[32m 1[2mms[22m[39m
+       [32m✓[39m key with multiple permissions[32m 1[2mms[22m[39m
+       [32m✓[39m revoking key sets isActive to false[32m 1[2mms[22m[39m
+       [32m✓[39m revoked key cannot be used for validation[32m 1[2mms[22m[39m
+       [32m✓[39m usage count increments on use[32m 1[2mms[22m[39m
+       [32m✓[39m multiple uses increment count correctly[32m 1[2mms[22m[39m
+       [32m✓[39m rate limit check returns allowed for fresh key[32m 1[2mms[22m[39m
+       [32m✓[39m rate limit resets after window expires[32m 1[2mms[22m[39m
+       [32m✓[39m keyHash is never exposed in list query results[32m 1[2mms[22m[39m
+       [32m✓[39m cannot access API key from another user project[32m 1[2mms[22m[39m
+[31m       [31m×[31m user with enterprise subscription can have API keys[39m[32m 7[2mms[22m[39m
+       [32m✓[39m subscription tier check for API key creation[32m 1[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m18 passed[39m[22m[90m (19)[39m
+[2m   Start at [22m 02:49:56
+[2m   Duration [22m 340ms[2m (transform 111ms, setup 0ms, import 214ms, tests 30ms, environment 0ms)[22m
+

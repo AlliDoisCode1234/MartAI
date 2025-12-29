@@ -14,7 +14,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, VStack, Box, useToast } from '@chakra-ui/react';
 import { AnimatePresence } from 'framer-motion';
-import { useMutation, useAction } from 'convex/react';
+import { useMutation, useAction, useConvex } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/lib/useAuth';
 import { MartLoader } from '@/src/components/assistant';
@@ -36,6 +36,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const toast = useToast();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
+  const convex = useConvex();
 
   // State
   const [step, setStep] = useState(1);
@@ -52,6 +53,9 @@ export default function OnboardingPage() {
   const createOnboardingProspect = useMutation(api.prospects.prospects.createOnboardingProspect);
   const generateKeywordsFromUrl = useAction(api.seo.keywordActions.generateKeywordsFromUrl);
   const generateClusters = useAction(api.seo.keywordActions.generateClusters);
+  const generatePlan = useAction(api.content.quarterlyPlanActions.generatePlan);
+  const generateBrief = useAction(api.content.briefActions.generateBrief);
+  const generateDraft = useAction(api.content.draftActions.generateDraft);
   const generatePreliminaryScore = useMutation(
     api.analytics.martaiRatingQueries.generatePreliminaryScore
   );
@@ -151,35 +155,57 @@ export default function OnboardingPage() {
             console.error
           );
           await updateOnboardingStep({ step: 'projectCreated', value: true }).catch(console.error);
-          // Generate keywords (non-blocking, silent - user sees results on reveal page)
-          // TODO: Remove debug logs before launch
-          try {
-            console.log('[ONBOARDING DEBUG] Calling generateKeywordsFromUrl...', {
-              projectId: newProjectId,
-            });
-            const kwResult = await generateKeywordsFromUrl({
-              projectId: newProjectId as any,
-              limit: 30,
-            });
-            console.log('[ONBOARDING DEBUG] generateKeywordsFromUrl SUCCESS:', kwResult);
-            // Generate clusters if enough keywords
-            console.log('[ONBOARDING DEBUG] Calling generateClusters...');
-            await generateClusters({ projectId: newProjectId as any }).catch((e) => {
-              console.warn('[ONBOARDING DEBUG] generateClusters FAILED:', e);
-            });
-            console.log('[ONBOARDING DEBUG] generateClusters completed');
-          } catch (kwError: any) {
-            console.warn('[ONBOARDING DEBUG] generateKeywordsFromUrl FAILED:', kwError);
-          }
-          // Generate MR score (non-blocking, silent)
-          // TODO: Remove debug logs before launch
-          try {
-            console.log('[ONBOARDING DEBUG] Calling generatePreliminaryScore...');
-            const mrResult = await generatePreliminaryScore({ projectId: newProjectId as any });
-            console.log('[ONBOARDING DEBUG] generatePreliminaryScore SUCCESS:', mrResult);
-          } catch (mrError) {
-            console.warn('[ONBOARDING DEBUG] generatePreliminaryScore FAILED:', mrError);
-          }
+
+          // FIRE-AND-FORGET: All generation happens in background
+          // User proceeds immediately to GA4/GSC step
+          (async () => {
+            try {
+              console.log('[ONBOARDING DEBUG] Starting background generation...');
+              console.log('[ONBOARDING DEBUG] Calling generateKeywordsFromUrl...');
+              const kwResult = await generateKeywordsFromUrl({
+                projectId: newProjectId as any,
+                limit: 30,
+              });
+              console.log('[ONBOARDING DEBUG] generateKeywordsFromUrl SUCCESS:', kwResult);
+
+              console.log('[ONBOARDING DEBUG] Calling generateClusters...');
+              await generateClusters({ projectId: newProjectId as any });
+              console.log('[ONBOARDING DEBUG] generateClusters completed');
+
+              console.log('[ONBOARDING DEBUG] Calling generatePlan...');
+              await generatePlan({
+                projectId: newProjectId as any,
+                contentVelocity: 2,
+                startDate: Date.now(),
+              });
+              console.log('[ONBOARDING DEBUG] generatePlan completed - calendar ready!');
+
+              // Auto-generate first brief content and draft
+              console.log('[ONBOARDING DEBUG] Fetching first brief for auto-generation...');
+              const briefs = await convex.query(api.content.briefs.getBriefsByProject, {
+                projectId: newProjectId as any,
+              });
+              const firstBrief = briefs?.[0];
+              if (firstBrief) {
+                console.log('[ONBOARDING DEBUG] Generating brief content for:', firstBrief._id);
+                await generateBrief({
+                  briefId: firstBrief._id as any,
+                  projectId: newProjectId as any,
+                  clusterId: firstBrief.clusterId || undefined,
+                });
+                console.log('[ONBOARDING DEBUG] Brief content generated! Now generating draft...');
+                await generateDraft({ briefId: firstBrief._id as any });
+                console.log('[ONBOARDING DEBUG] Draft generated! Demo content ready.');
+              }
+
+              // Generate MR score
+              console.log('[ONBOARDING DEBUG] Calling generatePreliminaryScore...');
+              await generatePreliminaryScore({ projectId: newProjectId as any });
+              console.log('[ONBOARDING DEBUG] All background generation complete!');
+            } catch (bgError) {
+              console.warn('[ONBOARDING DEBUG] Background generation error:', bgError);
+            }
+          })();
         }
       }
       nextStep();

@@ -82,20 +82,25 @@ export const generateClusters = action({
       tier = (user.membershipTier as MembershipTier) || 'free';
     }
 
-    // Check rate limit
-    const rateLimitKey = getRateLimitKey('generateKeywordClusters', tier);
-    // rateLimitKey is dynamic (tier-based) so we need type assertion for the string union
-    const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
-      key: userId as string,
-    });
+    // DEV MODE: Skip rate limiting for development/testing
+    const isDevMode = process.env.CONVEX_DEV_MODE === 'true';
 
-    if (!ok) {
-      const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
-      throw new ConvexError({
-        kind: 'RateLimitError',
-        message: `Rate limit exceeded. You can generate ${tier === 'free' ? '5 clusters per day' : tier === 'admin' ? '200 clusters per hour' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
-        retryAfter,
+    if (!isDevMode) {
+      // Check rate limit
+      const rateLimitKey = getRateLimitKey('generateKeywordClusters', tier);
+      // rateLimitKey is dynamic (tier-based) so we need type assertion for the string union
+      const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
+        key: userId as string,
       });
+
+      if (!ok) {
+        const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
+        throw new ConvexError({
+          kind: 'RateLimitError',
+          message: `Rate limit exceeded. You can generate ${tier === 'free' ? '5 clusters per day' : tier === 'admin' ? '200 clusters per hour' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
+          retryAfter,
+        });
+      }
     }
 
     const project = await ctx.runQuery(api.projects.projects.getProjectById, {

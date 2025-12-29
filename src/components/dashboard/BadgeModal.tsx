@@ -173,7 +173,7 @@ export function BadgeModal({ isOpen, onClose, projectId, currentScore }: Props) 
 
             <Text fontSize="xs" color="gray.500" textAlign="center">
               Embed this badge on your website to show your SEO health score. Links back to your
-              MartAI profile.
+              Phoo profile.
             </Text>
           </VStack>
         </ModalBody>

@@ -13,7 +13,7 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.AUTH_RESEND_KEY);
 
 // From address - change after domain verification
-const FROM_EMAIL = 'MartAI <onboarding@resend.dev>';
+const FROM_EMAIL = 'Phoo <onboarding@resend.dev>';
 const APP_URL = process.env.SITE_URL || 'http://localhost:3000';
 
 // Email templates
@@ -22,11 +22,11 @@ const EMAIL_TEMPLATES: Record<
   { subject: string; getHtml: (data: Record<string, unknown>) => string }
 > = {
   welcome: {
-    subject: "Welcome to MartAI! Let's grow your traffic 🚀",
+    subject: "Welcome to Phoo! Let's grow your traffic 🚀",
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #F99F2A;">Welcome to MartAI!</h1>
-        <p>Hey${data.name ? ` ${data.name}` : ''}! I'm Mart, your AI SEO assistant.</p>
+        <h1 style="color: #F99F2A;">Welcome to Phoo!</h1>
+        <p>Hey${data.name ? ` ${data.name}` : ''}! I'm Phoo, your AI SEO assistant.</p>
         <p>I'm excited to help you rank higher and drive more traffic. Let's get started!</p>
         <a href="${APP_URL}/onboarding" style="display: inline-block; background: #F99F2A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 16px;">
           Start Your First Project
@@ -43,7 +43,7 @@ const EMAIL_TEMPLATES: Record<
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #F99F2A;">You just leveled up!</h1>
-        <p>Great progress! You've unlocked new features in MartAI.</p>
+        <p>Great progress! You've unlocked new features in Phoo.</p>
         <p><strong>New Phase:</strong> ${data.phaseName || 'Discovery'}</p>
         <a href="${APP_URL}/dashboard" style="display: inline-block; background: #F99F2A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 16px;">
           Explore New Features

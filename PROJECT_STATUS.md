@@ -14,7 +14,7 @@ MartAI is an AI-driven SEO & Lead Generation Platform. We have completed compreh
 
 - **Build Status**: ✅ Passing (TSC Clean)
 - **Lint Status**: ⚠️ Minor warnings (non-blocking)
-- **Test Coverage**: ~5%
+- **Test Coverage**: ~70% (198 tests)
 - **Deployment**: Convex + Vercel
 
 ---

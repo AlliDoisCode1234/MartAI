@@ -1,13 +1,13 @@
-import { action, mutation, query } from "../_generated/server";
-import { v } from "convex/values";
-import { api } from "../_generated/api";
-import { Id } from "../_generated/dataModel";
+import { action, mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
+import { api } from '../_generated/api';
+import { Id } from '../_generated/dataModel';
 // generatePlanSummary, estimateTraffic, estimateLeads moved to quarterlyPlanActions.ts
 
 // Create quarterly plan
 export const createQuarterlyPlan = mutation({
   args: {
-    projectId: v.id("projects"),
+    projectId: v.id('projects'),
     contentVelocity: v.number(), // posts per week
     startDate: v.number(), // timestamp
     goals: v.object({
@@ -18,38 +18,53 @@ export const createQuarterlyPlan = mutation({
     assumptions: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const planId = await ctx.db.insert("quarterlyPlans", {
+    const planId = await ctx.db.insert('quarterlyPlans', {
       projectId: args.projectId,
       contentVelocity: args.contentVelocity,
       startDate: args.startDate,
       goals: args.goals,
-      assumptions: args.assumptions || "",
+      assumptions: args.assumptions || '',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
     // Generate brief placeholders for 12 weeks
     const briefs = generateBriefPlaceholders(args.startDate, args.contentVelocity);
-    
+
     // Get clusters to assign
     const clusters = await ctx.db
-      .query("keywordClusters")
-      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .query('keywordClusters')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .collect();
-    
+
     const sortedClusters = clusters.sort((a, b) => (b.impactScore || 0) - (a.impactScore || 0));
-    
+
     for (let i = 0; i < briefs.length; i++) {
       const brief = briefs[i];
       const cluster = sortedClusters[i % sortedClusters.length];
-      
-      await ctx.db.insert("briefs", {
+
+      // Create the brief
+      const briefId = await ctx.db.insert('briefs', {
         planId: planId,
         projectId: args.projectId,
         clusterId: cluster?._id,
-        title: brief.title,
+        title: cluster?.clusterName || brief.title,
         scheduledDate: brief.scheduledDate,
-        status: "planned",
+        status: 'planned',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      // Also create contentCalendars entry for Calendar page display
+      await ctx.db.insert('contentCalendars', {
+        projectId: args.projectId,
+        briefId: briefId,
+        title: cluster?.clusterName || brief.title,
+        contentType: 'blog',
+        primaryKeyword: cluster?.keywords?.[0] || undefined,
+        supportingKeywords: cluster?.keywords?.slice(1, 5) || [],
+        status: 'scheduled',
+        publishDate: brief.scheduledDate,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -70,8 +85,8 @@ function generateBriefPlaceholders(startDate: number, contentVelocity: number) {
     for (let post = 0; post < postsPerWeek; post++) {
       const daysPerPost = 7 / postsPerWeek;
       const dayOffset = week * 7 + Math.floor(post * daysPerPost);
-      const scheduledDate = startDate + (dayOffset * 24 * 60 * 60 * 1000);
-      
+      const scheduledDate = startDate + dayOffset * 24 * 60 * 60 * 1000;
+
       briefs.push({
         title: `Content Brief ${briefs.length + 1}`,
         scheduledDate,
@@ -84,19 +99,19 @@ function generateBriefPlaceholders(startDate: number, contentVelocity: number) {
 
 // Get plan by project
 export const getPlanByProject = query({
-  args: { projectId: v.id("projects") },
+  args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     const plan = await ctx.db
-      .query("quarterlyPlans")
-      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .query('quarterlyPlans')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .first();
 
     if (!plan) return null;
 
     // Get associated briefs
     const briefs = await ctx.db
-      .query("briefs")
-      .withIndex("by_plan", (q) => q.eq("planId", plan._id))
+      .query('briefs')
+      .withIndex('by_plan', (q) => q.eq('planId', plan._id))
       .collect();
 
     return {
@@ -109,25 +124,27 @@ export const getPlanByProject = query({
 // Update plan
 export const updatePlan = mutation({
   args: {
-    planId: v.id("quarterlyPlans"),
+    planId: v.id('quarterlyPlans'),
     contentVelocity: v.optional(v.number()),
-    goals: v.optional(v.object({
-      traffic: v.optional(v.number()),
-      leads: v.optional(v.number()),
-      revenue: v.optional(v.number()),
-    })),
+    goals: v.optional(
+      v.object({
+        traffic: v.optional(v.number()),
+        leads: v.optional(v.number()),
+        revenue: v.optional(v.number()),
+      })
+    ),
     assumptions: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { planId, ...updates } = args;
     const cleanUpdates: Record<string, any> = { updatedAt: Date.now() };
-    
+
     for (const [key, value] of Object.entries(updates)) {
       if (value !== undefined) {
         cleanUpdates[key] = value;
       }
     }
-    
+
     return await ctx.db.patch(planId, cleanUpdates);
   },
 });
@@ -135,7 +152,7 @@ export const updatePlan = mutation({
 // Reschedule brief
 export const rescheduleBrief = mutation({
   args: {
-    briefId: v.id("briefs"),
+    briefId: v.id('briefs'),
     newDate: v.number(),
   },
   handler: async (ctx, args) => {
@@ -149,8 +166,8 @@ export const rescheduleBrief = mutation({
 // Assign cluster to brief
 export const assignClusterToBrief = mutation({
   args: {
-    briefId: v.id("briefs"),
-    clusterId: v.id("keywordClusters"),
+    briefId: v.id('briefs'),
+    clusterId: v.id('keywordClusters'),
   },
   handler: async (ctx, args) => {
     return await ctx.db.patch(args.briefId, {
@@ -162,21 +179,20 @@ export const assignClusterToBrief = mutation({
 
 // Delete plan
 export const deletePlan = mutation({
-  args: { planId: v.id("quarterlyPlans") },
+  args: { planId: v.id('quarterlyPlans') },
   handler: async (ctx, args) => {
     // Delete associated briefs
     const briefs = await ctx.db
-      .query("briefs")
-      .withIndex("by_plan", (q) => q.eq("planId", args.planId))
+      .query('briefs')
+      .withIndex('by_plan', (q) => q.eq('planId', args.planId))
       .collect();
-    
+
     for (const brief of briefs) {
       await ctx.db.delete(brief._id);
     }
-    
+
     await ctx.db.delete(args.planId);
   },
 });
 
 // generatePlan action moved to quarterlyPlanActions.ts
-

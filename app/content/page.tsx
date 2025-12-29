@@ -37,10 +37,14 @@ import {
   Badge,
 } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
-import { useAction } from 'convex/react';
+import { useAction, useMutation, useQuery, useConvex } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { LexicalEditorComponent } from '@/src/components/LexicalEditor';
 import type { Brief, Draft } from '@/types';
+import { useProject } from '@/lib/hooks';
+import { useRouter } from 'next/navigation';
+import type { ContentTemplate } from '@/lib/constants/contentTemplates';
+import type { Id } from '@/convex/_generated/dataModel';
 
 import {
   TitleOptionsCard,
@@ -55,9 +59,142 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/src/lib/analyticsEvents';
 import { sanitizeErrorMessage } from '@/lib/errorSanitizer';
 import { CONTENT_TEMPLATES } from '@/lib/constants/contentTemplates';
 
+// Template-based brief creation component
+function TemplateBasedBriefCreator({ template }: { template: ContentTemplate }) {
+  const router = useRouter();
+  const { projectId } = useProject(null, { autoSelect: true });
+  const [title, setTitle] = useState('');
+  const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const clusters = useQuery(
+    api.seo.keywordClusters.getActiveClusters,
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+  );
+
+  const createBrief = useMutation(api.content.briefs.createBrief);
+
+  const handleCreate = async () => {
+    if (!projectId || !title.trim()) return;
+    setCreating(true);
+    try {
+      const briefId = await createBrief({
+        projectId: projectId as Id<'projects'>,
+        clusterId: selectedClusterId ? (selectedClusterId as Id<'keywordClusters'>) : undefined,
+        title: title.trim(),
+        scheduledDate: Date.now() + 7 * 24 * 60 * 60 * 1000, // Default: 1 week from now
+        status: 'in_progress',
+        h2Outline: template.structure, // Pre-populate with template structure
+      });
+      trackEvent(ANALYTICS_EVENTS.BRIEF_CREATED, { briefId, templateId: template.id });
+      router.push(`/content?briefId=${briefId}`);
+    } catch (error) {
+      console.error('Failed to create brief:', error);
+      alert('Failed to create brief. Please try again.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Box minH="calc(100vh - 64px)" bg="brand.light">
+      <Container maxW="container.lg" py={{ base: 8, md: 12 }} px={{ base: 4, md: 8 }}>
+        <VStack spacing={8} align="stretch">
+          <VStack spacing={2} textAlign="center">
+            <Badge colorScheme={template.color} fontSize="sm" px={3} py={1}>
+              {template.useCase}
+            </Badge>
+            <Heading size="xl">Create {template.name}</Heading>
+            <Text color="gray.600">{template.description}</Text>
+          </VStack>
+
+          <Card>
+            <CardBody>
+              <VStack align="stretch" spacing={6}>
+                <FormControl isRequired>
+                  <FormLabel>Content Title</FormLabel>
+                  <Input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g., How to Improve Your SEO Strategy"
+                    size="lg"
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Link to Cluster (Optional)</FormLabel>
+                  <Box
+                    as="select"
+                    w="full"
+                    p={2}
+                    borderWidth={1}
+                    borderRadius="md"
+                    value={selectedClusterId || ''}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                      setSelectedClusterId(e.target.value || null)
+                    }
+                  >
+                    <option value="">No cluster - standalone content</option>
+                    {clusters?.map(
+                      (cluster: { _id: string; clusterName?: string; keywords?: string[] }) => (
+                        <option key={cluster._id} value={cluster._id}>
+                          {cluster.clusterName} ({cluster.keywords?.length || 0} keywords)
+                        </option>
+                      )
+                    )}
+                  </Box>
+                  <Text fontSize="sm" color="gray.500" mt={1}>
+                    Linking to a cluster helps with SEO targeting
+                  </Text>
+                </FormControl>
+
+                <Box>
+                  <Text fontWeight="medium" mb={2}>
+                    Template Structure (H2 Outline)
+                  </Text>
+                  <VStack align="stretch" spacing={2}>
+                    {template.structure.map((section, i) => (
+                      <HStack key={i} spacing={3} p={2} bg="gray.50" borderRadius="md">
+                        <Badge colorScheme="gray">{i + 1}</Badge>
+                        <Text>{section}</Text>
+                      </HStack>
+                    ))}
+                  </VStack>
+                  <Text fontSize="sm" color="gray.500" mt={2}>
+                    You can edit this structure after creating the brief
+                  </Text>
+                </Box>
+              </VStack>
+            </CardBody>
+          </Card>
+
+          <HStack spacing={4} justify="flex-end">
+            <Button variant="ghost" onClick={() => window.history.back()}>
+              Cancel
+            </Button>
+            <Button
+              bg="brand.orange"
+              color="white"
+              _hover={{ bg: '#E8851A' }}
+              onClick={handleCreate}
+              isLoading={creating}
+              loadingText="Creating..."
+              isDisabled={!title.trim() || !projectId}
+              size="lg"
+            >
+              Create Brief
+            </Button>
+          </HStack>
+        </VStack>
+      </Container>
+    </Box>
+  );
+}
+
 function ContentContent() {
   const { isAuthenticated } = useAuth();
   const searchParams = useSearchParams();
+  const convex = useConvex();
   const [brief, setBrief] = useState<Brief | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(false);
@@ -82,6 +219,8 @@ function ContentContent() {
 
   const generateBriefAction = useAction((api as any).content.briefActions.generateBrief);
   const generateDraftAction = useAction((api as any).content.draftActions.generateDraft);
+  const updateBriefMutation = useMutation((api as any).content.briefs.updateBrief);
+  const updateDraftMutation = useMutation((api as any).content.drafts.updateDraft);
 
   useEffect(() => {
     if (briefId) {
@@ -93,23 +232,60 @@ function ContentContent() {
   const loadBrief = async (id: string) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/briefs?briefId=${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      // Use direct Convex query (avoids 401 auth issues with REST API)
+      const briefData = await convex.query(api.content.briefs.getBriefById, {
+        briefId: id as any,
       });
-      if (response.ok) {
-        const data = await response.json();
-        setBrief(data.brief);
+
+      if (briefData) {
+        setBrief(briefData as Brief);
         setFormData({
-          title: data.brief.title || '',
-          titleOptions: data.brief.titleOptions || [],
-          h2Outline: data.brief.h2Outline || [],
-          faqs: data.brief.faqs || [],
-          metaTitle: data.brief.metaTitle || '',
-          metaDescription: data.brief.metaDescription || '',
-          internalLinks: data.brief.internalLinks || [],
-          schemaSuggestion: data.brief.schemaSuggestion || '',
+          title: briefData.title || '',
+          titleOptions: briefData.titleOptions || [],
+          h2Outline: briefData.h2Outline || [],
+          faqs: briefData.faqs || [],
+          metaTitle: briefData.metaTitle || '',
+          metaDescription: briefData.metaDescription || '',
+          internalLinks: briefData.internalLinks || [],
+          schemaSuggestion: briefData.schemaSuggestion || '',
         });
+
+        // AUTO-GENERATE if brief is empty (no h2Outline means never generated)
+        if (!briefData.h2Outline || briefData.h2Outline.length === 0) {
+          console.log('[CONTENT EDITOR] Brief is empty, auto-generating...');
+          setGenerating(true);
+          try {
+            const result = await generateBriefAction({
+              briefId: id as any,
+              projectId: briefData.projectId as any,
+              clusterId: briefData.clusterId || undefined,
+            });
+            if (result.success) {
+              console.log('[CONTENT EDITOR] Auto-generation complete, reloading brief...');
+              // Reload the brief with generated content
+              const refreshData = await convex.query(api.content.briefs.getBriefById, {
+                briefId: id as any,
+              });
+              if (refreshData) {
+                setBrief(refreshData as Brief);
+                setFormData({
+                  title: refreshData.title || '',
+                  titleOptions: refreshData.titleOptions || [],
+                  h2Outline: refreshData.h2Outline || [],
+                  faqs: refreshData.faqs || [],
+                  metaTitle: refreshData.metaTitle || '',
+                  metaDescription: refreshData.metaDescription || '',
+                  internalLinks: refreshData.internalLinks || [],
+                  schemaSuggestion: refreshData.schemaSuggestion || '',
+                });
+              }
+            }
+          } catch (autoGenError) {
+            console.warn('[CONTENT EDITOR] Auto-generation failed:', autoGenError);
+          } finally {
+            setGenerating(false);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading brief:', error);
@@ -120,13 +296,12 @@ function ContentContent() {
 
   const loadDraft = async (briefId: string) => {
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/drafts?briefId=${briefId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      // Use direct Convex query
+      const draftData = await convex.query(api.content.drafts.getDraftByBrief, {
+        briefId: briefId as any,
       });
-      if (response.ok) {
-        const data = await response.json();
-        setDraft(data.draft);
+      if (draftData) {
+        setDraft(draftData as Draft);
       }
     } catch (error) {
       console.error('Error loading draft:', error);
@@ -180,20 +355,22 @@ function ContentContent() {
     if (!briefId) return;
     setSaving(true);
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/briefs', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ briefId, ...formData }),
+      // Use Convex mutation directly
+      await updateBriefMutation({
+        briefId: briefId as any,
+        ...formData,
       });
-      if (response.ok) {
-        alert('Brief saved successfully!');
-        await loadBrief(briefId);
-      } else {
-        alert('Failed to save brief');
+      alert('Brief saved successfully!');
+      await loadBrief(briefId);
+    } catch (error: any) {
+      console.error('Save brief error:', error);
+      // Check if it's an auth error - redirect to login
+      if (error?.message?.includes('Unauthorized') || error?.message?.includes('Not logged in')) {
+        alert('Session expired. Please log in again.');
+        window.location.href = '/auth/login';
+        return;
       }
-    } catch {
-      alert('Failed to save brief');
+      alert('Failed to save brief: ' + (error?.message || 'Unknown error'));
     } finally {
       setSaving(false);
     }
@@ -203,19 +380,15 @@ function ContentContent() {
     if (!draft?._id) return;
     setSaving(true);
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/drafts', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ draftId: draft._id, content: draft.content }),
+      // Use Convex mutation directly
+      await updateDraftMutation({
+        draftId: draft._id as any,
+        content: draft.content,
       });
-      if (response.ok) {
-        alert('Draft saved successfully!');
-        if (briefId) await loadDraft(briefId);
-      } else {
-        alert('Failed to save draft');
-      }
-    } catch {
+      alert('Draft saved successfully!');
+      if (briefId) await loadDraft(briefId);
+    } catch (error) {
+      console.error('Save draft error:', error);
       alert('Failed to save draft');
     } finally {
       setSaving(false);
@@ -226,23 +399,19 @@ function ContentContent() {
     if (!draft?._id || !confirm('Approve this draft? It will be locked for editing.')) return;
     setSaving(true);
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/drafts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ draftId: draft._id }),
+      // Use Convex mutation directly
+      await updateDraftMutation({
+        draftId: draft._id as any,
+        status: 'approved',
       });
-      if (response.ok) {
-        trackEvent(ANALYTICS_EVENTS.BRIEF_COMPLETED, { briefId });
-        alert('Draft approved!');
-        if (briefId) {
-          await loadDraft(briefId);
-          await loadBrief(briefId);
-        }
-      } else {
-        alert('Failed to approve draft');
+      trackEvent(ANALYTICS_EVENTS.BRIEF_COMPLETED, { briefId });
+      alert('Draft approved!');
+      if (briefId) {
+        await loadDraft(briefId);
+        await loadBrief(briefId);
       }
-    } catch {
+    } catch (error) {
+      console.error('Approve draft error:', error);
       alert('Failed to approve draft');
     } finally {
       setSaving(false);
@@ -277,66 +446,11 @@ function ContentContent() {
 
   // Template selected - show template-based brief creation form
   if (!briefId && selectedTemplate) {
-    return (
-      <Box minH="calc(100vh - 64px)" bg="brand.light">
-        <Container maxW="container.lg" py={{ base: 8, md: 12 }} px={{ base: 4, md: 8 }}>
-          <VStack spacing={8} align="stretch">
-            <VStack spacing={2} textAlign="center">
-              <Badge colorScheme={selectedTemplate.color} fontSize="sm" px={3} py={1}>
-                {selectedTemplate.useCase}
-              </Badge>
-              <Heading size="xl">{selectedTemplate.name}</Heading>
-              <Text color="gray.600">{selectedTemplate.description}</Text>
-            </VStack>
-
-            <Card>
-              <CardBody>
-                <VStack align="stretch" spacing={4}>
-                  <Heading size="md">Template Structure</Heading>
-                  <Text fontSize="sm" color="gray.600">
-                    This template includes the following sections:
-                  </Text>
-                  {selectedTemplate.structure.map((section, i) => (
-                    <HStack key={i} spacing={3}>
-                      <Badge colorScheme="gray">{i + 1}</Badge>
-                      <Text>{section}</Text>
-                    </HStack>
-                  ))}
-                </VStack>
-              </CardBody>
-            </Card>
-
-            <Alert status="info" borderRadius="md">
-              <AlertIcon />
-              <VStack align="start" spacing={1}>
-                <Text fontWeight="semibold">Coming Soon</Text>
-                <Text fontSize="sm">
-                  Create a content brief from this template by going to Strategy → select a cluster
-                  → Create Brief.
-                </Text>
-              </VStack>
-            </Alert>
-
-            <HStack spacing={4}>
-              <Button variant="ghost" onClick={() => window.history.back()}>
-                Back to Templates
-              </Button>
-              <Button
-                bg="brand.orange"
-                color="white"
-                _hover={{ bg: '#E8851A' }}
-                onClick={() => (window.location.href = '/strategy')}
-              >
-                Go to Strategy
-              </Button>
-            </HStack>
-          </VStack>
-        </Container>
-      </Box>
-    );
+    return <TemplateBasedBriefCreator template={selectedTemplate} />;
   }
 
-  if (loading) return <ContentSkeleton />;
+  // Show skeleton during loading OR generating (prevents empty state flash)
+  if (loading || generating) return <ContentSkeleton />;
 
   return (
     <Box minH="calc(100vh - 64px)" bg="brand.light">

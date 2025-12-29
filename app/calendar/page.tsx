@@ -40,7 +40,7 @@ type ViewMode = 'month' | 'week' | 'list';
 export default function CalendarPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { projectId, isLoading: projectLoading } = useProject(null, { autoSelect: true });
-  const [viewMode, setViewMode] = useState<ViewMode>('week');
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Calculate date range for current view (3 months window)

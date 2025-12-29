@@ -84,7 +84,7 @@ export function ContentStudioLanding({ onTemplateSelect }: Props) {
                 What will you create today?
               </Heading>
               <Text fontSize="lg" color="gray.600" maxW="600px">
-                Pick a template, grab a quick win keyword, or start from scratch. Mart will help you
+                Pick a template, grab a quick win keyword, or start from scratch. Phoo will help you
                 every step of the way.
               </Text>
             </VStack>
@@ -169,7 +169,7 @@ export function ContentStudioLanding({ onTemplateSelect }: Props) {
                 <VStack align="start" spacing={2}>
                   <Heading size="md">Need help getting started?</Heading>
                   <Text color="gray.300">
-                    Generate keywords first, then Mart will suggest the best content to create.
+                    Generate keywords first, then Phoo will suggest the best content to create.
                   </Text>
                 </VStack>
                 <Button

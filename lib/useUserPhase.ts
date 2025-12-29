@@ -235,11 +235,7 @@ export function getNextStepCTA(
       path: '/content',
       description: 'Start creating content',
     },
-    '/content': {
-      label: 'Publish',
-      path: '/content',
-      description: 'Go live with your article',
-    },
+    // NOTE: Publish step removed - not functional yet, confusing for demos
   };
 
   // Only show next step if not at full access

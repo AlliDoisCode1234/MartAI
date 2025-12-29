@@ -14,7 +14,7 @@ if (typeof window === 'undefined' && !apiLocal) {
   }
 }
 
-// GET - Get brief by ID
+// GET - Get brief by ID or briefs by project
 export async function GET(request: NextRequest) {
   try {
     await requireAuth(request, {
@@ -23,13 +23,22 @@ export async function GET(request: NextRequest) {
     });
     const searchParams = request.nextUrl.searchParams;
     const briefId = searchParams.get('briefId');
-
-    if (!briefId) {
-      return NextResponse.json({ error: 'briefId is required' }, { status: 400 });
-    }
+    const projectId = searchParams.get('projectId');
 
     if (!apiLocal) {
       return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
+    }
+
+    // If projectId is provided, return all briefs for project
+    if (projectId) {
+      const briefs = await callConvexQuery(apiLocal.briefs.getBriefsByProject, {
+        projectId: projectId as any,
+      });
+      return secureResponse(NextResponse.json({ briefs: briefs || [] }));
+    }
+
+    if (!briefId) {
+      return NextResponse.json({ error: 'briefId or projectId is required' }, { status: 400 });
     }
 
     // Validate required ID - type guaranteed after assertion

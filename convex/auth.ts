@@ -4,7 +4,7 @@ import Resend from '@auth/core/providers/resend';
 import { Password } from '@convex-dev/auth/providers/Password';
 
 // TODO: Change to 'MartAI <noreply@martai.io>' after verifying domain at https://resend.com/domains
-const RESEND_FROM = 'MartAI <onboarding@resend.dev>';
+const RESEND_FROM = 'Phoo <onboarding@resend.dev>';
 
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
