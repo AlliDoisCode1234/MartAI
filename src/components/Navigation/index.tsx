@@ -8,13 +8,14 @@
  *   └── UserDropdown
  *
  * Features:
+ * - Context-aware rendering (minimal in Studio, full elsewhere)
  * - Phase-based route gating (UX-001)
  * - Admin route access
  * - Mobile responsive
  */
 
 import { type FC } from 'react';
-import { Box, HStack, Text, Button, Tooltip } from '@chakra-ui/react';
+import { Box, HStack, Text, Button, Tooltip, Badge } from '@chakra-ui/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
@@ -22,12 +23,14 @@ import { useProject } from '@/lib/hooks/useProject';
 import { useUserPhase, type UserPhase } from '@/lib/useUserPhase';
 import type { Id } from '@/convex/_generated/dataModel';
 import { UserDropdown } from './UserDropdown';
+import { FiArrowLeft } from 'react-icons/fi';
+import { Icon } from '@chakra-ui/react';
 
 // Nav item with phase gating
 interface NavItem {
   label: string;
   path: string;
-  minPhase?: UserPhase; // Minimum phase required to access
+  minPhase?: UserPhase;
 }
 
 // Public navigation (not logged in)
@@ -36,22 +39,18 @@ const publicNavItems: NavItem[] = [
   { label: 'Pricing', path: '/pricing' },
 ];
 
-// User navigation (logged in, non-admin) - all pages accessible for exploration
-const userNavItems: NavItem[] = [
+// User navigation (logged in, non-admin) - simplified for dashboard context
+const dashboardNavItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Strategy', path: '/strategy' },
-  { label: 'Calendar', path: '/calendar' },
-  { label: 'Content', path: '/content' },
-  { label: 'Integrations', path: '/integrations' },
+  { label: 'Studio', path: '/studio' },
+  { label: 'Settings', path: '/settings' },
 ];
 
-// Admin navigation (logged in, admin)
+// Admin navigation
 const adminNavItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Strategy', path: '/strategy' },
-  { label: 'Calendar', path: '/calendar' },
-  { label: 'Content', path: '/content' },
-  { label: 'Integrations', path: '/integrations' },
+  { label: 'Studio', path: '/studio' },
+  { label: 'Settings', path: '/settings' },
   { label: 'Admin', path: '/admin' },
 ];
 
@@ -59,7 +58,7 @@ export const Navigation: FC = () => {
   const pathname = usePathname();
   const { user, isAuthenticated } = useAuth();
   const { projectId } = useProject(null, { autoSelect: true });
-  const { phase, isRouteAvailable, hasCompletedFirstProject, phaseInfo } = useUserPhase({
+  const { hasCompletedFirstProject, phaseInfo, isRouteAvailable } = useUserPhase({
     projectId: projectId as Id<'projects'> | null,
   });
 
@@ -69,21 +68,20 @@ export const Navigation: FC = () => {
     return null;
   }
 
+  // Detect if we're in Studio context
+  const isStudioContext = pathname?.startsWith('/studio');
+
   // Determine which nav items to show
   let navItems: NavItem[] = publicNavItems;
   if (isAuthenticated && user) {
     const isAdmin = user.role === 'admin' || user.role === 'super_admin';
-    // Admins get full access, users get phase-gated access
-    navItems = isAdmin ? adminNavItems : userNavItems;
+    navItems = isAdmin ? adminNavItems : dashboardNavItems;
   }
 
   // Check if a nav item is locked (phase gating)
   const isItemLocked = (item: NavItem): boolean => {
-    // Admins bypass phase gating
     if (user?.role === 'admin' || user?.role === 'super_admin') return false;
-    // DIY mode (completed first project) = all unlocked
     if (hasCompletedFirstProject) return false;
-    // Check phase requirement
     return !isRouteAvailable(item.path);
   };
 
@@ -94,6 +92,54 @@ export const Navigation: FC = () => {
     return `Complete ${phaseName} phase to unlock`;
   };
 
+  // STUDIO CONTEXT: Minimal dark top bar
+  if (isStudioContext && isAuthenticated) {
+    return (
+      <Box
+        bg="rgba(13, 13, 13, 0.98)"
+        borderBottom="1px solid rgba(255, 255, 255, 0.08)"
+        position="sticky"
+        top={0}
+        zIndex={1000}
+        backdropFilter="blur(10px)"
+      >
+        <Box maxW="container.xl" mx="auto" px={{ base: 4, md: 8 }}>
+          <HStack justify="space-between" h={14}>
+            {/* Logo + Context indicator */}
+            <HStack spacing={4}>
+              <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                <HStack
+                  spacing={2}
+                  color="gray.400"
+                  _hover={{ color: 'white' }}
+                  transition="color 0.2s"
+                >
+                  <Icon as={FiArrowLeft} boxSize={4} />
+                  <Text fontSize="sm" fontWeight="medium">
+                    Exit
+                  </Text>
+                </HStack>
+              </Link>
+              <Box h={4} w="1px" bg="rgba(255, 255, 255, 0.1)" />
+              <Text
+                fontSize="lg"
+                fontWeight="bold"
+                bgGradient="linear(to-r, #FF9D00, #FF6B00)"
+                bgClip="text"
+              >
+                Content Studio
+              </Text>
+            </HStack>
+
+            {/* User menu */}
+            <UserDropdown />
+          </HStack>
+        </Box>
+      </Box>
+    );
+  }
+
+  // DEFAULT CONTEXT: Full navigation
   return (
     <Box
       bg="white"
@@ -114,11 +160,13 @@ export const Navigation: FC = () => {
           <HStack spacing={8}>
             {navItems.map((item) => {
               const locked = isItemLocked(item);
+              const isActive = pathname === item.path || pathname?.startsWith(item.path + '/');
+
               const NavElement = (
                 <Box
                   as="span"
-                  color={locked ? 'gray.300' : pathname === item.path ? 'brand.orange' : 'gray.600'}
-                  fontWeight={pathname === item.path ? 'semibold' : 'normal'}
+                  color={locked ? 'gray.300' : isActive ? 'brand.orange' : 'gray.600'}
+                  fontWeight={isActive ? 'semibold' : 'normal'}
                   _hover={locked ? {} : { color: 'brand.orange' }}
                   cursor={locked ? 'not-allowed' : 'pointer'}
                   transition="color 0.2s"
@@ -129,6 +177,11 @@ export const Navigation: FC = () => {
                   }}
                 >
                   {item.label}
+                  {item.path === '/studio' && (
+                    <Badge ml={2} colorScheme="orange" fontSize="xs" variant="subtle">
+                      NEW
+                    </Badge>
+                  )}
                 </Box>
               );
 
