@@ -38,3 +38,6 @@ next-env.d.ts
 
 # private legal documents
 docs/legal/private/
+
+# internal knowledge (client data, intelligence)
+docs/.internal/

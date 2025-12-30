@@ -66,6 +66,42 @@ export const getById = query({
   },
 });
 
+/**
+ * List content pieces by scheduled date for calendar view
+ */
+export const listByScheduledDate = query({
+  args: {
+    projectId: v.id('projects'),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return [];
+
+    // Get all pieces for project with scheduled dates
+    const pieces = await ctx.db
+      .query('contentPieces')
+      .withIndex('by_project_scheduled', (q) => q.eq('projectId', args.projectId))
+      .collect();
+
+    // Filter by date range if provided
+    let filtered = pieces.filter((p) => p.scheduledDate != null);
+
+    if (args.startDate) {
+      filtered = filtered.filter((p) => (p.scheduledDate ?? 0) >= args.startDate!);
+    }
+    if (args.endDate) {
+      filtered = filtered.filter((p) => (p.scheduledDate ?? 0) <= args.endDate!);
+    }
+
+    // Sort by scheduled date
+    filtered.sort((a, b) => (a.scheduledDate ?? 0) - (b.scheduledDate ?? 0));
+
+    return filtered;
+  },
+});
+
 // ============================================================================
 // Mutations
 // ============================================================================
@@ -221,5 +257,111 @@ export const getStats = query({
       scheduled,
       avgScore,
     };
+  },
+});
+
+// ============================================================================
+// Calendar Integration
+// ============================================================================
+
+/**
+ * Schedule content for future publishing
+ */
+export const schedule = mutation({
+  args: {
+    contentPieceId: v.id('contentPieces'),
+    publishDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    const piece = await ctx.db.get(args.contentPieceId);
+    if (!piece) throw new Error('Content not found');
+
+    // Verify project ownership
+    const project = await ctx.db.get(piece.projectId);
+    if (!project || project.userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    // Validate publish date is in the future
+    if (args.publishDate <= Date.now()) {
+      throw new Error('Publish date must be in the future');
+    }
+
+    await ctx.db.patch(args.contentPieceId, {
+      status: 'scheduled',
+      publishDate: args.publishDate,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, publishDate: args.publishDate };
+  },
+});
+
+/**
+ * List scheduled content (for calendar view)
+ */
+export const listScheduled = query({
+  args: {
+    projectId: v.id('projects'),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return [];
+
+    const pieces = await ctx.db
+      .query('contentPieces')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .collect();
+
+    // Filter for scheduled status
+    let scheduled = pieces.filter((p) => p.status === 'scheduled' && p.publishDate);
+
+    // Filter by date range if provided
+    if (args.startDate) {
+      scheduled = scheduled.filter((p) => (p.publishDate ?? 0) >= (args.startDate ?? 0));
+    }
+    if (args.endDate) {
+      scheduled = scheduled.filter((p) => (p.publishDate ?? 0) <= (args.endDate ?? 0));
+    }
+
+    // Sort by publish date ascending
+    scheduled.sort((a, b) => (a.publishDate ?? 0) - (b.publishDate ?? 0));
+
+    return scheduled;
+  },
+});
+
+/**
+ * Unschedule content (revert to draft)
+ */
+export const unschedule = mutation({
+  args: {
+    contentPieceId: v.id('contentPieces'),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    const piece = await ctx.db.get(args.contentPieceId);
+    if (!piece) throw new Error('Content not found');
+
+    // Verify project ownership
+    const project = await ctx.db.get(piece.projectId);
+    if (!project || project.userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    await ctx.db.patch(args.contentPieceId, {
+      status: 'draft',
+      publishDate: undefined,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
   },
 });

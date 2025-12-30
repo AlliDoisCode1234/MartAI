@@ -226,6 +226,46 @@ High rate limits during testing revealed database bloat. 55 tables in schema, le
 
 ---
 
+## Decision #006: Content Studio Phase 2
+
+**Date**: 2024-12-30
+**Confidence**: 0.92 (Very High)
+**Status**: Approved
+
+### Context
+
+Content Studio Phase 1 complete (one-click generation, SEO scoring, editor). Phase 2 proposes: AI generation (real GPT/Claude), calendar integration, quality guarantee loop, platform publish.
+
+### Decision
+
+**Approved.** Proceed in priority order:
+
+| Priority | Feature                         | Effort | Impact           |
+| -------- | ------------------------------- | ------ | ---------------- |
+| **P0**   | AI Generation (real GPT/Claude) | 2h     | Core value       |
+| **P1**   | Calendar Integration            | 1h     | Workflow closure |
+| **P2**   | Quality Guarantee Loop          | 1h     | A+ guarantee     |
+| **P3**   | Platform Publish (stretch)      | 2h     | Full automation  |
+
+### Board Consensus
+
+All 14 personas approve. Key highlights:
+
+| Board Member | Key Input                                 |
+| ------------ | ----------------------------------------- |
+| ALEX (CEO)   | Vision-aligned, highest-leverage          |
+| BILL (CFO)   | ROI excellent (~$0.02/article)            |
+| CLARA (CMO)  | "A+ content guaranteed" = demo killer     |
+| TYLER (CTO)  | Fits existing ai/ patterns                |
+| KATE (PO)    | AI + Calendar = MUST, others SHOULD/COULD |
+| KHANH (Eng)  | Low-medium complexity                     |
+
+### Related Documents
+
+- [LDD_CONTENT_STUDIO.md](file:///c:/Users/josia/Desktop/Anti_MartAI/MartAI/docs/LLD_CONTENT_STUDIO.md)
+
+---
+
 ## Template for Future Decisions
 
 ```markdown

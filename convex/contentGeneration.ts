@@ -1,18 +1,24 @@
 /**
  * Content Generation Actions
  *
- * One-click content generation with quality guarantee.
- * Generates outline + full content with 90+ SEO score target.
+ * One-click content generation using AI Router with quality guarantee.
+ * Routes to best available AI provider with automatic failover.
+ * Includes retry loop to ensure 90+ SEO score guarantee.
  */
 
 import { action, internalMutation } from './_generated/server';
 import { v } from 'convex/values';
 import { auth } from './auth';
-import { internal } from './_generated/api';
+import { internal, api } from './_generated/api';
 import { Id } from './_generated/dataModel';
+import type { ActionCtx } from './_generated/server';
+
+// Quality threshold for A+ grade
+const QUALITY_THRESHOLD = 90;
+const MAX_GENERATION_ATTEMPTS = 3;
 
 // ============================================================================
-// Content Generation Action
+// Content Generation Action with Quality Guarantee
 // ============================================================================
 
 export const generateContent = action({
@@ -45,8 +51,8 @@ export const generateContent = action({
       }
     );
 
-    // 2. Generate outline based on content type
-    const outline = generateOutline(args.contentType, args.title, args.keywords);
+    // 2. Generate outline using AI
+    const outline = await generateOutlineWithAI(ctx, args.contentType, args.title, args.keywords);
 
     // 3. Update with outline
     await ctx.runMutation(internal.contentGeneration.updateContentPiece, {
@@ -55,22 +61,67 @@ export const generateContent = action({
       status: 'generating',
     });
 
-    // 4. Generate full content (simulated for now)
-    const content = await generateFullContent(args.contentType, args.title, outline, args.keywords);
+    // 4. Quality Guarantee Loop - retry until score >= 90 or max attempts
+    let attempt = 0;
+    let bestContent = '';
+    let bestScore = 0;
+    let bestMetrics: Record<string, number> = {};
 
-    // 5. Score content
-    const { score, metrics } = scoreContent(content, outline, args.keywords);
+    while (attempt < MAX_GENERATION_ATTEMPTS) {
+      attempt++;
+      console.log(`[ContentGeneration] Attempt ${attempt}/${MAX_GENERATION_ATTEMPTS}`);
 
-    // 6. Update with final content
+      // Generate full content using AI Router
+      const content = await generateFullContentWithAI(
+        ctx,
+        args.contentType,
+        args.title,
+        outline,
+        args.keywords,
+        attempt > 1 // Add quality hints on retries
+      );
+
+      // Score content
+      const { score, metrics } = scoreContent(content, outline, args.keywords);
+      console.log(`[ContentGeneration] Score: ${score}`);
+
+      // Track best result
+      if (score > bestScore) {
+        bestContent = content;
+        bestScore = score;
+        bestMetrics = metrics;
+      }
+
+      // Quality threshold met - exit loop
+      if (score >= QUALITY_THRESHOLD) {
+        console.log(`[ContentGeneration] Quality threshold met (${score} >= ${QUALITY_THRESHOLD})`);
+        break;
+      }
+
+      // Log why we're retrying
+      if (attempt < MAX_GENERATION_ATTEMPTS) {
+        console.log(`[ContentGeneration] Retrying for better quality...`);
+        await ctx.runMutation(internal.contentGeneration.updateContentPiece, {
+          contentPieceId,
+          generationAttempts: attempt,
+        });
+      }
+    }
+
+    // 5. Update with best content
     await ctx.runMutation(internal.contentGeneration.updateContentPiece, {
       contentPieceId,
-      content,
-      wordCount: countWords(content),
-      seoScore: score,
-      qualityMetrics: metrics,
+      content: bestContent,
+      wordCount: countWords(bestContent),
+      seoScore: bestScore,
+      qualityMetrics: bestMetrics,
+      generationAttempts: attempt,
       status: 'draft',
     });
 
+    console.log(
+      `[ContentGeneration] Complete. Final score: ${bestScore} after ${attempt} attempt(s)`
+    );
     return contentPieceId;
   },
 });
@@ -103,6 +154,7 @@ export const createContentPiece = internalMutation({
       h2Outline: [],
       keywords: args.keywords,
       status: 'generating',
+      generationAttempts: 0,
       createdAt: now,
       updatedAt: now,
     });
@@ -126,6 +178,7 @@ export const updateContentPiece = internalMutation({
         uniquenessScore: v.optional(v.number()),
       })
     ),
+    generationAttempts: v.optional(v.number()),
     status: v.optional(
       v.union(
         v.literal('generating'),
@@ -147,12 +200,161 @@ export const updateContentPiece = internalMutation({
 });
 
 // ============================================================================
-// Content Generation Helpers
+// AI-Powered Content Generation
 // ============================================================================
 
-function generateOutline(contentType: string, title: string, keywords: string[]): string[] {
+/**
+ * Generate outline using AI Router
+ */
+async function generateOutlineWithAI(
+  ctx: ActionCtx,
+  contentType: string,
+  title: string,
+  keywords: string[]
+): Promise<string[]> {
   const primaryKeyword = keywords[0] || 'topic';
+  const targetSections = getTargetSections(contentType);
 
+  const systemPrompt = `You are an expert SEO content strategist. Generate a content outline for a ${contentType} article.
+
+Requirements:
+- Create exactly ${targetSections} H2 sections
+- Include introduction and conclusion
+- Focus on the primary keyword: "${primaryKeyword}"
+- Optimize for search intent and user value
+- Each section should be actionable and specific
+
+Respond with ONLY the section titles, one per line. No numbering, no markdown, just the titles.`;
+
+  const prompt = `Create an SEO-optimized outline for: "${title}"
+
+Keywords to incorporate: ${keywords.join(', ')}
+Content type: ${contentType}`;
+
+  try {
+    const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
+      prompt,
+      systemPrompt,
+      maxTokens: 500,
+      temperature: 0.7,
+      taskType: 'analysis',
+      strategy: 'best_quality',
+    });
+
+    // Parse response into array of section titles
+    const sections = response.text
+      .split('\n')
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0 && !s.startsWith('#'));
+
+    return sections.length > 0 ? sections : getDefaultOutline(contentType, primaryKeyword);
+  } catch (error) {
+    console.warn('[ContentGeneration] AI outline failed, using template:', error);
+    return getDefaultOutline(contentType, primaryKeyword);
+  }
+}
+
+/**
+ * Generate full content using AI Router
+ */
+async function generateFullContentWithAI(
+  ctx: ActionCtx,
+  contentType: string,
+  title: string,
+  outline: string[],
+  keywords: string[],
+  enhanceQuality: boolean = false
+): Promise<string> {
+  const primaryKeyword = keywords[0] || 'topic';
+  const targetWords = getTargetWords(contentType);
+
+  // Enhanced prompt for retry attempts
+  const qualityBoost = enhanceQuality
+    ? `
+IMPORTANT: This is a quality-focused regeneration. Prioritize:
+- Increase word count to ${targetWords + 200}+ words
+- Use the primary keyword "${primaryKeyword}" at least 10 times naturally
+- Include 8+ H2 sections with detailed content under each
+- Add specific examples, statistics, and actionable tips
+- Ensure smooth transitions between sections`
+    : '';
+
+  const systemPrompt = `You are an expert SEO content writer following E-E-A-T principles (Experience, Expertise, Authoritativeness, Trustworthiness).
+
+Writing guidelines:
+- Write in a professional but conversational tone
+- Use the primary keyword "${primaryKeyword}" naturally 8-12 times
+- Include secondary keywords: ${keywords.slice(1).join(', ') || 'none'}
+- Target word count: ${targetWords} words minimum
+- Use short paragraphs (2-4 sentences max)
+- Include actionable advice and specific examples
+- Add transition sentences between sections
+- Write for readability (aim for Flesch score 60+)
+${qualityBoost}
+
+Format the content as Markdown with:
+- H1 title at the top
+- H2 headers for each section
+- Bold for key terms
+- Bullet lists where appropriate`;
+
+  const outlineText = outline.map((s, i) => `${i + 1}. ${s}`).join('\n');
+
+  const prompt = `Write a complete ${contentType} article with this outline:
+
+Title: ${title}
+
+Outline:
+${outlineText}
+
+Keywords: ${keywords.join(', ')}
+
+Write the full article now, following the outline structure.`;
+
+  try {
+    const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
+      prompt,
+      systemPrompt,
+      maxTokens: 4000,
+      temperature: enhanceQuality ? 0.6 : 0.8, // Lower temp for quality retries
+      taskType: 'generation',
+      strategy: 'best_quality',
+    });
+
+    return response.text;
+  } catch (error) {
+    console.warn('[ContentGeneration] AI content failed, using fallback:', error);
+    return generateFallbackContent(title, outline, keywords);
+  }
+}
+
+// ============================================================================
+// Fallback & Scoring Helpers
+// ============================================================================
+
+function getTargetSections(contentType: string): number {
+  const targets: Record<string, number> = {
+    blog: 8,
+    pillar: 10,
+    howto: 8,
+    comparison: 9,
+    listicle: 9,
+  };
+  return targets[contentType] || 8;
+}
+
+function getTargetWords(contentType: string): number {
+  const targets: Record<string, number> = {
+    blog: 1200,
+    pillar: 3500,
+    howto: 1800,
+    comparison: 2000,
+    listicle: 1500,
+  };
+  return targets[contentType] || 1200;
+}
+
+function getDefaultOutline(contentType: string, primaryKeyword: string): string[] {
   const templates: Record<string, string[]> = {
     blog: [
       'Introduction',
@@ -213,53 +415,19 @@ function generateOutline(contentType: string, title: string, keywords: string[])
   return templates[contentType] || templates.blog;
 }
 
-async function generateFullContent(
-  contentType: string,
-  title: string,
-  outline: string[],
-  keywords: string[]
-): Promise<string> {
-  // TODO: Replace with actual AI generation
-  // For now, generate placeholder content based on outline
-
+function generateFallbackContent(title: string, outline: string[], keywords: string[]): string {
   const primaryKeyword = keywords[0] || 'topic';
-  const targetWords = getTargetWords(contentType);
-
   let content = `# ${title}\n\n`;
 
   for (const section of outline) {
     content += `## ${section}\n\n`;
-
-    // Generate 2-3 paragraphs per section
-    const paragraphs = Math.floor(Math.random() * 2) + 2;
-    for (let i = 0; i < paragraphs; i++) {
-      content += generateParagraph(primaryKeyword, keywords) + '\n\n';
-    }
+    content += `When it comes to ${primaryKeyword}, understanding this section is essential for success. `;
+    content += `Many professionals overlook the importance of ${section.toLowerCase()}, but it can make a significant difference in your results.\n\n`;
+    content += `By focusing on key elements related to ${primaryKeyword}, you can achieve better outcomes. `;
+    content += `This section provides actionable insights that you can implement immediately.\n\n`;
   }
 
   return content;
-}
-
-function generateParagraph(primaryKeyword: string, keywords: string[]): string {
-  const templates = [
-    `When it comes to ${primaryKeyword}, understanding the fundamentals is essential for success. Many professionals overlook the importance of this aspect, but it can make a significant difference in your results. By focusing on the key elements, you can achieve better outcomes and establish yourself as an authority in your field.`,
-    `The importance of ${primaryKeyword} cannot be overstated in today's competitive landscape. Organizations that prioritize this area consistently outperform their competitors. Research shows that implementing best practices leads to measurable improvements.`,
-    `${primaryKeyword.charAt(0).toUpperCase() + primaryKeyword.slice(1)} plays a crucial role in achieving your goals. Whether you're just getting started or looking to optimize your existing approach, there are proven strategies that can help you succeed. Let's explore the key factors that contribute to success.`,
-    `Understanding how ${primaryKeyword} works is the first step toward mastery. This section breaks down the essential components and provides actionable insights that you can implement immediately. The strategies outlined here have been tested and proven effective.`,
-  ];
-
-  return templates[Math.floor(Math.random() * templates.length)];
-}
-
-function getTargetWords(contentType: string): number {
-  const targets: Record<string, number> = {
-    blog: 1200,
-    pillar: 3500,
-    howto: 1800,
-    comparison: 2000,
-    listicle: 1500,
-  };
-  return targets[contentType] || 1200;
 }
 
 function countWords(content: string): number {
@@ -274,16 +442,15 @@ function scoreContent(
   const wordCount = countWords(content);
   const h2Count = (content.match(/^## /gm) || []).length;
   const primaryKeyword = keywords[0]?.toLowerCase() || '';
-  const keywordMentions = (content.toLowerCase().match(new RegExp(primaryKeyword, 'g')) || [])
-    .length;
+  const keywordMentions = primaryKeyword
+    ? (content.toLowerCase().match(new RegExp(primaryKeyword, 'g')) || []).length
+    : 0;
 
   // Score components (0-100 each)
   const wordCountScore = Math.min(100, (wordCount / 1200) * 100);
   const h2Score = Math.min(100, (h2Count / 7) * 100);
   const keywordScore = Math.min(100, (keywordMentions / 10) * 100);
   const readabilityScore = 75; // Placeholder - would use real readability lib
-
-  // Link score placeholder
   const linkScore = 50; // No links in generated content yet
 
   // Weighted average

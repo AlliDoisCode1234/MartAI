@@ -8,3 +8,4 @@ export { StudioSidebar } from './StudioSidebar';
 export { StudioLayout } from './StudioLayout';
 export { ContentCard } from './ContentCard';
 export { SEOScorePanel } from './SEOScorePanel';
+export { CalendarCard } from './CalendarCard';

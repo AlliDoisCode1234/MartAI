@@ -13,7 +13,16 @@
 import { Box, VStack, Icon, Text, Tooltip, Spacer, Divider } from '@chakra-ui/react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { FiHome, FiFolder, FiPlusCircle, FiBarChart2, FiSettings, FiLogOut } from 'react-icons/fi';
+import {
+  FiHome,
+  FiFolder,
+  FiPlusCircle,
+  FiBarChart2,
+  FiSettings,
+  FiLogOut,
+  FiCalendar,
+  FiTarget,
+} from 'react-icons/fi';
 
 interface Props {
   collapsed?: boolean;
@@ -27,6 +36,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/studio', label: 'Home', icon: FiHome },
+  { href: '/strategy', label: 'Strategy', icon: FiTarget }, // Planning tab
+  { href: '/studio/calendar', label: 'Calendar', icon: FiCalendar },
   { href: '/studio/library', label: 'Library', icon: FiFolder },
   { href: '/studio/create', label: 'Create', icon: FiPlusCircle },
   { href: '/studio/insights', label: 'Insights', icon: FiBarChart2 },

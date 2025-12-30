@@ -59,6 +59,9 @@ export default function OnboardingPage() {
   const generatePreliminaryScore = useMutation(
     api.analytics.martaiRatingQueries.generatePreliminaryScore
   );
+  const generateContentCalendar = useAction(
+    api.contentCalendar.generateCalendar.generateFullCalendar
+  );
 
   // Cache email when user loads
   useEffect(() => {
@@ -259,6 +262,25 @@ export default function OnboardingPage() {
 
   const handleStep4Next = async () => {
     setStep(5);
+
+    // Fire-and-forget: Generate zero-click content calendar
+    if (projectId) {
+      (async () => {
+        try {
+          console.log('[ONBOARDING DEBUG] Generating zero-click content calendar...');
+          const calendarResult = await generateContentCalendar({
+            projectId: projectId as any,
+            useGa4Gsc: ga4Connected,
+          });
+          console.log(
+            `[ONBOARDING DEBUG] Calendar generated: ${calendarResult.itemsGenerated} items for ${calendarResult.industry} industry`
+          );
+        } catch (err) {
+          console.warn('[ONBOARDING DEBUG] Calendar generation error:', err);
+        }
+      })();
+    }
+
     await completeOnboarding();
     router.push('/onboarding/reveal');
   };

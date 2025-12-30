@@ -4,24 +4,44 @@ import type { NextRequest } from 'next/server';
 /**
  * Next.js Middleware - Runs on every request
  * Adds security headers to ALL responses (pages and API routes)
+ * Handles legacy route redirects
  */
 export function middleware(request: NextRequest) {
+  // ==========================================================================
+  // Legacy Route Redirects (Content Studio Consolidation)
+  // ==========================================================================
+  const pathname = request.nextUrl.pathname;
+
+  // /calendar → /studio/calendar (301 permanent redirect)
+  if (pathname === '/calendar') {
+    return NextResponse.redirect(new URL('/studio/calendar', request.url), 301);
+  }
+
+  // /content → /studio/library (301 permanent redirect)
+  if (pathname === '/content' || pathname.startsWith('/content/')) {
+    const newPath = pathname.replace('/content', '/studio/library');
+    return NextResponse.redirect(new URL(newPath, request.url), 301);
+  }
+
+  // ==========================================================================
+  // Security Headers
+  // ==========================================================================
   const response = NextResponse.next();
 
   // Security headers for all responses
   const securityHeaders = {
     // Prevent MIME type sniffing
     'X-Content-Type-Options': 'nosniff',
-    
+
     // Prevent clickjacking
     'X-Frame-Options': 'DENY',
-    
+
     // Enable XSS protection (legacy but still useful)
     'X-XSS-Protection': '1; mode=block',
-    
+
     // Control referrer information
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    
+
     // Permissions Policy (formerly Feature Policy)
     'Permissions-Policy': [
       'geolocation=()',
@@ -33,7 +53,7 @@ export function middleware(request: NextRequest) {
       'gyroscope=()',
       'accelerometer=()',
     ].join(', '),
-    
+
     // Content Security Policy
     // Note: CSP can be strict in production, but needs to allow Next.js development features
     // Adjust based on your needs
@@ -50,15 +70,15 @@ export function middleware(request: NextRequest) {
         "base-uri 'self'",
         "form-action 'self'",
         "frame-ancestors 'none'",
-        "upgrade-insecure-requests",
+        'upgrade-insecure-requests',
       ].join('; '),
     }),
-    
+
     // Strict Transport Security (HTTPS only in production)
     ...(process.env.NODE_ENV === 'production' && {
       'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
     }),
-    
+
     // Cross-Origin policies
     'Cross-Origin-Embedder-Policy': 'require-corp',
     'Cross-Origin-Opener-Policy': 'same-origin',
@@ -95,4 +115,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2)$).*)',
   ],
 };
-

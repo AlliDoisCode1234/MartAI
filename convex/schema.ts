@@ -1340,9 +1340,15 @@ export default defineSchema({
       v.literal('listicle')
     ),
 
+    // PhooIntelligence Content Type (17 types from industry templates)
+    phooContentType: v.optional(v.string()),
+
+    // Priority for calendar ordering
+    priority: v.optional(v.union(v.literal('P0'), v.literal('P1'), v.literal('P2'))),
+
     // Metadata (was: Brief)
     title: v.string(),
-    h2Outline: v.array(v.string()),
+    h2Outline: v.optional(v.array(v.string())),
     keywords: v.array(v.string()),
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
@@ -1375,6 +1381,7 @@ export default defineSchema({
       v.literal('scheduled')
     ),
     publishDate: v.optional(v.number()),
+    scheduledDate: v.optional(v.number()), // Calendar scheduled date
     publishedUrl: v.optional(v.string()),
 
     // Legacy migration (for rollback)
@@ -1387,5 +1394,6 @@ export default defineSchema({
     .index('by_project', ['projectId'])
     .index('by_project_status', ['projectId', 'status'])
     .index('by_project_created', ['projectId', 'createdAt'])
-    .index('by_cluster', ['clusterId']),
+    .index('by_cluster', ['clusterId'])
+    .index('by_project_scheduled', ['projectId', 'scheduledDate']),
 });

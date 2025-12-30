@@ -27,9 +27,15 @@ export function useAuth() {
   const user = useQuery(api.users.me);
 
   const logout = useCallback(async () => {
-    // Navigate first to prevent authenticated queries from running after signOut
+    try {
+      // Sign out first to clear the session
+      await signOut();
+    } catch (e) {
+      // Ignore signOut errors - session may already be invalid
+      console.warn('SignOut error (may be expected):', e);
+    }
+    // Then navigate to home - no authenticated queries will fire
     router.push('/');
-    await signOut();
   }, [signOut, router]);
 
   return {
