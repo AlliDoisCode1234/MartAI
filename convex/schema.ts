@@ -2,8 +2,43 @@ import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 import { authTables } from '@convex-dev/auth/server';
 
+/**
+ * MartAI Convex Schema
+ *
+ * 55 Tables organized by domain:
+ *
+ * ┌────────────────────────────────────────────────────────────────┐
+ * │ SECTION                    │ TABLES              │ LINES      │
+ * ├────────────────────────────────────────────────────────────────┤
+ * │ 1. Auth & Users            │ users               │ ~9-100     │
+ * │ 2. Clients & Legacy        │ clients, legacy*    │ ~105-280   │
+ * │ 3. Prospects & Leads       │ prospects, details  │ ~281-365   │
+ * │ 4. Projects & Orgs         │ projects, ga4, gsc  │ ~474-560   │
+ * │ 5. SEO & Keywords          │ keywords, clusters  │ ~158-230   │
+ * │ 6. Content Creation        │ briefs, drafts,     │ ~560-720   │
+ * │                            │ contentPieces, etc  │            │
+ * │ 7. Analytics & Insights    │ analyticsData, gsc  │ ~728-810   │
+ * │ 8. AI & Generation         │ aiReports, routing  │ ~330-370   │
+ * │                            │ providers, health   │ ~1208-1295 │
+ * │ 9. Billing & Usage         │ subscriptions, api  │ ~417-470   │
+ * │ 10. Platform & Webhooks    │ webhooks, platform  │ ~680-1075  │
+ * │ 11. Organizations          │ orgs, teams, invites│ ~927-1014  │
+ * │ 12. DEPRECATED             │ legacyUsers/Sessions│ ~248-280   │
+ * │                            │ briefs, drafts      │ ~560-615   │
+ * └────────────────────────────────────────────────────────────────┘
+ *
+ * Cleanup Status:
+ * - [x] Phase 1: Legacy auth tables deprecated
+ * - [x] Phase 2: Content migration scripts ready
+ * - [ ] Phase 3: Remove deprecated tables (after migration)
+ */
+
 export default defineSchema({
   ...authTables,
+
+  // ============================================================================
+  // SECTION 1: AUTH & USERS
+  // ============================================================================
 
   // Users - Extended for MartAI
   users: defineTable({
@@ -239,7 +274,12 @@ export default defineSchema({
     .index('by_client', ['clientId'])
     .index('by_period', ['periodStart', 'periodEnd']),
 
-  // Users (legacy - migrating to Convex Auth)
+  // ============================================================================
+  // DEPRECATED: Legacy auth tables - marked for deletion after data cleared
+  // Delete via Convex dashboard after running cleanupDatabase.clearLegacyAuth
+  // ============================================================================
+
+  // @deprecated - Use Convex Auth 'users' table instead
   legacyUsers: defineTable({
     email: v.string(),
     name: v.optional(v.string()),
@@ -262,7 +302,7 @@ export default defineSchema({
     .index('by_email', ['email'])
     .index('by_role', ['role']),
 
-  // Sessions (legacy - migrating to Convex Auth)
+  // @deprecated - Use Convex Auth sessions instead
   legacySessions: defineTable({
     userId: v.id('legacyUsers'),
     token: v.string(),
@@ -483,6 +523,10 @@ export default defineSchema({
     targetAudience: v.optional(v.string()),
     businessGoals: v.optional(v.string()),
     competitors: v.optional(v.array(v.string())),
+    // Generation status for onboarding progress visibility
+    generationStatus: v.optional(
+      v.union(v.literal('idle'), v.literal('generating'), v.literal('complete'), v.literal('error'))
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -548,7 +592,12 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index('by_project', ['projectId']),
 
-  // Briefs
+  // ============================================================================
+  // DEPRECATED: Briefs/Drafts - migrating to contentPieces (Content Studio)
+  // Run admin/migrateContent.migrateToContentPieces to migrate data
+  // ============================================================================
+
+  // @deprecated - Use contentPieces table instead
   briefs: defineTable({
     planId: v.optional(v.id('quarterlyPlans')),
     projectId: v.id('projects'),
@@ -579,7 +628,7 @@ export default defineSchema({
     .index('by_project', ['projectId'])
     .index('by_status', ['status']),
 
-  // Drafts
+  // @deprecated - Use contentPieces table instead
   drafts: defineTable({
     briefId: v.id('briefs'),
     projectId: v.id('projects'),
@@ -1272,4 +1321,71 @@ export default defineSchema({
     .index('by_provider', ['selectedProvider'])
     .index('by_status', ['status'])
     .index('by_date', ['createdAt']),
+
+  // ============================================================================
+  // Content Studio (Phase 1) - Unified content management
+  // ============================================================================
+
+  // ContentPieces - Unified Brief + Draft into single entity
+  contentPieces: defineTable({
+    projectId: v.id('projects'),
+    clusterId: v.optional(v.id('keywordClusters')),
+
+    // Content Type (replaces templates)
+    contentType: v.union(
+      v.literal('blog'),
+      v.literal('pillar'),
+      v.literal('howto'),
+      v.literal('comparison'),
+      v.literal('listicle')
+    ),
+
+    // Metadata (was: Brief)
+    title: v.string(),
+    h2Outline: v.array(v.string()),
+    keywords: v.array(v.string()),
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+    internalLinks: v.optional(v.array(v.string())),
+
+    // Content (was: Draft)
+    content: v.optional(v.string()),
+    wordCount: v.optional(v.number()),
+
+    // Quality Metrics - 90+ score guarantee
+    seoScore: v.optional(v.number()), // 0-100
+    qualityMetrics: v.optional(
+      v.object({
+        wordCountScore: v.number(),
+        h2Score: v.number(),
+        keywordScore: v.number(),
+        linkScore: v.number(),
+        readabilityScore: v.number(),
+        uniquenessScore: v.optional(v.number()),
+      })
+    ),
+    generationAttempts: v.optional(v.number()), // Track retry count
+
+    // Status
+    status: v.union(
+      v.literal('generating'),
+      v.literal('draft'),
+      v.literal('approved'),
+      v.literal('published'),
+      v.literal('scheduled')
+    ),
+    publishDate: v.optional(v.number()),
+    publishedUrl: v.optional(v.string()),
+
+    // Legacy migration (for rollback)
+    _legacyBriefId: v.optional(v.id('briefs')),
+    _legacyDraftId: v.optional(v.id('drafts')),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_project', ['projectId'])
+    .index('by_project_status', ['projectId', 'status'])
+    .index('by_project_created', ['projectId', 'createdAt'])
+    .index('by_cluster', ['clusterId']),
 });

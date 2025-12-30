@@ -10,7 +10,9 @@
 
 import type * as admin from "../admin.js";
 import type * as admin_cleanup from "../admin/cleanup.js";
+import type * as admin_cleanupDatabase from "../admin/cleanupDatabase.js";
 import type * as admin_costs from "../admin/costs.js";
+import type * as admin_migrateContent from "../admin/migrateContent.js";
 import type * as admin_users from "../admin/users.js";
 import type * as aiStorage from "../aiStorage.js";
 import type * as ai_analysis from "../ai/analysis.js";
@@ -45,6 +47,7 @@ import type * as auth from "../auth.js";
 import type * as auth_passwordReset from "../auth/passwordReset.js";
 import type * as cache from "../cache.js";
 import type * as config_thresholds from "../config/thresholds.js";
+import type * as contentPieces from "../contentPieces.js";
 import type * as content_briefActions from "../content/briefActions.js";
 import type * as content_briefVersions from "../content/briefVersions.js";
 import type * as content_briefs from "../content/briefs.js";
@@ -143,7 +146,9 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   "admin/cleanup": typeof admin_cleanup;
+  "admin/cleanupDatabase": typeof admin_cleanupDatabase;
   "admin/costs": typeof admin_costs;
+  "admin/migrateContent": typeof admin_migrateContent;
   "admin/users": typeof admin_users;
   aiStorage: typeof aiStorage;
   "ai/analysis": typeof ai_analysis;
@@ -178,6 +183,7 @@ declare const fullApi: ApiFromModules<{
   "auth/passwordReset": typeof auth_passwordReset;
   cache: typeof cache;
   "config/thresholds": typeof config_thresholds;
+  contentPieces: typeof contentPieces;
   "content/briefActions": typeof content_briefActions;
   "content/briefVersions": typeof content_briefVersions;
   "content/briefs": typeof content_briefs;

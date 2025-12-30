@@ -160,6 +160,12 @@ export default function OnboardingPage() {
           // User proceeds immediately to GA4/GSC step
           (async () => {
             try {
+              // Set status to generating
+              await convex.mutation(api.projects.projects.updateProject, {
+                projectId: newProjectId as any,
+                generationStatus: 'generating',
+              });
+
               console.log('[ONBOARDING DEBUG] Starting background generation...');
               console.log('[ONBOARDING DEBUG] Calling generateKeywordsFromUrl...');
               const kwResult = await generateKeywordsFromUrl({
@@ -202,8 +208,21 @@ export default function OnboardingPage() {
               console.log('[ONBOARDING DEBUG] Calling generatePreliminaryScore...');
               await generatePreliminaryScore({ projectId: newProjectId as any });
               console.log('[ONBOARDING DEBUG] All background generation complete!');
+
+              // Set status to complete
+              await convex.mutation(api.projects.projects.updateProject, {
+                projectId: newProjectId as any,
+                generationStatus: 'complete',
+              });
             } catch (bgError) {
               console.warn('[ONBOARDING DEBUG] Background generation error:', bgError);
+              // Set status to error
+              await convex
+                .mutation(api.projects.projects.updateProject, {
+                  projectId: newProjectId as any,
+                  generationStatus: 'error',
+                })
+                .catch(console.error);
             }
           })();
         }
@@ -294,7 +313,7 @@ export default function OnboardingPage() {
                 onBack={prevStep}
               />
             )}
-            {step === 5 && <ProcessingStep />}
+            {step === 5 && <ProcessingStep projectId={projectId} />}
           </AnimatePresence>
         </VStack>
       </Container>

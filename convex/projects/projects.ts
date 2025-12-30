@@ -134,6 +134,10 @@ export const updateProject = mutation({
     targetAudience: v.optional(v.string()),
     businessGoals: v.optional(v.string()),
     competitors: v.optional(v.array(v.string())),
+    // Generation status for onboarding visibility
+    generationStatus: v.optional(
+      v.union(v.literal('idle'), v.literal('generating'), v.literal('complete'), v.literal('error'))
+    ),
   },
   handler: async (ctx, args) => {
     // Security: Require project access
@@ -151,6 +155,7 @@ export const updateProject = mutation({
     if (args.name !== undefined) updates.name = args.name;
     if (args.websiteUrl !== undefined) updates.websiteUrl = args.websiteUrl;
     if (args.industry !== undefined) updates.industry = args.industry;
+    if (args.generationStatus !== undefined) updates.generationStatus = args.generationStatus;
 
     return await ctx.db.patch(args.projectId, updates);
   },

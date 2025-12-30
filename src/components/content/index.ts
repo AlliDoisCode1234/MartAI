@@ -13,3 +13,4 @@ export { DraftScoresCard } from './DraftScoresCard';
 export { ContentSkeleton } from './ContentSkeleton';
 export { TemplateCard } from './TemplateCard';
 export { ContentStudioLanding } from './ContentStudioLanding';
+export { TemplateBasedBriefCreator } from './TemplateBasedBriefCreator';

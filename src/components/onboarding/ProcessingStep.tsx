@@ -6,17 +6,34 @@
  * Component Hierarchy:
  * App → Onboarding → ProcessingStep (this file)
  *
- * Step 5: Processing/analyzing state.
+ * Step 5: Processing/analyzing state with real-time status.
  */
 
-import { Box, VStack, HStack, Heading, Text, Badge } from '@chakra-ui/react';
+import { Box, VStack, HStack, Heading, Text, Badge, Icon } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { FiZap, FiTrendingUp } from 'react-icons/fi';
+import { FiZap, FiCheck, FiAlertCircle } from 'react-icons/fi';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
 import { MartCharacter } from '@/src/components/assistant';
 
 const MotionBox = motion(Box);
 
-export function ProcessingStep() {
+interface Props {
+  projectId?: string | null;
+}
+
+export function ProcessingStep({ projectId }: Props) {
+  // Subscribe to project for real-time status updates
+  const project = useQuery(
+    api.projects.projects.getProjectById,
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+  );
+
+  const status = project?.generationStatus ?? 'generating';
+  const isComplete = status === 'complete';
+  const isError = status === 'error';
+
   return (
     <MotionBox
       key="step5"
@@ -26,22 +43,30 @@ export function ProcessingStep() {
     >
       <Box bg="white" p={12} borderRadius="2xl" shadow="lg" textAlign="center">
         <VStack spacing={6}>
-          <MartCharacter state="loading" size="lg" showBubble={false} />
-          <Heading size="lg">Phoo is analyzing your site...</Heading>
+          <MartCharacter
+            state={isComplete ? 'active' : isError ? 'thinking' : 'loading'}
+            size="lg"
+            showBubble={false}
+          />
+          <Heading size="lg">
+            {isComplete
+              ? 'Your strategy is ready!'
+              : isError
+                ? 'Something went wrong'
+                : 'Phoo is analyzing your site...'}
+          </Heading>
           <Text color="gray.600">
-            Finding keywords, analyzing competitors, and building your strategy.
+            {isComplete
+              ? 'Keywords, clusters, and content plan generated. You can proceed!'
+              : isError
+                ? "We'll retry automatically. You can continue to the next step."
+                : 'Finding keywords, building clusters, and creating your content plan.'}
           </Text>
           <HStack spacing={4} pt={4}>
-            <Badge colorScheme="green" px={3} py={1}>
+            <Badge colorScheme={isComplete ? 'green' : isError ? 'red' : 'blue'} px={3} py={1}>
               <HStack spacing={1}>
-                <FiZap />
-                <Text>Crawling pages</Text>
-              </HStack>
-            </Badge>
-            <Badge colorScheme="blue" px={3} py={1}>
-              <HStack spacing={1}>
-                <FiTrendingUp />
-                <Text>Finding keywords</Text>
+                <Icon as={isComplete ? FiCheck : isError ? FiAlertCircle : FiZap} />
+                <Text>{isComplete ? 'Complete' : isError ? 'Error' : 'Generating...'}</Text>
               </HStack>
             </Badge>
           </HStack>

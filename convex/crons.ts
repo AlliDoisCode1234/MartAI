@@ -31,4 +31,11 @@ crons.interval(
   internal.ai.health.healthActions.checkCircuitTimeouts
 );
 
+// Database TTL cleanup - delete old logs daily at 4 AM UTC
+crons.daily(
+  'database-ttl-cleanup',
+  { hourUTC: 4, minuteUTC: 0 },
+  internal.admin.cleanupDatabase.cleanupOldLogs
+);
+
 export default crons;
