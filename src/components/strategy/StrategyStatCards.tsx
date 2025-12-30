@@ -43,20 +43,22 @@ export function StrategyStatCards({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: stat.delay }}
-          bg="white"
+          bg="rgba(30, 30, 30, 0.6)"
           borderRadius="xl"
-          boxShadow="sm"
+          borderWidth="1px"
+          borderColor="rgba(255, 255, 255, 0.1)"
+          boxShadow="lg"
         >
           <CardBody>
             <HStack spacing={3}>
-              <Box p={3} borderRadius="lg" bg={`${stat.color}.100`}>
-                <Icon as={stat.icon} color={`${stat.color}.600`} boxSize={5} />
+              <Box p={3} borderRadius="lg" bg={`${stat.color}.900`}>
+                <Icon as={stat.icon} color={`${stat.color}.400`} boxSize={5} />
               </Box>
               <Box>
-                <Text fontSize="2xl" fontWeight="bold">
+                <Text fontSize="2xl" fontWeight="bold" color="white">
                   {stat.value}
                 </Text>
-                <Text fontSize="sm" color="gray.500">
+                <Text fontSize="sm" color="gray.400">
                   {stat.label}
                 </Text>
               </Box>

@@ -34,11 +34,11 @@ export function ProgressBadge({ currentStage, totalStages = 4 }: Props) {
                 w={isCurrent ? '24px' : '12px'}
                 h="12px"
                 borderRadius="full"
-                bg={isComplete ? 'green.400' : isCurrent ? 'orange.400' : 'gray.200'}
+                bg={isComplete ? 'green.400' : isCurrent ? 'orange.400' : 'gray.600'}
                 transition="all 0.2s"
               />
               {isCurrent && (
-                <Text fontSize="xs" fontWeight="semibold" color="orange.600">
+                <Text fontSize="xs" fontWeight="semibold" color="orange.400">
                   {STAGE_LABELS[index]}
                 </Text>
               )}

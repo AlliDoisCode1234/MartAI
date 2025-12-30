@@ -107,11 +107,12 @@ export function PrimaryCTA({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      bg="white"
-      borderWidth="2px"
-      borderColor={`${config.color}.100`}
-      shadow="md"
+      bg="rgba(30, 30, 30, 0.8)"
+      borderWidth="1px"
+      borderColor="rgba(255, 255, 255, 0.1)"
+      shadow="xl"
       overflow="hidden"
+      backdropFilter="blur(10px)"
     >
       <CardBody py={8} px={8}>
         <VStack spacing={5} align="center" textAlign="center">
@@ -124,10 +125,10 @@ export function PrimaryCTA({
           <Icon as={config.icon} boxSize={12} color={`${config.color}.500`} />
 
           <VStack spacing={2}>
-            <Heading size="lg" fontWeight="bold" color="gray.800">
+            <Heading size="lg" fontWeight="bold" color="white">
               {config.title}
             </Heading>
-            <Text color="gray.600" maxW="400px">
+            <Text color="gray.400" maxW="400px">
               {config.description}
             </Text>
           </VStack>
