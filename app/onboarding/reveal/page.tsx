@@ -174,8 +174,8 @@ export default function OnboardingRevealPage() {
   };
 
   const handleContinue = () => {
-    // Go to dashboard after reveal
-    router.replace('/dashboard');
+    // Go to Content Studio after reveal
+    router.replace('/studio');
   };
 
   // Show loading state while auth is loading or clusters are loading
@@ -210,7 +210,7 @@ export default function OnboardingRevealPage() {
             <Text color="gray.600" textAlign="center">
               Let's generate some keyword opportunities for you!
             </Text>
-            <Button bg="brand.orange" color="white" onClick={() => router.push('/strategy')}>
+            <Button bg="brand.orange" color="white" onClick={() => router.push('/studio/strategy')}>
               Go to Strategy Dashboard
             </Button>
           </VStack>
@@ -290,7 +290,7 @@ export default function OnboardingRevealPage() {
                   _hover={{ bg: '#E8851A', transform: 'scale(1.05)' }}
                   onClick={handleContinue}
                 >
-                  Continue to Strategy Dashboard →
+                  Continue to Content Studio →
                 </Button>
               </VStack>
             )}

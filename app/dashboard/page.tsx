@@ -1,64 +1,59 @@
 'use client';
 
 /**
- * Dashboard Page
+ * Dashboard Page (Executive Glance)
  *
  * Component Hierarchy:
  * App → Dashboard (this file)
  *
- * Unified dashboard with MART guidance, stats, charts, and insights.
- * Merged from previous Home + Dashboard pages.
+ * Quick 10-second overview of project health with prominent CTA to Studio.
+ * Per Board Decision: Dashboard = glance, Studio = workspace.
  */
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Container,
   VStack,
   Grid,
+  GridItem,
   HStack,
   Heading,
-  SimpleGrid,
+  Text,
   Box,
   Button,
+  Card,
+  CardBody,
+  Icon,
+  Badge,
+  Flex,
+  Spacer,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { FiTrendingUp, FiTarget, FiZap, FiActivity, FiPlus } from 'react-icons/fi';
+import {
+  FiArrowRight,
+  FiEdit3,
+  FiCalendar,
+  FiTarget,
+  FiTrendingUp,
+  FiAlertCircle,
+} from 'react-icons/fi';
 import { useProject } from '@/lib/hooks';
 import Link from 'next/link';
 
 // Dashboard components
 import {
-  StatCard,
-  TrafficChart,
-  KeywordGrowthChart,
   MartAIRatingWidget,
-  DashboardHero,
   WelcomeEmptyState,
-  IntelligenceCard,
   DashboardSkeleton,
-  TopKeywordsCard,
-  QuickWinsCard,
 } from '@/src/components/dashboard';
-import { IntegrationPromptBanner } from '@/src/components/analytics/IntegrationPromptBanner';
-import { InsightList } from '@/src/components/insights';
-import {
-  MartCharacter,
-  TutorialCard,
-  POST_ONBOARDING_STEPS,
-  WHATS_NEXT_STEPS,
-  type TutorialStep,
-} from '@/src/components/assistant';
-import { KeywordsPreview, TopicsPreview } from '@/src/components/strategy';
+import { MartCharacter } from '@/src/components/assistant';
 
-// Constants
-import { MOCK_TRAFFIC_DATA, MOCK_KEYWORD_PERFORMANCE } from '@/lib/constants/dashboard';
-
-const MotionGrid = motion(Grid);
 const MotionBox = motion(Box);
+const MotionCard = motion(Card);
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -69,21 +64,10 @@ export default function DashboardPage() {
   const {
     projectId,
     project,
-    ga4Connection,
     mrScore,
     strategyData,
     isLoading: projectLoading,
   } = useProject(null, { autoSelect: true });
-
-  const latestAiReport = useQuery(
-    api.ai.reports.getLatestAiReport,
-    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
-  );
-
-  const keywords = useQuery(
-    api.seo.keywords.getKeywordsByProject,
-    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
-  );
 
   // Auth redirect
   useEffect(() => {
@@ -91,190 +75,231 @@ export default function DashboardPage() {
     if (!isAuthenticated) router.replace('/auth/login');
   }, [isAuthenticated, authLoading, router]);
 
-  const stats = strategyData?.stats ?? null;
   const loadingDashboard = authLoading || projectLoading;
-
-  // Determine user state for MART guidance
-  const hasClusters = (strategyData?.clusters?.length ?? 0) > 0;
-  const hasGA4 = !!ga4Connection;
-  const isNewUser = !hasGA4 && !hasClusters;
   const userName = user?.name?.split(' ')[0] || 'there';
-
-  // Build tutorial steps based on state
-  const tutorialSteps = useMemo((): TutorialStep[] => {
-    if (!hasClusters) {
-      return POST_ONBOARDING_STEPS.map((step) => ({
-        ...step,
-        completed:
-          (step.id === 'view-keywords' && (keywords?.length ?? 0) > 0) ||
-          (step.id === 'create-clusters' && hasClusters),
-      }));
-    }
-    return WHATS_NEXT_STEPS;
-  }, [hasClusters, keywords?.length]);
-
-  // MART's contextual message
-  const getMartMessage = () => {
-    if (isNewUser) {
-      return `Hey ${userName}! Let's get your SEO strategy off the ground. Here's what to focus on first:`;
-    }
-    if (mrScore && mrScore.overall >= 70) {
-      return `Nice work, ${userName}! Your MR score is looking great. Here are ways to keep the momentum:`;
-    }
-    return `Welcome back, ${userName}! Here's what I'd focus on next to boost your SEO:`;
-  };
+  const stats = strategyData?.stats ?? null;
+  const clusterCount = strategyData?.clusters?.length ?? 0;
+  const briefCount = stats?.briefCount ?? 0;
 
   if (loadingDashboard) return <DashboardSkeleton />;
   if (!project) return <WelcomeEmptyState />;
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.1 } },
-  };
+  // Calculate health indicators
+  const hasStrategy = clusterCount > 0;
+  const hasContent = briefCount > 0;
+  const healthScore = mrScore?.overall ?? 0;
+  const healthTier = mrScore?.tier ?? 'needs-work';
+
+  // Quick actions for Studio
+  const quickActions = [
+    {
+      label: 'Strategy',
+      href: '/studio/strategy',
+      icon: FiTarget,
+      description: hasStrategy ? `${clusterCount} clusters` : 'Get started',
+      color: hasStrategy ? 'green.500' : 'orange.500',
+    },
+    {
+      label: 'Calendar',
+      href: '/studio/calendar',
+      icon: FiCalendar,
+      description: hasContent ? `${briefCount} pieces scheduled` : 'Plan content',
+      color: hasContent ? 'green.500' : 'orange.500',
+    },
+    {
+      label: 'Create',
+      href: '/studio/create',
+      icon: FiEdit3,
+      description: 'Write new content',
+      color: 'blue.500',
+    },
+  ];
 
   return (
     <Container maxW="container.xl" py={8}>
       <VStack spacing={8} align="stretch">
-        <DashboardHero userName={user?.name} projectName={project.name || 'Your Project'} />
-
-        {/* MART Guidance Section */}
-        <MotionBox initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <MartCharacter message={getMartMessage()} size="md" />
-        </MotionBox>
-
-        <IntegrationPromptBanner isConnected={!!ga4Connection} projectId={projectId || undefined} />
-
-        <Grid templateColumns={{ base: '1fr', lg: '300px 1fr' }} gap={6}>
-          <MartAIRatingWidget
-            score={
-              mrScore
-                ? {
-                    overall: mrScore.overall,
-                    tier: mrScore.tier,
-                    visibility: mrScore.visibility,
-                    trafficHealth: mrScore.trafficHealth,
-                    ctrPerformance: mrScore.ctrPerformance,
-                    engagementQuality: mrScore.engagementQuality,
-                    quickWinPotential: mrScore.quickWinPotential,
-                    contentVelocity: mrScore.contentVelocity,
-                  }
-                : null
-            }
-            loading={mrScore === undefined}
-          />
-          <MotionGrid
-            templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }}
-            gap={6}
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-          >
-            <StatCard
-              label="Organic Traffic"
-              value="9.5K"
-              trend="increase"
-              trendValue="23.5% vs last month"
-              icon={FiTrendingUp}
-              iconColor="orange.500"
-              iconBg="orange.50"
-            />
-            <StatCard
-              label="Ranking Keywords"
-              value={keywords?.length ?? 0}
-              trend="increase"
-              trendValue="Tracked keywords"
-              icon={FiTarget}
-              iconColor="blue.500"
-              iconBg="blue.50"
-            />
-            <StatCard
-              label="Content Published"
-              value={stats?.briefCount || 0}
-              helpText={stats?.planExists ? 'Plan active' : 'No plan'}
-              icon={FiZap}
-              iconColor="purple.500"
-              iconBg="purple.50"
-            />
-            <StatCard
-              label="Avg. Position"
-              value="7.2"
-              trend="increase"
-              trendValue="Improved 2.3 spots"
-              icon={FiActivity}
-              iconColor="green.500"
-              iconBg="green.50"
-            />
-          </MotionGrid>
-        </Grid>
-
-        {/* What's Next Section */}
-        <Box>
-          <HStack justify="space-between" mb={4}>
-            <Heading size="md" color="gray.700">
-              {isNewUser ? 'Getting Started' : "What's Next"}
-            </Heading>
-            <Link href="/projects/new">
-              <Button colorScheme="orange" leftIcon={<FiPlus />} size="sm">
-                New Project
+        {/* Hero - Greeting + Primary CTA */}
+        <MotionBox
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <HStack justify="space-between" align="start" flexWrap="wrap" gap={4}>
+            <VStack align="start" spacing={1}>
+              <Heading size="xl" fontFamily="heading" color="gray.800">
+                Welcome back, {userName}
+              </Heading>
+              <Text color="gray.600" fontSize="lg">
+                {project.name} • Quick overview
+              </Text>
+            </VStack>
+            <Link href="/studio">
+              <Button
+                size="lg"
+                bg="linear-gradient(135deg, #FF9D00 0%, #FF6B00 100%)"
+                color="white"
+                px={8}
+                rightIcon={<FiArrowRight />}
+                _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                transition="all 0.2s"
+              >
+                Open Content Studio
               </Button>
             </Link>
           </HStack>
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-            {tutorialSteps.slice(0, 4).map((step, i) => (
-              <TutorialCard key={step.id} step={step} index={i} />
-            ))}
-          </SimpleGrid>
-        </Box>
+        </MotionBox>
 
-        {/* Keywords & Topics Preview */}
-        {projectId && (
-          <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
-            <KeywordsPreview projectId={projectId as Id<'projects'>} maxPreview={8} />
-            <TopicsPreview projectId={projectId as Id<'projects'>} maxPreview={4} />
-          </Grid>
-        )}
+        {/* MART Quick Message */}
+        <MartCharacter
+          message={
+            healthScore >= 70
+              ? `Your SEO health is looking strong! Jump into the Studio to keep the momentum.`
+              : `Let's boost your SEO performance. The Studio has everything you need.`
+          }
+          size="sm"
+        />
 
-        <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
-          <TrafficChart data={MOCK_TRAFFIC_DATA} />
-          <KeywordGrowthChart data={MOCK_TRAFFIC_DATA} />
+        {/* Main Grid: Health Score + Quick Actions */}
+        <Grid templateColumns={{ base: '1fr', lg: '300px 1fr' }} gap={6}>
+          {/* Health Score Widget */}
+          <GridItem>
+            <MartAIRatingWidget
+              score={
+                mrScore
+                  ? {
+                      overall: mrScore.overall,
+                      tier: mrScore.tier,
+                      visibility: mrScore.visibility,
+                      trafficHealth: mrScore.trafficHealth,
+                      ctrPerformance: mrScore.ctrPerformance,
+                      engagementQuality: mrScore.engagementQuality,
+                      quickWinPotential: mrScore.quickWinPotential,
+                      contentVelocity: mrScore.contentVelocity,
+                    }
+                  : null
+              }
+              loading={mrScore === undefined}
+            />
+          </GridItem>
+
+          {/* Quick Actions to Studio */}
+          <GridItem>
+            <VStack spacing={4} align="stretch">
+              <Heading size="md" color="gray.700">
+                Jump to Studio
+              </Heading>
+
+              {quickActions.map((action, i) => (
+                <Link key={action.href} href={action.href} style={{ textDecoration: 'none' }}>
+                  <MotionCard
+                    variant="outline"
+                    cursor="pointer"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    _hover={{
+                      borderColor: 'orange.300',
+                      transform: 'translateX(4px)',
+                      boxShadow: 'sm',
+                    }}
+                  >
+                    <CardBody py={4}>
+                      <HStack>
+                        <Box p={2} borderRadius="md" bg="orange.50" color="orange.500">
+                          <Icon as={action.icon} boxSize={5} />
+                        </Box>
+                        <VStack align="start" spacing={0} flex={1}>
+                          <Text fontWeight="semibold" color="gray.800">
+                            {action.label}
+                          </Text>
+                          <Text fontSize="sm" color={action.color}>
+                            {action.description}
+                          </Text>
+                        </VStack>
+                        <Icon as={FiArrowRight} color="gray.400" />
+                      </HStack>
+                    </CardBody>
+                  </MotionCard>
+                </Link>
+              ))}
+            </VStack>
+          </GridItem>
         </Grid>
 
-        <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={6}>
-          <TopKeywordsCard keywords={MOCK_KEYWORD_PERFORMANCE} />
-          {projectId && <QuickWinsCard projectId={projectId as Id<'projects'>} />}
-        </Grid>
-
-        {projectId && (
-          <Grid
-            templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }}
-            gap={6}
+        {/* Urgent Items (if any) */}
+        {!hasStrategy && (
+          <MotionCard
+            bg="orange.50"
+            borderColor="orange.200"
+            borderWidth={1}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
           >
-            <InsightList
-              projectId={projectId as Id<'projects'>}
-              type="quick_win"
-              title="Quick Wins"
-              maxItems={3}
-              columns={1}
-            />
-            <InsightList
-              projectId={projectId as Id<'projects'>}
-              type="content_gap"
-              title="Content Gaps"
-              maxItems={3}
-              columns={1}
-            />
-            <InsightList
-              projectId={projectId as Id<'projects'>}
-              type="semantic_opportunity"
-              title="Opportunities"
-              maxItems={3}
-              columns={1}
-            />
-          </Grid>
+            <CardBody>
+              <HStack>
+                <Icon as={FiAlertCircle} color="orange.500" boxSize={6} />
+                <VStack align="start" spacing={0} flex={1}>
+                  <Text fontWeight="semibold" color="orange.800">
+                    Action Needed: Create Your SEO Strategy
+                  </Text>
+                  <Text fontSize="sm" color="orange.600">
+                    Generate keyword clusters and content plan to start ranking.
+                  </Text>
+                </VStack>
+                <Link href="/studio/strategy">
+                  <Button size="sm" colorScheme="orange">
+                    Go to Strategy
+                  </Button>
+                </Link>
+              </HStack>
+            </CardBody>
+          </MotionCard>
         )}
 
-        <IntelligenceCard report={latestAiReport ?? null} />
+        {/* Quick Stats Row */}
+        <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={4}>
+          <StatMini label="Clusters" value={clusterCount} icon={FiTarget} />
+          <StatMini label="Content Pieces" value={briefCount} icon={FiEdit3} />
+          <StatMini
+            label="Keywords"
+            value={strategyData?.stats?.keywordCount ?? 0}
+            icon={FiTrendingUp}
+          />
+          <StatMini label="Health Score" value={healthScore} icon={FiTrendingUp} suffix="/100" />
+        </Grid>
       </VStack>
     </Container>
+  );
+}
+
+// Minimal stat component for quick glance
+function StatMini({
+  label,
+  value,
+  icon,
+  suffix = '',
+}: {
+  label: string;
+  value: number | string;
+  icon: any;
+  suffix?: string;
+}) {
+  return (
+    <Card variant="outline">
+      <CardBody py={4} px={4}>
+        <HStack>
+          <Icon as={icon} color="gray.400" boxSize={4} />
+          <VStack align="start" spacing={0}>
+            <Text fontSize="xl" fontWeight="bold" color="gray.800">
+              {value}
+              {suffix}
+            </Text>
+            <Text fontSize="xs" color="gray.500" textTransform="uppercase">
+              {label}
+            </Text>
+          </VStack>
+        </HStack>
+      </CardBody>
+    </Card>
   );
 }

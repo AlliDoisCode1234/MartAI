@@ -23,6 +23,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(newPath, request.url), 301);
   }
 
+  // /strategy → /studio/strategy (301 permanent redirect)
+  if (pathname === '/strategy') {
+    return NextResponse.redirect(new URL('/studio/strategy', request.url), 301);
+  }
+
   // ==========================================================================
   // Security Headers
   // ==========================================================================

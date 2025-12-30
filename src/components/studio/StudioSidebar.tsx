@@ -36,7 +36,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/studio', label: 'Home', icon: FiHome },
-  { href: '/strategy', label: 'Strategy', icon: FiTarget }, // Planning tab
+  { href: '/studio/strategy', label: 'Strategy', icon: FiTarget }, // Planning tab
   { href: '/studio/calendar', label: 'Calendar', icon: FiCalendar },
   { href: '/studio/library', label: 'Library', icon: FiFolder },
   { href: '/studio/create', label: 'Create', icon: FiPlusCircle },
