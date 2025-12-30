@@ -6,7 +6,7 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 
 ## Current Status (December 2025)
 
-### ✅ Completed (MVP Foundation)
+### ✅ Completed (Latest - December 30, 2025)
 
 - [x] Authentication & User Management (Convex Auth + Google OAuth)
 - [x] Project Creation & Onboarding Flow
@@ -19,6 +19,16 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - [x] Convex Backend Schema & Queries
 - [x] Security Middleware & Rate Limiting (Ticket-009)
 - [x] Persistent AI Data Storage & Audit Log (Infinite Retention)
+- [x] **Content Studio Consolidation** (December 30, 2025)
+  - [x] Unified workspace: Strategy + Calendar + Library + Create
+  - [x] Dashboard simplified to executive glance
+  - [x] Onboarding redirects to /studio
+  - [x] Legacy route 301 redirects
+- [x] **Zero-Click Content Calendar** (December 30, 2025)
+  - [x] Auto-generation based on industry templates
+  - [x] Current month scheduling logic
+- [x] **Dark Theme Polish** (December 30, 2025)
+  - [x] 6 Strategy components updated to glassmorphic dark theme
 
 **Timeline**: 4 weeks  
 **Goal**: Migrate to production-ready auth and add cost-saving components
@@ -499,4 +509,4 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 - **Engineering review completed**: 2025-01-XX
 - **Next review**: After Phase 1A completion
 
-Last updated: 2025-01-XX
+Last updated: 2025-12-30

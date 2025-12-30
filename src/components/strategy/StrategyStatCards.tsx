@@ -6,14 +6,12 @@
  * Component Hierarchy:
  * App → Strategy → StrategyStatCards (this file)
  *
- * Displays 4 hero stat cards for strategy metrics.
+ * Displays 4 hero stat cards for strategy metrics using shared MetricCard.
  */
 
-import { SimpleGrid, Card, CardBody, HStack, Box, Text, Icon } from '@chakra-ui/react';
-import { motion } from 'framer-motion';
+import { SimpleGrid } from '@chakra-ui/react';
 import { FiLayers, FiFileText, FiTrendingUp, FiZap } from 'react-icons/fi';
-
-const MotionCard = motion(Card);
+import { MetricCard } from '@/src/components/shared';
 
 type Props = {
   clusterCount: number;
@@ -29,42 +27,48 @@ export function StrategyStatCards({
   keywordCount,
 }: Props) {
   const stats = [
-    { label: 'Topic Clusters', value: clusterCount, icon: FiLayers, color: 'purple', delay: 0.1 },
-    { label: 'Planned Briefs', value: briefCount, icon: FiFileText, color: 'blue', delay: 0.2 },
-    { label: 'Posts/Week', value: contentVelocity, icon: FiTrendingUp, color: 'green', delay: 0.3 },
-    { label: 'Target Keywords', value: keywordCount, icon: FiZap, color: 'yellow', delay: 0.4 },
+    {
+      label: 'Topic Clusters',
+      value: clusterCount,
+      icon: FiLayers,
+      color: 'purple' as const,
+      delay: 0.1,
+    },
+    {
+      label: 'Planned Briefs',
+      value: briefCount,
+      icon: FiFileText,
+      color: 'blue' as const,
+      delay: 0.2,
+    },
+    {
+      label: 'Posts/Week',
+      value: contentVelocity,
+      icon: FiTrendingUp,
+      color: 'green' as const,
+      delay: 0.3,
+    },
+    {
+      label: 'Target Keywords',
+      value: keywordCount,
+      icon: FiZap,
+      color: 'yellow' as const,
+      delay: 0.4,
+    },
   ];
 
   return (
     <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
       {stats.map((stat) => (
-        <MotionCard
+        <MetricCard
           key={stat.label}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: stat.delay }}
-          bg="rgba(30, 30, 30, 0.6)"
-          borderRadius="xl"
-          borderWidth="1px"
-          borderColor="rgba(255, 255, 255, 0.1)"
-          boxShadow="lg"
-        >
-          <CardBody>
-            <HStack spacing={3}>
-              <Box p={3} borderRadius="lg" bg={`${stat.color}.900`}>
-                <Icon as={stat.icon} color={`${stat.color}.400`} boxSize={5} />
-              </Box>
-              <Box>
-                <Text fontSize="2xl" fontWeight="bold" color="white">
-                  {stat.value}
-                </Text>
-                <Text fontSize="sm" color="gray.400">
-                  {stat.label}
-                </Text>
-              </Box>
-            </HStack>
-          </CardBody>
-        </MotionCard>
+          icon={stat.icon}
+          label={stat.label}
+          value={stat.value}
+          color={stat.color}
+          theme="dark"
+          delay={stat.delay}
+        />
       ))}
     </SimpleGrid>
   );

@@ -51,6 +51,7 @@ import {
   DashboardSkeleton,
 } from '@/src/components/dashboard';
 import { MartCharacter } from '@/src/components/assistant';
+import { MetricCard } from '@/src/components/shared';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Card);
@@ -256,50 +257,46 @@ export default function DashboardPage() {
           </MotionCard>
         )}
 
-        {/* Quick Stats Row */}
+        {/* Quick Stats Row - Using shared MetricCard */}
         <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={4}>
-          <StatMini label="Clusters" value={clusterCount} icon={FiTarget} />
-          <StatMini label="Content Pieces" value={briefCount} icon={FiEdit3} />
-          <StatMini
+          <MetricCard
+            icon={FiTarget}
+            label="Clusters"
+            value={clusterCount}
+            color="purple"
+            theme="light"
+            size="sm"
+            delay={0.1}
+          />
+          <MetricCard
+            icon={FiEdit3}
+            label="Content Pieces"
+            value={briefCount}
+            color="blue"
+            theme="light"
+            size="sm"
+            delay={0.2}
+          />
+          <MetricCard
+            icon={FiTrendingUp}
             label="Keywords"
             value={strategyData?.stats?.keywordCount ?? 0}
-            icon={FiTrendingUp}
+            color="green"
+            theme="light"
+            size="sm"
+            delay={0.3}
           />
-          <StatMini label="Health Score" value={healthScore} icon={FiTrendingUp} suffix="/100" />
+          <MetricCard
+            icon={FiTrendingUp}
+            label="Health Score"
+            value={`${healthScore}/100`}
+            color="orange"
+            theme="light"
+            size="sm"
+            delay={0.4}
+          />
         </Grid>
       </VStack>
     </Container>
-  );
-}
-
-// Minimal stat component for quick glance
-function StatMini({
-  label,
-  value,
-  icon,
-  suffix = '',
-}: {
-  label: string;
-  value: number | string;
-  icon: any;
-  suffix?: string;
-}) {
-  return (
-    <Card variant="outline">
-      <CardBody py={4} px={4}>
-        <HStack>
-          <Icon as={icon} color="gray.400" boxSize={4} />
-          <VStack align="start" spacing={0}>
-            <Text fontSize="xl" fontWeight="bold" color="gray.800">
-              {value}
-              {suffix}
-            </Text>
-            <Text fontSize="xs" color="gray.500" textTransform="uppercase">
-              {label}
-            </Text>
-          </VStack>
-        </HStack>
-      </CardBody>
-    </Card>
   );
 }
