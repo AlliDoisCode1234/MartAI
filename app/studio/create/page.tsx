@@ -21,10 +21,12 @@ import {
   Input,
   FormControl,
   FormLabel,
-  Select,
   Textarea,
   useToast,
+  Progress,
 } from '@chakra-ui/react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { StudioLayout } from '@/src/components/studio';
 import {
   FiFileText,
@@ -34,10 +36,12 @@ import {
   FiGitBranch,
   FiTarget,
   FiArrowLeft,
+  FiZap,
 } from 'react-icons/fi';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAction } from 'convex/react';
 
 type ContentType = 'blog' | 'pillar' | 'howto' | 'comparison' | 'listicle';
 
@@ -95,11 +99,20 @@ export default function CreateContentPage() {
   const preselectedType = searchParams.get('type') as ContentType | null;
   const fromStrategy = searchParams.get('fromStrategy') === 'true';
 
-  const [step, setStep] = useState<'type' | 'details'>(preselectedType ? 'details' : 'type');
+  const [step, setStep] = useState<'type' | 'details' | 'generating'>(
+    preselectedType ? 'details' : 'type'
+  );
   const [selectedType, setSelectedType] = useState<ContentType | null>(preselectedType);
   const [title, setTitle] = useState('');
   const [keywords, setKeywords] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  // Get active project
+  const projects = useQuery(api.projects.projects.list);
+  const activeProject = projects?.[0];
+
+  // Content generation action
+  const generateContent = useAction(api.contentGeneration.generateContent);
 
   const handleTypeSelect = (type: ContentType) => {
     setSelectedType(type);
@@ -117,21 +130,60 @@ export default function CreateContentPage() {
       return;
     }
 
-    setIsGenerating(true);
+    if (!activeProject) {
+      toast({
+        title: 'No project found',
+        description: 'Please create a project first',
+        status: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
 
-    // TODO: Implement actual generation via Convex mutation
-    toast({
-      title: 'Generation started',
-      description: 'Your content is being generated...',
-      status: 'info',
-      duration: 3000,
-    });
+    setStep('generating');
+    setProgress(10);
 
-    // Simulate generation delay
-    setTimeout(() => {
-      setIsGenerating(false);
-      router.push('/studio/library');
-    }, 2000);
+    try {
+      // Parse keywords
+      const keywordList = keywords
+        .split(',')
+        .map((k) => k.trim())
+        .filter((k) => k.length > 0);
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setProgress((p) => Math.min(p + 10, 90));
+      }, 500);
+
+      // Call generation action
+      const contentPieceId = await generateContent({
+        projectId: activeProject._id,
+        contentType: selectedType,
+        title,
+        keywords: keywordList.length > 0 ? keywordList : [title.split(' ')[0]],
+      });
+
+      clearInterval(progressInterval);
+      setProgress(100);
+
+      toast({
+        title: 'Content generated!',
+        description: 'Your content is ready',
+        status: 'success',
+        duration: 3000,
+      });
+
+      // Navigate to editor
+      router.push(`/studio/${contentPieceId}`);
+    } catch (e) {
+      setStep('details');
+      toast({
+        title: 'Generation failed',
+        description: e instanceof Error ? e.message : 'Unknown error',
+        status: 'error',
+        duration: 5000,
+      });
+    }
   };
 
   return (
@@ -141,20 +193,26 @@ export default function CreateContentPage() {
         <HStack justify="space-between">
           <HStack spacing={4}>
             <Link href="/studio">
-              <IconButton
-                aria-label="Back to studio"
-                icon={<Icon as={FiArrowLeft} />}
+              <Button
                 variant="ghost"
+                size="sm"
                 color="gray.400"
+                leftIcon={<Icon as={FiArrowLeft} />}
                 _hover={{ color: 'white' }}
-              />
+              >
+                Back
+              </Button>
             </Link>
             <Box>
               <Heading size="lg" color="white">
                 Create Content
               </Heading>
               <Text color="gray.500" mt={1}>
-                {step === 'type' ? 'Choose content type' : 'Enter details'}
+                {step === 'type'
+                  ? 'Choose content type'
+                  : step === 'details'
+                    ? 'Enter details'
+                    : 'Generating...'}
               </Text>
             </Box>
           </HStack>
@@ -273,8 +331,7 @@ export default function CreateContentPage() {
                   bg="linear-gradient(135deg, #FF9D00, #FF6B00)"
                   color="white"
                   _hover={{ opacity: 0.9 }}
-                  isLoading={isGenerating}
-                  loadingText="Generating..."
+                  leftIcon={<Icon as={FiZap} />}
                   onClick={handleGenerate}
                 >
                   Generate Content
@@ -283,28 +340,47 @@ export default function CreateContentPage() {
             </VStack>
           </Box>
         )}
+
+        {/* Step 3: Generating */}
+        {step === 'generating' && (
+          <Box
+            bg="rgba(255, 255, 255, 0.03)"
+            border="1px solid rgba(255, 255, 255, 0.08)"
+            borderRadius="16px"
+            p={12}
+          >
+            <VStack spacing={6}>
+              <Box bg="rgba(255, 157, 0, 0.1)" borderRadius="full" p={6}>
+                <Icon as={FiZap} boxSize={12} color="#FF9D00" animation="pulse 1s infinite" />
+              </Box>
+              <Heading size="md" color="white">
+                Generating Your Content
+              </Heading>
+              <Text color="gray.500" textAlign="center">
+                {title}
+              </Text>
+              <Box w="100%" maxW="400px">
+                <Progress
+                  value={progress}
+                  size="sm"
+                  colorScheme="orange"
+                  borderRadius="full"
+                  bg="rgba(255, 255, 255, 0.1)"
+                />
+                <Text color="gray.600" fontSize="sm" textAlign="center" mt={2}>
+                  {progress < 30
+                    ? 'Creating outline...'
+                    : progress < 60
+                      ? 'Writing content...'
+                      : progress < 90
+                        ? 'Optimizing for SEO...'
+                        : 'Finalizing...'}
+                </Text>
+              </Box>
+            </VStack>
+          </Box>
+        )}
       </VStack>
     </StudioLayout>
-  );
-}
-
-// IconButton wrapper (since we're using it above)
-function IconButton({
-  'aria-label': ariaLabel,
-  icon,
-  variant,
-  color,
-  _hover,
-}: {
-  'aria-label': string;
-  icon: React.ReactNode;
-  variant: string;
-  color: string;
-  _hover: Record<string, string>;
-}) {
-  return (
-    <Button aria-label={ariaLabel} variant={variant} color={color} _hover={_hover} p={2}>
-      {icon}
-    </Button>
   );
 }

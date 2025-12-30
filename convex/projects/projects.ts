@@ -87,6 +87,21 @@ export const getProjectsByUser = query({
   },
 });
 
+// List projects for current user (simplified for Content Studio)
+export const list = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+    return await ctx.db
+      .query('projects')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect();
+  },
+});
+
 // Get projects by organization (Phase 3)
 export const getProjectsByOrganization = query({
   args: { organizationId: v.id('organizations') },

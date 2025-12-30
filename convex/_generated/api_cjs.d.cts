@@ -47,6 +47,7 @@ import type * as auth from "../auth.js";
 import type * as auth_passwordReset from "../auth/passwordReset.js";
 import type * as cache from "../cache.js";
 import type * as config_thresholds from "../config/thresholds.js";
+import type * as contentGeneration from "../contentGeneration.js";
 import type * as contentPieces from "../contentPieces.js";
 import type * as content_briefActions from "../content/briefActions.js";
 import type * as content_briefVersions from "../content/briefVersions.js";
@@ -183,6 +184,7 @@ declare const fullApi: ApiFromModules<{
   "auth/passwordReset": typeof auth_passwordReset;
   cache: typeof cache;
   "config/thresholds": typeof config_thresholds;
+  contentGeneration: typeof contentGeneration;
   contentPieces: typeof contentPieces;
   "content/briefActions": typeof content_briefActions;
   "content/briefVersions": typeof content_briefVersions;
