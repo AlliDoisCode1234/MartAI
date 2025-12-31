@@ -19,3 +19,6 @@ export { AnimatedCounter } from './AnimatedCounter';
 export { CircularGauge } from './CircularGauge';
 export { ChangeIndicator } from './ChangeIndicator';
 export { ScoreBar } from './ScoreBar';
+
+// Permission components
+export { PermissionGate } from './PermissionGate';
