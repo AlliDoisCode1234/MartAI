@@ -221,7 +221,9 @@ export default function CalendarPage() {
 
   // Stats
   const totalScheduled = scheduledContent?.length ?? 0;
-  const p0Count = (scheduledContent ?? []).filter((p) => p.priority === 'P0').length;
+  const p0Count = (scheduledContent ?? []).filter(
+    (p: { priority?: string }) => p.priority === 'P0'
+  ).length;
 
   return (
     <StudioLayout>

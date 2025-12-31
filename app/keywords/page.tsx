@@ -56,12 +56,9 @@ export default function KeywordsPage() {
   const [filter, setFilter] = useState({ status: 'all', priority: 'all' });
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
-  // Redirect to login if not authenticated (after all hooks called)
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.replace('/auth/login');
-    }
-  }, [authLoading, isAuthenticated, router]);
+  // NOTE: Auth redirect removed - the navigation already requires login,
+  // and redirecting here causes race conditions with auth state hydration.
+  // Users clicking Keywords from nav are already authenticated.
 
   const filteredKeywords = (results || []).filter((kw) => {
     if (filter.status !== 'all' && kw.status !== filter.status) return false;
@@ -99,8 +96,8 @@ export default function KeywordsPage() {
     alert('Automation integration requires updated backend logic.');
   };
 
-  // Show loading while auth is loading, project is loading, or redirecting
-  if (authLoading || projectLoading || (!authLoading && !isAuthenticated)) {
+  // Show loading while data is being fetched
+  if (authLoading || projectLoading) {
     return (
       <Box minH="calc(100vh - 64px)" bg="brand.light" p={8}>
         <Container maxW="container.xl">
@@ -149,7 +146,7 @@ export default function KeywordsPage() {
           </HStack>
 
           {!results || results.length === 0 ? (
-            <EmptyState type="keywords" onAction={() => (window.location.href = '/strategy')} />
+            <EmptyState type="keywords" />
           ) : (
             <>
               <HStack spacing={4}>

@@ -9,28 +9,22 @@
  *
  * Features:
  * - Context-aware rendering (minimal in Studio, full elsewhere)
- * - Phase-based route gating (UX-001)
  * - Admin route access
  * - Mobile responsive
  */
 
 import { type FC } from 'react';
-import { Box, HStack, Text, Button, Tooltip } from '@chakra-ui/react';
+import { Box, HStack, Text, Button } from '@chakra-ui/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
-import { useProject } from '@/lib/hooks/useProject';
-import { useUserPhase, type UserPhase } from '@/lib/useUserPhase';
-import type { Id } from '@/convex/_generated/dataModel';
 import { UserDropdown } from './UserDropdown';
 import { FiArrowLeft } from 'react-icons/fi';
 import { Icon } from '@chakra-ui/react';
 
-// Nav item with phase gating
 interface NavItem {
   label: string;
   path: string;
-  minPhase?: UserPhase;
 }
 
 // Public navigation (not logged in) - Logo links to home, so no "Home" item needed
@@ -59,10 +53,6 @@ const adminNavItems: NavItem[] = [
 export const Navigation: FC = () => {
   const pathname = usePathname();
   const { user, isAuthenticated } = useAuth();
-  const { projectId } = useProject(null, { autoSelect: true });
-  const { hasCompletedFirstProject, phaseInfo, isRouteAvailable } = useUserPhase({
-    projectId: projectId as Id<'projects'> | null,
-  });
 
   // Hide navigation completely on onboarding and auth pages
   const hiddenRoutes = ['/onboarding', '/auth/signup', '/auth/login'];
@@ -80,29 +70,8 @@ export const Navigation: FC = () => {
     navItems = isAdmin ? adminNavItems : userNavItems;
   }
 
-  // Check if a nav item is locked (phase gating)
-  // Public routes (/, /pricing) are never locked
-  const isItemLocked = (item: NavItem): boolean => {
-    // Public routes never locked
-    const publicPaths = ['/', '/pricing', '/how-it-works', '/home', '/about'];
-    if (publicPaths.includes(item.path)) return false;
-
-    // Admins never locked
-    if (user?.role === 'admin' || user?.role === 'super_admin') return false;
-
-    // After completing first project, nothing locked
-    if (hasCompletedFirstProject) return false;
-
-    // Otherwise check phase gating
-    return !isRouteAvailable(item.path);
-  };
-
-  // Get tooltip for locked items
-  const getLockedTooltip = (item: NavItem): string => {
-    if (!item.minPhase) return '';
-    const phaseName = phaseInfo.name;
-    return `Complete ${phaseName} phase to unlock`;
-  };
+  // Navigation items are never locked for authenticated users
+  // Phase gating removed - users can navigate freely
 
   // STUDIO CONTEXT: Minimal dark top bar
   if (isStudioContext && isAuthenticated) {
@@ -166,50 +135,37 @@ export const Navigation: FC = () => {
           </Link>
           <HStack spacing={8}>
             {navItems.map((item) => {
-              const locked = isItemLocked(item);
               const isActive = pathname === item.path || pathname?.startsWith(item.path + '/');
-
-              const NavElement = (
-                <Box
-                  as="span"
-                  color={locked ? 'gray.300' : 'brand.orange'}
-                  fontWeight={isActive ? 'bold' : 'medium'}
-                  _hover={locked ? {} : { opacity: 0.8 }}
-                  cursor={locked ? 'not-allowed' : 'pointer'}
-                  transition="all 0.2s"
-                  opacity={locked ? 0.5 : isActive ? 1 : 0.85}
-                  display={{ base: 'none', md: 'inline' }}
-                  position="relative"
-                  _after={
-                    isActive
-                      ? {
-                          content: '""',
-                          position: 'absolute',
-                          bottom: '-6px',
-                          left: 0,
-                          right: 0,
-                          height: '2px',
-                          bg: 'brand.orange',
-                          borderRadius: 'full',
-                        }
-                      : {}
-                  }
-                >
-                  {item.label}
-                </Box>
-              );
-
-              if (locked) {
-                return (
-                  <Tooltip key={item.path} label={getLockedTooltip(item)} hasArrow>
-                    {NavElement}
-                  </Tooltip>
-                );
-              }
 
               return (
                 <Link key={item.path} href={item.path} style={{ textDecoration: 'none' }}>
-                  {NavElement}
+                  <Box
+                    as="span"
+                    color="brand.orange"
+                    fontWeight={isActive ? 'bold' : 'medium'}
+                    _hover={{ opacity: 0.8 }}
+                    cursor="pointer"
+                    transition="all 0.2s"
+                    opacity={isActive ? 1 : 0.85}
+                    display={{ base: 'none', md: 'inline' }}
+                    position="relative"
+                    _after={
+                      isActive
+                        ? {
+                            content: '""',
+                            position: 'absolute',
+                            bottom: '-6px',
+                            left: 0,
+                            right: 0,
+                            height: '2px',
+                            bg: 'brand.orange',
+                            borderRadius: 'full',
+                          }
+                        : {}
+                    }
+                  >
+                    {item.label}
+                  </Box>
                 </Link>
               );
             })}

@@ -93,17 +93,9 @@ export default function OnboardingPage() {
     return () => window.removeEventListener('popstate', preventBack);
   }, []);
 
-  // Persist step to DB when it changes (fire-and-forget)
-  useEffect(() => {
-    if (isAuthenticated && step > 1) {
-      convex
-        .mutation(api.onboarding.updateOnboardingStep, {
-          step: 'currentStep',
-          value: step,
-        })
-        .catch(console.error);
-    }
-  }, [step, isAuthenticated, convex]);
+  // NOTE: Step number (1-4) is a UI concept. Individual onboarding completions
+  // (signupCompleted, planSelected, etc.) are tracked separately via mutations.
+  // We don't need to persist the current step number to the database.
 
   // ==========================================================================
   // LOADING STATE GUARDS (fixes flash of wrong content)

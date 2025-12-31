@@ -8,65 +8,8 @@ import type { NextRequest } from 'next/server';
  */
 export function middleware(request: NextRequest) {
   // ==========================================================================
-  // Legacy Route Redirects (Content Studio Consolidation)
+  // Security Headers (the only purpose of this middleware now)
   // ==========================================================================
-  const pathname = request.nextUrl.pathname;
-
-  // /calendar → /studio/calendar (301 permanent redirect)
-  if (pathname === '/calendar') {
-    return NextResponse.redirect(new URL('/studio/calendar', request.url), 301);
-  }
-
-  // /content → /studio/library (301 permanent redirect)
-  if (pathname === '/content' || pathname.startsWith('/content/')) {
-    const newPath = pathname.replace('/content', '/studio/library');
-    return NextResponse.redirect(new URL(newPath, request.url), 301);
-  }
-
-  // /strategy → /studio/strategy (301 permanent redirect)
-  if (pathname === '/strategy') {
-    return NextResponse.redirect(new URL('/studio/strategy', request.url), 301);
-  }
-
-  // /analytics → /studio/insights (301 permanent redirect)
-  if (pathname === '/analytics') {
-    return NextResponse.redirect(new URL('/studio/insights', request.url), 301);
-  }
-
-  // /competitors → /studio/strategy (strategic analysis)
-  if (pathname === '/competitors') {
-    return NextResponse.redirect(new URL('/studio/strategy', request.url), 301);
-  }
-
-  // /keywords → /studio/strategy (keyword management)
-  if (pathname === '/keywords' || pathname.startsWith('/keywords/')) {
-    return NextResponse.redirect(new URL('/studio/strategy', request.url), 301);
-  }
-
-  // /integrations → /settings (account-level integrations)
-  if (pathname === '/integrations') {
-    return NextResponse.redirect(new URL('/settings', request.url), 301);
-  }
-
-  // /assistant → /studio (AI assistant in studio)
-  if (pathname === '/assistant') {
-    return NextResponse.redirect(new URL('/studio', request.url), 301);
-  }
-
-  // /publish → /studio/library (content publishing)
-  if (pathname === '/publish') {
-    return NextResponse.redirect(new URL('/studio/library', request.url), 301);
-  }
-
-  // /home → / (marketing home)
-  if (pathname === '/home') {
-    return NextResponse.redirect(new URL('/', request.url), 301);
-  }
-
-  // /profile → /settings (profile is part of settings)
-  if (pathname === '/profile') {
-    return NextResponse.redirect(new URL('/settings', request.url), 301);
-  }
 
   // ==========================================================================
   // Security Headers
