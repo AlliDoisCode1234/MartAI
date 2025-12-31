@@ -5,7 +5,7 @@
  * App → StrategyPage → KeywordsPreview
  *
  * Expandable section showing user's keywords with basic info.
- * Provides visibility/trust that keywords were actually added.
+ * Dark theme variant for Content Studio.
  */
 
 'use client';
@@ -19,22 +19,21 @@ import {
   Badge,
   Icon,
   Collapse,
-  Button,
   Table,
   Thead,
   Tbody,
   Tr,
   Th,
   Td,
-  useColorModeValue,
   Skeleton,
   Tooltip,
 } from '@chakra-ui/react';
-import { FiChevronDown, FiChevronUp, FiSearch, FiTrendingUp } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiSearch } from 'react-icons/fi';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { getDifficultyLabel, getIntentLabel } from '@/src/lib/copyStrings';
+import { darkGlass, glassCardProps } from '@/src/theme/darkGlassTokens';
 
 interface Props {
   projectId: Id<'projects'>;
@@ -42,12 +41,8 @@ interface Props {
 }
 
 export function KeywordsPreview({ projectId, maxPreview = 20 }: Props) {
-  const [isOpen, setIsOpen] = useState(false); // Collapsed by default for cleaner view
+  const [isOpen, setIsOpen] = useState(false);
   const keywords = useQuery(api.seo.keywords.getKeywordsByProject, { projectId });
-
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const headerBg = useColorModeValue('gray.50', 'gray.700');
 
   const isLoading = keywords === undefined;
   const keywordCount = keywords?.length || 0;
@@ -57,48 +52,36 @@ export function KeywordsPreview({ projectId, maxPreview = 20 }: Props) {
 
   if (isLoading) {
     return (
-      <Box
-        bg={bgColor}
-        borderWidth="1px"
-        borderColor={borderColor}
-        borderRadius="lg"
-        overflow="hidden"
-      >
+      <Box {...glassCardProps} overflow="hidden">
         <HStack p={4} justify="space-between">
-          <Skeleton h={5} w="150px" />
-          <Skeleton h={5} w="80px" />
+          <Skeleton h={5} w="150px" startColor="gray.700" endColor="gray.600" />
+          <Skeleton h={5} w="80px" startColor="gray.700" endColor="gray.600" />
         </HStack>
       </Box>
     );
   }
 
   if (keywordCount === 0) {
-    return null; // Don't show if no keywords
+    return null;
   }
 
   return (
-    <Box
-      bg={bgColor}
-      borderWidth="1px"
-      borderColor={borderColor}
-      borderRadius="lg"
-      overflow="hidden"
-    >
+    <Box {...glassCardProps} overflow="hidden">
       {/* Header - Always visible, prominent */}
       <HStack
         p={5}
         justify="space-between"
         cursor="pointer"
         onClick={() => setIsOpen(!isOpen)}
-        _hover={{ bg: headerBg }}
+        _hover={{ bg: darkGlass.bgHover }}
         transition="background 0.2s"
-        bg={isOpen ? undefined : headerBg}
+        bg={isOpen ? undefined : 'rgba(255, 255, 255, 0.02)'}
       >
         <HStack spacing={3}>
-          <Box p={2} borderRadius="md" bg="brand.orange" color="white">
-            <Icon as={FiSearch} boxSize={4} />
+          <Box p={2} borderRadius="md" bg={darkGlass.accentOrangeBg}>
+            <Icon as={FiSearch} boxSize={4} color={darkGlass.accentOrange} />
           </Box>
-          <Text fontWeight="bold" fontSize="lg">
+          <Text fontWeight="bold" fontSize="lg" color={darkGlass.text}>
             Your Keywords
           </Text>
           <Badge
@@ -113,21 +96,27 @@ export function KeywordsPreview({ projectId, maxPreview = 20 }: Props) {
           </Badge>
         </HStack>
         <HStack spacing={2}>
-          <Text fontSize="sm" color="gray.500" fontWeight="medium">
+          <Text fontSize="sm" color={darkGlass.textSubtle} fontWeight="medium">
             {isOpen ? 'Hide details' : 'Show details'}
           </Text>
-          <Icon as={isOpen ? FiChevronUp : FiChevronDown} color="gray.500" boxSize={5} />
+          <Icon
+            as={isOpen ? FiChevronUp : FiChevronDown}
+            color={darkGlass.textSubtle}
+            boxSize={5}
+          />
         </HStack>
       </HStack>
 
       {/* Expandable content */}
       <Collapse in={isOpen} animateOpacity>
-        <Box borderTopWidth="1px" borderColor={borderColor}>
+        <Box borderTopWidth="1px" borderColor={darkGlass.border}>
           <Table size="sm">
-            <Thead bg={headerBg}>
+            <Thead bg="rgba(255, 255, 255, 0.03)">
               <Tr>
-                <Th>Keyword</Th>
-                <Th isNumeric>
+                <Th color={darkGlass.textMuted} borderColor={darkGlass.border}>
+                  Keyword
+                </Th>
+                <Th isNumeric color={darkGlass.textMuted} borderColor={darkGlass.border}>
                   <Tooltip
                     label="Monthly searches for this keyword. Capture just 10% to drive meaningful traffic growth."
                     hasArrow
@@ -138,7 +127,7 @@ export function KeywordsPreview({ projectId, maxPreview = 20 }: Props) {
                     </Text>
                   </Tooltip>
                 </Th>
-                <Th>
+                <Th color={darkGlass.textMuted} borderColor={darkGlass.border}>
                   <Tooltip
                     label="How hard to rank for this keyword (1-100). Lower = easier."
                     hasArrow
@@ -149,7 +138,7 @@ export function KeywordsPreview({ projectId, maxPreview = 20 }: Props) {
                     </Text>
                   </Tooltip>
                 </Th>
-                <Th>
+                <Th color={darkGlass.textMuted} borderColor={darkGlass.border}>
                   <Tooltip
                     label="Searcher's goal: Informational (learn), Commercial (compare), Transactional (buy)"
                     hasArrow
@@ -168,35 +157,35 @@ export function KeywordsPreview({ projectId, maxPreview = 20 }: Props) {
                 const intentLabel = kw.intent ? getIntentLabel(kw.intent) : null;
 
                 return (
-                  <Tr key={kw._id}>
-                    <Td>
-                      <Text fontSize="sm" fontWeight="medium">
+                  <Tr key={kw._id} _hover={{ bg: darkGlass.bgHover }}>
+                    <Td borderColor={darkGlass.border}>
+                      <Text fontSize="sm" fontWeight="medium" color={darkGlass.text}>
                         {kw.keyword}
                       </Text>
                     </Td>
-                    <Td isNumeric>
-                      <Text fontSize="sm" color="gray.600">
+                    <Td isNumeric borderColor={darkGlass.border}>
+                      <Text fontSize="sm" color={darkGlass.textMuted}>
                         {kw.searchVolume?.toLocaleString() || '—'}
                       </Text>
                     </Td>
-                    <Td>
+                    <Td borderColor={darkGlass.border}>
                       {diffLabel ? (
                         <Badge colorScheme={diffLabel.color} size="sm">
                           {diffLabel.label}
                         </Badge>
                       ) : (
-                        <Text fontSize="sm" color="gray.400">
+                        <Text fontSize="sm" color={darkGlass.textSubtle}>
                           —
                         </Text>
                       )}
                     </Td>
-                    <Td>
+                    <Td borderColor={darkGlass.border}>
                       {intentLabel ? (
                         <Badge colorScheme={intentLabel.color} size="sm">
                           {intentLabel.label}
                         </Badge>
                       ) : (
-                        <Text fontSize="sm" color="gray.400">
+                        <Text fontSize="sm" color={darkGlass.textSubtle}>
                           —
                         </Text>
                       )}
@@ -208,8 +197,8 @@ export function KeywordsPreview({ projectId, maxPreview = 20 }: Props) {
           </Table>
 
           {hasMore && (
-            <HStack p={3} justify="center" bg={headerBg}>
-              <Text fontSize="sm" color="gray.500">
+            <HStack p={3} justify="center" bg="rgba(255, 255, 255, 0.03)">
+              <Text fontSize="sm" color={darkGlass.textSubtle}>
                 Showing {maxPreview} of {keywordCount} keywords
               </Text>
             </HStack>
