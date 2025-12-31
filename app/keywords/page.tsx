@@ -33,18 +33,20 @@ import {
   Skeleton,
 } from '@chakra-ui/react';
 import { usePaginatedQuery, useConvexAuth } from 'convex/react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useProject } from '@/lib/hooks';
 import { EmptyState } from '@/src/components/feedback';
+import { useEffect } from 'react';
 
 export default function KeywordsPage() {
-  const { isLoading: authLoading } = useConvexAuth();
+  const { isLoading: authLoading, isAuthenticated } = useConvexAuth();
+  const router = useRouter();
 
-  // Use enhanced useProject hook with autoSelect
+  // All hooks must be called unconditionally
   const { projectId, project, isLoading: projectLoading } = useProject(null, { autoSelect: true });
 
-  // Paginated Query
   const { results, status, loadMore } = usePaginatedQuery(
     api.seo.keywords.getKeywords,
     projectId ? { projectId: projectId as Id<'projects'> } : 'skip',
@@ -53,6 +55,13 @@ export default function KeywordsPage() {
 
   const [filter, setFilter] = useState({ status: 'all', priority: 'all' });
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+
+  // Redirect to login if not authenticated (after all hooks called)
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace('/auth/login');
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const filteredKeywords = (results || []).filter((kw) => {
     if (filter.status !== 'all' && kw.status !== filter.status) return false;
@@ -90,7 +99,8 @@ export default function KeywordsPage() {
     alert('Automation integration requires updated backend logic.');
   };
 
-  if (authLoading || projectLoading) {
+  // Show loading while auth is loading, project is loading, or redirecting
+  if (authLoading || projectLoading || (!authLoading && !isAuthenticated)) {
     return (
       <Box minH="calc(100vh - 64px)" bg="brand.light" p={8}>
         <Container maxW="container.xl">

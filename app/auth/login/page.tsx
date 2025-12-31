@@ -75,11 +75,30 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
+    console.log('[GoogleLogin] Button clicked');
     setLoading(true);
+    setError(null);
     try {
-      await signIn('google');
-    } catch (err) {
-      setError('Failed to sign in with Google');
+      console.log('[GoogleLogin] Calling signIn("google")...');
+      const result = await signIn('google', { redirectTo: '/dashboard' });
+      console.log('[GoogleLogin] signIn result:', result);
+
+      // For OAuth flows, signIn returns a redirect URL we must navigate to
+      if (result?.redirect) {
+        console.log('[GoogleLogin] Redirecting to OAuth URL:', result.redirect.toString());
+        window.location.href = result.redirect.toString();
+      } else if (result?.signingIn) {
+        console.log('[GoogleLogin] User signed in immediately');
+        router.replace('/dashboard');
+      } else {
+        console.log('[GoogleLogin] No redirect or signingIn - unexpected state');
+        setError('Failed to start Google sign-in flow');
+        setLoading(false);
+      }
+    } catch (err: unknown) {
+      console.error('[GoogleLogin] Error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in with Google';
+      setError(errorMessage);
       setLoading(false);
     }
   };

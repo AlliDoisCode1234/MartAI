@@ -46,6 +46,7 @@ export default defineSchema({
     image: v.optional(v.string()),
     email: v.optional(v.string()),
     emailVerified: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.float64()), // For @convex-dev/auth OAuth
     // Custom fields
     role: v.optional(
       v.union(v.literal('super_admin'), v.literal('admin'), v.literal('user'), v.literal('viewer'))

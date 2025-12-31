@@ -51,7 +51,8 @@ export const Layout: FC<Props> = ({ children }) => {
     <Box minH="100vh" w="100%" bg="brand.light">
       <SkipLink />
       <Navigation />
-      <GoogleOneTap />
+      {/* GoogleOneTap disabled - not compatible with @convex-dev/auth OAuth flow.
+          Use the standard "Sign in with Google" button on /auth/login instead. */}
       <MainContent>{children}</MainContent>
 
       {/* PhooFab - floating chat button (bottom-left) */}

@@ -3,33 +3,38 @@
 import { useGoogleOneTapLogin } from '@react-oauth/google';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useAuth } from '@/lib/useAuth';
+import { useRouter } from 'next/navigation';
 
 export function GoogleOneTap() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useAuth();
+  const router = useRouter();
 
   useGoogleOneTapLogin({
     onSuccess: async (credentialResponse) => {
       if (credentialResponse.credential) {
         try {
-          console.log('Google One Tap Success', credentialResponse);
-          // Attempt to sign in with the ID token
-          // Note: This relies on the backend provider accepting 'idToken' or 'token'
-          // If this doesn't work out of the box with @convex-dev/auth + Google provider,
-          // we might need a custom verification action.
-          // For standard Auth.js, this is often 'id_token'.
-          await signIn('google', { id_token: credentialResponse.credential });
+          console.log('[GoogleOneTap] Credential received');
+          // Try to sign in with the ID token
+          // Note: This may not work with standard @convex-dev/auth Google provider
+          // which expects OAuth authorization code flow, not ID token flow
+          const result = await signIn('google', { idToken: credentialResponse.credential });
+          console.log('[GoogleOneTap] signIn result:', result);
         } catch (error) {
-          console.error('One Tap Sign In Failed', error);
+          console.error('[GoogleOneTap] ID token sign-in failed:', error);
+          // Fallback: redirect to login page for manual OAuth flow
+          console.log('[GoogleOneTap] Falling back to manual login');
+          router.push('/auth/login');
         }
       }
     },
     onError: () => {
-      console.log('Google One Tap Failed');
+      console.log('[GoogleOneTap] One Tap prompt failed');
     },
-    disabled: isAuthenticated, // Don't show if already logged in
-    auto_select: true, // Attempt auto sign-in
+    disabled: isAuthenticated,
+    auto_select: false,
+    use_fedcm_for_prompt: true, // Enable FedCM as required by Google
   });
 
-  return null; // This component is headless (renders user prompt via Google script)
+  return null;
 }
