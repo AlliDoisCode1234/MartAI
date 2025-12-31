@@ -180,6 +180,216 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       read: async () => isAdmin,
       modify: async () => isAdmin,
     },
+
+    // Drafts: project-scoped
+    drafts: {
+      read: async (ruleCtx, draft) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(draft.projectId);
+        return project?.userId === userId;
+      },
+      modify: async (ruleCtx, draft) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(draft.projectId);
+        return project?.userId === userId;
+      },
+    },
+
+    // Content calendars: project-scoped (projectId is optional)
+    contentCalendars: {
+      read: async (ruleCtx, calendar) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        if (!calendar.projectId) return false; // No project = no access
+        const project = await ruleCtx.db.get(calendar.projectId);
+        return project?.userId === userId;
+      },
+      modify: async (ruleCtx, calendar) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        if (!calendar.projectId) return false;
+        const project = await ruleCtx.db.get(calendar.projectId);
+        return project?.userId === userId;
+      },
+    },
+
+    // Content templates: readable by all authenticated, modifiable by super_admin only
+    contentTemplates: {
+      read: async () => !!userId, // Any authenticated user can read templates
+      modify: async () => isSuperAdmin, // Only super_admin can modify
+    },
+
+    // Organizations: member-scoped
+    organizations: {
+      read: async (ruleCtx, org) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        // Check if user is a member
+        const membership = await ruleCtx.db
+          .query('teamMembers')
+          .withIndex('by_user_org', (q) => q.eq('userId', userId).eq('organizationId', org._id))
+          .first();
+        return !!membership;
+      },
+      modify: async (ruleCtx, org) => {
+        if (isSuperAdmin) return true;
+        if (!userId) return false;
+        // Check if user is org admin or owner
+        const membership = await ruleCtx.db
+          .query('teamMembers')
+          .withIndex('by_user_org', (q) => q.eq('userId', userId).eq('organizationId', org._id))
+          .first();
+        return membership?.role === 'owner' || membership?.role === 'admin';
+      },
+    },
+
+    // Team members: org-scoped
+    teamMembers: {
+      read: async (ruleCtx, member) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        // Can read if member of same org
+        const myMembership = await ruleCtx.db
+          .query('teamMembers')
+          .withIndex('by_user_org', (q) =>
+            q.eq('userId', userId).eq('organizationId', member.organizationId)
+          )
+          .first();
+        return !!myMembership;
+      },
+      modify: async (ruleCtx, member) => {
+        if (isSuperAdmin) return true;
+        if (!userId) return false;
+        // Can only modify own membership or if org admin
+        if (member.userId === userId) return true;
+        const myMembership = await ruleCtx.db
+          .query('teamMembers')
+          .withIndex('by_user_org', (q) =>
+            q.eq('userId', userId).eq('organizationId', member.organizationId)
+          )
+          .first();
+        return myMembership?.role === 'owner' || myMembership?.role === 'admin';
+      },
+    },
+
+    // Analytics events: admin only
+    analyticsEvents: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // AI generations (cost tracking): super_admin for read, admin for write
+    aiGenerations: {
+      read: async () => isSuperAdmin, // Only super_admin can see AI costs
+      modify: async () => isAdmin, // Admins can log generations
+    },
+
+    // API access requests: user-scoped read, admin modify
+    apiAccessRequests: {
+      read: async (_ctx, request) => {
+        if (isAdmin) return true;
+        return request.userId === userId;
+      },
+      modify: async () => isAdmin, // Only admins can approve/reject
+    },
+
+    // Insights: project-scoped
+    insights: {
+      read: async (ruleCtx, insight) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(insight.projectId);
+        return project?.userId === userId;
+      },
+      modify: async () => isAdmin, // System-generated
+    },
+
+    // Scheduled posts: project-scoped
+    scheduledPosts: {
+      read: async (ruleCtx, post) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(post.projectId);
+        return project?.userId === userId;
+      },
+      modify: async (ruleCtx, post) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(post.projectId);
+        return project?.userId === userId;
+      },
+    },
+
+    // Platform connections: project-scoped
+    platformConnections: {
+      read: async (ruleCtx, connection) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(connection.projectId);
+        return project?.userId === userId;
+      },
+      modify: async (ruleCtx, connection) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(connection.projectId);
+        return project?.userId === userId;
+      },
+    },
+
+    // GA4 connections: project-scoped
+    ga4Connections: {
+      read: async (ruleCtx, connection) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(connection.projectId);
+        return project?.userId === userId;
+      },
+      modify: async (ruleCtx, connection) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(connection.projectId);
+        return project?.userId === userId;
+      },
+    },
+
+    // GSC connections: project-scoped
+    gscConnections: {
+      read: async (ruleCtx, connection) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(connection.projectId);
+        return project?.userId === userId;
+      },
+      modify: async (ruleCtx, connection) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(connection.projectId);
+        return project?.userId === userId;
+      },
+    },
+
+    // OAuth tokens: super_admin only (sensitive)
+    oauthTokens: {
+      read: async () => isSuperAdmin,
+      modify: async () => isSuperAdmin,
+    },
+
+    // Usage limits: user-scoped read, admin modify
+    usageLimits: {
+      read: async (_ctx, limit) => {
+        if (isAdmin) return true;
+        return limit.userId === userId;
+      },
+      modify: async () => isAdmin,
+    },
+
+    // Personas: global table with isDefault flag - readable by all authenticated, modifiable by admin
+    personas: {
+      read: async () => !!userId, // Any authenticated user can read personas
+      modify: async () => isAdmin, // Only admins can modify personas
+    },
   };
 }
 
