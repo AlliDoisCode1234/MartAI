@@ -68,24 +68,24 @@ export default function OnboardingPage() {
     if (user?.email) cacheUserEmail(user.email);
   }, [user?.email]);
 
-  // Track signup on mount
+  // Track signup on mount (only when authenticated and on step 1)
   useEffect(() => {
     if (isAuthenticated && user && step === 1) {
       updateOnboardingStep({ step: 'signupCompleted', value: true }).catch(console.error);
     }
   }, [isAuthenticated, user, step, updateOnboardingStep]);
 
-  // Auth redirect
+  // Restore step from user's onboardingStep in DB if available
   useEffect(() => {
-    if (authLoading) return;
-    if (!isAuthenticated) {
-      router.replace('/auth/login');
-      return;
+    if (user?.onboardingStep && typeof user.onboardingStep === 'number') {
+      const dbStep = user.onboardingStep;
+      if (dbStep >= 1 && dbStep <= 5 && dbStep !== step) {
+        setStep(dbStep);
+      }
     }
-    if (user?.onboardingStatus === 'completed') router.replace('/home');
-  }, [isAuthenticated, authLoading, router, user]);
+  }, [user?.onboardingStep]);
 
-  // Prevent browser back button
+  // Prevent browser back button during onboarding
   useEffect(() => {
     const preventBack = () => window.history.pushState(null, '', window.location.href);
     window.history.pushState(null, '', window.location.href);
@@ -93,21 +93,54 @@ export default function OnboardingPage() {
     return () => window.removeEventListener('popstate', preventBack);
   }, []);
 
-  // Persist/restore step
+  // Persist step to DB when it changes (fire-and-forget)
   useEffect(() => {
-    if (typeof window !== 'undefined') localStorage.setItem('onboardingStep', step.toString());
-  }, [step]);
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('onboardingStep');
-      if (saved) {
-        const parsed = parseInt(saved, 10);
-        if (parsed >= 1 && parsed <= 5) setStep(parsed);
-      }
+    if (isAuthenticated && step > 1) {
+      convex
+        .mutation(api.onboarding.updateOnboardingStep, {
+          step: 'currentStep',
+          value: step,
+        })
+        .catch(console.error);
     }
-  }, []);
+  }, [step, isAuthenticated, convex]);
 
-  // Step handlers
+  // ==========================================================================
+  // LOADING STATE GUARDS (fixes flash of wrong content)
+  // ==========================================================================
+
+  // Guard 1: Still loading auth
+  if (authLoading) {
+    return (
+      <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
+        <MartLoader message="Loading..." />
+      </Box>
+    );
+  }
+
+  // Guard 2: Not authenticated - redirect to login
+  if (!isAuthenticated || !user) {
+    router.replace('/auth/login');
+    return (
+      <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
+        <MartLoader message="Redirecting to login..." />
+      </Box>
+    );
+  }
+
+  // Guard 3: Already completed onboarding - redirect to dashboard
+  if (user.onboardingStatus === 'completed') {
+    router.replace('/dashboard');
+    return (
+      <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
+        <MartLoader message="Welcome back! Redirecting..." />
+      </Box>
+    );
+  }
+
+  // ==========================================================================
+  // Step handlers (only reached if guards pass)
+  // ==========================================================================
   const nextStep = () => setStep((s) => Math.min(s + 1, 5));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
@@ -285,15 +318,7 @@ export default function OnboardingPage() {
     router.push('/onboarding/reveal');
   };
 
-  // Loading state
-  if (!isAuthenticated || authLoading) {
-    return (
-      <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
-        <MartLoader message="Loading..." />
-      </Box>
-    );
-  }
-
+  // Main render (guards already handled above)
   return (
     <Box minH="100vh" bg="brand.light" py={12}>
       <Container maxW="container.md">

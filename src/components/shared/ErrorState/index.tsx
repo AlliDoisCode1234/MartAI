@@ -1,25 +1,39 @@
 'use client';
 
-import { type FC, type ReactNode } from 'react';
-import { Box, Alert, AlertIcon, Button, Container, VStack } from '@chakra-ui/react';
-import { useRouter } from 'next/navigation';
+/**
+ * ErrorState Component
+ *
+ * Component Hierarchy:
+ * App → shared/ErrorState (this file)
+ *
+ * Displays an error alert with optional action button.
+ * Supports light and dark themes.
+ */
 
-type ErrorStateProps = {
+import { type FC } from 'react';
+import { Box, Alert, AlertIcon, Button, Container, VStack, Text, Icon } from '@chakra-ui/react';
+import { useRouter } from 'next/navigation';
+import { FiAlertTriangle } from 'react-icons/fi';
+
+type Props = {
   message: string;
   actionLabel?: string;
   onAction?: () => void;
   actionRoute?: string;
   fullPage?: boolean;
+  theme?: 'light' | 'dark';
 };
 
-export const ErrorState: FC<ErrorStateProps> = ({
+export const ErrorState: FC<Props> = ({
   message,
   actionLabel = 'Go Back',
   onAction,
   actionRoute,
   fullPage = false,
+  theme = 'light',
 }) => {
   const router = useRouter();
+  const isDark = theme === 'dark';
 
   const handleAction = () => {
     if (onAction) {
@@ -45,8 +59,40 @@ export const ErrorState: FC<ErrorStateProps> = ({
         justifyContent: 'center',
       };
 
+  // Theme-aware styles
+  const bgColor = isDark ? 'transparent' : 'brand.light';
+  const cardBg = isDark ? 'rgba(30, 30, 30, 0.6)' : 'white';
+  const textColor = isDark ? 'gray.300' : 'gray.700';
+  const iconColor = isDark ? 'red.400' : 'red.500';
+
+  if (isDark) {
+    return (
+      <Box bg={bgColor} {...containerProps}>
+        <Container maxW="container.sm">
+          <VStack
+            spacing={4}
+            p={8}
+            bg={cardBg}
+            borderRadius="xl"
+            borderWidth="1px"
+            borderColor="rgba(255, 255, 255, 0.1)"
+            backdropFilter="blur(10px)"
+          >
+            <Icon as={FiAlertTriangle} boxSize={12} color={iconColor} />
+            <Text color={textColor} textAlign="center">
+              {message}
+            </Text>
+            <Button colorScheme="orange" onClick={handleAction}>
+              {actionLabel}
+            </Button>
+          </VStack>
+        </Container>
+      </Box>
+    );
+  }
+
   return (
-    <Box bg="brand.light" {...containerProps}>
+    <Box bg={bgColor} {...containerProps}>
       <Container maxW="container.sm">
         <VStack spacing={4}>
           <Alert status="error" borderRadius="md">
@@ -61,4 +107,3 @@ export const ErrorState: FC<ErrorStateProps> = ({
     </Box>
   );
 };
-
