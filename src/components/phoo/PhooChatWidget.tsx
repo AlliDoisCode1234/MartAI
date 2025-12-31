@@ -48,10 +48,21 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [showFaqs, setShowFaqs] = useState(!isAuthenticated); // Show FAQs for guest users
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const createThread = useAction(api.phoo.agent.chat.createThread);
   const sendMessage = useAction(api.phoo.agent.chat.sendMessage);
+
+  // FAQ suggestions for guest users
+  const faqSuggestions = [
+    'What is Phoo and how does it work?',
+    'How does AI content generation work?',
+    'What integrations do you support?',
+    'How much does Phoo cost?',
+    'What is SEO and why does it matter?',
+    'How long until I see results?',
+  ];
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -63,7 +74,7 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
     if (messages.length === 0) {
       const welcomeMessage = isAuthenticated
         ? "Hi! I'm Phoo, your AI SEO assistant. Ask me about your keywords, content strategy, or how to improve your Phoo Rating!"
-        : "Hi! I'm Phoo. I can answer questions about our SEO platform. What would you like to know?";
+        : "Hi! I'm Phoo. I can answer questions about our SEO platform and help you understand how automated content marketing works. Choose a question below or ask your own!";
 
       setMessages([
         {
@@ -75,6 +86,17 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
       ]);
     }
   }, [isAuthenticated, messages.length]);
+
+  // Handle FAQ click
+  const handleFaqClick = (question: string) => {
+    setShowFaqs(false);
+    setInput(question);
+    // Trigger send after a short delay to allow state update
+    setTimeout(() => {
+      const event = new KeyboardEvent('keypress', { key: 'Enter' });
+      document.querySelector<HTMLInputElement>('[data-phoo-input]')?.dispatchEvent(event);
+    }, 100);
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -240,6 +262,40 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
               </Box>
             </HStack>
           )}
+
+          {/* FAQ Suggestions for guests */}
+          {showFaqs && !isAuthenticated && messages.length <= 1 && (
+            <Box mt={2}>
+              <Text fontSize="xs" color="gray.500" mb={2} fontWeight="medium">
+                Popular questions:
+              </Text>
+              <Flex flexWrap="wrap" gap={2}>
+                {faqSuggestions.map((faq, index) => (
+                  <Box
+                    key={index}
+                    as="button"
+                    px={3}
+                    py={2}
+                    bg="white"
+                    border="1px solid"
+                    borderColor="orange.200"
+                    borderRadius="full"
+                    fontSize="xs"
+                    color="gray.700"
+                    cursor="pointer"
+                    _hover={{ bg: 'orange.50', borderColor: 'brand.orange' }}
+                    onClick={() => {
+                      setShowFaqs(false);
+                      setInput(faq);
+                    }}
+                  >
+                    {faq}
+                  </Box>
+                ))}
+              </Flex>
+            </Box>
+          )}
+
           <div ref={messagesEndRef} />
         </VStack>
 

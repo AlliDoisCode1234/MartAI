@@ -1,21 +1,11 @@
 'use client';
 
 import { type FC } from 'react';
-import {
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  MenuDivider,
-  Avatar,
-  HStack,
-  VStack,
-  Text,
-  Icon,
-} from '@chakra-ui/react';
+import { Menu, MenuButton, MenuList, MenuItem, MenuDivider, Avatar, Icon } from '@chakra-ui/react';
 import { FiUser, FiSettings, FiCreditCard, FiShield, FiLogOut } from 'react-icons/fi';
 import Link from 'next/link';
 import { useAuth } from '@/lib/useAuth';
+import { getUserDisplayName, getInitials } from '@/lib/funNames';
 
 export const UserDropdown: FC = () => {
   const { user, logout } = useAuth();
@@ -23,31 +13,23 @@ export const UserDropdown: FC = () => {
   if (!user) return null;
 
   const isAdmin = user.role === 'admin' || user.role === 'super_admin';
-  const initials = user.name
-    ? user.name
-        .split(' ')
-        .map((n: string) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : 'U';
+  const displayName = getUserDisplayName(user);
+  const initials = getInitials(displayName);
 
   return (
     <Menu>
       <MenuButton>
-        <HStack spacing={3} cursor="pointer" _hover={{ opacity: 0.8 }}>
-          <Avatar size="sm" bg="brand.orange" color="white" fontWeight="bold">
-            {initials}
-          </Avatar>
-          <VStack align="start" spacing={0} display={{ base: 'none', md: 'flex' }}>
-            <Text fontSize="sm" fontWeight="semibold" color="gray.700">
-              {user.name}
-            </Text>
-            <Text fontSize="xs" color="gray.500">
-              {user.email}
-            </Text>
-          </VStack>
-        </HStack>
+        <Avatar
+          size="sm"
+          bg="brand.orange"
+          color="white"
+          fontWeight="bold"
+          cursor="pointer"
+          _hover={{ transform: 'scale(1.05)', boxShadow: 'md' }}
+          transition="all 0.2s"
+        >
+          {initials}
+        </Avatar>
       </MenuButton>
       <MenuList>
         <MenuItem as={Link} href="/profile" icon={<Icon as={FiUser} />}>

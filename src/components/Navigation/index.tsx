@@ -15,7 +15,7 @@
  */
 
 import { type FC } from 'react';
-import { Box, HStack, Text, Button, Tooltip, Badge } from '@chakra-ui/react';
+import { Box, HStack, Text, Button, Tooltip } from '@chakra-ui/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
@@ -33,24 +33,26 @@ interface NavItem {
   minPhase?: UserPhase;
 }
 
-// Public navigation (not logged in)
+// Public navigation (not logged in) - Logo links to home, so no "Home" item needed
 const publicNavItems: NavItem[] = [
-  { label: 'Home', path: '/' },
+  { label: 'How It Works', path: '/how-it-works' },
   { label: 'Pricing', path: '/pricing' },
 ];
 
-// User navigation (logged in, non-admin) - simplified for dashboard context
-const dashboardNavItems: NavItem[] = [
+// User navigation (logged in)
+const userNavItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Studio', path: '/studio' },
-  { label: 'Settings', path: '/settings' },
+  { label: 'Keywords', path: '/keywords' },
+  { label: 'Content Studio', path: '/studio' },
+  { label: 'Integrations', path: '/integrations' },
 ];
 
-// Admin navigation
+// Admin navigation (includes Admin portal link)
 const adminNavItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Studio', path: '/studio' },
-  { label: 'Settings', path: '/settings' },
+  { label: 'Keywords', path: '/keywords' },
+  { label: 'Content Studio', path: '/studio' },
+  { label: 'Integrations', path: '/integrations' },
   { label: 'Admin', path: '/admin' },
 ];
 
@@ -75,13 +77,23 @@ export const Navigation: FC = () => {
   let navItems: NavItem[] = publicNavItems;
   if (isAuthenticated && user) {
     const isAdmin = user.role === 'admin' || user.role === 'super_admin';
-    navItems = isAdmin ? adminNavItems : dashboardNavItems;
+    navItems = isAdmin ? adminNavItems : userNavItems;
   }
 
   // Check if a nav item is locked (phase gating)
+  // Public routes (/, /pricing) are never locked
   const isItemLocked = (item: NavItem): boolean => {
+    // Public routes never locked
+    const publicPaths = ['/', '/pricing', '/how-it-works', '/home', '/about'];
+    if (publicPaths.includes(item.path)) return false;
+
+    // Admins never locked
     if (user?.role === 'admin' || user?.role === 'super_admin') return false;
+
+    // After completing first project, nothing locked
     if (hasCompletedFirstProject) return false;
+
+    // Otherwise check phase gating
     return !isRouteAvailable(item.path);
   };
 
@@ -121,12 +133,7 @@ export const Navigation: FC = () => {
                 </HStack>
               </Link>
               <Box h={4} w="1px" bg="rgba(255, 255, 255, 0.1)" />
-              <Text
-                fontSize="lg"
-                fontWeight="bold"
-                bgGradient="linear(to-r, #FF9D00, #FF6B00)"
-                bgClip="text"
-              >
+              <Text fontSize="lg" fontWeight="bold" color="brand.orange">
                 Content Studio
               </Text>
             </HStack>
@@ -165,23 +172,30 @@ export const Navigation: FC = () => {
               const NavElement = (
                 <Box
                   as="span"
-                  color={locked ? 'gray.300' : isActive ? 'brand.orange' : 'gray.600'}
-                  fontWeight={isActive ? 'semibold' : 'normal'}
-                  _hover={locked ? {} : { color: 'brand.orange' }}
+                  color={locked ? 'gray.300' : 'brand.orange'}
+                  fontWeight={isActive ? 'bold' : 'medium'}
+                  _hover={locked ? {} : { opacity: 0.8 }}
                   cursor={locked ? 'not-allowed' : 'pointer'}
-                  transition="color 0.2s"
-                  opacity={locked ? 0.5 : 1}
-                  display={{
-                    base: item.label === 'Home' || item.label === 'Dashboard' ? 'inline' : 'none',
-                    md: 'inline',
-                  }}
+                  transition="all 0.2s"
+                  opacity={locked ? 0.5 : isActive ? 1 : 0.85}
+                  display={{ base: 'none', md: 'inline' }}
+                  position="relative"
+                  _after={
+                    isActive
+                      ? {
+                          content: '""',
+                          position: 'absolute',
+                          bottom: '-6px',
+                          left: 0,
+                          right: 0,
+                          height: '2px',
+                          bg: 'brand.orange',
+                          borderRadius: 'full',
+                        }
+                      : {}
+                  }
                 >
                   {item.label}
-                  {item.path === '/studio' && (
-                    <Badge ml={2} colorScheme="orange" fontSize="xs" variant="subtle">
-                      NEW
-                    </Badge>
-                  )}
                 </Box>
               );
 

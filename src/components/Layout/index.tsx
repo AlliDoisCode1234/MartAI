@@ -42,8 +42,9 @@ export const Layout: FC<Props> = ({ children }) => {
   // PhooFab drawer state for guest users
   const { isOpen: isDrawerOpen, onOpen: onOpenDrawer, onClose: onCloseDrawer } = useDisclosure();
 
-  // Pages where we hide PhooFab (marketing page, onboarding, auth, admin)
-  const hidePhooPages = ['/', '/onboarding', '/auth', '/admin', '/apply', '/thank-you'];
+  // Pages where we hide PhooFab (onboarding, auth, admin)
+  // Note: / (marketing) now shows Phoo for guest engagement
+  const hidePhooPages = ['/onboarding', '/auth', '/admin', '/apply', '/thank-you'];
   const showPhoo = !hidePhooPages.some((p) => pathname === p || pathname?.startsWith(p + '/'));
 
   return (

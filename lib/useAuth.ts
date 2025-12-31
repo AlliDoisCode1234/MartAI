@@ -27,15 +27,20 @@ export function useAuth() {
   const user = useQuery(api.users.me);
 
   const logout = useCallback(async () => {
+    // IMPORTANT: Navigate FIRST to prevent authenticated queries from firing
+    // This avoids the "Unauthorized: Not logged in" error during logout
+    router.push('/');
+
+    // Give router time to start the navigation
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     try {
-      // Sign out first to clear the session
+      // Then sign out to clear the session
       await signOut();
     } catch (e) {
       // Ignore signOut errors - session may already be invalid
       console.warn('SignOut error (may be expected):', e);
     }
-    // Then navigate to home - no authenticated queries will fire
-    router.push('/');
   }, [signOut, router]);
 
   return {
