@@ -10,9 +10,7 @@
 
 import type * as admin from "../admin.js";
 import type * as admin_cleanup from "../admin/cleanup.js";
-import type * as admin_cleanupDatabase from "../admin/cleanupDatabase.js";
 import type * as admin_costs from "../admin/costs.js";
-import type * as admin_migrateContent from "../admin/migrateContent.js";
 import type * as admin_users from "../admin/users.js";
 import type * as aiStorage from "../aiStorage.js";
 import type * as ai_analysis from "../ai/analysis.js";
@@ -27,7 +25,6 @@ import type * as ai_providers_seed from "../ai/providers/seed.js";
 import type * as ai_providers_types from "../ai/providers/types.js";
 import type * as ai_reports from "../ai/reports.js";
 import type * as ai_router_router from "../ai/router/router.js";
-import type * as ai_seoAgent from "../ai/seoAgent.js";
 import type * as analytics_adhoc from "../analytics/adhoc.js";
 import type * as analytics_aggregations from "../analytics/aggregations.js";
 import type * as analytics_analytics from "../analytics/analytics.js";
@@ -50,18 +47,7 @@ import type * as config_thresholds from "../config/thresholds.js";
 import type * as contentCalendar_generateCalendar from "../contentCalendar/generateCalendar.js";
 import type * as contentGeneration from "../contentGeneration.js";
 import type * as contentPieces from "../contentPieces.js";
-import type * as content_briefActions from "../content/briefActions.js";
-import type * as content_briefVersions from "../content/briefVersions.js";
-import type * as content_briefs from "../content/briefs.js";
-import type * as content_calendars from "../content/calendars.js";
-import type * as content_content from "../content/content.js";
-import type * as content_contentCheckQueries from "../content/contentCheckQueries.js";
-import type * as content_contentChecks from "../content/contentChecks.js";
 import type * as content_contentTemplates from "../content/contentTemplates.js";
-import type * as content_draftActions from "../content/draftActions.js";
-import type * as content_drafts from "../content/drafts.js";
-import type * as content_quarterlyPlanActions from "../content/quarterlyPlanActions.js";
-import type * as content_quarterlyPlans from "../content/quarterlyPlans.js";
 import type * as content_quickWins from "../content/quickWins.js";
 import type * as crons from "../crons.js";
 import type * as email_emailActions from "../email/emailActions.js";
@@ -106,7 +92,6 @@ import type * as phoo_lib_rating from "../phoo/lib/rating.js";
 import type * as projects_clients from "../projects/clients.js";
 import type * as projects_projects from "../projects/projects.js";
 import type * as prospects_prospects from "../prospects/prospects.js";
-import type * as publishing_publishing from "../publishing/publishing.js";
 import type * as publishing_scheduledPosts from "../publishing/scheduledPosts.js";
 import type * as publishing_wordpressActions from "../publishing/wordpressActions.js";
 import type * as rateLimits from "../rateLimits.js";
@@ -123,7 +108,6 @@ import type * as seo_rankings from "../seo/rankings.js";
 import type * as seo_seoAudits from "../seo/seoAudits.js";
 import type * as seo_serpAnalysis from "../seo/serpAnalysis.js";
 import type * as seo_statistics from "../seo/statistics.js";
-import type * as seo_strategy from "../seo/strategy.js";
 import type * as stripe_checkout from "../stripe/checkout.js";
 import type * as stripe_index from "../stripe/index.js";
 import type * as subscriptions_subscriptionLifecycle from "../subscriptions/subscriptionLifecycle.js";
@@ -139,7 +123,6 @@ import type * as workflows_contentWorkflows from "../workflows/contentWorkflows.
 import type * as workflows_index from "../workflows/index.js";
 import type * as workflows_keywordWorkflows from "../workflows/keywordWorkflows.js";
 import type * as workflows_onboardingWorkflows from "../workflows/onboardingWorkflows.js";
-import type * as workflows_strategyWorkflows from "../workflows/strategyWorkflows.js";
 
 import type {
   ApiFromModules,
@@ -150,9 +133,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   "admin/cleanup": typeof admin_cleanup;
-  "admin/cleanupDatabase": typeof admin_cleanupDatabase;
   "admin/costs": typeof admin_costs;
-  "admin/migrateContent": typeof admin_migrateContent;
   "admin/users": typeof admin_users;
   aiStorage: typeof aiStorage;
   "ai/analysis": typeof ai_analysis;
@@ -167,7 +148,6 @@ declare const fullApi: ApiFromModules<{
   "ai/providers/types": typeof ai_providers_types;
   "ai/reports": typeof ai_reports;
   "ai/router/router": typeof ai_router_router;
-  "ai/seoAgent": typeof ai_seoAgent;
   "analytics/adhoc": typeof analytics_adhoc;
   "analytics/aggregations": typeof analytics_aggregations;
   "analytics/analytics": typeof analytics_analytics;
@@ -190,18 +170,7 @@ declare const fullApi: ApiFromModules<{
   "contentCalendar/generateCalendar": typeof contentCalendar_generateCalendar;
   contentGeneration: typeof contentGeneration;
   contentPieces: typeof contentPieces;
-  "content/briefActions": typeof content_briefActions;
-  "content/briefVersions": typeof content_briefVersions;
-  "content/briefs": typeof content_briefs;
-  "content/calendars": typeof content_calendars;
-  "content/content": typeof content_content;
-  "content/contentCheckQueries": typeof content_contentCheckQueries;
-  "content/contentChecks": typeof content_contentChecks;
   "content/contentTemplates": typeof content_contentTemplates;
-  "content/draftActions": typeof content_draftActions;
-  "content/drafts": typeof content_drafts;
-  "content/quarterlyPlanActions": typeof content_quarterlyPlanActions;
-  "content/quarterlyPlans": typeof content_quarterlyPlans;
   "content/quickWins": typeof content_quickWins;
   crons: typeof crons;
   "email/emailActions": typeof email_emailActions;
@@ -246,7 +215,6 @@ declare const fullApi: ApiFromModules<{
   "projects/clients": typeof projects_clients;
   "projects/projects": typeof projects_projects;
   "prospects/prospects": typeof prospects_prospects;
-  "publishing/publishing": typeof publishing_publishing;
   "publishing/scheduledPosts": typeof publishing_scheduledPosts;
   "publishing/wordpressActions": typeof publishing_wordpressActions;
   rateLimits: typeof rateLimits;
@@ -263,7 +231,6 @@ declare const fullApi: ApiFromModules<{
   "seo/seoAudits": typeof seo_seoAudits;
   "seo/serpAnalysis": typeof seo_serpAnalysis;
   "seo/statistics": typeof seo_statistics;
-  "seo/strategy": typeof seo_strategy;
   "stripe/checkout": typeof stripe_checkout;
   "stripe/index": typeof stripe_index;
   "subscriptions/subscriptionLifecycle": typeof subscriptions_subscriptionLifecycle;
@@ -279,7 +246,6 @@ declare const fullApi: ApiFromModules<{
   "workflows/index": typeof workflows_index;
   "workflows/keywordWorkflows": typeof workflows_keywordWorkflows;
   "workflows/onboardingWorkflows": typeof workflows_onboardingWorkflows;
-  "workflows/strategyWorkflows": typeof workflows_strategyWorkflows;
 }>;
 
 /**

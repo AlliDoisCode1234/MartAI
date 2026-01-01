@@ -43,8 +43,7 @@ export type UserId = Id<'users'>;
 export type ProjectId = Id<'projects'>;
 export type KeywordId = Id<'keywords'>;
 export type ClusterId = Id<'keywordClusters'>;
-export type BriefId = Id<'briefs'>;
-export type DraftId = Id<'drafts'>;
+export type ContentPieceId = Id<'contentPieces'>;
 export type PlanId = Id<'quarterlyPlans'>;
 
 // ============================================

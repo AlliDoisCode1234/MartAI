@@ -275,44 +275,6 @@ export default defineSchema({
     .index('by_client', ['clientId'])
     .index('by_period', ['periodStart', 'periodEnd']),
 
-  // ============================================================================
-  // DEPRECATED: Legacy auth tables - marked for deletion after data cleared
-  // Delete via Convex dashboard after running cleanupDatabase.clearLegacyAuth
-  // ============================================================================
-
-  // @deprecated - Use Convex Auth 'users' table instead
-  legacyUsers: defineTable({
-    email: v.string(),
-    name: v.optional(v.string()),
-    passwordHash: v.string(), // bcrypt hash
-    role: v.optional(
-      v.union(v.literal('super_admin'), v.literal('admin'), v.literal('user'), v.literal('viewer'))
-    ), // User role: super_admin, admin, user, viewer
-    avatarUrl: v.optional(v.string()), // User profile picture
-    bio: v.optional(v.string()), // User bio/description
-    preferences: v.optional(
-      v.object({
-        theme: v.optional(v.union(v.literal('light'), v.literal('dark'), v.literal('auto'))),
-        notifications: v.optional(v.boolean()),
-        timezone: v.optional(v.string()),
-      })
-    ),
-    createdAt: v.number(),
-    updatedAt: v.optional(v.number()),
-  })
-    .index('by_email', ['email'])
-    .index('by_role', ['role']),
-
-  // @deprecated - Use Convex Auth sessions instead
-  legacySessions: defineTable({
-    userId: v.id('legacyUsers'),
-    token: v.string(),
-    expiresAt: v.number(),
-    createdAt: v.number(),
-  })
-    .index('by_user', ['userId'])
-    .index('by_token', ['token']),
-
   // Prospect intake (lead capture)
   prospects: defineTable({
     firstName: v.optional(v.string()),
@@ -593,64 +555,9 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index('by_project', ['projectId']),
 
-  // ============================================================================
-  // DEPRECATED: Briefs/Drafts - migrating to contentPieces (Content Studio)
-  // Run admin/migrateContent.migrateToContentPieces to migrate data
-  // ============================================================================
-
-  // @deprecated - Use contentPieces table instead
-  briefs: defineTable({
-    planId: v.optional(v.id('quarterlyPlans')),
-    projectId: v.id('projects'),
-    clusterId: v.optional(v.id('keywordClusters')),
-    title: v.string(),
-    scheduledDate: v.number(),
-    status: v.string(), // planned, in_progress, approved, published
-    // Brief details
-    titleOptions: v.optional(v.array(v.string())),
-    h2Outline: v.optional(v.array(v.string())),
-    faqs: v.optional(
-      v.array(
-        v.object({
-          question: v.string(),
-          answer: v.string(),
-        })
-      )
-    ),
-    metaTitle: v.optional(v.string()),
-    metaDescription: v.optional(v.string()),
-    internalLinks: v.optional(v.array(v.string())),
-    schema: v.optional(v.any()),
-    schemaSuggestion: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index('by_plan', ['planId'])
-    .index('by_project', ['projectId'])
-    .index('by_status', ['status']),
-
-  // @deprecated - Use contentPieces table instead
-  drafts: defineTable({
-    briefId: v.id('briefs'),
-    projectId: v.id('projects'),
-    content: v.string(), // Markdown
-    qualityScore: v.optional(v.number()), // 0-100
-    toneScore: v.optional(v.number()), // 0-100
-    wordCount: v.optional(v.number()),
-    status: v.string(), // draft, approved, published
-    notes: v.optional(v.string()),
-    publishedUrl: v.optional(v.string()), // WordPress/Shopify URL
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index('by_brief', ['briefId'])
-    .index('by_project', ['projectId'])
-    .index('by_status', ['status']),
-
   // Content Quality Checks (Plagiarism & AI Detection)
   contentChecks: defineTable({
-    draftId: v.id('drafts'),
-    briefId: v.optional(v.id('briefs')),
+    contentPieceId: v.id('contentPieces'),
     projectId: v.id('projects'),
     // Check results
     plagiarismScore: v.number(), // 0-100, higher = more unique
@@ -686,16 +593,16 @@ export default defineSchema({
     checkedAt: v.number(),
     createdAt: v.number(),
   })
-    .index('by_draft', ['draftId'])
-    .index('by_brief', ['briefId'])
+    .index('by_content_piece', ['contentPieceId'])
     .index('by_project', ['projectId'])
     .index('by_status', ['status']),
 
   // Scheduled Posts
+  // NOTE: Some legacy documents may have draftId/briefId instead of contentPieceId.
+  // These should be migrated or deleted from the Convex dashboard.
   scheduledPosts: defineTable({
-    draftId: v.id('drafts'),
+    contentPieceId: v.optional(v.id('contentPieces')), // Optional for legacy data migration
     projectId: v.id('projects'),
-    briefId: v.id('briefs'),
     publishDate: v.number(), // timestamp
     timezone: v.string(),
     platform: v.string(), // wordpress, shopify

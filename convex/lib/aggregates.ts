@@ -3,16 +3,16 @@ import { DataModel } from '../_generated/dataModel';
 import { TableAggregate } from '@convex-dev/aggregate';
 
 /**
- * Aggregate for counting briefs by project.
+ * Aggregate for counting content pieces by project.
  * Enables efficient O(log n) count queries instead of table scans.
  */
-export const briefsByProject = new TableAggregate<{
+export const contentPiecesByProject = new TableAggregate<{
   Namespace: string; // projectId as string
   Key: number; // _creationTime for sorting
   DataModel: DataModel;
-  TableName: 'briefs';
+  TableName: 'contentPieces';
 }>(components.aggregateBriefs, {
-  namespace: (doc) => doc.planId as unknown as string,
+  namespace: (doc) => doc.projectId as unknown as string,
   sortKey: (doc) => doc._creationTime,
 });
 

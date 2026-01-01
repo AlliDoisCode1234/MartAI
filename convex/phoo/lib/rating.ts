@@ -211,23 +211,23 @@ export const getPhooRating = query({
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .first();
 
-    const briefs = await ctx.db
-      .query('briefs')
+    const contentPieces = await ctx.db
+      .query('contentPieces')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .collect();
 
     let contentScore = 0;
-    if (calendar || briefs.length > 0) {
+    if (calendar || contentPieces.length > 0) {
       const calendarPoints = calendar ? 40 : 0;
-      const briefPoints = Math.min(briefs.length / 5, 1) * 60; // Up to 5 briefs for full points
-      contentScore = Math.round(calendarPoints + briefPoints);
+      const contentPoints = Math.min(contentPieces.length / 5, 1) * 60; // Up to 5 pieces for full points
+      contentScore = Math.round(calendarPoints + contentPoints);
 
       breakdown.push({
         component: 'Content Execution',
         score: contentScore,
         weight: RATING_WEIGHTS.CONTENT,
         weighted: contentScore * RATING_WEIGHTS.CONTENT,
-        details: `${briefs.length} briefs created${calendar ? ', active calendar' : ''}`,
+        details: `${contentPieces.length} content pieces${calendar ? ', active calendar' : ''}`,
       });
     } else {
       breakdown.push({
@@ -235,7 +235,7 @@ export const getPhooRating = query({
         score: 0,
         weight: RATING_WEIGHTS.CONTENT,
         weighted: 0,
-        details: 'No content calendar or briefs',
+        details: 'No content calendar or content pieces',
       });
       insights.push('Create a content calendar to drive consistent publishing');
     }

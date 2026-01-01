@@ -97,22 +97,6 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       },
     },
 
-    // Briefs: project-scoped
-    briefs: {
-      read: async (ruleCtx, brief) => {
-        if (isAdmin) return true;
-        if (!userId) return false;
-        const project = await ruleCtx.db.get(brief.projectId);
-        return project?.userId === userId;
-      },
-      modify: async (ruleCtx, brief) => {
-        if (isAdmin) return true;
-        if (!userId) return false;
-        const project = await ruleCtx.db.get(brief.projectId);
-        return project?.userId === userId;
-      },
-    },
-
     // Competitors: project-scoped
     competitors: {
       read: async (ruleCtx, competitor) => {
@@ -179,22 +163,6 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
     prospectDetails: {
       read: async () => isAdmin,
       modify: async () => isAdmin,
-    },
-
-    // Drafts: project-scoped
-    drafts: {
-      read: async (ruleCtx, draft) => {
-        if (isAdmin) return true;
-        if (!userId) return false;
-        const project = await ruleCtx.db.get(draft.projectId);
-        return project?.userId === userId;
-      },
-      modify: async (ruleCtx, draft) => {
-        if (isAdmin) return true;
-        if (!userId) return false;
-        const project = await ruleCtx.db.get(draft.projectId);
-        return project?.userId === userId;
-      },
     },
 
     // Content calendars: project-scoped (projectId is optional)

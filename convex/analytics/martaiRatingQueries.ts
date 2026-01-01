@@ -64,7 +64,7 @@ export const getScoreHistory = query({
 });
 
 /**
- * Count briefs created since a given date for content velocity scoring
+ * Count content pieces created since a given date for content velocity scoring
  */
 export const countBriefsThisMonth = internalQuery({
   args: {
@@ -72,12 +72,12 @@ export const countBriefsThisMonth = internalQuery({
     since: v.number(),
   },
   handler: async (ctx, args) => {
-    const briefs = await ctx.db
-      .query('briefs')
+    const pieces = await ctx.db
+      .query('contentPieces')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .filter((q) => q.gte(q.field('createdAt'), args.since))
       .collect();
-    return briefs.length;
+    return pieces.length;
   },
 });
 

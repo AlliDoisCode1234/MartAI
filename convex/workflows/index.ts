@@ -26,13 +26,6 @@ export {
   rankTrackingWorkflow,
 } from './analyticsWorkflows';
 
-// Strategy Workflows
-export {
-  seoStrategyWorkflow,
-  contentOptimizationWorkflow,
-  batchContentGenerationWorkflow,
-} from './strategyWorkflows';
-
 // Onboarding (Types and Utilities)
 export {
   ONBOARDING_STEPS,
@@ -62,11 +55,6 @@ export const WORKFLOW_REGISTRY = {
   'analytics:analyzeContent': 'workflows/analyticsWorkflows:contentPerformanceWorkflow',
   'analytics:analyzeCompetitors': 'workflows/analyticsWorkflows:competitorAnalysisWorkflow',
   'analytics:trackRankings': 'workflows/analyticsWorkflows:rankTrackingWorkflow',
-
-  // Strategy Workflows
-  'strategy:execute': 'workflows/strategyWorkflows:seoStrategyWorkflow',
-  'strategy:optimize': 'workflows/strategyWorkflows:contentOptimizationWorkflow',
-  'strategy:batchGenerate': 'workflows/strategyWorkflows:batchContentGenerationWorkflow',
 } as const;
 
 /**
