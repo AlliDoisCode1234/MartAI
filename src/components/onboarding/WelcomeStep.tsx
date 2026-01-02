@@ -9,6 +9,7 @@
  * Step 1: Welcome with website URL input.
  */
 
+import { useRef, useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -34,6 +35,25 @@ type Props = {
 };
 
 export function WelcomeStep({ formData, onFormChange, onNext, loading }: Props) {
+  const websiteInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus on website input when step loads
+  useEffect(() => {
+    // Small delay to ensure animation completes
+    const timer = setTimeout(() => {
+      websiteInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle Enter key to submit (no form wrapper to avoid "Leave site?" warning)
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && formData.website && !loading) {
+      e.preventDefault();
+      onNext();
+    }
+  };
+
   return (
     <MotionBox
       key="step1"
@@ -53,8 +73,8 @@ export function WelcomeStep({ formData, onFormChange, onNext, loading }: Props) 
                 Welcome to Phoo
               </Heading>
               <Text color="gray.600">
-                I'm Phoo, your AI marketing manager. Enter your website below and I'll analyze it to
-                find keyword opportunities and create your SEO strategy.
+                I&apos;m Phoo, your AI marketing manager. Enter your website below and I&apos;ll
+                analyze it to find keyword opportunities and create your SEO strategy.
               </Text>
             </Box>
           </HStack>
@@ -68,6 +88,7 @@ export function WelcomeStep({ formData, onFormChange, onNext, loading }: Props) 
                 placeholder="e.g., Acme Corp"
                 value={formData.businessName}
                 onChange={(e) => onFormChange({ ...formData, businessName: e.target.value })}
+                onKeyDown={handleKeyDown}
                 size="lg"
               />
             </FormControl>
@@ -75,11 +96,13 @@ export function WelcomeStep({ formData, onFormChange, onNext, loading }: Props) 
             <FormControl isRequired>
               <FormLabel>Website URL</FormLabel>
               <Input
+                ref={websiteInputRef}
                 type="url"
                 autoComplete="url"
                 placeholder="https://yourwebsite.com"
                 value={formData.website}
                 onChange={(e) => onFormChange({ ...formData, website: e.target.value })}
+                onKeyDown={handleKeyDown}
                 size="lg"
               />
             </FormControl>

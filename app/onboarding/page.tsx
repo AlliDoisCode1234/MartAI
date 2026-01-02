@@ -46,6 +46,7 @@ export default function OnboardingPage() {
   const [formData, setFormData] = useState({ businessName: '', website: '' });
   const [projectId, setProjectId] = useState<string | null>(null);
   const [ga4Connected, setGa4Connected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   // Mutations & Actions
   const createProject = useMutation(api.projects.projects.createProject);
@@ -79,14 +80,26 @@ export default function OnboardingPage() {
   }, [isAuthenticated, user, step, updateOnboardingStep]);
 
   // Restore step from user's onboardingStep in DB if available
+  // BUT: URL step takes precedence (e.g., coming back from OAuth with ?step=4)
   useEffect(() => {
+    // Check if URL has a step param - that takes priority
+    const urlStep = searchParams?.get('step');
+    if (urlStep) {
+      const parsed = parseInt(urlStep, 10);
+      if (parsed >= 1 && parsed <= 5) {
+        setStep(parsed);
+        return; // Don't override with DB value
+      }
+    }
+
+    // Fall back to DB step if no URL step
     if (user?.onboardingStep && typeof user.onboardingStep === 'number') {
       const dbStep = user.onboardingStep;
       if (dbStep >= 1 && dbStep <= 5 && dbStep !== step) {
         setStep(dbStep);
       }
     }
-  }, [user?.onboardingStep]);
+  }, [user?.onboardingStep, searchParams]);
 
   // Prevent browser back button during onboarding
   useEffect(() => {
@@ -103,13 +116,8 @@ export default function OnboardingPage() {
     const gscSite = searchParams?.get('gscSite');
 
     if (success === 'true') {
-      // OAuth succeeded - update state and clear URL params
+      // OAuth succeeded - update state
       setGa4Connected(true);
-
-      // Get step from URL if present
-      const urlStep = searchParams?.get('step');
-      if (urlStep) setStep(parseInt(urlStep, 10));
-      else setStep(4); // Default to step 4 for GA4 integration
 
       // Restore projectId from session storage
       const storedProjectId = sessionStorage.getItem('onboarding_projectId');
@@ -123,28 +131,48 @@ export default function OnboardingPage() {
         ],
       }).catch(console.error);
 
-      // Clear URL params
-      window.history.replaceState({}, '', '/onboarding');
-
       // Show success toast
       toast({
         title: 'Connected!',
-        description: `GA4${ga4Property ? ` (${ga4Property})` : ''} connected successfully.`,
+        description: `GA4${ga4Property ? ` (${ga4Property})` : ''} connected. Redirecting to dashboard...`,
         status: 'success',
-        duration: 3000,
+        duration: 2000,
       });
+
+      // Complete onboarding and redirect to dashboard
+      completeOnboarding()
+        .then(() => {
+          router.push('/dashboard');
+        })
+        .catch(console.error);
     } else if (success === 'false') {
       const error = searchParams?.get('error');
-      toast({
-        title: 'Connection Failed',
-        description: error || 'Failed to connect Google Analytics.',
-        status: 'error',
-        duration: 5000,
-      });
-      // Clear URL params
-      window.history.replaceState({}, '', '/onboarding');
+      // Set connection error state so IntegrationStep can show it
+      setConnectionError(error || 'Connection failed');
+      setStep(4); // Stay on step 4
+
+      // Restore projectId from session storage
+      const storedProjectId = sessionStorage.getItem('onboarding_projectId');
+      if (storedProjectId) setProjectId(storedProjectId);
+
+      // Clear URL params but keep step
+      window.history.replaceState({}, '', `/onboarding?step=4`);
     }
-  }, [searchParams, toast, updateMultipleSteps]);
+  }, [searchParams, toast, updateMultipleSteps, completeOnboarding, router]);
+
+  // Sync URL with current step
+  useEffect(() => {
+    const urlStep = searchParams?.get('step');
+    const success = searchParams?.get('success');
+
+    // Don't update URL if we're processing OAuth callback
+    if (success) return;
+
+    // Only update if URL step doesn't match current step
+    if (urlStep !== String(step)) {
+      window.history.replaceState({}, '', `/onboarding?step=${step}`);
+    }
+  }, [step, searchParams]);
 
   // NOTE: Step number (1-4) is a UI concept. Individual onboarding completions
   // (signupCompleted, planSelected, etc.) are tracked separately via mutations.
@@ -320,28 +348,35 @@ export default function OnboardingPage() {
     }
   };
 
-  // Step 4: GA4 connection - use same pattern as integrations page
+  // Step 4: GA4 connection - full page redirect (more reliable than popup)
   const handleConnect = async () => {
     if (!projectId) {
       alert('Project not created yet.');
       return;
     }
 
+    // Clear any previous error
+    setConnectionError(null);
+
     try {
-      // Use the same generateAuthUrl action as integrations page, with returnTo for onboarding
+      // Generate auth URL with returnTo so callback redirects back to onboarding
       const authUrl = await generateAuthUrl({
         projectId: projectId as any,
         returnTo: '/onboarding?step=4',
       });
-      if (authUrl) {
-        // Save current step before redirect so we return to the right place
-        sessionStorage.setItem('onboarding_step', '4');
-        sessionStorage.setItem('onboarding_projectId', projectId);
-        // Full page redirect like integrations page
-        window.location.href = authUrl;
-      } else {
+
+      if (!authUrl) {
         alert('Failed to initiate GA4 connection');
+        return;
       }
+
+      // Save all state before redirect to prevent "Leave site?" warning
+      sessionStorage.setItem('onboarding_projectId', projectId);
+      sessionStorage.setItem('onboarding_step', '4');
+      sessionStorage.setItem('onboarding_formData', JSON.stringify(formData));
+
+      // Full page redirect - user will return to /onboarding?step=4&success=true after OAuth
+      window.location.href = authUrl;
     } catch (error) {
       console.error('GA4 connection error:', error);
       alert('Failed to connect GA4: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -349,28 +384,31 @@ export default function OnboardingPage() {
   };
 
   const handleStep4Next = async () => {
-    setStep(5);
+    setLoading(true);
 
-    // Fire-and-forget: Generate zero-click content calendar
+    // Fire-and-forget: Generate zero-click content calendar in background
     if (projectId) {
       (async () => {
         try {
-          console.log('[ONBOARDING DEBUG] Generating zero-click content calendar...');
+          console.log('[ONBOARDING] Generating zero-click content calendar...');
           const calendarResult = await generateContentCalendar({
             projectId: projectId as any,
             useGa4Gsc: ga4Connected,
           });
           console.log(
-            `[ONBOARDING DEBUG] Calendar generated: ${calendarResult.itemsGenerated} items for ${calendarResult.industry} industry`
+            `[ONBOARDING] Calendar generated: ${calendarResult.itemsGenerated} items for ${calendarResult.industry} industry`
           );
         } catch (err) {
-          console.warn('[ONBOARDING DEBUG] Calendar generation error:', err);
+          console.warn('[ONBOARDING] Calendar generation error:', err);
         }
       })();
     }
 
+    // Mark onboarding complete and redirect to dashboard
     await completeOnboarding();
-    router.push('/onboarding/reveal');
+
+    // Go directly to dashboard - content generation happens in background
+    router.push('/dashboard');
   };
 
   // Main render (guards already handled above)
@@ -409,6 +447,7 @@ export default function OnboardingPage() {
               <IntegrationStep
                 projectId={projectId}
                 ga4Connected={ga4Connected}
+                connectionError={connectionError}
                 onConnect={handleConnect}
                 onNext={handleStep4Next}
                 onSkip={handleStep4Next}

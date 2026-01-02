@@ -22,7 +22,7 @@ if (typeof window === 'undefined') {
   }
 }
 
-// Helper to build redirect URL
+// Helper to build redirect URL - preserves existing params in returnTo
 function buildRedirectUrl(
   baseUrl: string,
   returnTo: string | undefined,
@@ -32,12 +32,29 @@ function buildRedirectUrl(
   const targetPath = returnTo || '/integrations';
   const url = new URL(targetPath, baseUrl);
 
-  // Add params
+  // Add new params (won't overwrite existing ones in returnTo)
   for (const [key, value] of Object.entries(params)) {
-    url.searchParams.append(key, value);
+    // Only add if not already in the URL
+    if (!url.searchParams.has(key)) {
+      url.searchParams.append(key, value);
+    }
   }
 
   return url.toString();
+}
+
+// Helper for OAuth response - redirect to returnTo with params
+function oauthResponse(
+  baseUrl: string,
+  returnTo: string | undefined,
+  params: Record<string, string | boolean>
+): NextResponse {
+  const redirectUrl = buildRedirectUrl(
+    baseUrl,
+    returnTo,
+    Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]))
+  );
+  return NextResponse.redirect(redirectUrl);
 }
 
 export async function GET(request: NextRequest) {
@@ -131,33 +148,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Build success params - encode tokens for onboarding to use
-    const successParams: Record<string, string> = {
-      success: 'true',
+    // Return success via postMessage (for popup) or redirect (for full page)
+    return oauthResponse(baseUrl, returnTo, {
+      success: true,
       type: type,
-    };
-
-    if (ga4PropertyName) successParams.ga4Property = ga4PropertyName;
-    if (gscSiteUrl) successParams.gscSite = gscSiteUrl;
-
-    // Encode tokens so onboarding can verify
-    const tokensData = Buffer.from(
-      JSON.stringify({
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        projectId,
-      })
-    ).toString('base64');
-    successParams.tokens = tokensData;
-
-    return NextResponse.redirect(buildRedirectUrl(baseUrl, returnTo, successParams));
+      ga4Property: ga4PropertyName || '',
+      gscSite: gscSiteUrl || '',
+    });
   } catch (error) {
     console.error('Google OAuth callback error:', error);
-    return NextResponse.redirect(
-      buildRedirectUrl(baseUrl, undefined, {
-        error: error instanceof Error ? error.message : 'unknown',
-        success: 'false',
-      })
-    );
+    return oauthResponse(baseUrl, undefined, {
+      success: false,
+      error: error instanceof Error ? error.message : 'unknown',
+    });
   }
 }

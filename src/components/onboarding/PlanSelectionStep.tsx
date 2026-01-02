@@ -9,6 +9,7 @@
  * Step 2: Plan selection.
  */
 
+import { useEffect, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -36,6 +37,30 @@ type Props = {
 };
 
 export function PlanSelectionStep({ selectedPlan, onSelectPlan, onNext, onBack }: Props) {
+  // Handle keyboard navigation
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && selectedPlan) {
+        onNext();
+      }
+      // Arrow keys to navigate between plans
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const currentIndex = PLANS.findIndex((p) => p.id === selectedPlan);
+        if (e.key === 'ArrowRight' && currentIndex < PLANS.length - 1) {
+          onSelectPlan(PLANS[currentIndex + 1].id);
+        } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+          onSelectPlan(PLANS[currentIndex - 1].id);
+        }
+      }
+    },
+    [selectedPlan, onNext, onSelectPlan]
+  );
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
   return (
     <MotionBox
       key="step2"
@@ -54,6 +79,9 @@ export function PlanSelectionStep({ selectedPlan, onSelectPlan, onNext, onBack }
             <Text color="gray.600">
               Select the plan that fits your needs. You can upgrade anytime.
             </Text>
+            <Text fontSize="sm" color="gray.400" mt={1}>
+              Use arrow keys to navigate, Enter to continue
+            </Text>
           </Box>
 
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
@@ -68,6 +96,14 @@ export function PlanSelectionStep({ selectedPlan, onSelectPlan, onNext, onBack }
                 _hover={{ borderColor: `${plan.color}.300` }}
                 transition="all 0.2s"
                 position="relative"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectPlan(plan.id);
+                  }
+                }}
+                _focus={{ outline: 'none', boxShadow: 'outline' }}
               >
                 {'popular' in plan && plan.popular && (
                   <Badge

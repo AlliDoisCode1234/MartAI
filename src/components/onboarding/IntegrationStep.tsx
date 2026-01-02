@@ -22,7 +22,14 @@ import {
   Button,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { FiArrowRight, FiArrowLeft, FiCheck, FiTrendingUp, FiZap } from 'react-icons/fi';
+import {
+  FiArrowRight,
+  FiArrowLeft,
+  FiCheck,
+  FiTrendingUp,
+  FiZap,
+  FiAlertCircle,
+} from 'react-icons/fi';
 
 const MotionBox = motion(Box);
 
@@ -50,6 +57,7 @@ const GoogleIcon = () => (
 type Props = {
   projectId: string | null;
   ga4Connected: boolean;
+  connectionError: string | null; // Error message when connection fails (e.g., no properties)
   onConnect: () => void;
   onNext: () => void;
   onSkip: () => void;
@@ -59,11 +67,17 @@ type Props = {
 export function IntegrationStep({
   projectId,
   ga4Connected,
+  connectionError,
   onConnect,
   onNext,
   onSkip,
   onBack,
 }: Props) {
+  // Check if error is "no properties found"
+  const isNoPropertiesError =
+    connectionError?.toLowerCase().includes('no') ||
+    connectionError?.toLowerCase().includes('properties');
+
   return (
     <MotionBox
       key="step4"
@@ -117,6 +131,34 @@ export function IntegrationStep({
                   </Box>
                 </HStack>
               </Box>
+            ) : connectionError ? (
+              // Error state - show error and try again option
+              <Box p={4} bg="red.50" borderRadius="lg" borderWidth="1px" borderColor="red.200">
+                <VStack spacing={3} align="stretch">
+                  <HStack spacing={3}>
+                    <Icon as={FiAlertCircle} boxSize={6} color="red.500" />
+                    <Box>
+                      <Text fontWeight="semibold" color="red.700">
+                        {isNoPropertiesError ? 'No GA4 Properties Found' : 'Connection Failed'}
+                      </Text>
+                      <Text fontSize="sm" color="gray.600">
+                        {isNoPropertiesError
+                          ? "This Google account doesn't have any GA4 properties. Try a different account or skip for now."
+                          : connectionError}
+                      </Text>
+                    </Box>
+                  </HStack>
+                  <Button
+                    size="md"
+                    variant="outline"
+                    colorScheme="blue"
+                    leftIcon={<GoogleIcon />}
+                    onClick={onConnect}
+                  >
+                    Try a Different Account
+                  </Button>
+                </VStack>
+              </Box>
             ) : (
               <Button
                 size="lg"
@@ -133,9 +175,11 @@ export function IntegrationStep({
             <Text fontSize="xs" color="gray.500" textAlign="center">
               {ga4Connected
                 ? 'Connected! You can manage this in the Integrations page later.'
-                : projectId
-                  ? 'Sign in with the Google account linked to your Analytics & Search Console.'
-                  : 'Creating your project... Please wait.'}
+                : connectionError
+                  ? "Make sure you're signed into a Google account with GA4 access for your website."
+                  : projectId
+                    ? 'Sign in with the Google account linked to your Analytics & Search Console.'
+                    : 'Creating your project... Please wait.'}
             </Text>
           </VStack>
 

@@ -145,10 +145,8 @@ export function useProject(
   );
 
   // Fetch strategy data
-  const strategyData = useQuery(
-    api.seo.strategy.getStrategyByProject,
-    shouldFetch && typedProjectId ? { projectId: typedProjectId } : 'skip'
-  );
+  // TODO: Implement api.seo.strategy.getStrategyByProject when strategy feature is built
+  const strategyData = null; // Placeholder - function doesn't exist yet
 
   // Compute derived state
   const result = useMemo<UseProjectResult>(() => {
