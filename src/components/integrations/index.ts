@@ -9,3 +9,4 @@ export { GA4Modal } from './GA4Modal';
 export { GSCModal } from './GSCModal';
 export { CMSModal } from './CMSModal';
 export { IntegrationsSkeleton } from './IntegrationsSkeleton';
+export { PropertyPickerModal } from './PropertyPickerModal';

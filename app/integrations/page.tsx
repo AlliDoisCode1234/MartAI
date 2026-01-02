@@ -25,7 +25,7 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { useAuth } from '@/lib/useAuth';
-import { useAction, useMutation } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { AnalyticsSetupWizard } from '@/src/components/analytics/AnalyticsSetupWizard';
@@ -37,6 +37,7 @@ import {
   GSCModal,
   CMSModal,
   IntegrationsSkeleton,
+  PropertyPickerModal,
 } from '@/src/components/integrations';
 import {
   DEFAULT_INTEGRATIONS,
@@ -48,7 +49,7 @@ function IntegrationsContent() {
   const { user, isAuthenticated } = useAuth();
   const searchParams = useSearchParams();
   const [integrations, setIntegrations] = useState<Integration[]>(DEFAULT_INTEGRATIONS);
-  const [loading, setLoading] = useState(false);
+  const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
 
   // Modal states
@@ -67,6 +68,11 @@ function IntegrationsContent() {
     onOpen: onCMSModalOpen,
     onClose: onCMSModalClose,
   } = useDisclosure();
+  const {
+    isOpen: isPropertyPickerOpen,
+    onOpen: onPropertyPickerOpen,
+    onClose: onPropertyPickerClose,
+  } = useDisclosure();
 
   // Form states
   const [ga4PropertyId, setGA4PropertyId] = useState('');
@@ -81,6 +87,16 @@ function IntegrationsContent() {
     canPublish?: boolean;
   } | null>(null);
   const [showWizard, setShowWizard] = useState(false);
+  const [oauthTokens, setOauthTokens] = useState<{
+    accessToken: string;
+    refreshToken: string;
+  } | null>(null);
+
+  // Query for project websiteUrl
+  const project = useQuery(
+    api.projects.projects.getProjectById,
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+  );
 
   // Mutations
   const generateAuthUrl = useAction(api.integrations.google.generateAuthUrl);
@@ -106,21 +122,33 @@ function IntegrationsContent() {
     setProjectId(storedProject || `project-${Date.now()}`);
   }, [searchParams]);
 
-  // Check for GA4 setup tokens
+  // Check for GA4 setup tokens → open PropertyPickerModal
   useEffect(() => {
     const setup = searchParams?.get('setup');
     const tokens = searchParams?.get('tokens');
+    console.log('[Integrations] OAuth callback check:', { setup, hasTokens: !!tokens });
+
     if (setup === 'ga4' && tokens) {
       try {
         const decoded = JSON.parse(atob(decodeURIComponent(tokens)));
-        setGA4Tokens(decoded);
-        setShowWizard(true);
+        console.log('[Integrations] Decoded tokens:', {
+          hasAccessToken: !!decoded.accessToken,
+          hasRefreshToken: !!decoded.refreshToken,
+          projectId: decoded.projectId,
+        });
+        setOauthTokens({
+          accessToken: decoded.accessToken,
+          refreshToken: decoded.refreshToken,
+        });
+        // Open property picker instead of old wizard
+        console.log('[Integrations] Opening PropertyPickerModal');
+        onPropertyPickerOpen();
         window.history.replaceState({}, '', '/integrations');
       } catch (e) {
-        console.error('Failed to parse GA4 tokens:', e);
+        console.error('[Integrations] Failed to parse GA4 tokens:', e);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, onPropertyPickerOpen]);
 
   // Handlers
   const handleConnectGA4 = async () => {
@@ -128,16 +156,16 @@ function IntegrationsContent() {
       alert('Please complete onboarding first');
       return;
     }
-    setLoading(true);
+    setLoadingPlatform('ga4');
     try {
-      const authUrl = await generateAuthUrl({ projectId: projectId as any });
+      const authUrl = await generateAuthUrl({ projectId: projectId as Id<'projects'> });
       if (authUrl) window.location.href = authUrl;
       else alert('Failed to initiate GA4 connection');
     } catch (error) {
       console.error(error);
       alert('Failed to connect GA4');
     } finally {
-      setLoading(false);
+      setLoadingPlatform(null);
     }
   };
 
@@ -146,7 +174,7 @@ function IntegrationsContent() {
       alert('Please enter a Property ID');
       return;
     }
-    setLoading(true);
+    setLoadingPlatform('ga4');
     try {
       await upsertGA4Connection({
         projectId: ga4Tokens.projectId as Id<'projects'>,
@@ -173,7 +201,7 @@ function IntegrationsContent() {
       console.error('Failed to save GA4 connection:', error);
       alert('Failed to save connection.');
     } finally {
-      setLoading(false);
+      setLoadingPlatform(null);
     }
   };
 
@@ -182,7 +210,7 @@ function IntegrationsContent() {
       alert('Please enter your site URL');
       return;
     }
-    setLoading(true);
+    setLoadingPlatform('gsc');
     try {
       await upsertGSCConnection({
         projectId: gscTokens.projectId as Id<'projects'>,
@@ -200,7 +228,7 @@ function IntegrationsContent() {
       console.error('Failed to save GSC connection:', error);
       alert('Failed to save connection.');
     } finally {
-      setLoading(false);
+      setLoadingPlatform(null);
     }
   };
 
@@ -213,7 +241,7 @@ function IntegrationsContent() {
 
   const handleTestCMS = async () => {
     if (!projectId || !cmsPlatform) return;
-    setLoading(true);
+    setLoadingPlatform(cmsPlatform);
     setTestResult(null);
     try {
       const token = localStorage.getItem('auth_token');
@@ -241,7 +269,7 @@ function IntegrationsContent() {
     } catch (error) {
       setTestResult({ valid: false, error: 'Failed to test connection' });
     } finally {
-      setLoading(false);
+      setLoadingPlatform(null);
     }
   };
 
@@ -275,6 +303,41 @@ function IntegrationsContent() {
       );
     }
     setGA4Tokens(null);
+  };
+
+  // Handler for PropertyPickerModal save
+  const handlePropertyPickerSave = async (ga4PropertyId: string, gscSiteUrl: string) => {
+    if (!oauthTokens || !projectId) return;
+
+    // Save GA4 connection
+    await upsertGA4Connection({
+      projectId: projectId as Id<'projects'>,
+      propertyId: ga4PropertyId,
+      propertyName: `Property ${ga4PropertyId}`,
+      accessToken: oauthTokens.accessToken,
+      refreshToken: oauthTokens.refreshToken,
+    });
+
+    // Save GSC connection
+    await upsertGSCConnection({
+      projectId: projectId as Id<'projects'>,
+      siteUrl: gscSiteUrl,
+      accessToken: oauthTokens.accessToken,
+      refreshToken: oauthTokens.refreshToken,
+    });
+
+    // Update UI state
+    setIntegrations((prev) =>
+      prev.map((i) => {
+        if (i.platform === 'ga4')
+          return { ...i, connected: true, propertyName: `Property ${ga4PropertyId}` };
+        if (i.platform === 'gsc') return { ...i, connected: true, siteUrl: gscSiteUrl };
+        return i;
+      })
+    );
+
+    setOauthTokens(null);
+    onPropertyPickerClose();
   };
 
   const getConnectHandler = (platform: string) => {
@@ -324,7 +387,7 @@ function IntegrationsContent() {
                 <IntegrationCard
                   integration={integration}
                   onConnect={getConnectHandler(integration.platform)}
-                  loading={loading}
+                  loading={loadingPlatform === integration.platform}
                 />
               </GridItem>
             ))}
@@ -348,7 +411,7 @@ function IntegrationsContent() {
             propertyId={ga4PropertyId}
             onPropertyIdChange={setGA4PropertyId}
             onSave={handleSaveGA4Connection}
-            loading={loading}
+            loading={loadingPlatform === 'ga4'}
           />
           <GSCModal
             isOpen={isGSCModalOpen}
@@ -356,7 +419,7 @@ function IntegrationsContent() {
             siteUrl={gscSiteUrl}
             onSiteUrlChange={setGscSiteUrl}
             onSave={handleSaveGSCConnection}
-            loading={loading}
+            loading={loadingPlatform === 'gsc'}
           />
           <CMSModal
             isOpen={isCMSModalOpen}
@@ -366,8 +429,28 @@ function IntegrationsContent() {
             onCredentialsChange={setCmsCredentials}
             onTest={handleTestCMS}
             testResult={testResult}
-            loading={loading}
+            loading={loadingPlatform === cmsPlatform}
           />
+
+          {/* Smart Property Picker Modal */}
+          {oauthTokens && (
+            <PropertyPickerModal
+              isOpen={isPropertyPickerOpen}
+              onClose={() => {
+                onPropertyPickerClose();
+                setOauthTokens(null);
+              }}
+              accessToken={oauthTokens.accessToken}
+              refreshToken={oauthTokens.refreshToken}
+              projectWebsiteUrl={project?.websiteUrl || ''}
+              onSave={handlePropertyPickerSave}
+              onSwitchAccount={() => {
+                setOauthTokens(null);
+                onPropertyPickerClose();
+                handleConnectGA4();
+              }}
+            />
+          )}
 
           <Alert status="info" borderRadius="md">
             <AlertIcon />

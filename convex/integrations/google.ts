@@ -8,6 +8,7 @@ const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 const SCOPES = [
   'https://www.googleapis.com/auth/analytics.readonly',
+  'https://www.googleapis.com/auth/analytics.edit', // Required for Admin API (list properties)
   'https://www.googleapis.com/auth/webmasters.readonly',
   'openid',
   'email',
@@ -85,6 +86,71 @@ export const exchangeCode = action({
       expiresIn: tokens.expires_in,
       tokenType: tokens.token_type,
     };
+  },
+});
+
+/**
+ * List user's GA4 properties (for property picker dropdown)
+ */
+export const listGA4Properties = action({
+  args: { accessToken: v.string() },
+  handler: async (ctx, args) => {
+    const response = await fetch('https://analyticsadmin.googleapis.com/v1beta/accountSummaries', {
+      headers: { Authorization: `Bearer ${args.accessToken}` },
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Failed to list GA4 properties: ${err}`);
+    }
+
+    const data = await response.json();
+
+    // Extract properties with display name + ID + account name
+    const properties: Array<{
+      propertyId: string;
+      displayName: string;
+      accountName: string;
+    }> = [];
+
+    for (const account of data.accountSummaries || []) {
+      for (const prop of account.propertySummaries || []) {
+        properties.push({
+          propertyId: prop.property.replace('properties/', ''),
+          displayName: prop.displayName,
+          accountName: account.displayName,
+        });
+      }
+    }
+
+    return properties;
+  },
+});
+
+/**
+ * List user's verified GSC sites (for site picker)
+ */
+export const listGSCSites = action({
+  args: { accessToken: v.string() },
+  handler: async (ctx, args) => {
+    const response = await fetch('https://www.googleapis.com/webmasters/v3/sites', {
+      headers: { Authorization: `Bearer ${args.accessToken}` },
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Failed to list GSC sites: ${err}`);
+    }
+
+    const data = await response.json();
+
+    // Return site URLs with permission level
+    return (
+      data.siteEntry?.map((site: { siteUrl: string; permissionLevel: string }) => ({
+        siteUrl: site.siteUrl,
+        permissionLevel: site.permissionLevel,
+      })) || []
+    );
   },
 });
 
