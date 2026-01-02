@@ -11,7 +11,8 @@
  */
 
 import { Box, Text, Badge, HStack, Icon, Tooltip, VStack } from '@chakra-ui/react';
-import { FiFileText, FiVideo, FiImage, FiMic, FiClock, FiSearch } from 'react-icons/fi';
+import { FiClock, FiSearch } from 'react-icons/fi';
+import { getContentTypeIcon, getContentTypeLabel } from '@/lib/constants/contentTypes';
 
 type Props = {
   id: string;
@@ -23,14 +24,6 @@ type Props = {
   keywordVolume?: number;
   keywordDifficulty?: number;
   onClick?: () => void;
-};
-
-const CONTENT_TYPE_ICONS: Record<string, typeof FiFileText> = {
-  article: FiFileText,
-  video: FiVideo,
-  infographic: FiImage,
-  podcast: FiMic,
-  blog: FiFileText,
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -72,7 +65,7 @@ export function CalendarItemCard({
   keywordDifficulty,
   onClick,
 }: Props) {
-  const IconComponent = CONTENT_TYPE_ICONS[contentType.toLowerCase()] || FiFileText;
+  const IconComponent = getContentTypeIcon(contentType);
   const statusColor = STATUS_COLORS[status] || 'gray';
 
   const tooltipContent = (

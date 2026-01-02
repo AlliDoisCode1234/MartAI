@@ -12,6 +12,7 @@ import { auth } from './auth';
 import { internal, api } from './_generated/api';
 import { Id } from './_generated/dataModel';
 import type { ActionCtx } from './_generated/server';
+import { CONTENT_TYPES, ContentTypeId, DEFAULT_SEO_CHECKLIST } from './phoo/contentTypes';
 
 // Quality threshold for A+ grade
 const QUALITY_THRESHOLD = 90;
@@ -25,11 +26,28 @@ export const generateContent = action({
   args: {
     projectId: v.id('projects'),
     contentType: v.union(
+      // Core Pages
+      v.literal('homepage'),
+      v.literal('about'),
+      v.literal('service'),
+      v.literal('landing'),
+      // Blog Content
       v.literal('blog'),
-      v.literal('pillar'),
-      v.literal('howto'),
-      v.literal('comparison'),
-      v.literal('listicle')
+      v.literal('blogVersus'),
+      v.literal('blogVideo'),
+      v.literal('contentRefresh'),
+      // Conversion
+      v.literal('leadMagnet'),
+      v.literal('paidProduct'),
+      // Local/Geo
+      v.literal('areasWeServe'),
+      // Specialty
+      v.literal('employment'),
+      v.literal('mentorship'),
+      v.literal('donate'),
+      v.literal('events'),
+      v.literal('partner'),
+      v.literal('program')
     ),
     title: v.string(),
     keywords: v.array(v.string()),
@@ -134,11 +152,28 @@ export const createContentPiece = internalMutation({
   args: {
     projectId: v.id('projects'),
     contentType: v.union(
+      // Core Pages
+      v.literal('homepage'),
+      v.literal('about'),
+      v.literal('service'),
+      v.literal('landing'),
+      // Blog Content
       v.literal('blog'),
-      v.literal('pillar'),
-      v.literal('howto'),
-      v.literal('comparison'),
-      v.literal('listicle')
+      v.literal('blogVersus'),
+      v.literal('blogVideo'),
+      v.literal('contentRefresh'),
+      // Conversion
+      v.literal('leadMagnet'),
+      v.literal('paidProduct'),
+      // Local/Geo
+      v.literal('areasWeServe'),
+      // Specialty
+      v.literal('employment'),
+      v.literal('mentorship'),
+      v.literal('donate'),
+      v.literal('events'),
+      v.literal('partner'),
+      v.literal('program')
     ),
     title: v.string(),
     keywords: v.array(v.string()),
@@ -344,14 +379,19 @@ function getTargetSections(contentType: string): number {
 }
 
 function getTargetWords(contentType: string): number {
-  const targets: Record<string, number> = {
-    blog: 1200,
+  // Use word counts from Content Intelligence (17 types)
+  const config = CONTENT_TYPES[contentType as ContentTypeId];
+  if (config) {
+    return config.wordCount;
+  }
+  // Fallback for legacy types
+  const legacyTargets: Record<string, number> = {
     pillar: 3500,
     howto: 1800,
     comparison: 2000,
     listicle: 1500,
   };
-  return targets[contentType] || 1200;
+  return legacyTargets[contentType] || DEFAULT_SEO_CHECKLIST.wordCount;
 }
 
 function getDefaultOutline(contentType: string, primaryKeyword: string): string[] {

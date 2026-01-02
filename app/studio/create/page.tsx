@@ -6,7 +6,7 @@
  * Component Hierarchy:
  * App → StudioLayout → CreateContentPage
  *
- * One-click content creation with type selection and strategy integration.
+ * One-click content creation with 17 content types from Content Intelligence.
  */
 
 import {
@@ -16,7 +16,6 @@ import {
   HStack,
   VStack,
   Button,
-  SimpleGrid,
   Icon,
   Input,
   FormControl,
@@ -25,71 +24,34 @@ import {
   useToast,
   Progress,
 } from '@chakra-ui/react';
-import { useMutation, useQuery } from 'convex/react';
+import { useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { StudioLayout } from '@/src/components/studio';
-import {
-  FiFileText,
-  FiBookOpen,
-  FiHelpCircle,
-  FiList,
-  FiGitBranch,
-  FiTarget,
-  FiArrowLeft,
-  FiZap,
-} from 'react-icons/fi';
+import { ContentTypeSelector } from '@/src/components/studio/ContentTypeSelector';
+import { FiTarget, FiArrowLeft, FiZap } from 'react-icons/fi';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAction } from 'convex/react';
 
-type ContentType = 'blog' | 'pillar' | 'howto' | 'comparison' | 'listicle';
-
-interface ContentTypeOption {
-  type: ContentType;
-  label: string;
-  description: string;
-  icon: typeof FiFileText;
-  targetWords: string;
-}
-
-const contentTypes: ContentTypeOption[] = [
-  {
-    type: 'blog',
-    label: 'Blog Post',
-    description: 'Standard SEO-optimized article',
-    icon: FiFileText,
-    targetWords: '1,200-1,500',
-  },
-  {
-    type: 'pillar',
-    label: 'Pillar Content',
-    description: 'Comprehensive topic authority',
-    icon: FiBookOpen,
-    targetWords: '3,000-5,000',
-  },
-  {
-    type: 'howto',
-    label: 'How-To Guide',
-    description: 'Step-by-step instructions',
-    icon: FiHelpCircle,
-    targetWords: '1,500-2,000',
-  },
-  {
-    type: 'comparison',
-    label: 'Comparison',
-    description: 'A vs B analysis',
-    icon: FiGitBranch,
-    targetWords: '1,800-2,500',
-  },
-  {
-    type: 'listicle',
-    label: 'Listicle',
-    description: 'Top X list format',
-    icon: FiList,
-    targetWords: '1,200-1,800',
-  },
-];
+// All 17 content types from Content Intelligence
+type ContentType =
+  | 'homepage'
+  | 'about'
+  | 'service'
+  | 'landing'
+  | 'blog'
+  | 'blogVersus'
+  | 'blogVideo'
+  | 'contentRefresh'
+  | 'leadMagnet'
+  | 'paidProduct'
+  | 'areasWeServe'
+  | 'employment'
+  | 'mentorship'
+  | 'donate'
+  | 'events'
+  | 'partner'
+  | 'program';
 
 export default function CreateContentPage() {
   const router = useRouter();
@@ -114,8 +76,8 @@ export default function CreateContentPage() {
   // Content generation action
   const generateContent = useAction(api.contentGeneration.generateContent);
 
-  const handleTypeSelect = (type: ContentType) => {
-    setSelectedType(type);
+  const handleTypeSelect = (typeId: string) => {
+    setSelectedType(typeId as ContentType);
     setStep('details');
   };
 
@@ -232,42 +194,9 @@ export default function CreateContentPage() {
           )}
         </HStack>
 
-        {/* Step 1: Type Selection */}
+        {/* Step 1: Type Selection - 17 Content Types from Content Intelligence */}
         {step === 'type' && (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-            {contentTypes.map((option) => (
-              <Box
-                key={option.type}
-                bg="rgba(255, 255, 255, 0.03)"
-                border="1px solid rgba(255, 255, 255, 0.08)"
-                borderRadius="16px"
-                p={6}
-                cursor="pointer"
-                transition="all 0.2s ease"
-                _hover={{
-                  border: '1px solid rgba(255, 157, 0, 0.3)',
-                  boxShadow: '0 0 30px rgba(255, 157, 0, 0.1)',
-                  transform: 'translateY(-2px)',
-                }}
-                onClick={() => handleTypeSelect(option.type)}
-              >
-                <VStack align="start" spacing={3}>
-                  <Box bg="rgba(255, 157, 0, 0.1)" borderRadius="12px" p={3}>
-                    <Icon as={option.icon} boxSize={6} color="#FF9D00" />
-                  </Box>
-                  <Text fontWeight="semibold" color="white" fontSize="lg">
-                    {option.label}
-                  </Text>
-                  <Text color="gray.500" fontSize="sm">
-                    {option.description}
-                  </Text>
-                  <Text color="gray.600" fontSize="xs">
-                    Target: {option.targetWords} words
-                  </Text>
-                </VStack>
-              </Box>
-            ))}
-          </SimpleGrid>
+          <ContentTypeSelector selectedType={selectedType} onSelect={handleTypeSelect} />
         )}
 
         {/* Step 2: Content Details */}
@@ -283,8 +212,8 @@ export default function CreateContentPage() {
                 <Button variant="ghost" size="sm" color="gray.400" onClick={() => setStep('type')}>
                   ← Change Type
                 </Button>
-                <Text color="#FF9D00" fontWeight="medium">
-                  {contentTypes.find((t) => t.type === selectedType)?.label}
+                <Text color="#FF9D00" fontWeight="medium" textTransform="capitalize">
+                  {selectedType?.replace(/([A-Z])/g, ' $1').trim()}
                 </Text>
               </HStack>
 

@@ -10,6 +10,7 @@
 
 import type * as admin from "../admin.js";
 import type * as admin_cleanup from "../admin/cleanup.js";
+import type * as admin_clearAllUserData from "../admin/clearAllUserData.js";
 import type * as admin_costs from "../admin/costs.js";
 import type * as admin_users from "../admin/users.js";
 import type * as aiStorage from "../aiStorage.js";
@@ -133,6 +134,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   "admin/cleanup": typeof admin_cleanup;
+  "admin/clearAllUserData": typeof admin_clearAllUserData;
   "admin/costs": typeof admin_costs;
   "admin/users": typeof admin_users;
   aiStorage: typeof aiStorage;

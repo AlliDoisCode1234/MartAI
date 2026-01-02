@@ -6,7 +6,7 @@
  * Component Hierarchy:
  * App → StudioLayout → ContentLibrary
  *
- * Grid/list view of all content pieces with filtering and search.
+ * Grid/list view of all content pieces with filtering, search, and infinite scroll.
  */
 
 import {
@@ -27,14 +27,19 @@ import {
   Skeleton,
   Badge,
   Icon,
+  Spinner,
+  Center,
 } from '@chakra-ui/react';
-import { useQuery } from 'convex/react';
+import { usePaginatedQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { StudioLayout } from '@/src/components/studio';
 import { ContentCard } from '@/src/components/studio/ContentCard';
 import { FiSearch, FiGrid, FiList, FiPlus } from 'react-icons/fi';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useProject } from '@/lib/hooks';
+import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
+import type { Id } from '@/convex/_generated/dataModel';
 
 type ViewMode = 'grid' | 'list';
 type StatusFilter = 'all' | 'draft' | 'approved' | 'published' | 'scheduled';
@@ -44,34 +49,50 @@ export default function LibraryPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // TODO: Replace with real query
-  const contentPieces: Array<{
-    _id: string;
-    title: string;
-    contentType: string;
-    status: string;
-    wordCount?: number;
-    seoScore?: number;
-    updatedAt: number;
-  }> = [];
+  // Get current project
+  const { projectId, isLoading: projectLoading } = useProject(null, { autoSelect: true });
 
-  const isLoading = false;
+  // Paginated query for content pieces
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.contentPieces.listByProjectPaginated,
+    projectId
+      ? {
+          projectId: projectId as Id<'projects'>,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+        }
+      : 'skip',
+    { initialNumItems: 12 }
+  );
 
-  // Filter content
-  const filteredContent = contentPieces.filter((piece) => {
-    if (statusFilter !== 'all' && piece.status !== statusFilter) return false;
-    if (searchQuery && !piece.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
+  const isLoadingFirst = status === 'LoadingFirstPage' || projectLoading;
+  const isLoadingMore = status === 'LoadingMore';
+  const hasMore = status === 'CanLoadMore';
+
+  // Infinite scroll hook
+  const { sentinelRef } = useInfiniteScroll({
+    loadMore,
+    hasMore,
+    isLoading: isLoadingMore,
+    threshold: 300,
   });
 
-  // Count by status
-  const counts = {
-    all: contentPieces.length,
-    draft: contentPieces.filter((p) => p.status === 'draft').length,
-    approved: contentPieces.filter((p) => p.status === 'approved').length,
-    published: contentPieces.filter((p) => p.status === 'published').length,
-    scheduled: contentPieces.filter((p) => p.status === 'scheduled').length,
-  };
+  // Filter by search (client-side for now)
+  const filteredContent = useMemo(() => {
+    if (!searchQuery) return results;
+    return results.filter((piece) => piece.title.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [results, searchQuery]);
+
+  // Count by status from loaded results (approximate)
+  const counts = useMemo(
+    () => ({
+      all: results.length,
+      draft: results.filter((p) => p.status === 'draft').length,
+      approved: results.filter((p) => p.status === 'approved').length,
+      published: results.filter((p) => p.status === 'published').length,
+      scheduled: results.filter((p) => p.status === 'scheduled').length,
+    }),
+    [results]
+  );
 
   return (
     <StudioLayout>
@@ -83,7 +104,7 @@ export default function LibraryPage() {
               Content Library
             </Heading>
             <Text color="gray.500" mt={1}>
-              {contentPieces.length} pieces
+              {results.length} pieces{hasMore ? '+' : ''}
             </Text>
           </Box>
           <Link href="/studio/create">
@@ -170,7 +191,7 @@ export default function LibraryPage() {
         </Tabs>
 
         {/* Content Grid/List */}
-        {isLoading ? (
+        {isLoadingFirst ? (
           <SimpleGrid columns={viewMode === 'grid' ? { base: 1, md: 2, lg: 3 } : 1} spacing={4}>
             {[...Array(6)].map((_, i) => (
               <Skeleton key={i} height="200px" borderRadius="16px" />
@@ -198,11 +219,23 @@ export default function LibraryPage() {
             </Link>
           </Box>
         ) : (
-          <SimpleGrid columns={viewMode === 'grid' ? { base: 1, md: 2, lg: 3 } : 1} spacing={4}>
-            {filteredContent.map((piece) => (
-              <ContentCard key={piece._id} contentPiece={piece} />
-            ))}
-          </SimpleGrid>
+          <>
+            <SimpleGrid columns={viewMode === 'grid' ? { base: 1, md: 2, lg: 3 } : 1} spacing={4}>
+              {filteredContent.map((piece) => (
+                <ContentCard key={piece._id} contentPiece={piece} />
+              ))}
+            </SimpleGrid>
+
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} style={{ height: 1 }} />
+
+            {/* Loading more indicator */}
+            {isLoadingMore && (
+              <Center py={4}>
+                <Spinner color="#FF9D00" />
+              </Center>
+            )}
+          </>
         )}
       </VStack>
     </StudioLayout>

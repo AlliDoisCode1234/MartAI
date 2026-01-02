@@ -201,33 +201,27 @@ export const createCalendarContentPieces = internalMutation({
     const ids: Id<'contentPieces'>[] = [];
 
     for (const item of args.items) {
-      // Map content type to contentPieces schema type
-      const typeMapping: Record<string, string> = {
-        homepage: 'pillar',
-        about: 'pillar',
-        service: 'pillar',
-        blog: 'blog',
-        blogVersus: 'comparison',
-        leadMagnet: 'pillar',
-        paidProduct: 'pillar',
-        landing: 'pillar',
-        areasWeServe: 'pillar',
-        employment: 'pillar',
-        mentorship: 'pillar',
-        donate: 'pillar',
-        events: 'pillar',
-        partner: 'pillar',
-        program: 'pillar',
-        contentRefresh: 'blog',
-        blogVideo: 'blog',
-      };
-
-      const mappedType = typeMapping[item.contentType] || 'blog';
-
+      // Schema now supports all 17 content types directly
       const id = await ctx.db.insert('contentPieces', {
         projectId: args.projectId,
-        contentType: mappedType as 'blog' | 'pillar' | 'comparison' | 'listicle' | 'howto',
-        phooContentType: item.contentType, // Store original type
+        contentType: item.contentType as
+          | 'homepage'
+          | 'about'
+          | 'service'
+          | 'landing'
+          | 'blog'
+          | 'blogVersus'
+          | 'blogVideo'
+          | 'contentRefresh'
+          | 'leadMagnet'
+          | 'paidProduct'
+          | 'areasWeServe'
+          | 'employment'
+          | 'mentorship'
+          | 'donate'
+          | 'events'
+          | 'partner'
+          | 'program',
         title: item.title,
         keywords: item.keywords,
         status: 'draft',
@@ -235,7 +229,6 @@ export const createCalendarContentPieces = internalMutation({
         priority: item.priority,
         createdAt: now,
         updatedAt: now,
-        // SEO defaults
         seoScore: 0,
         wordCount: 0,
       });

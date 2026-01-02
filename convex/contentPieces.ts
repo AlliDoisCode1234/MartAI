@@ -5,6 +5,7 @@
  */
 
 import { mutation, query } from './_generated/server';
+import { paginationOptsValidator } from 'convex/server';
 import { v } from 'convex/values';
 import { auth } from './auth';
 
@@ -51,6 +52,48 @@ export const listByProject = query({
     }
 
     return filtered;
+  },
+});
+
+/**
+ * Paginated version for infinite scroll in Content Library
+ */
+export const listByProjectPaginated = query({
+  args: {
+    projectId: v.id('projects'),
+    status: v.optional(
+      v.union(
+        v.literal('generating'),
+        v.literal('draft'),
+        v.literal('approved'),
+        v.literal('published'),
+        v.literal('scheduled')
+      )
+    ),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      return { page: [], isDone: true, continueCursor: '' };
+    }
+
+    // Use index for efficient pagination
+    const result = await ctx.db
+      .query('contentPieces')
+      .withIndex('by_project_created', (q) => q.eq('projectId', args.projectId))
+      .order('desc')
+      .paginate(args.paginationOpts);
+
+    // Filter by status in-memory if specified
+    if (args.status) {
+      return {
+        ...result,
+        page: result.page.filter((p) => p.status === args.status),
+      };
+    }
+
+    return result;
   },
 });
 
@@ -110,11 +153,28 @@ export const create = mutation({
   args: {
     projectId: v.id('projects'),
     contentType: v.union(
+      // Core Pages
+      v.literal('homepage'),
+      v.literal('about'),
+      v.literal('service'),
+      v.literal('landing'),
+      // Blog Content
       v.literal('blog'),
-      v.literal('pillar'),
-      v.literal('howto'),
-      v.literal('comparison'),
-      v.literal('listicle')
+      v.literal('blogVersus'),
+      v.literal('blogVideo'),
+      v.literal('contentRefresh'),
+      // Conversion
+      v.literal('leadMagnet'),
+      v.literal('paidProduct'),
+      // Local/Geo
+      v.literal('areasWeServe'),
+      // Specialty
+      v.literal('employment'),
+      v.literal('mentorship'),
+      v.literal('donate'),
+      v.literal('events'),
+      v.literal('partner'),
+      v.literal('program')
     ),
     title: v.string(),
     keywords: v.array(v.string()),

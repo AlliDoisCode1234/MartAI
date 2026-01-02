@@ -10,9 +10,9 @@
  */
 
 import { Box, Text, HStack, Badge, Icon, Tooltip } from '@chakra-ui/react';
-import { FiFileText, FiHome, FiGrid, FiBook, FiCheckCircle } from 'react-icons/fi';
 import Link from 'next/link';
 import { Id } from '@/convex/_generated/dataModel';
+import { getContentTypeIcon, getContentTypeLabel } from '@/lib/constants/contentTypes';
 
 interface Props {
   contentPiece: {
@@ -25,16 +25,6 @@ interface Props {
     priority?: 'P0' | 'P1' | 'P2';
   };
 }
-
-const CONTENT_TYPE_ICONS: Record<string, typeof FiFileText> = {
-  blog: FiFileText,
-  pillar: FiBook,
-  homepage: FiHome,
-  service: FiGrid,
-  comparison: FiCheckCircle,
-  howto: FiFileText,
-  listicle: FiFileText,
-};
 
 const STATUS_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   draft: { bg: 'rgba(113, 128, 150, 0.1)', border: 'rgba(113, 128, 150, 0.3)', text: 'gray.400' },
@@ -72,7 +62,7 @@ function getSeoGrade(score?: number): { grade: string; color: string } {
 
 export function CalendarCard({ contentPiece }: Props) {
   const { _id, title, contentType, phooContentType, status, seoScore, priority } = contentPiece;
-  const IconComponent = CONTENT_TYPE_ICONS[contentType] || FiFileText;
+  const IconComponent = getContentTypeIcon(contentType);
   const statusStyle = STATUS_COLORS[status] || STATUS_COLORS.draft;
   const { grade, color: gradeColor } = getSeoGrade(seoScore);
 

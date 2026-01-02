@@ -50,6 +50,53 @@ export const updateOnboardingStep = mutation({
 });
 
 /**
+ * Update multiple onboarding steps in a SINGLE write to avoid write conflicts.
+ * Use this when updating multiple steps in quick succession (e.g., payment + project).
+ */
+export const updateMultipleSteps = mutation({
+  args: {
+    steps: v.array(
+      v.object({
+        step: v.union(
+          v.literal('signupCompleted'),
+          v.literal('planSelected'),
+          v.literal('paymentCompleted'),
+          v.literal('projectCreated'),
+          v.literal('ga4Connected'),
+          v.literal('gscConnected')
+        ),
+        value: v.union(v.boolean(), v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error('User not found');
+
+    const now = Date.now();
+    const updatedSteps: Record<string, any> = { ...(user.onboardingSteps || {}) };
+
+    // Apply ALL steps in ONE write
+    for (const { step, value } of args.steps) {
+      updatedSteps[step] = value;
+      updatedSteps[`${step}At`] = now;
+    }
+
+    await ctx.db.patch(userId, {
+      onboardingSteps: updatedSteps,
+      onboardingStatus: 'in_progress',
+      lastActiveAt: now,
+      updatedAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
  * Update a specific onboarding step
  */
 export const updateStep = internalMutation({

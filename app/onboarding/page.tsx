@@ -50,6 +50,7 @@ export default function OnboardingPage() {
   const createProject = useMutation(api.projects.projects.createProject);
   const completeOnboarding = useMutation(api.users.completeOnboarding);
   const updateOnboardingStep = useMutation(api.onboarding.updateOnboardingStep);
+  const updateMultipleSteps = useMutation(api.onboarding.updateMultipleSteps);
   const createOnboardingProspect = useMutation(api.prospects.prospects.createOnboardingProspect);
   const generateKeywordsFromUrl = useAction(api.seo.keywordActions.generateKeywordsFromUrl);
   const generateClusters = useAction(api.seo.keywordActions.generateClusters);
@@ -179,10 +180,13 @@ export default function OnboardingPage() {
         if (newProjectId) {
           setProjectId(newProjectId);
           localStorage.setItem('currentProjectId', newProjectId);
-          await updateOnboardingStep({ step: 'paymentCompleted', value: true }).catch(
-            console.error
-          );
-          await updateOnboardingStep({ step: 'projectCreated', value: true }).catch(console.error);
+          // Batch both steps in ONE write to avoid write conflicts
+          await updateMultipleSteps({
+            steps: [
+              { step: 'paymentCompleted', value: true },
+              { step: 'projectCreated', value: true },
+            ],
+          }).catch(console.error);
 
           // FIRE-AND-FORGET: All generation happens in background
           // User proceeds immediately to GA4/GSC step
@@ -279,8 +283,13 @@ export default function OnboardingPage() {
       if (popup?.closed) {
         clearInterval(checkPopup);
         setGa4Connected(true);
-        updateOnboardingStep({ step: 'ga4Connected', value: true }).catch(console.error);
-        updateOnboardingStep({ step: 'gscConnected', value: true }).catch(console.error);
+        // Batch both steps in ONE write to avoid write conflicts
+        updateMultipleSteps({
+          steps: [
+            { step: 'ga4Connected', value: true },
+            { step: 'gscConnected', value: true },
+          ],
+        }).catch(console.error);
       }
     }, 1000);
   };

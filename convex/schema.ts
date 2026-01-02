@@ -1239,16 +1239,39 @@ export default defineSchema({
     projectId: v.id('projects'),
     clusterId: v.optional(v.id('keywordClusters')),
 
-    // Content Type (replaces templates)
+    // Content Type (17 types from Content Intelligence framework)
     contentType: v.union(
+      // Core Pages
+      v.literal('homepage'),
+      v.literal('about'),
+      v.literal('service'),
+      v.literal('landing'),
+      // Blog Content
       v.literal('blog'),
+      v.literal('blogVersus'),
+      v.literal('blogVideo'),
+      v.literal('contentRefresh'),
+      // Conversion
+      v.literal('leadMagnet'),
+      v.literal('paidProduct'),
+      // Local/Geo
+      v.literal('areasWeServe'),
+      // Specialty
+      v.literal('employment'),
+      v.literal('mentorship'),
+      v.literal('donate'),
+      v.literal('events'),
+      v.literal('partner'),
+      v.literal('program'),
+      // DEPRECATED: Legacy types kept for backward compatibility
+      // TODO: Migrate existing documents and remove these
       v.literal('pillar'),
       v.literal('howto'),
       v.literal('comparison'),
       v.literal('listicle')
     ),
 
-    // PhooIntelligence Content Type (17 types from industry templates)
+    // Legacy field for PhooIntelligence content type (kept for backward compatibility)
     phooContentType: v.optional(v.string()),
 
     // Priority for calendar ordering

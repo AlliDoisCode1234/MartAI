@@ -36,6 +36,12 @@ Types: feat, fix, refactor, docs, chore, test
 Use STYLES_GUIDE.md for new styles.
 /bod is our board of directors, always refer to them
 
+## Testing Rules
+
+**Use existing Google OAuth user for all testing** - never sign up new users
+When testing auth flows, use the primary Google OAuth account already in the system
+Do not create test users via signup forms or direct database inserts
+
 ## Security Rules (MANDATORY)
 
 Every mutation requires `auth.getUserId(ctx)` - throw 'Unauthorized' if null
