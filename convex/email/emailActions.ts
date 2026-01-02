@@ -133,6 +133,23 @@ const EMAIL_TEMPLATES: Record<
       </div>
     `,
   },
+
+  team_invite_accepted: {
+    subject: '🎉 {{memberName}} joined your team!',
+    getHtml: (data) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #F99F2A;">New Team Member!</h1>
+        <p>Great news! <strong>${data.memberName || 'A new member'}</strong> (${data.memberEmail || 'email'}) has accepted your invitation to join <strong>${data.orgName || 'your team'}</strong>.</p>
+        <p>They've been assigned the <strong>${data.role || 'team member'}</strong> role.</p>
+        <a href="${APP_URL}/settings/team" style="display: inline-block; background: #F99F2A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 16px;">
+          View Your Team
+        </a>
+        <p style="color: #999; font-size: 12px; margin-top: 24px;">
+          — The Phoo Team
+        </p>
+      </div>
+    `,
+  },
 };
 
 /**
@@ -241,6 +258,32 @@ export const sendPasswordResetEmail = action({
       to: args.email,
       template: 'password_reset',
       data: { name: args.name, token: args.token },
+    });
+  },
+});
+
+/**
+ * Send notification when team invite is accepted
+ * Called by acceptInvitation mutation
+ */
+export const sendInviteAcceptedEmail = action({
+  args: {
+    inviterEmail: v.string(),
+    memberName: v.optional(v.string()),
+    memberEmail: v.string(),
+    orgName: v.optional(v.string()),
+    role: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    return await sendEmailInternal({
+      to: args.inviterEmail,
+      template: 'team_invite_accepted',
+      data: {
+        memberName: args.memberName,
+        memberEmail: args.memberEmail,
+        orgName: args.orgName,
+        role: args.role,
+      },
     });
   },
 });

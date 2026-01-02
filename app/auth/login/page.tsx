@@ -80,7 +80,7 @@ export default function LoginPage() {
     setError(null);
     try {
       console.log('[GoogleLogin] Calling signIn("google")...');
-      const result = await signIn('google', { redirectTo: '/dashboard' });
+      const result = await signIn('google', { redirectTo: '/auth/callback' });
       console.log('[GoogleLogin] signIn result:', result);
 
       // For OAuth flows, signIn returns a redirect URL we must navigate to

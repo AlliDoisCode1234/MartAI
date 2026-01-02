@@ -114,6 +114,8 @@ import type * as stripe_index from "../stripe/index.js";
 import type * as subscriptions_subscriptionLifecycle from "../subscriptions/subscriptionLifecycle.js";
 import type * as subscriptions_subscriptions from "../subscriptions/subscriptions.js";
 import type * as subscriptions_userHealth from "../subscriptions/userHealth.js";
+import type * as teams_invitations from "../teams/invitations.js";
+import type * as teams_teams from "../teams/teams.js";
 import type * as users from "../users.js";
 import type * as webhooks_webhookActions from "../webhooks/webhookActions.js";
 import type * as webhooks_webhookMutations from "../webhooks/webhookMutations.js";
@@ -238,6 +240,8 @@ declare const fullApi: ApiFromModules<{
   "subscriptions/subscriptionLifecycle": typeof subscriptions_subscriptionLifecycle;
   "subscriptions/subscriptions": typeof subscriptions_subscriptions;
   "subscriptions/userHealth": typeof subscriptions_userHealth;
+  "teams/invitations": typeof teams_invitations;
+  "teams/teams": typeof teams_teams;
   users: typeof users;
   "webhooks/webhookActions": typeof webhooks_webhookActions;
   "webhooks/webhookMutations": typeof webhooks_webhookMutations;

@@ -16,9 +16,10 @@ const SCOPES = [
 ].join(' ');
 
 export const generateAuthUrl = action({
-  // Accept projectId to pass as state
+  // Accept projectId and returnTo to pass as state
   args: {
     projectId: v.optional(v.id('projects')),
+    returnTo: v.optional(v.string()), // Where to redirect after OAuth
   },
   handler: async (ctx, args) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -36,9 +37,16 @@ export const generateAuthUrl = action({
     url.searchParams.append('access_type', 'offline'); // Crucial for refresh token
     url.searchParams.append('prompt', 'consent'); // Force re-consent to ensure refresh token
 
-    // Encode projectId in state so we know who is connecting
+    // Encode projectId and returnTo in state as JSON
+    const stateData: Record<string, string> = {};
     if (args.projectId) {
-      url.searchParams.append('state', args.projectId);
+      stateData.projectId = args.projectId;
+    }
+    if (args.returnTo) {
+      stateData.returnTo = args.returnTo;
+    }
+    if (Object.keys(stateData).length > 0) {
+      url.searchParams.append('state', Buffer.from(JSON.stringify(stateData)).toString('base64'));
     }
 
     return url.toString();

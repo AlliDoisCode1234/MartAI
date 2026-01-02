@@ -22,120 +22,142 @@ if (typeof window === 'undefined') {
   }
 }
 
+// Helper to build redirect URL
+function buildRedirectUrl(
+  baseUrl: string,
+  returnTo: string | undefined,
+  params: Record<string, string>
+): string {
+  // Default to /integrations if no returnTo specified
+  const targetPath = returnTo || '/integrations';
+  const url = new URL(targetPath, baseUrl);
+
+  // Add params
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.append(key, value);
+  }
+
+  return url.toString();
+}
+
 export async function GET(request: NextRequest) {
+  const baseUrl = request.nextUrl.origin;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const error = searchParams.get('error');
 
+    // Parse state first to get returnTo
+    let stateData: { projectId?: string; returnTo?: string; type?: string } = {};
+    if (state) {
+      try {
+        stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+      } catch {
+        // State might be plain projectId for backwards compatibility
+        stateData = { projectId: state };
+      }
+    }
+
+    const { projectId, returnTo, type = 'both' } = stateData;
+
     if (error) {
       return NextResponse.redirect(
-        new URL(`/integrations?error=${encodeURIComponent(error)}`, request.url)
+        buildRedirectUrl(baseUrl, returnTo, { error, success: 'false' })
       );
     }
 
-    if (!code || !state) {
+    if (!code) {
       return NextResponse.redirect(
-        new URL('/integrations?error=missing_params', request.url)
+        buildRedirectUrl(baseUrl, returnTo, { error: 'missing_code', success: 'false' })
       );
     }
-
-    // Decode state
-    let stateData;
-    try {
-      stateData = JSON.parse(Buffer.from(state, 'base64').toString());
-    } catch {
-      return NextResponse.redirect(
-        new URL('/integrations?error=invalid_state', request.url)
-      );
-    }
-
-    const { userId, projectId, type } = stateData;
 
     // Exchange code for tokens
     const tokens = await getTokensFromCode(code);
-    
+
     if (!tokens.access_token) {
       return NextResponse.redirect(
-        new URL('/integrations?error=no_access_token', request.url)
+        buildRedirectUrl(baseUrl, returnTo, { error: 'no_access_token', success: 'false' })
       );
     }
 
-    // Store connection based on type
-    if (type === 'ga4') {
-      // Get GA4 properties
-      const properties = await getGA4Properties(tokens.access_token);
-      
-      if (properties.length === 0) {
-        return NextResponse.redirect(
-          new URL('/integrations?error=no_properties', request.url)
-        );
-      }
+    let ga4PropertyName = '';
+    let gscSiteUrl = '';
 
-      // For now, use first property (can enhance to let user select)
-      const property = properties[0];
-      const propertyId = property.id || '';
+    // Get GA4 properties if needed
+    if (type === 'ga4' || type === 'both') {
+      try {
+        const properties = await getGA4Properties(tokens.access_token);
+        if (properties.length > 0) {
+          const property = properties[0];
+          ga4PropertyName = property.name || 'Unknown';
 
-      if (api) {
-        try {
-          await callMutation(api.integrations.ga4Connections.upsertGA4Connection, {
-            projectId: projectId as any,
-            propertyId,
-            propertyName: property.name || 'Unknown',
-            accessToken: tokens.access_token,
-            refreshToken: tokens.refresh_token,
-          });
-        } catch (error) {
-          console.warn('Failed to save GA4 connection:', error);
+          if (api && projectId) {
+            await callMutation(api.integrations.ga4Connections.upsertGA4Connection, {
+              projectId: projectId as any,
+              propertyId: property.id || '',
+              propertyName: ga4PropertyName,
+              accessToken: tokens.access_token,
+              refreshToken: tokens.refresh_token,
+            });
+          }
         }
+      } catch (e) {
+        console.warn('GA4 property fetch failed:', e);
       }
-
-      return NextResponse.redirect(
-        new URL(`/integrations?success=ga4&property=${encodeURIComponent(property.name || '')}`, request.url)
-      );
     }
 
-    if (type === 'gsc') {
-      // Get GSC sites
-      const sites = await getGSCSites(tokens.access_token);
-      
-      if (sites.length === 0) {
-        return NextResponse.redirect(
-          new URL('/integrations?error=no_sites', request.url)
-        );
-      }
+    // Get GSC sites if needed
+    if (type === 'gsc' || type === 'both') {
+      try {
+        const sites = await getGSCSites(tokens.access_token);
+        if (sites.length > 0) {
+          const site = sites.find((s) => s.permissionLevel === 'siteOwner') || sites[0];
+          gscSiteUrl = site.siteUrl || '';
 
-      // For now, use first verified site
-      const site = sites.find(s => s.permissionLevel === 'siteOwner') || sites[0];
-      const siteUrl = site.siteUrl || '';
-
-      if (api) {
-        try {
-          await callMutation(api.integrations.gscConnections.upsertGSCConnection, {
-            projectId: projectId as any,
-            siteUrl,
-            accessToken: tokens.access_token,
-            refreshToken: tokens.refresh_token,
-          });
-        } catch (error) {
-          console.warn('Failed to save GSC connection:', error);
+          if (api && projectId) {
+            await callMutation(api.integrations.gscConnections.upsertGSCConnection, {
+              projectId: projectId as any,
+              siteUrl: gscSiteUrl,
+              accessToken: tokens.access_token,
+              refreshToken: tokens.refresh_token,
+            });
+          }
         }
+      } catch (e) {
+        console.warn('GSC sites fetch failed:', e);
       }
-
-      return NextResponse.redirect(
-        new URL(`/integrations?success=gsc&site=${encodeURIComponent(siteUrl)}`, request.url)
-      );
     }
 
-    return NextResponse.redirect(
-      new URL('/integrations?error=invalid_type', request.url)
-    );
+    // Build success params - encode tokens for onboarding to use
+    const successParams: Record<string, string> = {
+      success: 'true',
+      type: type,
+    };
+
+    if (ga4PropertyName) successParams.ga4Property = ga4PropertyName;
+    if (gscSiteUrl) successParams.gscSite = gscSiteUrl;
+
+    // Encode tokens so onboarding can verify
+    const tokensData = Buffer.from(
+      JSON.stringify({
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        projectId,
+      })
+    ).toString('base64');
+    successParams.tokens = tokensData;
+
+    return NextResponse.redirect(buildRedirectUrl(baseUrl, returnTo, successParams));
   } catch (error) {
     console.error('Google OAuth callback error:', error);
     return NextResponse.redirect(
-      new URL(`/integrations?error=${encodeURIComponent(error instanceof Error ? error.message : 'unknown')}`, request.url)
+      buildRedirectUrl(baseUrl, undefined, {
+        error: error instanceof Error ? error.message : 'unknown',
+        success: 'false',
+      })
     );
   }
 }
-

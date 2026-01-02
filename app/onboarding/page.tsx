@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Container, VStack, Box, useToast } from '@chakra-ui/react';
 import { AnimatePresence } from 'framer-motion';
 import { useMutation, useAction, useConvex } from 'convex/react';
@@ -34,6 +34,7 @@ import { getUserEmail, cacheUserEmail } from '@/lib/constants/onboarding';
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const convex = useConvex();
@@ -57,6 +58,7 @@ export default function OnboardingPage() {
   const generatePlan = useAction(api.content.quarterlyPlanActions.generatePlan);
   const generateBrief = useAction(api.content.briefActions.generateBrief);
   const generateDraft = useAction(api.content.draftActions.generateDraft);
+  const generateAuthUrl = useAction(api.integrations.google.generateAuthUrl);
   const generatePreliminaryScore = useMutation(
     api.analytics.martaiRatingQueries.generatePreliminaryScore
   );
@@ -93,6 +95,56 @@ export default function OnboardingPage() {
     window.addEventListener('popstate', preventBack);
     return () => window.removeEventListener('popstate', preventBack);
   }, []);
+
+  // Handle OAuth callback when returning from Google
+  useEffect(() => {
+    const success = searchParams?.get('success');
+    const ga4Property = searchParams?.get('ga4Property');
+    const gscSite = searchParams?.get('gscSite');
+
+    if (success === 'true') {
+      // OAuth succeeded - update state and clear URL params
+      setGa4Connected(true);
+
+      // Get step from URL if present
+      const urlStep = searchParams?.get('step');
+      if (urlStep) setStep(parseInt(urlStep, 10));
+      else setStep(4); // Default to step 4 for GA4 integration
+
+      // Restore projectId from session storage
+      const storedProjectId = sessionStorage.getItem('onboarding_projectId');
+      if (storedProjectId) setProjectId(storedProjectId);
+
+      // Update onboarding steps in DB
+      updateMultipleSteps({
+        steps: [
+          { step: 'ga4Connected', value: true },
+          { step: 'gscConnected', value: !!gscSite },
+        ],
+      }).catch(console.error);
+
+      // Clear URL params
+      window.history.replaceState({}, '', '/onboarding');
+
+      // Show success toast
+      toast({
+        title: 'Connected!',
+        description: `GA4${ga4Property ? ` (${ga4Property})` : ''} connected successfully.`,
+        status: 'success',
+        duration: 3000,
+      });
+    } else if (success === 'false') {
+      const error = searchParams?.get('error');
+      toast({
+        title: 'Connection Failed',
+        description: error || 'Failed to connect Google Analytics.',
+        status: 'error',
+        duration: 5000,
+      });
+      // Clear URL params
+      window.history.replaceState({}, '', '/onboarding');
+    }
+  }, [searchParams, toast, updateMultipleSteps]);
 
   // NOTE: Step number (1-4) is a UI concept. Individual onboarding completions
   // (signupCompleted, planSelected, etc.) are tracked separately via mutations.
@@ -268,30 +320,32 @@ export default function OnboardingPage() {
     }
   };
 
-  // Step 4: GA4 connection
-  const handleConnect = () => {
+  // Step 4: GA4 connection - use same pattern as integrations page
+  const handleConnect = async () => {
     if (!projectId) {
       alert('Project not created yet.');
       return;
     }
-    const popup = window.open(
-      `/api/oauth/google?type=both&projectId=${projectId}`,
-      'google-oauth',
-      'width=500,height=600,scrollbars=yes'
-    );
-    const checkPopup = setInterval(() => {
-      if (popup?.closed) {
-        clearInterval(checkPopup);
-        setGa4Connected(true);
-        // Batch both steps in ONE write to avoid write conflicts
-        updateMultipleSteps({
-          steps: [
-            { step: 'ga4Connected', value: true },
-            { step: 'gscConnected', value: true },
-          ],
-        }).catch(console.error);
+
+    try {
+      // Use the same generateAuthUrl action as integrations page, with returnTo for onboarding
+      const authUrl = await generateAuthUrl({
+        projectId: projectId as any,
+        returnTo: '/onboarding?step=4',
+      });
+      if (authUrl) {
+        // Save current step before redirect so we return to the right place
+        sessionStorage.setItem('onboarding_step', '4');
+        sessionStorage.setItem('onboarding_projectId', projectId);
+        // Full page redirect like integrations page
+        window.location.href = authUrl;
+      } else {
+        alert('Failed to initiate GA4 connection');
       }
-    }, 1000);
+    } catch (error) {
+      console.error('GA4 connection error:', error);
+      alert('Failed to connect GA4: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
   };
 
   const handleStep4Next = async () => {

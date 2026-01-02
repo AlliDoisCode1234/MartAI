@@ -70,12 +70,18 @@ export default defineSchema({
     ),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
-    onboardingStatus: v.optional(v.string()), // 'in_progress', 'completed'
+    // Onboarding status - optional since Convex Auth creates users automatically
+    // undefined = not_started, code treats missing as needing onboarding
+    onboardingStatus: v.optional(
+      v.union(v.literal('not_started'), v.literal('in_progress'), v.literal('completed'))
+    ),
     // Granular onboarding step tracking
     onboardingSteps: v.optional(
       v.object({
         signupCompleted: v.optional(v.boolean()),
         signupCompletedAt: v.optional(v.number()),
+        organizationCreated: v.optional(v.boolean()),
+        organizationCreatedAt: v.optional(v.number()),
         planSelected: v.optional(v.string()), // 'starter', 'growth', 'pro'
         planSelectedAt: v.optional(v.number()),
         paymentCompleted: v.optional(v.boolean()),
@@ -132,6 +138,8 @@ export default defineSchema({
     lastPaymentAt: v.optional(v.number()),
     // Stripe customer ID for billing
     stripeCustomerId: v.optional(v.string()),
+    // Team Management: Which organization this user belongs to
+    organizationId: v.optional(v.id('organizations')),
   })
     .index('email', ['email'])
     .index('by_role', ['role'])
@@ -896,6 +904,7 @@ export default defineSchema({
     // Limits
     maxProjects: v.optional(v.number()),
     maxMembers: v.optional(v.number()),
+    seatsPurchased: v.optional(v.number()), // For enterprise custom seat counts
     // Owner
     ownerId: v.id('users'),
     createdAt: v.number(),
@@ -948,6 +957,33 @@ export default defineSchema({
     .index('by_org', ['organizationId'])
     .index('by_email', ['email'])
     .index('by_token', ['token']),
+
+  // Team Audit Logs (Track all team member changes)
+  teamAuditLogs: defineTable({
+    organizationId: v.id('organizations'),
+    actorId: v.id('users'), // Who performed the action
+    targetUserId: v.optional(v.id('users')), // Who was affected
+    action: v.union(
+      v.literal('member_invited'),
+      v.literal('member_joined'),
+      v.literal('member_removed'),
+      v.literal('role_changed'),
+      v.literal('invite_revoked'),
+      v.literal('org_name_changed')
+    ),
+    details: v.optional(
+      v.object({
+        previousRole: v.optional(v.string()),
+        newRole: v.optional(v.string()),
+        previousName: v.optional(v.string()),
+        newName: v.optional(v.string()),
+        email: v.optional(v.string()),
+      })
+    ),
+    createdAt: v.number(),
+  })
+    .index('by_org', ['organizationId'])
+    .index('by_org_date', ['organizationId', 'createdAt']),
 
   // ========================================
   // PHASE 3: ENTERPRISE - Webhooks

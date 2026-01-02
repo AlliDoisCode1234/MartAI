@@ -19,6 +19,7 @@ export const updateOnboardingStep = mutation({
       v.literal('planSelected'),
       v.literal('paymentCompleted'),
       v.literal('projectCreated'),
+      v.literal('organizationCreated'),
       v.literal('ga4Connected'),
       v.literal('gscConnected')
     ),
@@ -37,6 +38,14 @@ export const updateOnboardingStep = mutation({
     const updatedSteps: Record<string, any> = { ...currentSteps };
     updatedSteps[args.step] = args.value;
     updatedSteps[`${args.step}At`] = now;
+
+    // Auto-create organization when signup completes (if not already created)
+    if (args.step === 'signupCompleted' && args.value === true && !user.organizationId) {
+      // Create org using the teams module
+      const orgId = await ctx.runMutation(api.teams.teams.createOrganization, {});
+      updatedSteps['organizationCreated'] = true;
+      updatedSteps['organizationCreatedAt'] = now;
+    }
 
     await ctx.db.patch(userId, {
       onboardingSteps: updatedSteps,

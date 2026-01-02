@@ -73,8 +73,16 @@ export default function DashboardPage() {
   // Auth redirect
   useEffect(() => {
     if (authLoading) return;
-    if (!isAuthenticated) router.replace('/auth/login');
-  }, [isAuthenticated, authLoading, router]);
+    if (!isAuthenticated) {
+      router.replace('/auth/login');
+      return;
+    }
+    // User must complete onboarding before accessing dashboard
+    if (user && user.onboardingStatus !== 'completed') {
+      router.replace('/onboarding');
+      return;
+    }
+  }, [isAuthenticated, authLoading, user, router]);
 
   const loadingDashboard = authLoading || projectLoading;
   const userName = user?.name?.split(' ')[0] || 'there';
