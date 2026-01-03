@@ -4,9 +4,23 @@
 
 This roadmap outlines the development priorities and milestones for MartAI, an AI-driven SEO & Lead Generation Platform.
 
-## Current Status (December 2025)
+## Current Status (January 2026)
 
-### ✅ Completed (Latest - December 30, 2025)
+### ✅ Critical Items Fixed (January 3, 2026)
+
+- [x] Fix "free tier" messaging in 4 files (see `docs/LDD_CODEBASE_REVIEW_JAN2026.md`)
+- [x] Run `npm audit fix` for qs vulnerability (high severity)
+- [x] Fix TypeScript errors in `lib/hooks/useProject.ts`
+- [ ] Set up staging environment for pentest (pending)
+
+### ✅ Completed (January 3, 2026)
+
+- [x] Comprehensive Codebase Review (security, code quality, marketing alignment)
+- [x] Third-Party Vendor Review (all current vendors approved)
+- [x] Penetration Testing Plan ($5k budget approved)
+- [x] Product Feature Matrix documentation
+
+### ✅ Completed (December 30, 2025)
 
 - [x] Authentication & User Management (Convex Auth + Google OAuth)
 - [x] Project Creation & Onboarding Flow

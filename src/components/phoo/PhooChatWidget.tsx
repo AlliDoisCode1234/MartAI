@@ -274,6 +274,7 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
                   <Box
                     key={index}
                     as="button"
+                    type="button"
                     px={3}
                     py={2}
                     bg="white"
@@ -284,6 +285,7 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
                     color="gray.700"
                     cursor="pointer"
                     _hover={{ bg: 'orange.50', borderColor: 'brand.orange' }}
+                    _focus={{ boxShadow: 'outline', outline: 'none' }}
                     onClick={() => {
                       setShowFaqs(false);
                       setInput(faq);

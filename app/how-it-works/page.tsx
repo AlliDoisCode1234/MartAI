@@ -22,7 +22,7 @@ import {
   Icon,
   Circle,
 } from '@chakra-ui/react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { FiGlobe, FiLink, FiZap, FiArrowRight, FiCheck } from 'react-icons/fi';
 
@@ -35,14 +35,23 @@ interface StepCardProps {
   description: string;
   features: string[];
   delay: number;
+  prefersReducedMotion: boolean;
 }
 
-function StepCard({ number, icon, title, description, features, delay }: StepCardProps) {
+function StepCard({
+  number,
+  icon,
+  title,
+  description,
+  features,
+  delay,
+  prefersReducedMotion,
+}: StepCardProps) {
   return (
     <MotionBox
-      initial={{ opacity: 0, y: 30 }}
+      initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay }}
+      transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.5, delay }}
       bg="white"
       p={8}
       borderRadius="2xl"
@@ -104,8 +113,9 @@ function StepCard({ number, icon, title, description, features, delay }: StepCar
 
 export default function HowItWorksPage() {
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion() ?? false;
 
-  const steps: Omit<StepCardProps, 'delay'>[] = [
+  const steps: Omit<StepCardProps, 'delay' | 'prefersReducedMotion'>[] = [
     {
       number: 1,
       icon: FiGlobe,
@@ -178,7 +188,12 @@ export default function HowItWorksPage() {
           {/* Steps Grid */}
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} w="full">
             {steps.map((step, index) => (
-              <StepCard key={step.number} {...step} delay={0.2 + index * 0.15} />
+              <StepCard
+                key={step.number}
+                {...step}
+                delay={0.2 + index * 0.15}
+                prefersReducedMotion={prefersReducedMotion}
+              />
             ))}
           </SimpleGrid>
 
@@ -211,7 +226,7 @@ export default function HowItWorksPage() {
                   _hover={{ bg: 'orange.500', transform: 'translateY(-2px)' }}
                   onClick={() => router.push('/onboarding')}
                 >
-                  Get Started Free
+                  Start Your Trial
                 </Button>
                 <Button
                   size="lg"

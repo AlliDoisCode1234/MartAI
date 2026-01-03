@@ -146,7 +146,7 @@ export function useProject(
 
   // Fetch strategy data
   // TODO: Implement api.seo.strategy.getStrategyByProject when strategy feature is built
-  const strategyData = null; // Placeholder - function doesn't exist yet
+  const strategyData: { clusters?: unknown[]; plan?: unknown } | null = null; // Placeholder - function doesn't exist yet
 
   // Compute derived state
   const result = useMemo<UseProjectResult>(() => {
@@ -169,8 +169,8 @@ export function useProject(
       isSelectingProject,
       hasGA4: !!ga4Connection,
       hasGSC: !!gscConnection,
-      hasClusters: (strategyData?.clusters?.length ?? 0) > 0,
-      hasPlan: !!strategyData?.plan,
+      hasClusters: ((strategyData as { clusters?: unknown[] } | null)?.clusters?.length ?? 0) > 0,
+      hasPlan: !!(strategyData as { plan?: unknown } | null)?.plan,
       setCurrentProject,
       // PROJ-001 fields
       projectType: (project?.projectType as 'own' | 'competitor') ?? null,

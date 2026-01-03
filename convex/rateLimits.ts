@@ -6,7 +6,12 @@ import type { RateLimitKey } from './lib/typedHelpers';
 const DAY = 24 * HOUR;
 
 // Define tiered rate limits based on membership tier
+// NOTE: 'free' tier is a LEGACY/FALLBACK tier for rate limiting only.
+// Business policy: MartAI has NO FREE TIER for marketing/billing.
+// This exists to handle edge cases (trial users, migration, testing).
+// Do NOT expose 'free' tier in UI or marketing materials.
 export const RATE_LIMIT_TIERS = {
+  // Legacy fallback - restricted limits for edge cases only
   free: {
     briefGeneration: { rate: 3, period: DAY },
     draftGeneration: { rate: 3, period: DAY },

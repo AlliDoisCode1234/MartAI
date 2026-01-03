@@ -393,7 +393,7 @@ We monitor for abuse and will reach out if we see unusual patterns.
 - You manage 20+ websites or clients
 - You need white-label capabilities
 
-**Still not sure?** Start with our 14-day free trial (no credit card required) and upgrade anytime.
+**Still not sure?** Start with a **14-day money-back guarantee** and upgrade anytime.
 
 ---
 

@@ -17,6 +17,7 @@ import {
   Link,
   Divider,
   HStack,
+  FormHelperText,
 } from '@chakra-ui/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { FaGoogle } from 'react-icons/fa';
@@ -91,7 +92,7 @@ export default function SignupPage() {
               color="gray.800"
               textAlign="center"
             >
-              Get Started - It's Free!
+              Get Started Today
             </Heading>
             <Text color="gray.600" textAlign="center">
               No SEO knowledge needed. We'll help you get found on Google.
@@ -142,6 +143,7 @@ export default function SignupPage() {
                 <FormControl isRequired>
                   <FormLabel fontWeight="semibold">Email</FormLabel>
                   <Input
+                    id="signup-email"
                     type="email"
                     placeholder="your@email.com"
                     value={formData.email}
@@ -151,15 +153,17 @@ export default function SignupPage() {
                     disabled={loading}
                     size="lg"
                     autoComplete="off"
+                    aria-describedby="email-helper"
                   />
-                  <Text fontSize="xs" color="gray.500" mt={1}>
+                  <FormHelperText id="email-helper" color="gray.500">
                     Your email doubles as your username so sign-ins stay simple.
-                  </Text>
+                  </FormHelperText>
                 </FormControl>
 
                 <FormControl isRequired>
                   <FormLabel fontWeight="semibold">Create a password</FormLabel>
                   <Input
+                    id="signup-password"
                     type="password"
                     placeholder="At least 8 characters"
                     value={formData.password}
@@ -167,10 +171,11 @@ export default function SignupPage() {
                     disabled={loading}
                     size="lg"
                     autoComplete="new-password"
+                    aria-describedby="password-helper"
                   />
-                  <Text fontSize="xs" color="gray.500" mt={1}>
+                  <FormHelperText id="password-helper" color="gray.500">
                     Make it something you'll remember
-                  </Text>
+                  </FormHelperText>
                 </FormControl>
 
                 <FormControl isRequired>

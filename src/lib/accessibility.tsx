@@ -9,7 +9,7 @@
 
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { Box, VisuallyHidden, Link } from '@chakra-ui/react';
 
 /**
@@ -94,6 +94,52 @@ export function useAnnounce() {
   );
 
   return { announce, Announcer: AnnouncerComponent };
+}
+
+/**
+ * Hook for announcing loading states to screen readers
+ * Announces when loading starts and completes
+ */
+export function useLoadingAnnounce(
+  isLoading: boolean,
+  loadingMessage = 'Loading...',
+  completeMessage = 'Content loaded'
+) {
+  const { announce, Announcer } = useAnnounce();
+  const previousLoadingRef = useRef(isLoading);
+
+  useEffect(() => {
+    if (isLoading && !previousLoadingRef.current) {
+      announce(loadingMessage);
+    } else if (!isLoading && previousLoadingRef.current) {
+      announce(completeMessage);
+    }
+    previousLoadingRef.current = isLoading;
+  }, [isLoading, loadingMessage, completeMessage, announce]);
+
+  return { Announcer };
+}
+
+/**
+ * Hook for detecting reduced motion preference
+ * Returns true if user prefers reduced motion
+ */
+export function useReducedMotion(): boolean {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handler = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  return prefersReducedMotion;
 }
 
 /**

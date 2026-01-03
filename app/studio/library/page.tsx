@@ -39,6 +39,7 @@ import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import { useProject } from '@/lib/hooks';
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
+import { useLoadingAnnounce } from '@/src/lib/accessibility';
 import type { Id } from '@/convex/_generated/dataModel';
 
 type ViewMode = 'grid' | 'list';
@@ -76,6 +77,13 @@ export default function LibraryPage() {
     threshold: 300,
   });
 
+  // Accessibility: Announce loading states to screen readers
+  const { Announcer } = useLoadingAnnounce(
+    isLoadingFirst || isLoadingMore,
+    'Loading content...',
+    'Content loaded'
+  );
+
   // Filter by search (client-side for now)
   const filteredContent = useMemo(() => {
     if (!searchQuery) return results;
@@ -96,6 +104,8 @@ export default function LibraryPage() {
 
   return (
     <StudioLayout>
+      {/* Accessibility: Screen reader announcements */}
+      <Announcer />
       <VStack align="stretch" spacing={6}>
         {/* Header */}
         <HStack justify="space-between">
