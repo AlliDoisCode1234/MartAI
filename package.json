@@ -47,7 +47,7 @@
     "convex": "^1.29.3",
     "convex-helpers": "^0.1.107",
     "date-fns": "^4.1.0",
-    "framer-motion": "^10.18.0",
+    "framer-motion": "^12.23.26",
     "googleapis": "^166.0.0",
     "isomorphic-dompurify": "^2.35.0",
     "lexical": "^0.38.2",
