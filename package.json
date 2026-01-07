@@ -54,7 +54,7 @@
     "lucide-react": "^0.556.0",
     "marked": "^17.0.1",
     "neutral-cost": "^0.2.2",
-    "next": "^15.5.7",
+    "next": "15.5.9",
     "react": "^19.2.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^19.2.1",
