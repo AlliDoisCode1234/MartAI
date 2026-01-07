@@ -3,13 +3,104 @@ import type { NextRequest } from 'next/server';
 
 /**
  * Next.js Middleware - Runs on every request
- * Adds security headers to ALL responses (pages and API routes)
- * Handles legacy route redirects
+ * - Adds security headers to ALL responses (pages and API routes)
+ * - Handles phoo.ai domain routing (landing page + password protection)
+ * - Handles legacy route redirects
  */
+
+// Password protection credentials (set in Vercel environment variables)
+const PHOO_PASSWORD = process.env.PHOO_BETA_PASSWORD || 'phoo2026';
+
+/**
+ * Check if request is from phoo.ai domain
+ */
+function isPhooAiDomain(request: NextRequest): boolean {
+  const host = request.headers.get('host') || '';
+  return host.includes('phoo.ai') || host.includes('phoo-ai');
+}
+
+/**
+ * Basic auth check for password-protected routes
+ * Returns true if authenticated, false otherwise
+ */
+function checkBasicAuth(request: NextRequest): boolean {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Basic ')) {
+    return false;
+  }
+
+  const base64Credentials = authHeader.substring(6);
+  try {
+    const credentials = atob(base64Credentials);
+    // Format: "username:password" - we only check password
+    const [, password] = credentials.split(':');
+    return password === PHOO_PASSWORD;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Return 401 Unauthorized response with Basic Auth challenge
+ */
+function unauthorizedResponse(): NextResponse {
+  return new NextResponse('Unauthorized - Please enter password', {
+    status: 401,
+    headers: {
+      'WWW-Authenticate': 'Basic realm="Phoo Beta Access"',
+      'Content-Type': 'text/plain',
+    },
+  });
+}
+
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
   // ==========================================================================
-  // Security Headers (the only purpose of this middleware now)
+  // Phoo.ai Domain Routing (STRICT)
+  // Only allowed routes: /, /v1/*, /landing, /api/waitlist, /api/convex
+  // All other routes return 404 to prevent access to main app without auth
   // ==========================================================================
+  if (isPhooAiDomain(request)) {
+    // Root path on phoo.ai → landing page
+    if (pathname === '/' || pathname === '') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/landing';
+      return NextResponse.rewrite(url);
+    }
+
+    // /v1/* routes require password protection
+    if (pathname.startsWith('/v1')) {
+      if (!checkBasicAuth(request)) {
+        return unauthorizedResponse();
+      }
+      // Authenticated - rewrite /v1/path to /path for the actual app
+      const url = request.nextUrl.clone();
+      url.pathname = pathname.replace(/^\/v1/, '') || '/studio';
+      return NextResponse.rewrite(url);
+    }
+
+    // Allowed public routes on phoo.ai (whitelist approach)
+    const allowedPublicRoutes = [
+      '/landing', // Landing page
+      '/api/waitlist', // Waitlist API (for form submission)
+      '/api/convex', // Convex backend
+    ];
+
+    const isAllowedRoute = allowedPublicRoutes.some(
+      (route) => pathname === route || pathname.startsWith(route + '/')
+    );
+
+    // Block all other routes on phoo.ai domain → 404
+    if (!isAllowedRoute) {
+      return new NextResponse('Not Found', {
+        status: 404,
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    }
+
+    // Allowed route - continue with security headers below
+  }
 
   // ==========================================================================
   // Security Headers

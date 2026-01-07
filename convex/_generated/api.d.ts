@@ -61,6 +61,7 @@ import type * as integrations_google from "../integrations/google.js";
 import type * as integrations_gsc from "../integrations/gsc.js";
 import type * as integrations_gscConnections from "../integrations/gscConnections.js";
 import type * as integrations_hubspot from "../integrations/hubspot.js";
+import type * as integrations_hubspotMapper from "../integrations/hubspotMapper.js";
 import type * as integrations_integrations from "../integrations/integrations.js";
 import type * as integrations_oauth from "../integrations/oauth.js";
 import type * as integrations_pages from "../integrations/pages.js";
@@ -97,6 +98,7 @@ import type * as publishing_scheduledPosts from "../publishing/scheduledPosts.js
 import type * as publishing_wordpressActions from "../publishing/wordpressActions.js";
 import type * as rateLimits from "../rateLimits.js";
 import type * as scripts_seedKeywordLibrary from "../scripts/seedKeywordLibrary.js";
+import type * as scripts_seedStaging from "../scripts/seedStaging.js";
 import type * as seo_agentActions from "../seo/agentActions.js";
 import type * as seo_competitors from "../seo/competitors.js";
 import type * as seo_keywordActions from "../seo/keywordActions.js";
@@ -117,6 +119,7 @@ import type * as subscriptions_userHealth from "../subscriptions/userHealth.js";
 import type * as teams_invitations from "../teams/invitations.js";
 import type * as teams_teams from "../teams/teams.js";
 import type * as users from "../users.js";
+import type * as waitlist from "../waitlist.js";
 import type * as webhooks_webhookActions from "../webhooks/webhookActions.js";
 import type * as webhooks_webhookMutations from "../webhooks/webhookMutations.js";
 import type * as webhooks_webhookQueries from "../webhooks/webhookQueries.js";
@@ -187,6 +190,7 @@ declare const fullApi: ApiFromModules<{
   "integrations/gsc": typeof integrations_gsc;
   "integrations/gscConnections": typeof integrations_gscConnections;
   "integrations/hubspot": typeof integrations_hubspot;
+  "integrations/hubspotMapper": typeof integrations_hubspotMapper;
   "integrations/integrations": typeof integrations_integrations;
   "integrations/oauth": typeof integrations_oauth;
   "integrations/pages": typeof integrations_pages;
@@ -223,6 +227,7 @@ declare const fullApi: ApiFromModules<{
   "publishing/wordpressActions": typeof publishing_wordpressActions;
   rateLimits: typeof rateLimits;
   "scripts/seedKeywordLibrary": typeof scripts_seedKeywordLibrary;
+  "scripts/seedStaging": typeof scripts_seedStaging;
   "seo/agentActions": typeof seo_agentActions;
   "seo/competitors": typeof seo_competitors;
   "seo/keywordActions": typeof seo_keywordActions;
@@ -243,6 +248,7 @@ declare const fullApi: ApiFromModules<{
   "teams/invitations": typeof teams_invitations;
   "teams/teams": typeof teams_teams;
   users: typeof users;
+  waitlist: typeof waitlist;
   "webhooks/webhookActions": typeof webhooks_webhookActions;
   "webhooks/webhookMutations": typeof webhooks_webhookMutations;
   "webhooks/webhookQueries": typeof webhooks_webhookQueries;

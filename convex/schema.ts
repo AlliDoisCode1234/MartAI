@@ -140,10 +140,32 @@ export default defineSchema({
     stripeCustomerId: v.optional(v.string()),
     // Team Management: Which organization this user belongs to
     organizationId: v.optional(v.id('organizations')),
+    // Acquisition tracking - how user was acquired
+    acquisitionSource: v.optional(
+      v.union(
+        v.literal('waitlist_beta'), // Phoo.ai beta waitlist
+        v.literal('organic'), // Direct signup
+        v.literal('referral'), // Referred by another user
+        v.literal('partner'), // Partner/affiliate
+        v.literal('paid'), // Paid advertising
+        v.literal('migration') // Migrated from legacy system
+      )
+    ),
+    acquisitionMetadata: v.optional(
+      v.object({
+        utmSource: v.optional(v.string()),
+        utmMedium: v.optional(v.string()),
+        utmCampaign: v.optional(v.string()),
+        referrer: v.optional(v.string()),
+        waitlistId: v.optional(v.id('waitlist')), // Link to original waitlist entry
+      })
+    ),
+    acquisitionDate: v.optional(v.number()),
   })
     .index('email', ['email'])
     .index('by_role', ['role'])
-    .index('by_account_status', ['accountStatus']),
+    .index('by_account_status', ['accountStatus'])
+    .index('by_acquisition_source', ['acquisitionSource']),
 
   // Client/Business information
   clients: defineTable({
@@ -1363,4 +1385,33 @@ export default defineSchema({
     .index('by_project_created', ['projectId', 'createdAt'])
     .index('by_cluster', ['clusterId'])
     .index('by_project_scheduled', ['projectId', 'scheduledDate']),
+
+  // ============================================================================
+  // SECTION 12: WAITLIST (Phoo.ai Lead Capture)
+  // ============================================================================
+
+  /**
+   * Waitlist table for phoo.ai landing page lead capture.
+   * Tracks early access signups before public launch.
+   */
+  waitlist: defineTable({
+    email: v.string(),
+    source: v.optional(v.string()), // 'phoo.ai', 'referral', etc.
+    metadata: v.optional(
+      v.object({
+        referrer: v.optional(v.string()),
+        utmSource: v.optional(v.string()),
+        utmMedium: v.optional(v.string()),
+        utmCampaign: v.optional(v.string()),
+        userAgent: v.optional(v.string()),
+      })
+    ),
+    status: v.optional(v.union(v.literal('pending'), v.literal('invited'), v.literal('converted'))),
+    invitedAt: v.optional(v.number()),
+    convertedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index('by_email', ['email'])
+    .index('by_status', ['status'])
+    .index('by_created', ['createdAt']),
 });
