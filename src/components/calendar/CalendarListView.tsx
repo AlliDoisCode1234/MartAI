@@ -25,6 +25,7 @@ import {
 } from '@chakra-ui/react';
 import { FiCalendar, FiEdit3, FiFileText } from 'react-icons/fi';
 import { getStatusColorScheme } from '@/lib/constants/statusColors';
+import { formatMonthDay, formatWeekdayDate, startOfWeek, endOfWeek } from '@/lib/dateUtils';
 
 type CalendarItem = {
   _id: string;
@@ -46,15 +47,11 @@ type WeekGroup = {
 };
 
 function getWeekStart(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day;
-  return new Date(d.setDate(diff));
+  return startOfWeek(date, { weekStartsOn: 0 });
 }
 
 function getWeekEnd(date: Date): Date {
-  const start = getWeekStart(date);
-  return new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000);
+  return endOfWeek(date, { weekStartsOn: 0 });
 }
 
 function groupByWeek(items: CalendarItem[]): WeekGroup[] {
@@ -113,10 +110,7 @@ export function CalendarListView({ items }: Props) {
             <HStack mb={4} justify="space-between">
               <HStack>
                 <Icon as={FiCalendar} color="orange.500" />
-                <Heading size="sm">
-                  Week of{' '}
-                  {group.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </Heading>
+                <Heading size="sm">Week of {formatMonthDay(group.weekStart)}</Heading>
               </HStack>
               <Badge colorScheme="orange">{group.items.length} items</Badge>
             </HStack>
@@ -136,11 +130,7 @@ export function CalendarListView({ items }: Props) {
                     <Box>
                       <Text fontWeight="medium">{item.title}</Text>
                       <Text fontSize="sm" color="gray.500">
-                        {new Date(item.publishDate!).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
+                        {formatWeekdayDate(item.publishDate!)}
                         {' · '}
                         {item.contentType}
                       </Text>

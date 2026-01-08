@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { Box, Grid, GridItem, Text, VStack, HStack, IconButton, Heading } from '@chakra-ui/react';
 import { FiChevronLeft, FiChevronRight, FiPlus } from 'react-icons/fi';
 import { CalendarItemCard } from './CalendarItemCard';
+import { formatMonthYear, isSameDay } from '@/lib/dateUtils';
 
 type CalendarItem = {
   _id: string;
@@ -60,14 +61,6 @@ function getDaysInMonth(year: number, month: number): Date[] {
   return days;
 }
 
-function isSameDay(date1: Date, date2: Date): boolean {
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  );
-}
-
 export function CalendarMonthView({ items, currentDate, onPrevMonth, onNextMonth }: Props) {
   const router = useRouter();
   const year = currentDate.getFullYear();
@@ -90,7 +83,7 @@ export function CalendarMonthView({ items, currentDate, onPrevMonth, onNextMonth
     }
   };
 
-  const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const monthName = formatMonthYear(currentDate);
 
   return (
     <VStack align="stretch" spacing={4}>

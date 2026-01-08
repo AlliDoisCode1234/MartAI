@@ -44,6 +44,7 @@ import {
   FiSettings,
 } from 'react-icons/fi';
 import Link from 'next/link';
+import { formatLongDate } from '@/lib/dateUtils';
 
 // Helper to get initials from name or email
 function getInitials(name?: string, email?: string): string {
@@ -99,9 +100,7 @@ export default function ProfilePage() {
   const tier = me.subscriptionTier || 'starter';
   const isStarter = tier === 'starter';
   const initials = getInitials(me.name, me.email);
-  const memberSince = me._creationTime
-    ? new Date(me._creationTime).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    : 'Unknown';
+  const memberSince = me._creationTime ? formatLongDate(me._creationTime) : 'Unknown';
 
   return (
     <Box minH="calc(100vh - 64px)" bg="brand.light">

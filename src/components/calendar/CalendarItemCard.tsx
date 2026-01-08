@@ -14,6 +14,7 @@ import { Box, Text, Badge, HStack, Icon, Tooltip, VStack } from '@chakra-ui/reac
 import { FiClock, FiSearch } from 'react-icons/fi';
 import { getContentTypeIcon, getContentTypeLabel } from '@/lib/constants/contentTypes';
 import { getStatusColorScheme } from '@/lib/constants/statusColors';
+import { formatDateTime } from '@/lib/dateUtils';
 
 type Props = {
   id: string;
@@ -26,15 +27,6 @@ type Props = {
   keywordDifficulty?: number;
   onClick?: () => void;
 };
-
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
 
 function formatVolume(volume: number): string {
   if (volume >= 1000) return `${(volume / 1000).toFixed(1)}K`;
@@ -93,7 +85,7 @@ export function CalendarItemCard({
       {publishDate && (
         <HStack spacing={1} fontSize="xs" color="gray.300">
           <Icon as={FiClock} />
-          <Text>{formatDate(publishDate)}</Text>
+          <Text>{formatDateTime(publishDate)}</Text>
         </HStack>
       )}
     </VStack>

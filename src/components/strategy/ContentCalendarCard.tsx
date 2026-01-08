@@ -24,6 +24,7 @@ import {
   Badge,
   Button,
 } from '@chakra-ui/react';
+import { formatShortDate } from '@/lib/dateUtils';
 
 type Brief = {
   _id: string;
@@ -76,7 +77,7 @@ export function ContentCalendarCard({ briefs, contentVelocity }: Props) {
                       {brief.week || Math.floor(index / contentVelocity) + 1}
                     </Td>
                     <Td color="gray.300" borderColor="whiteAlpha.100">
-                      {new Date(brief.scheduledDate).toLocaleDateString()}
+                      {formatShortDate(brief.scheduledDate)}
                     </Td>
                     <Td color="white" borderColor="whiteAlpha.100">
                       {brief.title}

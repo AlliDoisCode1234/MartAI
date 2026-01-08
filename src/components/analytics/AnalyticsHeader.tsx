@@ -11,6 +11,7 @@
 
 import { Card, CardBody, HStack, VStack, Heading, Text, Select, Button } from '@chakra-ui/react';
 import { ANALYTICS_TIME_RANGE_OPTIONS } from '@/src/constants/analyticsConstants';
+import { formatShortDate } from '@/lib/dateUtils';
 
 type CompetitorHistory = Array<{ _id: string; url: string; createdAt: number }>;
 
@@ -68,7 +69,7 @@ export function AnalyticsHeader({
               <option disabled>──────────</option>
               {competitorHistory?.map((h) => (
                 <option key={h._id} value={h._id}>
-                  → {h.url} ({new Date(h.createdAt).toLocaleDateString()})
+                  → {h.url} ({formatShortDate(h.createdAt)})
                 </option>
               ))}
             </Select>
