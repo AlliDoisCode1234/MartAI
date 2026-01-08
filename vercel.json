@@ -4,12 +4,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_CONVEX_URL": "@convex_url",
-      "CONVEX_DEPLOY_KEY": "@convex_deploy_key"
-    }
-  },
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30
