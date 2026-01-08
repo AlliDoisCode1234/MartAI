@@ -46,13 +46,28 @@ import {
   useToast,
   Button,
   Select,
+  SimpleGrid,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  Icon,
 } from '@chakra-ui/react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import { ViewIcon, SettingsIcon } from '@chakra-ui/icons';
-import { FiMoreVertical, FiUser, FiShield, FiAlertCircle } from 'react-icons/fi';
+import {
+  FiMoreVertical,
+  FiUser,
+  FiShield,
+  FiAlertCircle,
+  FiUsers,
+  FiUserPlus,
+  FiActivity,
+  FiUserX,
+} from 'react-icons/fi';
 import Link from 'next/link';
 import type { Id } from '@/convex/_generated/dataModel';
 
@@ -190,6 +205,87 @@ export default function AdminUsersPage() {
         <Heading size="lg">Users</Heading>
         <Text color="gray.600">Manage registered accounts and subscriptions.</Text>
       </Box>
+
+      {/* Stats Row */}
+      {users && (
+        <SimpleGrid columns={{ base: 2, md: 4 }} gap={4} mb={6}>
+          <Card>
+            <CardBody py={3}>
+              <Stat size="sm">
+                <StatLabel>
+                  <HStack>
+                    <Icon as={FiUsers} color="purple.500" />
+                    <Text>Total</Text>
+                  </HStack>
+                </StatLabel>
+                <StatNumber>{users.length}</StatNumber>
+                <StatHelpText>All users</StatHelpText>
+              </Stat>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody py={3}>
+              <Stat size="sm">
+                <StatLabel>
+                  <HStack>
+                    <Icon as={FiUserPlus} color="orange.500" />
+                    <Text>New (7d)</Text>
+                  </HStack>
+                </StatLabel>
+                <StatNumber color="orange.500">
+                  +
+                  {
+                    users.filter((u: User) => {
+                      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                      return u.createdAt && u.createdAt > sevenDaysAgo;
+                    }).length
+                  }
+                </StatNumber>
+                <StatHelpText>This week</StatHelpText>
+              </Stat>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody py={3}>
+              <Stat size="sm">
+                <StatLabel>
+                  <HStack>
+                    <Icon as={FiActivity} color="green.500" />
+                    <Text>Active</Text>
+                  </HStack>
+                </StatLabel>
+                <StatNumber>
+                  {
+                    users.filter((u: User) => u.accountStatus === 'active' || !u.accountStatus)
+                      .length
+                  }
+                </StatNumber>
+                <StatHelpText>Active accounts</StatHelpText>
+              </Stat>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody py={3}>
+              <Stat size="sm">
+                <StatLabel>
+                  <HStack>
+                    <Icon as={FiUserX} color="red.500" />
+                    <Text>Churned</Text>
+                  </HStack>
+                </StatLabel>
+                <StatNumber color="red.500">
+                  {
+                    users.filter(
+                      (u: User) => u.accountStatus === 'churned' || u.accountStatus === 'suspended'
+                    ).length
+                  }
+                </StatNumber>
+                <StatHelpText>Inactive/Suspended</StatHelpText>
+              </Stat>
+            </CardBody>
+          </Card>
+        </SimpleGrid>
+      )}
 
       <Card>
         <CardBody>

@@ -7,12 +7,27 @@ import { FiHome, FiUsers, FiActivity, FiSettings, FiBarChart2, FiCpu } from 'rea
 import { useAuth } from '@/lib/useAuth';
 
 const NAV_ITEMS = [
-  { name: 'Dashboard', icon: FiHome, path: '/admin', roles: ['admin', 'super_admin'] },
-  { name: 'Prospects', icon: FiUsers, path: '/admin/prospects', roles: ['admin', 'super_admin'] },
-  { name: 'Users', icon: FiUsers, path: '/admin/users', roles: ['admin', 'super_admin'] },
-  { name: 'Keywords', icon: FiActivity, path: '/admin/keywords', roles: ['admin', 'super_admin'] },
+  { name: 'Dashboard', icon: FiHome, path: '/admin', roles: ['admin', 'super_admin', 'viewer'] },
+  {
+    name: 'Prospects',
+    icon: FiUsers,
+    path: '/admin/prospects',
+    roles: ['admin', 'super_admin', 'viewer'],
+  },
+  { name: 'Users', icon: FiUsers, path: '/admin/users', roles: ['admin', 'super_admin', 'viewer'] },
+  {
+    name: 'Keywords',
+    icon: FiActivity,
+    path: '/admin/keywords',
+    roles: ['admin', 'super_admin', 'viewer'],
+  },
   { name: 'AI Providers', icon: FiCpu, path: '/admin/ai-providers', roles: ['super_admin'] },
-  { name: 'Analysis', icon: FiActivity, path: '/admin/analysis', roles: ['admin', 'super_admin'] },
+  {
+    name: 'Analysis',
+    icon: FiActivity,
+    path: '/admin/analysis',
+    roles: ['admin', 'super_admin', 'viewer'],
+  },
   { name: 'Analytics', icon: FiBarChart2, path: '/admin/analytics', roles: ['super_admin'] },
 ];
 
