@@ -26,14 +26,28 @@ import {
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 
+interface AnalysisResult {
+  url: string;
+  metrics: {
+    traffic: number;
+    keywords: number;
+    domainAuthority: number;
+  };
+  metadata: {
+    title: string;
+    h1Count: number;
+    server: string;
+  };
+}
+
 export default function AdhocAnalyzer() {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const toast = useToast();
-  const analyze = useMutation((api as any).analytics.adhoc.analyzeCompetitor);
+  const analyze = useMutation(api.analytics.adhoc.analyzeCompetitor);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,9 +65,8 @@ export default function AdhocAnalyzer() {
         status: 'success',
         duration: 3000,
       });
-    } catch (err: any) {
-      console.error(err);
-      const message = err.message || 'Failed to analyze URL';
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to analyze URL';
       setError(message);
 
       // Check for Rate Limit to show upgrade CTA

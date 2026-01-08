@@ -125,10 +125,9 @@ export function InsightCard({ insight, delay = 0, onApplied }: Props) {
       p={5}
       boxShadow="sm"
       _hover={{ boxShadow: 'lg', transform: 'translateY(-2px)' }}
-      transition="all 0.2s"
+      style={{ transition: 'all 0.2s' }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      // @ts-ignore
       transition={{ delay, duration: 0.4 }}
     >
       <VStack align="stretch" spacing={4}>

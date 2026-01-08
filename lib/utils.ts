@@ -4,7 +4,7 @@ export async function withRetry<T>(
     retries?: number;
     delay?: number;
     backoff?: number;
-    onRetry?: (error: any, attempt: number) => void;
+    onRetry?: (error: unknown, attempt: number) => void;
   } = {}
 ): Promise<T> {
   const { retries = 3, delay = 1000, backoff = 2, onRetry } = options;

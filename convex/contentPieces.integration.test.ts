@@ -1,6 +1,7 @@
 import { convexTest } from 'convex-test';
 import { expect, test, describe, beforeEach } from 'vitest';
 import { api } from './_generated/api';
+import { Id } from './_generated/dataModel';
 import schema from './schema';
 
 /**
@@ -50,8 +51,9 @@ const FIXTURES = {
 
 describe('ContentPieces CRUD Integration', () => {
   let t: ReturnType<typeof convexTest>;
-  let testProjectId: any;
-  let testUserId: any;
+  let authT: ReturnType<ReturnType<typeof convexTest>['withIdentity']>;
+  let testProjectId: Id<'projects'>;
+  let testUserId: Id<'users'>;
 
   beforeEach(async () => {
     t = convexTest(schema);
@@ -83,14 +85,14 @@ describe('ContentPieces CRUD Integration', () => {
     testProjectId = result.projectId;
 
     // Set authenticated identity for all tests
-    t = t.withIdentity({ subject: testUserId });
+    authT = t.withIdentity({ subject: testUserId });
   });
 
   describe('Create Content Piece', () => {
     test('should create content piece with all required fields', async () => {
       const fixture = FIXTURES.medSpa;
 
-      const contentPieceId = await t.mutation(api.contentPieces.create, {
+      const contentPieceId = await authT.mutation(api.contentPieces.create, {
         projectId: testProjectId,
         contentType: fixture.contentType,
         title: fixture.title,
@@ -100,7 +102,7 @@ describe('ContentPieces CRUD Integration', () => {
       expect(contentPieceId).toBeDefined();
 
       // Verify it was actually created
-      const piece = await t.query(api.contentPieces.getById, {
+      const piece = await authT.query(api.contentPieces.getById, {
         contentPieceId,
       });
 
@@ -114,7 +116,7 @@ describe('ContentPieces CRUD Integration', () => {
       const createdIds: any[] = [];
 
       for (const [industry, fixture] of Object.entries(FIXTURES)) {
-        const id = await t.mutation(api.contentPieces.create, {
+        const id = await authT.mutation(api.contentPieces.create, {
           projectId: testProjectId,
           contentType: fixture.contentType,
           title: fixture.title,
@@ -133,7 +135,7 @@ describe('ContentPieces CRUD Integration', () => {
     test('should list content pieces by project', async () => {
       // Create 3 pieces
       for (let i = 0; i < 3; i++) {
-        await t.mutation(api.contentPieces.create, {
+        await authT.mutation(api.contentPieces.create, {
           projectId: testProjectId,
           contentType: 'blog',
           title: `Test Blog ${i + 1}`,
@@ -142,7 +144,7 @@ describe('ContentPieces CRUD Integration', () => {
       }
 
       // List them
-      const pieces = await t.query(api.contentPieces.listByProject, {
+      const pieces = await authT.query(api.contentPieces.listByProject, {
         projectId: testProjectId,
       });
 
@@ -151,7 +153,7 @@ describe('ContentPieces CRUD Integration', () => {
 
     test('should filter by status', async () => {
       // Create pieces with different statuses
-      const draftId = await t.mutation(api.contentPieces.create, {
+      const draftId = await authT.mutation(api.contentPieces.create, {
         projectId: testProjectId,
         contentType: 'blog',
         title: 'Draft Piece',
@@ -159,13 +161,13 @@ describe('ContentPieces CRUD Integration', () => {
       });
 
       // Update one to published
-      await t.mutation(api.contentPieces.update, {
+      await authT.mutation(api.contentPieces.update, {
         contentPieceId: draftId,
         status: 'published',
       });
 
       // Query for drafts only
-      const drafts = await t.query(api.contentPieces.listByProject, {
+      const drafts = await authT.query(api.contentPieces.listByProject, {
         projectId: testProjectId,
         status: 'draft',
       });
@@ -177,20 +179,20 @@ describe('ContentPieces CRUD Integration', () => {
 
   describe('Update Content Piece', () => {
     test('should update title and content', async () => {
-      const id = await t.mutation(api.contentPieces.create, {
+      const id = await authT.mutation(api.contentPieces.create, {
         projectId: testProjectId,
         contentType: 'blog',
         title: 'Original Title',
         keywords: ['test'],
       });
 
-      await t.mutation(api.contentPieces.update, {
+      await authT.mutation(api.contentPieces.update, {
         contentPieceId: id,
         title: 'Updated Title',
         content: '# Updated Content\n\nThis is the updated body.',
       });
 
-      const updated = await t.query(api.contentPieces.getById, {
+      const updated = await authT.query(api.contentPieces.getById, {
         contentPieceId: id,
       });
 
@@ -199,20 +201,20 @@ describe('ContentPieces CRUD Integration', () => {
     });
 
     test('should update SEO score', async () => {
-      const id = await t.mutation(api.contentPieces.create, {
+      const id = await authT.mutation(api.contentPieces.create, {
         projectId: testProjectId,
         contentType: 'blog',
         title: 'SEO Test',
         keywords: ['seo', 'test'],
       });
 
-      await t.mutation(api.contentPieces.update, {
+      await authT.mutation(api.contentPieces.update, {
         contentPieceId: id,
         seoScore: 92,
         wordCount: 1500,
       });
 
-      const updated = await t.query(api.contentPieces.getById, {
+      const updated = await authT.query(api.contentPieces.getById, {
         contentPieceId: id,
       });
 
@@ -223,7 +225,7 @@ describe('ContentPieces CRUD Integration', () => {
 
   describe('Delete Content Piece', () => {
     test('should remove content piece', async () => {
-      const id = await t.mutation(api.contentPieces.create, {
+      const id = await authT.mutation(api.contentPieces.create, {
         projectId: testProjectId,
         contentType: 'blog',
         title: 'To Be Deleted',
@@ -231,21 +233,21 @@ describe('ContentPieces CRUD Integration', () => {
       });
 
       // Verify it exists
-      let piece = await t.query(api.contentPieces.getById, { contentPieceId: id });
+      let piece = await authT.query(api.contentPieces.getById, { contentPieceId: id });
       expect(piece).not.toBeNull();
 
       // Delete it
-      await t.mutation(api.contentPieces.remove, { contentPieceId: id });
+      await authT.mutation(api.contentPieces.remove, { contentPieceId: id });
 
       // Verify it's gone
-      piece = await t.query(api.contentPieces.getById, { contentPieceId: id });
+      piece = await authT.query(api.contentPieces.getById, { contentPieceId: id });
       expect(piece).toBeNull();
     });
   });
 
   describe('Calendar Scheduling', () => {
     test('should schedule content for future date', async () => {
-      const id = await t.mutation(api.contentPieces.create, {
+      const id = await authT.mutation(api.contentPieces.create, {
         projectId: testProjectId,
         contentType: 'blog',
         title: 'Scheduled Post',
@@ -254,12 +256,12 @@ describe('ContentPieces CRUD Integration', () => {
 
       const futureDate = Date.now() + 7 * 24 * 60 * 60 * 1000; // 1 week
 
-      await t.mutation(api.contentPieces.schedule, {
+      await authT.mutation(api.contentPieces.schedule, {
         contentPieceId: id,
         publishDate: futureDate,
       });
 
-      const scheduled = await t.query(api.contentPieces.getById, {
+      const scheduled = await authT.query(api.contentPieces.getById, {
         contentPieceId: id,
       });
 
@@ -272,20 +274,20 @@ describe('ContentPieces CRUD Integration', () => {
       const now = Date.now();
 
       for (let i = 1; i <= 3; i++) {
-        const id = await t.mutation(api.contentPieces.create, {
+        const id = await authT.mutation(api.contentPieces.create, {
           projectId: testProjectId,
           contentType: 'blog',
           title: `Scheduled ${i}`,
           keywords: ['schedule'],
         });
 
-        await t.mutation(api.contentPieces.schedule, {
+        await authT.mutation(api.contentPieces.schedule, {
           contentPieceId: id,
           publishDate: now + i * 24 * 60 * 60 * 1000, // Day 1, 2, 3
         });
       }
 
-      const scheduled = await t.query(api.contentPieces.listScheduled, {
+      const scheduled = await authT.query(api.contentPieces.listScheduled, {
         projectId: testProjectId,
         startDate: now,
         endDate: now + 4 * 24 * 60 * 60 * 1000, // 4 days
@@ -298,8 +300,9 @@ describe('ContentPieces CRUD Integration', () => {
 
 describe('Content Pieces Edge Cases', () => {
   let t: ReturnType<typeof convexTest>;
-  let testProjectId: any;
-  let testUserId: any;
+  let authT: ReturnType<ReturnType<typeof convexTest>['withIdentity']>;
+  let testProjectId: Id<'projects'>;
+  let testUserId: Id<'users'>;
 
   beforeEach(async () => {
     t = convexTest(schema);
@@ -328,11 +331,11 @@ describe('Content Pieces Edge Cases', () => {
     testProjectId = result.projectId;
 
     // Set authenticated identity for all tests
-    t = t.withIdentity({ subject: testUserId });
+    authT = t.withIdentity({ subject: testUserId });
   });
 
   test('should handle empty keywords array', async () => {
-    const id = await t.mutation(api.contentPieces.create, {
+    const id = await authT.mutation(api.contentPieces.create, {
       projectId: testProjectId,
       contentType: 'blog',
       title: 'No Keywords',
@@ -341,40 +344,40 @@ describe('Content Pieces Edge Cases', () => {
 
     expect(id).toBeDefined();
 
-    const piece = await t.query(api.contentPieces.getById, { contentPieceId: id });
+    const piece = await authT.query(api.contentPieces.getById, { contentPieceId: id });
     expect(piece?.keywords).toEqual([]);
   });
 
   test('should handle very long title', async () => {
     const longTitle = 'A'.repeat(500);
 
-    const id = await t.mutation(api.contentPieces.create, {
+    const id = await authT.mutation(api.contentPieces.create, {
       projectId: testProjectId,
       contentType: 'blog',
       title: longTitle,
       keywords: ['test'],
     });
 
-    const piece = await t.query(api.contentPieces.getById, { contentPieceId: id });
+    const piece = await authT.query(api.contentPieces.getById, { contentPieceId: id });
     expect(piece?.title).toBe(longTitle);
   });
 
   test('should handle special characters in title', async () => {
     const specialTitle = 'SEO Tips: 10 "Ways" to <Improve> & Rank #1 @ Google!';
 
-    const id = await t.mutation(api.contentPieces.create, {
+    const id = await authT.mutation(api.contentPieces.create, {
       projectId: testProjectId,
       contentType: 'blog',
       title: specialTitle,
       keywords: ['seo', 'tips'],
     });
 
-    const piece = await t.query(api.contentPieces.getById, { contentPieceId: id });
+    const piece = await authT.query(api.contentPieces.getById, { contentPieceId: id });
     expect(piece?.title).toBe(specialTitle);
   });
 
   test('should return empty list for project with no content', async () => {
-    const pieces = await t.query(api.contentPieces.listByProject, {
+    const pieces = await authT.query(api.contentPieces.listByProject, {
       projectId: testProjectId,
     });
 
@@ -383,7 +386,7 @@ describe('Content Pieces Edge Cases', () => {
 
   test('should reject scheduling content in the past', async () => {
     // Create content first
-    const id = await t.mutation(api.contentPieces.create, {
+    const id = await authT.mutation(api.contentPieces.create, {
       projectId: testProjectId,
       contentType: 'blog',
       title: 'Past Scheduled Content',

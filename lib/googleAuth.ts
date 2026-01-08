@@ -1,5 +1,7 @@
-import { google } from 'googleapis';
+import { google, Auth } from 'googleapis';
 import { format } from 'date-fns';
+
+type Credentials = Auth.Credentials;
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
@@ -49,7 +51,7 @@ export async function refreshAccessToken(refreshToken: string) {
 export async function getGA4Properties(
   accessToken: string,
   refreshToken?: string,
-  onTokenRefresh?: (tokens: any) => Promise<void>
+  onTokenRefresh?: (tokens: Credentials) => Promise<void>
 ) {
   try {
     const oauth2Client = createOAuth2Client();
@@ -119,7 +121,7 @@ export async function getGA4Data(
   propertyId: string,
   startDate: string | Date,
   endDate: string | Date,
-  onTokenRefresh?: (tokens: any) => Promise<void>
+  onTokenRefresh?: (tokens: Credentials) => Promise<void>
 ) {
   try {
     const oauth2Client = createOAuth2Client();
@@ -164,7 +166,7 @@ export async function getGSCData(
   startDate: string | Date,
   endDate: string | Date,
   rowLimit: number = 100,
-  onTokenRefresh?: (tokens: any) => Promise<void>
+  onTokenRefresh?: (tokens: Credentials) => Promise<void>
 ) {
   try {
     const oauth2Client = createOAuth2Client();

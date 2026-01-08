@@ -2,6 +2,7 @@ import { convexTest } from 'convex-test';
 import { expect, test, describe, beforeEach } from 'vitest';
 import { api } from './_generated/api';
 import schema from './schema';
+import { Id } from './_generated/dataModel';
 
 /**
  * Onboarding Flow Integration Tests
@@ -50,7 +51,8 @@ const FIXTURES = {
 
 describe('Onboarding: Step Tracking', () => {
   let t: ReturnType<typeof convexTest>;
-  let testUserId: any;
+  let authT: ReturnType<ReturnType<typeof convexTest>['withIdentity']>;
+  let testUserId: Id<'users'>;
 
   beforeEach(async () => {
     t = convexTest(schema);
@@ -68,12 +70,12 @@ describe('Onboarding: Step Tracking', () => {
     });
 
     testUserId = result.userId;
-    t = t.withIdentity({ subject: testUserId });
+    authT = t.withIdentity({ subject: testUserId });
   });
 
   test('should update single onboarding step', async () => {
     // Use planSelected to avoid nested createOrganization mutation
-    await t.mutation(api.onboarding.updateOnboardingStep, {
+    await authT.mutation(api.onboarding.updateOnboardingStep, {
       step: 'planSelected',
       value: 'pro',
     });
@@ -88,7 +90,7 @@ describe('Onboarding: Step Tracking', () => {
   });
 
   test('should update multiple steps in one write', async () => {
-    await t.mutation(api.onboarding.updateMultipleSteps, {
+    await authT.mutation(api.onboarding.updateMultipleSteps, {
       steps: [
         { step: 'signupCompleted', value: true },
         { step: 'planSelected', value: 'pro' },
@@ -106,12 +108,12 @@ describe('Onboarding: Step Tracking', () => {
   });
 
   test('should track GA4/GSC connection steps', async () => {
-    await t.mutation(api.onboarding.updateOnboardingStep, {
+    await authT.mutation(api.onboarding.updateOnboardingStep, {
       step: 'ga4Connected',
       value: true,
     });
 
-    await t.mutation(api.onboarding.updateOnboardingStep, {
+    await authT.mutation(api.onboarding.updateOnboardingStep, {
       step: 'gscConnected',
       value: true,
     });
@@ -126,7 +128,7 @@ describe('Onboarding: Step Tracking', () => {
 
   test('should complete full happy path onboarding', async () => {
     // Simulate complete onboarding flow
-    await t.mutation(api.onboarding.updateMultipleSteps, {
+    await authT.mutation(api.onboarding.updateMultipleSteps, {
       steps: [
         { step: 'signupCompleted', value: true },
         { step: 'planSelected', value: 'agency' },
@@ -152,7 +154,7 @@ describe('Onboarding: Step Tracking', () => {
 
   test('should complete onboarding WITHOUT GA4/GSC (required steps only)', async () => {
     // Only required steps (no analytics connections)
-    await t.mutation(api.onboarding.updateMultipleSteps, {
+    await authT.mutation(api.onboarding.updateMultipleSteps, {
       steps: [
         { step: 'signupCompleted', value: true },
         { step: 'planSelected', value: 'starter' },
@@ -183,7 +185,8 @@ describe('Onboarding: Step Tracking', () => {
 
 describe('Onboarding: Project Creation', () => {
   let t: ReturnType<typeof convexTest>;
-  let testUserId: any;
+  let authT: ReturnType<ReturnType<typeof convexTest>['withIdentity']>;
+  let testUserId: Id<'users'>;
 
   beforeEach(async () => {
     t = convexTest(schema);
@@ -201,14 +204,14 @@ describe('Onboarding: Project Creation', () => {
     });
 
     testUserId = result.userId;
-    t = t.withIdentity({ subject: testUserId });
+    authT = t.withIdentity({ subject: testUserId });
   });
 
   test('should create project for user WITH GSC data available', async () => {
     const fixture = FIXTURES.projectWithGSC;
 
     // Create project
-    const projectId = await t.mutation(api.projects.projects.createProject, {
+    const projectId = await authT.mutation(api.projects.projects.createProject, {
       name: fixture.name,
       websiteUrl: fixture.websiteUrl,
     });
@@ -227,7 +230,7 @@ describe('Onboarding: Project Creation', () => {
   test('should create project for user WITHOUT GSC (fallback path)', async () => {
     const fixture = FIXTURES.projectWithoutGSC;
 
-    const projectId = await t.mutation(api.projects.projects.createProject, {
+    const projectId = await authT.mutation(api.projects.projects.createProject, {
       name: fixture.name,
       websiteUrl: fixture.websiteUrl,
     });
@@ -249,8 +252,9 @@ describe('Onboarding: Project Creation', () => {
 
 describe('Onboarding: Keyword Generation Paths', () => {
   let t: ReturnType<typeof convexTest>;
-  let testUserId: any;
-  let testProjectId: any;
+  let authT: ReturnType<ReturnType<typeof convexTest>['withIdentity']>;
+  let testUserId: Id<'users'>;
+  let testProjectId: Id<'projects'>;
 
   beforeEach(async () => {
     t = convexTest(schema);
@@ -277,7 +281,7 @@ describe('Onboarding: Keyword Generation Paths', () => {
 
     testUserId = result.userId;
     testProjectId = result.projectId;
-    t = t.withIdentity({ subject: testUserId });
+    authT = t.withIdentity({ subject: testUserId });
   });
 
   describe('Path 1: WITH GSC Connection', () => {
@@ -319,7 +323,7 @@ describe('Onboarding: Keyword Generation Paths', () => {
     test('should generate clusters from GSC keywords', async () => {
       // Seed keywords first
       const keywordIds = await t.run(async (ctx) => {
-        const ids = [];
+        const ids: Id<'keywords'>[] = [];
         for (const kw of FIXTURES.projectWithGSC.gscKeywords) {
           const id = await ctx.db.insert('keywords', {
             projectId: testProjectId,
@@ -341,7 +345,7 @@ describe('Onboarding: Keyword Generation Paths', () => {
       const keywords = await t.run(async (ctx) => {
         return await ctx.db
           .query('keywords')
-          .withIndex('by_project', (q) => q.eq('projectId', testProjectId))
+          .filter((q) => q.eq(q.field('projectId'), testProjectId))
           .collect();
       });
 
@@ -366,7 +370,7 @@ describe('Onboarding: Keyword Generation Paths', () => {
       ];
 
       const keywordIds = await t.run(async (ctx) => {
-        const ids = [];
+        const ids: Id<'keywords'>[] = [];
         for (const kw of fallbackKeywords) {
           const id = await ctx.db.insert('keywords', {
             projectId: testProjectId,
@@ -387,7 +391,7 @@ describe('Onboarding: Keyword Generation Paths', () => {
       const keywords = await t.run(async (ctx) => {
         return await ctx.db
           .query('keywords')
-          .withIndex('by_project', (q) => q.eq('projectId', testProjectId))
+          .filter((q) => q.eq(q.field('projectId'), testProjectId))
           .collect();
       });
 
@@ -430,7 +434,7 @@ describe('Onboarding: Keyword Generation Paths', () => {
       const keywords = await t.run(async (ctx) => {
         return await ctx.db
           .query('keywords')
-          .withIndex('by_project', (q) => q.eq('projectId', testProjectId))
+          .filter((q) => q.eq(q.field('projectId'), testProjectId))
           .collect();
       });
 
@@ -453,7 +457,7 @@ describe('Onboarding: Keyword Generation Paths', () => {
       const keywords = await t.run(async (ctx) => {
         return await ctx.db
           .query('keywords')
-          .withIndex('by_project', (q) => q.eq('projectId', minimalProjectId))
+          .filter((q) => q.eq(q.field('projectId'), minimalProjectId))
           .collect();
       });
 
@@ -468,7 +472,8 @@ describe('Onboarding: Keyword Generation Paths', () => {
 
 describe('Onboarding: Edge Cases', () => {
   let t: ReturnType<typeof convexTest>;
-  let testUserId: any;
+  let authT: ReturnType<ReturnType<typeof convexTest>['withIdentity']>;
+  let testUserId: Id<'users'>;
 
   beforeEach(async () => {
     t = convexTest(schema);
@@ -486,17 +491,17 @@ describe('Onboarding: Edge Cases', () => {
     });
 
     testUserId = result.userId;
-    t = t.withIdentity({ subject: testUserId });
+    authT = t.withIdentity({ subject: testUserId });
   });
 
   test('should handle duplicate step updates idempotently', async () => {
     // Update same step twice - use planSelected to avoid nested createOrg mutation
-    await t.mutation(api.onboarding.updateOnboardingStep, {
+    await authT.mutation(api.onboarding.updateOnboardingStep, {
       step: 'planSelected',
       value: 'pro',
     });
 
-    await t.mutation(api.onboarding.updateOnboardingStep, {
+    await authT.mutation(api.onboarding.updateOnboardingStep, {
       step: 'planSelected',
       value: 'pro',
     });
@@ -510,13 +515,13 @@ describe('Onboarding: Edge Cases', () => {
 
   test('should preserve previous steps when updating new one', async () => {
     // Update first step - use paymentCompleted to avoid nested createOrg mutation
-    await t.mutation(api.onboarding.updateOnboardingStep, {
+    await authT.mutation(api.onboarding.updateOnboardingStep, {
       step: 'paymentCompleted',
       value: true,
     });
 
     // Update second step
-    await t.mutation(api.onboarding.updateOnboardingStep, {
+    await authT.mutation(api.onboarding.updateOnboardingStep, {
       step: 'planSelected',
       value: 'pro',
     });

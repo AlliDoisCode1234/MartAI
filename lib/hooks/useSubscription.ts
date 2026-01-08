@@ -25,9 +25,9 @@ type PlanTier = keyof typeof PLAN_LIMITS;
 
 interface UseSubscriptionResult {
   /** Raw subscription document */
-  subscription: any | null | undefined;
+  subscription: unknown | null | undefined;
   /** Usage document for current period */
-  usage: any | null | undefined;
+  usage: unknown | null | undefined;
   /** Whether data is loading */
   isLoading: boolean;
   /** Current plan tier */

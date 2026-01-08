@@ -12,7 +12,7 @@ const STORAGE_KEYS = {
   SEO_ANALYSIS: 'seoAnalysis',
 } as const;
 
-type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
+type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
 
 /**
  * Safe localStorage getter with error handling
@@ -90,12 +90,12 @@ export const authStorage = {
   getToken: () => getLocalStorage(STORAGE_KEYS.AUTH_TOKEN),
   setToken: (token: string) => setLocalStorage(STORAGE_KEYS.AUTH_TOKEN, token),
   removeToken: () => removeLocalStorage(STORAGE_KEYS.AUTH_TOKEN),
-  
+
   getRefreshToken: () => getLocalStorage(STORAGE_KEYS.REFRESH_TOKEN),
   setRefreshToken: (token: string) => setLocalStorage(STORAGE_KEYS.REFRESH_TOKEN, token),
   removeRefreshToken: () => removeLocalStorage(STORAGE_KEYS.REFRESH_TOKEN),
-  
-  getUser: <T = any>(): T | null => {
+
+  getUser: <T = unknown>(): T | null => {
     const userStr = getLocalStorage(STORAGE_KEYS.USER);
     if (!userStr) return null;
     try {
@@ -112,7 +112,7 @@ export const authStorage = {
     }
   },
   removeUser: () => removeLocalStorage(STORAGE_KEYS.USER),
-  
+
   clear: () => {
     authStorage.removeToken();
     authStorage.removeRefreshToken();
@@ -126,13 +126,12 @@ export const authStorage = {
 
 export const projectStorage = {
   getCurrentProjectId: () => getLocalStorage(STORAGE_KEYS.CURRENT_PROJECT_ID),
-  setCurrentProjectId: (projectId: string) => 
+  setCurrentProjectId: (projectId: string) =>
     setLocalStorage(STORAGE_KEYS.CURRENT_PROJECT_ID, projectId),
   removeCurrentProjectId: () => removeLocalStorage(STORAGE_KEYS.CURRENT_PROJECT_ID),
-  
+
   getProjectId: () => getLocalStorage(STORAGE_KEYS.PROJECT_ID),
-  setProjectId: (projectId: string) => 
-    setLocalStorage(STORAGE_KEYS.PROJECT_ID, projectId),
+  setProjectId: (projectId: string) => setLocalStorage(STORAGE_KEYS.PROJECT_ID, projectId),
   removeProjectId: () => removeLocalStorage(STORAGE_KEYS.PROJECT_ID),
 };
 
@@ -141,7 +140,7 @@ export const projectStorage = {
 // ============================================================================
 
 export const sessionStorageUtil = {
-  getSeoAnalysis: <T = any>(): T | null => {
+  getSeoAnalysis: <T = unknown>(): T | null => {
     const analysisStr = getSessionStorage(STORAGE_KEYS.SEO_ANALYSIS);
     if (!analysisStr) return null;
     try {
@@ -175,22 +174,22 @@ export const sessionStorageUtil = {
 export function getAuthHeaders(): HeadersInit {
   const token = authStorage.getToken();
   const headers: HeadersInit = {};
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   // Add CSRF token if available (for state-changing operations)
   const csrfToken = sessionStorage.getItem('csrf-token');
   if (csrfToken) {
     headers['X-CSRF-Token'] = csrfToken;
   }
-  
+
   // Add request ID for tracking
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     headers['X-Request-ID'] = crypto.randomUUID();
   }
-  
+
   return headers;
 }
 
@@ -208,7 +207,7 @@ export async function fetchCsrfToken(): Promise<string | null> {
     const response = await fetch('/api/csrf', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -226,4 +225,3 @@ export async function fetchCsrfToken(): Promise<string | null> {
     return null;
   }
 }
-

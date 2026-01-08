@@ -6,7 +6,7 @@
  * Component Hierarchy:
  * App → Projects/New → ProjectContextStep (this file)
  *
- * Step 2 form card for optional project context.
+ * Step 2 form card for optional industry/audience context.
  */
 
 import {
@@ -16,52 +16,43 @@ import {
   HStack,
   Heading,
   Icon,
-  Text,
   FormControl,
   FormLabel,
   FormHelperText,
-  Input,
   Select,
   Textarea,
   Button,
-  Badge,
-  Divider,
+  ButtonGroup,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { FiTarget, FiBriefcase, FiUsers, FiArrowLeft, FiCheck } from 'react-icons/fi';
-import type { UseFormRegister } from 'react-hook-form';
+import { FiBriefcase, FiArrowLeft, FiCheck } from 'react-icons/fi';
+import type { UseFormReturn } from 'react-hook-form';
+import type { ProjectFormValues } from '@/types/forms/project';
 
 const MotionCard = motion(Card);
 
 const INDUSTRIES = [
   'Technology',
   'E-commerce',
-  'Finance',
   'Healthcare',
+  'Finance',
   'Education',
-  'Marketing',
   'Real Estate',
   'Travel',
   'Food & Beverage',
-  'Entertainment',
   'Professional Services',
   'Other',
 ];
 
-type FormValues = {
-  industry?: string;
-  targetAudience?: string;
-  businessGoals?: string;
-  competitors?: string;
-};
-
-type Props = {
-  register: UseFormRegister<FormValues>;
+interface Props {
+  form: UseFormReturn<ProjectFormValues>;
   onBack: () => void;
   isSubmitting: boolean;
-};
+}
 
-export function ProjectContextStep({ register, onBack, isSubmitting }: Props) {
+export function ProjectContextStep({ form, onBack, isSubmitting }: Props) {
+  const { register } = form;
+
   return (
     <MotionCard
       initial={{ opacity: 0, x: 20 }}
@@ -72,72 +63,75 @@ export function ProjectContextStep({ register, onBack, isSubmitting }: Props) {
     >
       <CardBody p={8}>
         <VStack spacing={6} align="stretch">
-          <HStack spacing={3} mb={2}>
-            <Icon as={FiTarget} boxSize={6} color="brand.orange" />
-            <Heading size="md">Additional Context</Heading>
-            <Badge colorScheme="gray" ml="auto">
-              Optional
-            </Badge>
+          <HStack>
+            <Icon as={FiBriefcase} color="orange.500" fontSize="2xl" />
+            <Heading size="md" color="gray.800">
+              Project Context
+            </Heading>
           </HStack>
-          <Text color="gray.500" fontSize="sm" mt={-4}>
-            Help Phoo understand your business better for tailored insights
-          </Text>
 
           <FormControl>
-            <FormLabel>
-              <HStack spacing={2}>
-                <Icon as={FiBriefcase} />
-                <Text>Industry</Text>
-              </HStack>
+            <FormLabel fontWeight="medium" color="gray.700">
+              Industry (Optional)
             </FormLabel>
-            <Select placeholder="Select industry" {...register('industry')}>
-              {INDUSTRIES.map((ind) => (
-                <option key={ind} value={ind.toLowerCase()}>
-                  {ind}
+            <Select
+              {...register('industry')}
+              placeholder="Select industry"
+              size="lg"
+              bg="gray.50"
+              border="1px solid"
+              borderColor="gray.200"
+              _focus={{ borderColor: 'orange.400', bg: 'white' }}
+            >
+              {INDUSTRIES.map((industry) => (
+                <option key={industry} value={industry}>
+                  {industry}
                 </option>
               ))}
             </Select>
           </FormControl>
 
           <FormControl>
-            <FormLabel>
-              <HStack spacing={2}>
-                <Icon as={FiUsers} />
-                <Text>Target Audience</Text>
-              </HStack>
+            <FormLabel fontWeight="medium" color="gray.700">
+              Target Audience (Optional)
             </FormLabel>
             <Textarea
-              placeholder="e.g., Small business owners, marketing managers, tech startups..."
               {...register('targetAudience')}
-              rows={2}
+              placeholder="Describe your ideal customers..."
+              size="lg"
+              bg="gray.50"
+              border="1px solid"
+              borderColor="gray.200"
+              _focus={{ borderColor: 'orange.400', bg: 'white' }}
             />
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>Business Goals</FormLabel>
-            <Textarea
-              placeholder="e.g., Increase organic traffic by 50%, rank for 'best CRM software'..."
-              {...register('businessGoals')}
-              rows={2}
-            />
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>Primary Competitors</FormLabel>
-            <Textarea
-              placeholder="e.g., competitor1.com, competitor2.com"
-              {...register('competitors')}
-              rows={2}
-            />
-            <FormHelperText>
-              We'll analyze these for content and keyword opportunities
+            <FormHelperText color="gray.500">
+              E.g., &quot;Small business owners aged 30-50&quot;
             </FormHelperText>
           </FormControl>
 
-          <Divider />
+          <FormControl>
+            <FormLabel fontWeight="medium" color="gray.700">
+              Business Goals (Optional)
+            </FormLabel>
+            <Textarea
+              {...register('businessGoals')}
+              placeholder="What do you want to achieve?"
+              size="lg"
+              bg="gray.50"
+              border="1px solid"
+              borderColor="gray.200"
+              _focus={{ borderColor: 'orange.400', bg: 'white' }}
+            />
+          </FormControl>
 
-          <HStack justify="space-between" pt={2}>
-            <Button variant="ghost" leftIcon={<FiArrowLeft />} onClick={onBack}>
+          <ButtonGroup spacing={4} mt={4}>
+            <Button
+              variant="outline"
+              colorScheme="gray"
+              size="lg"
+              leftIcon={<FiArrowLeft />}
+              onClick={onBack}
+            >
               Back
             </Button>
             <Button
@@ -146,11 +140,11 @@ export function ProjectContextStep({ register, onBack, isSubmitting }: Props) {
               size="lg"
               rightIcon={<FiCheck />}
               isLoading={isSubmitting}
-              loadingText="Creating..."
+              flex={1}
             >
               Create Project
             </Button>
-          </HStack>
+          </ButtonGroup>
         </VStack>
       </CardBody>
     </MotionCard>

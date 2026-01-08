@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getRoot, $isTextNode } from 'lexical';
+import { $getRoot, $isTextNode, $isElementNode, LexicalNode } from 'lexical';
 import { $isHeadingNode } from '@lexical/rich-text';
 import { VStack, HStack, Text, Badge, Box } from '@chakra-ui/react';
 
@@ -29,7 +29,7 @@ export function useSEOValidation(content: string): SEOCheck[] {
         let text = '';
         let internalLinks = 0;
 
-        function traverse(node: any) {
+        function traverse(node: LexicalNode) {
           if ($isTextNode(node)) {
             const textContent = node.getTextContent();
             text += textContent + ' ';
@@ -44,22 +44,27 @@ export function useSEOValidation(content: string): SEOCheck[] {
             else if (tag === 'h2') h2Count++;
             else if (tag === 'h3') h3Count++;
           }
-          
-          const children = node.getChildren();
-          for (const child of children) {
-            traverse(child);
+
+          if ($isElementNode(node)) {
+            const children = node.getChildren();
+            for (const child of children) {
+              traverse(child);
+            }
           }
         }
 
         traverse(root);
-        
+
         // Count words
-        const wordArray = text.trim().split(/\s+/).filter(word => word.length > 0);
+        const wordArray = text
+          .trim()
+          .split(/\s+/)
+          .filter((word) => word.length > 0);
         wordCount = wordArray.length;
-        
+
         // Calculate H2 density
         const h2Density = wordCount > 0 ? (h2Count / wordCount) * 1000 : 0;
-        
+
         const newChecks: SEOCheck[] = [
           {
             item: 'Word count ≥ 800',
@@ -97,7 +102,7 @@ export function useSEOValidation(content: string): SEOCheck[] {
             target: 3,
           },
         ];
-        
+
         setChecks(newChecks);
       });
     });
@@ -108,13 +113,15 @@ export function useSEOValidation(content: string): SEOCheck[] {
 
 export function SEOValidationPlugin({ content }: { content: string }) {
   const checks = useSEOValidation(content);
-  const allPassed = checks.every(c => c.passed);
-  const passedCount = checks.filter(c => c.passed).length;
+  const allPassed = checks.every((c) => c.passed);
+  const passedCount = checks.filter((c) => c.passed).length;
 
   return (
     <VStack align="stretch" spacing={2}>
       <HStack justify="space-between">
-        <Text fontSize="sm" fontWeight="semibold">SEO Checklist</Text>
+        <Text fontSize="sm" fontWeight="semibold">
+          SEO Checklist
+        </Text>
         <Badge colorScheme={allPassed ? 'green' : 'yellow'}>
           {passedCount}/{checks.length}
         </Badge>
@@ -136,4 +143,3 @@ export function SEOValidationPlugin({ content }: { content: string }) {
     </VStack>
   );
 }
-

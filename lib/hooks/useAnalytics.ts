@@ -16,15 +16,29 @@ interface UseAnalyticsOptions {
   skip?: boolean;
 }
 
+interface MRScore {
+  overall: number;
+  tier: string;
+  [key: string]: unknown;
+}
+
+interface Insight {
+  _id: string;
+  type: string;
+  title: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
 interface UseAnalyticsResult {
   /** MR score object */
-  mrScore: any | null | undefined;
+  mrScore: MRScore | null | undefined;
   /** All insights */
-  insights: any[] | undefined;
+  insights: Insight[];
   /** Quick win insights (filtered) */
-  quickWins: any[];
+  quickWins: Insight[];
   /** Content gap insights (filtered) */
-  contentGaps: any[];
+  contentGaps: Insight[];
   /** Whether data is still loading */
   isLoading: boolean;
   /** Current MR tier */
@@ -70,8 +84,8 @@ export function useAnalytics(
 
     // Filter insights by type
     const insightList = insights ?? [];
-    const quickWins = insightList.filter((i: any) => i.type === 'quick_win');
-    const contentGaps = insightList.filter((i: any) => i.type === 'content_gap');
+    const quickWins = insightList.filter((i: Insight) => i.type === 'quick_win');
+    const contentGaps = insightList.filter((i: Insight) => i.type === 'content_gap');
 
     return {
       mrScore,

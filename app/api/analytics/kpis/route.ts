@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery } from '@/lib/convexClient';
+import { callConvexQuery, api } from '@/lib/convexClient';
+import { Id } from '@/convex/_generated/dataModel';
 
 export const dynamic = 'force-dynamic';
 
-// Import api dynamically
-let api: any = null;
-if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
-  }
+interface KPIData {
+  sessions: number;
+  clicks: number;
+  ctr: number;
+  avgPosition: number;
+  leads: number;
+  revenue: number;
+  conversionRate: number;
+}
+
+interface KPIWithChange {
+  value: number;
+  change: number;
+  previous: number;
 }
 
 export async function GET(request: NextRequest) {
@@ -29,38 +36,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!api) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
-    }
-
     // Get current period KPIs
-    const currentKPIs = await callConvexQuery(api.analytics.analytics.getKPIs, {
-      projectId: projectId as any,
+    const currentKPIs = (await callConvexQuery(api.analytics.analytics.getKPIs, {
+      projectId: projectId as Id<'projects'>,
       startDate: parseInt(startDate),
       endDate: parseInt(endDate),
-    });
+    })) as KPIData;
 
     // Get previous period for comparison
     const periodLength = parseInt(endDate) - parseInt(startDate);
     const prevStartDate = parseInt(startDate) - periodLength;
     const prevEndDate = parseInt(startDate) - 1;
 
-    const previousKPIs = await callConvexQuery(api.analytics.analytics.getKPIs, {
-      projectId: projectId as any,
+    const previousKPIs = (await callConvexQuery(api.analytics.analytics.getKPIs, {
+      projectId: projectId as Id<'projects'>,
       startDate: prevStartDate,
       endDate: prevEndDate,
-    });
+    })) as KPIData;
 
     // Calculate changes
-    const calculateChange = (current: number, previous: number) => {
+    const calculateChange = (current: number, previous: number): number => {
       if (previous === 0) return current > 0 ? 100 : 0;
       return ((current - previous) / previous) * 100;
     };
 
-    const kpis = {
+    const kpis: Record<keyof KPIData, KPIWithChange> = {
       sessions: {
         value: currentKPIs.sessions,
         change: calculateChange(currentKPIs.sessions, previousKPIs.sessions),
@@ -101,10 +101,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ kpis });
   } catch (error) {
     console.error('Get KPIs error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get KPIs' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get KPIs' }, { status: 500 });
   }
 }
-

@@ -20,11 +20,11 @@ interface UseKeywordsOptions {
 
 interface UseKeywordsResult {
   /** Active keyword clusters */
-  clusters: any[] | undefined;
+  clusters: unknown[] | undefined;
   /** GSC keywords (latest snapshot) */
-  gscKeywords: any[] | undefined;
+  gscKeywords: unknown[] | undefined;
   /** Project keywords */
-  projectKeywords: any[] | undefined;
+  projectKeywords: unknown[] | undefined;
   /** Whether any data is still loading */
   isLoading: boolean;
   /** Total cluster count */

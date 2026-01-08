@@ -35,17 +35,9 @@ import { sanitizeErrorMessage } from '@/lib/errorSanitizer';
 
 // Extracted components
 import { ProjectBasicsStep, ProjectContextStep } from '@/src/components/projects';
+import type { ProjectFormValues } from '@/types/forms/project';
 
 const MotionBox = motion(Box);
-
-interface NewProjectFormValues {
-  name: string;
-  websiteUrl: string;
-  industry?: string;
-  targetAudience?: string;
-  businessGoals?: string;
-  competitors?: string;
-}
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -56,13 +48,7 @@ export default function NewProjectPage() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    watch,
-    trigger,
-  } = useForm<NewProjectFormValues>({
+  const form = useForm<ProjectFormValues>({
     defaultValues: {
       name: '',
       websiteUrl: '',
@@ -73,10 +59,12 @@ export default function NewProjectPage() {
     },
   });
 
+  const { handleSubmit, watch, trigger } = form;
+
   const websiteUrl = watch('websiteUrl');
   const name = watch('name');
 
-  const onSubmit = async (data: NewProjectFormValues) => {
+  const onSubmit = async (data: ProjectFormValues) => {
     setIsSubmitting(true);
     try {
       const projectId = await createProject({
@@ -92,7 +80,7 @@ export default function NewProjectPage() {
       });
       if (typeof window !== 'undefined') localStorage.setItem('currentProjectId', projectId);
       router.push('/home');
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Failed to create project',
         description: sanitizeErrorMessage(error, 'Please try again.'),
@@ -169,15 +157,14 @@ export default function NewProjectPage() {
           <form onSubmit={handleSubmit(onSubmit)}>
             {step === 1 && (
               <ProjectBasicsStep
-                register={register}
-                errors={errors}
+                form={form}
                 onNext={nextStep}
                 isNextDisabled={!name || !websiteUrl}
               />
             )}
             {step === 2 && (
               <ProjectContextStep
-                register={register}
+                form={form}
                 onBack={() => setStep(1)}
                 isSubmitting={isSubmitting}
               />

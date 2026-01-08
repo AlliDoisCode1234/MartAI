@@ -21,6 +21,16 @@ export interface ShopifyAuth {
   apiVersion?: string;
 }
 
+export interface ShopifyPageResponse {
+  id: number;
+  title: string;
+  handle: string;
+  body_html: string;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export class ShopifyClient {
   private shopDomain: string;
   private accessToken: string;
@@ -49,9 +59,9 @@ export class ShopifyClient {
       const data = await response.json();
       return { valid: true, shopName: data.shop?.name };
     } catch (error) {
-      return { 
-        valid: false, 
-        error: error instanceof Error ? error.message : 'Connection failed' 
+      return {
+        valid: false,
+        error: error instanceof Error ? error.message : 'Connection failed',
       };
     }
   }
@@ -74,9 +84,9 @@ export class ShopifyClient {
 
       return { canPublish: true };
     } catch (error) {
-      return { 
-        canPublish: false, 
-        error: error instanceof Error ? error.message : 'Failed to check permissions' 
+      return {
+        canPublish: false,
+        error: error instanceof Error ? error.message : 'Failed to check permissions',
       };
     }
   }
@@ -117,11 +127,16 @@ export class ShopifyClient {
       };
     } catch (error) {
       console.error('Shopify API Error:', error);
-      throw new Error(`Shopify API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Shopify API error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
-  async updatePage(pageId: number, page: Partial<ShopifyPage>): Promise<{ id: number; handle: string; url: string }> {
+  async updatePage(
+    pageId: number,
+    page: Partial<ShopifyPage>
+  ): Promise<{ id: number; handle: string; url: string }> {
     try {
       const response = await fetch(
         `https://${this.shopDomain}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/pages/${pageId}.json`,
@@ -157,11 +172,13 @@ export class ShopifyClient {
       };
     } catch (error) {
       console.error('Shopify API Error:', error);
-      throw new Error(`Shopify API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Shopify API error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
-  async getPages(): Promise<any[]> {
+  async getPages(): Promise<ShopifyPageResponse[]> {
     try {
       const response = await fetch(
         `https://${this.shopDomain}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/pages.json`,
@@ -183,17 +200,21 @@ export class ShopifyClient {
       throw error;
     }
   }
-
 }
 
 // OAuth flow helpers
-export function getShopifyOAuthUrl(shopDomain: string, clientId: string, redirectUri: string, scopes: string[] = ['write_content', 'read_content']): string {
+export function getShopifyOAuthUrl(
+  shopDomain: string,
+  clientId: string,
+  redirectUri: string,
+  scopes: string[] = ['write_content', 'read_content']
+): string {
   const params = new URLSearchParams({
     client_id: clientId,
     scope: scopes.join(','),
     redirect_uri: redirectUri,
   });
-  
+
   return `https://${shopDomain}.myshopify.com/admin/oauth/authorize?${params.toString()}`;
 }
 
@@ -205,13 +226,16 @@ export function generateServicesPageContent(
 ): string {
   const primaryKeyword = keywords[0] || `${industry} services`;
   const secondaryKeywords = keywords.slice(1, 5).join(', ');
-  
+
   return `<h1>${primaryKeyword.charAt(0).toUpperCase() + primaryKeyword.slice(1)}</h1>
 <p>${companyName} provides comprehensive ${industry} solutions tailored for ${targetAudience}. Our expert team delivers results-driven strategies to help your business grow and succeed.</p>
 
 <h2>Our ${industry} Services</h2>
 <ul>
-${keywords.slice(0, 8).map(kw => `  <li>${kw.charAt(0).toUpperCase() + kw.slice(1)}</li>`).join('\n')}
+${keywords
+  .slice(0, 8)
+  .map((kw) => `  <li>${kw.charAt(0).toUpperCase() + kw.slice(1)}</li>`)
+  .join('\n')}
 </ul>
 
 <h2>Why Choose ${companyName}?</h2>
@@ -220,4 +244,3 @@ ${keywords.slice(0, 8).map(kw => `  <li>${kw.charAt(0).toUpperCase() + kw.slice(
 <h2>Get Started Today</h2>
 <p>Ready to take your ${industry} strategy to the next level? Contact us today to discuss how we can help you achieve your goals.</p>`;
 }
-

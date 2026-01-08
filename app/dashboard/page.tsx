@@ -179,12 +179,12 @@ export default function DashboardPage() {
                     ? {
                         overall: mrScore.overall,
                         tier: mrScore.tier,
-                        visibility: mrScore.visibility,
-                        trafficHealth: mrScore.trafficHealth,
-                        ctrPerformance: mrScore.ctrPerformance,
-                        engagementQuality: mrScore.engagementQuality,
-                        quickWinPotential: mrScore.quickWinPotential,
-                        contentVelocity: mrScore.contentVelocity,
+                        visibility: mrScore.visibility ?? 0,
+                        trafficHealth: mrScore.trafficHealth ?? 0,
+                        ctrPerformance: mrScore.ctrPerformance ?? 0,
+                        engagementQuality: mrScore.engagementQuality ?? 0,
+                        quickWinPotential: mrScore.quickWinPotential ?? 0,
+                        contentVelocity: mrScore.contentVelocity ?? 0,
                       }
                     : null
                 }

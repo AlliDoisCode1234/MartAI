@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery } from '@/lib/convexClient';
-
-// Import api dynamically
-let api: any = null;
-if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
-  }
-}
+import { callConvexQuery, api } from '@/lib/convexClient';
+import { Id } from '@/convex/_generated/dataModel';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,15 +19,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!api) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
-    }
-
     const data = await callConvexQuery(api.analytics.analytics.getAnalyticsData, {
-      projectId: projectId as any,
+      projectId: projectId as Id<'projects'>,
       startDate: parseInt(startDate),
       endDate: parseInt(endDate),
       source: source || undefined,
@@ -45,10 +29,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data });
   } catch (error) {
     console.error('Get analytics data error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get analytics data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get analytics data' }, { status: 500 });
   }
 }
-

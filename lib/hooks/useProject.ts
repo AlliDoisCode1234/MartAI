@@ -19,19 +19,87 @@ interface UseProjectOptions {
   autoSelect?: boolean;
 }
 
+/** Basic project document shape */
+interface ProjectData {
+  _id: Id<'projects'>;
+  name: string;
+  websiteUrl?: string;
+  industry?: string;
+  projectType?: 'own' | 'competitor';
+  serpAnalysisUsed?: boolean;
+}
+
+/** GA4/GSC connection shape */
+interface ConnectionData {
+  _id: string;
+  projectId: string;
+  [key: string]: unknown;
+}
+
+/** MR Score shape */
+interface MRScoreData {
+  overall: number;
+  tier: string;
+  visibility?: number;
+  trafficHealth?: number;
+  ctrPerformance?: number;
+  engagementQuality?: number;
+  quickWinPotential?: number;
+  contentVelocity?: number;
+}
+
+/** Cluster data shape */
+interface ClusterData {
+  _id?: string;
+  clusterName?: string;
+  keywords?: string[];
+  intent?: string;
+}
+
+/** Brief data shape - matches ContentCalendarCard.Brief */
+interface BriefData {
+  _id: string;
+  title: string;
+  status: string;
+  scheduledDate: number;
+  week?: number;
+}
+
+/** Plan data shape */
+interface PlanData {
+  briefs?: BriefData[];
+  contentVelocity?: number;
+  goals?: {
+    traffic?: number;
+    leads?: number;
+  };
+  assumptions?: string;
+}
+
+/** Strategy data shape */
+interface StrategyData {
+  clusters?: ClusterData[];
+  plan?: PlanData;
+  stats?: {
+    briefCount?: number;
+    keywordCount?: number;
+    clusterCount?: number;
+  };
+}
+
 interface UseProjectResult {
   /** The resolved project ID (from param or auto-selected) */
   projectId: string | null;
   /** The project document */
-  project: any | null | undefined;
+  project: ProjectData | null | undefined;
   /** GA4 connection status */
-  ga4Connection: any | null | undefined;
+  ga4Connection: ConnectionData | null | undefined;
   /** GSC connection status */
-  gscConnection: any | null | undefined;
+  gscConnection: ConnectionData | null | undefined;
   /** Latest MR score */
-  mrScore: any | null | undefined;
+  mrScore: MRScoreData | null | undefined;
   /** Strategy data (clusters + plan) */
-  strategyData: any | null | undefined;
+  strategyData: StrategyData | null | undefined;
   /** Whether any data is still loading */
   isLoading: boolean;
   /** Whether project selection is still loading (for autoSelect mode) */
@@ -88,7 +156,9 @@ export function useProject(
       typeof window !== 'undefined' ? localStorage.getItem('currentProjectId') : null;
 
     // Validate stored ID exists in user's projects
-    const matchedProject = storedId ? userProjects.find((p: any) => p._id === storedId) : null;
+    const matchedProject = storedId
+      ? userProjects.find((p: { _id: string }) => p._id === storedId)
+      : null;
 
     const selectedProject = matchedProject ?? userProjects[0];
     const selectedId = selectedProject._id as string;

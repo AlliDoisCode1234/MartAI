@@ -25,20 +25,23 @@ import {
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { FiGlobe, FiArrowRight } from 'react-icons/fi';
-import type { UseFormRegister, FieldErrors } from 'react-hook-form';
+import type { UseFormReturn } from 'react-hook-form';
+import type { ProjectFormValues } from '@/types/forms/project';
 
 const MotionCard = motion(Card);
 
-type FormValues = { name: string; websiteUrl: string };
-
-type Props = {
-  register: UseFormRegister<FormValues>;
-  errors: FieldErrors<FormValues>;
+interface Props {
+  form: UseFormReturn<ProjectFormValues>;
   onNext: () => void;
   isNextDisabled: boolean;
-};
+}
 
-export function ProjectBasicsStep({ register, errors, onNext, isNextDisabled }: Props) {
+export function ProjectBasicsStep({ form, onNext, isNextDisabled }: Props) {
+  const {
+    register,
+    formState: { errors },
+  } = form;
+
   return (
     <MotionCard
       initial={{ opacity: 0, x: -20 }}
@@ -49,52 +52,64 @@ export function ProjectBasicsStep({ register, errors, onNext, isNextDisabled }: 
     >
       <CardBody p={8}>
         <VStack spacing={6} align="stretch">
-          <HStack spacing={3} mb={2}>
-            <Icon as={FiGlobe} boxSize={6} color="brand.orange" />
-            <Heading size="md">Website Details</Heading>
+          <HStack>
+            <Icon as={FiGlobe} color="orange.500" fontSize="2xl" />
+            <Heading size="md" color="gray.800">
+              Project Basics
+            </Heading>
           </HStack>
 
-          <FormControl isInvalid={!!errors.name} isRequired>
-            <FormLabel>Project Name</FormLabel>
+          <FormControl isInvalid={!!errors.name}>
+            <FormLabel fontWeight="medium" color="gray.700">
+              Project Name
+            </FormLabel>
             <Input
-              size="lg"
+              {...register('name', { required: 'Project name is required' })}
               placeholder="My Awesome Website"
-              {...register('name', {
-                required: 'Project name is required',
-                minLength: { value: 2, message: 'At least 2 characters' },
-              })}
+              size="lg"
+              bg="gray.50"
+              border="1px solid"
+              borderColor="gray.200"
+              _focus={{ borderColor: 'orange.400', bg: 'white' }}
             />
             <FormErrorMessage>{errors.name?.message}</FormErrorMessage>
           </FormControl>
 
-          <FormControl isInvalid={!!errors.websiteUrl} isRequired>
-            <FormLabel>Website URL</FormLabel>
+          <FormControl isInvalid={!!errors.websiteUrl}>
+            <FormLabel fontWeight="medium" color="gray.700">
+              Website URL
+            </FormLabel>
             <Input
-              size="lg"
-              placeholder="https://example.com"
               {...register('websiteUrl', {
                 required: 'Website URL is required',
                 pattern: {
-                  value: /^https?:\/\/.+/i,
-                  message: 'Must be a valid URL starting with http:// or https://',
+                  value: /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/,
+                  message: 'Please enter a valid URL',
                 },
               })}
+              placeholder="https://example.com"
+              size="lg"
+              bg="gray.50"
+              border="1px solid"
+              borderColor="gray.200"
+              _focus={{ borderColor: 'orange.400', bg: 'white' }}
             />
-            <FormHelperText>Enter the main URL of the website you want to analyze</FormHelperText>
+            <FormHelperText color="gray.500">
+              Enter your website&apos;s URL for analysis and optimization
+            </FormHelperText>
             <FormErrorMessage>{errors.websiteUrl?.message}</FormErrorMessage>
           </FormControl>
 
-          <HStack justify="flex-end" pt={4}>
-            <Button
-              colorScheme="orange"
-              size="lg"
-              rightIcon={<FiArrowRight />}
-              onClick={onNext}
-              isDisabled={isNextDisabled}
-            >
-              Continue
-            </Button>
-          </HStack>
+          <Button
+            colorScheme="orange"
+            size="lg"
+            rightIcon={<FiArrowRight />}
+            onClick={onNext}
+            isDisabled={isNextDisabled}
+            mt={4}
+          >
+            Continue
+          </Button>
         </VStack>
       </CardBody>
     </MotionCard>

@@ -165,7 +165,7 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no expla
       return {
         clusterName: cluster.clusterName,
         keywords: cluster.keywords,
-        intent: cluster.intent as any,
+        intent: cluster.intent,
         volumeRange: cluster.estimatedVolume,
         difficulty: cluster.difficulty,
         impactScore: Math.round(impactScore * 100) / 100,
@@ -301,12 +301,24 @@ export function rerankClustersByImpact(
 /**
  * Import keywords from GSC data
  */
-export function importKeywordsFromGSC(gscData: any): KeywordInput[] {
+interface GSCDataRow {
+  keys?: string[];
+  impressions?: number;
+  clicks?: number;
+  position?: number;
+  ctr?: number;
+}
+
+interface GSCDataResponse {
+  rows?: GSCDataRow[];
+}
+
+export function importKeywordsFromGSC(gscData: GSCDataResponse): KeywordInput[] {
   if (!gscData?.rows) {
     return [];
   }
 
-  return gscData.rows.map((row: any) => ({
+  return gscData.rows.map((row: GSCDataRow) => ({
     keyword: row.keys?.[0] || '',
     volume: row.impressions || 0,
     difficulty: 50, // Default, can be enhanced with external API

@@ -54,7 +54,7 @@ export function IntegrationCard({ integration, onConnect, loading }: Props) {
             </VStack>
           )}
           <Button
-            colorScheme={info.color as any}
+            colorScheme={info.color}
             onClick={onConnect}
             isDisabled={loading}
             isLoading={loading}

@@ -36,10 +36,10 @@ type Brief = {
 
 type Props = {
   briefs: Brief[];
-  contentVelocity: number;
+  contentVelocity?: number;
 };
 
-export function ContentCalendarCard({ briefs, contentVelocity }: Props) {
+export function ContentCalendarCard({ briefs, contentVelocity = 0 }: Props) {
   if (!briefs || briefs.length === 0) return null;
 
   return (

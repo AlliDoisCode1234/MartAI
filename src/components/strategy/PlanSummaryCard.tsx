@@ -24,8 +24,8 @@ import {
 
 type Props = {
   plan: {
-    contentVelocity: number;
-    goals: {
+    contentVelocity?: number;
+    goals?: {
       traffic?: number;
       leads?: number;
     };
@@ -34,6 +34,9 @@ type Props = {
 };
 
 export function PlanSummaryCard({ plan }: Props) {
+  const velocity = plan.contentVelocity ?? 0;
+  const goals = plan.goals ?? {};
+
   return (
     <Card bg="rgba(30, 30, 30, 0.6)" borderWidth="1px" borderColor="rgba(255, 255, 255, 0.1)">
       <CardBody>
@@ -44,22 +47,20 @@ export function PlanSummaryCard({ plan }: Props) {
           <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={4}>
             <Stat>
               <StatLabel color="gray.400">Content Velocity</StatLabel>
-              <StatNumber color="white">{plan.contentVelocity} posts/week</StatNumber>
-              <StatHelpText color="gray.500">
-                12 weeks = {plan.contentVelocity * 12} total posts
-              </StatHelpText>
+              <StatNumber color="white">{velocity} posts/week</StatNumber>
+              <StatHelpText color="gray.500">12 weeks = {velocity * 12} total posts</StatHelpText>
             </Stat>
-            {plan.goals.traffic && (
+            {goals.traffic && (
               <Stat>
                 <StatLabel color="gray.400">Traffic Goal</StatLabel>
-                <StatNumber color="white">{plan.goals.traffic.toLocaleString()}</StatNumber>
+                <StatNumber color="white">{goals.traffic.toLocaleString()}</StatNumber>
                 <StatHelpText color="gray.500">Estimated visitors</StatHelpText>
               </Stat>
             )}
-            {plan.goals.leads && (
+            {goals.leads && (
               <Stat>
                 <StatLabel color="gray.400">Leads Goal</StatLabel>
-                <StatNumber color="white">{plan.goals.leads.toLocaleString()}</StatNumber>
+                <StatNumber color="white">{goals.leads.toLocaleString()}</StatNumber>
                 <StatHelpText color="gray.500">Estimated conversions</StatHelpText>
               </Stat>
             )}

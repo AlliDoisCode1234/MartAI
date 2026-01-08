@@ -39,6 +39,12 @@ import { Id } from '@/convex/_generated/dataModel';
 
 const MotionBox = motion(Box);
 
+interface QuickWin {
+  _id: string;
+  keyword: string;
+  difficulty?: number;
+}
+
 type Props = {
   onTemplateSelect?: (template: ContentTemplate, keyword?: string) => void;
 };
@@ -113,7 +119,7 @@ export function ContentStudioLanding({ onTemplateSelect }: Props) {
                       Low-competition keywords you can rank for quickly:
                     </Text>
                     <HStack spacing={3} flexWrap="wrap">
-                      {(quickWins as any[]).map((win) => (
+                      {quickWins.map((win: QuickWin) => (
                         <Button
                           key={win._id}
                           size="sm"

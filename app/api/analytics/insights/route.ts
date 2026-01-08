@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { Id } from '@/convex/_generated/dataModel';
 
 export const dynamic = 'force-dynamic';
-
-// Import api dynamically
-let api: any = null;
-if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
-  }
-}
 
 // GET - Get insights
 export async function GET(request: NextRequest) {
@@ -23,31 +14,18 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type');
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: 'projectId is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!api) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'projectId is required' }, { status: 400 });
     }
 
     const insights = await callConvexQuery(api.analytics.analytics.getInsights, {
-      projectId: projectId as any,
+      projectId: projectId as Id<'projects'>,
       type: type || undefined,
     });
 
     return NextResponse.json({ insights });
   } catch (error) {
     console.error('Get insights error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get insights' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get insights' }, { status: 500 });
   }
 }
 
@@ -59,30 +37,16 @@ export async function POST(request: NextRequest) {
     const { insightId } = body;
 
     if (!insightId) {
-      return NextResponse.json(
-        { error: 'insightId is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!api) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'insightId is required' }, { status: 400 });
     }
 
     await callConvexMutation(api.analytics.analytics.applyInsight, {
-      insightId: insightId as any,
+      insightId: insightId as string,
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Apply insight error:', error);
-    return NextResponse.json(
-      { error: 'Failed to apply insight' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to apply insight' }, { status: 500 });
   }
 }
-

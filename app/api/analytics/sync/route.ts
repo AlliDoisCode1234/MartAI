@@ -5,16 +5,8 @@ import { getGA4Data, getGSCData } from '@/lib/googleAuth';
 import { formatDate } from '@/lib/dateUtils';
 import { assertProjectId } from '@/lib/typeGuards';
 import type { ProjectId } from '@/types';
-
-// Import api dynamically for routes that need it
-let apiLocal: typeof api = api;
-if (typeof window === 'undefined' && !apiLocal) {
-  try {
-    apiLocal = require('@/convex/_generated/api')?.api;
-  } catch {
-    apiLocal = null as any;
-  }
-}
+import type { GSCRow, AnalyticsDataPoint } from '@/types/external/google';
+import type { Auth } from 'googleapis';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,28 +23,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'projectId is required' }, { status: 400 });
     }
 
-    if (!apiLocal) {
-      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
-    }
-
     // Validate required field - type guaranteed after assertion
     const projectIdTyped = assertProjectId(projectId);
 
     // Get GA4 connection by project
-    const ga4Connection = await callConvexQuery(
-      (apiLocal as any).integrations.ga4Connections.getGA4Connection,
-      {
-        projectId: projectIdTyped,
-      }
-    );
+    const ga4Connection = await callConvexQuery(api.integrations.ga4Connections.getGA4Connection, {
+      projectId: projectIdTyped,
+    });
 
     // Get GSC connection by project
-    const gscConnection = await callConvexQuery(
-      (apiLocal as any).integrations.gscConnections.getGSCConnection,
-      {
-        projectId: projectIdTyped,
-      }
-    );
+    const gscConnection = await callConvexQuery(api.integrations.gscConnections.getGSCConnection, {
+      projectId: projectIdTyped,
+    });
 
     const endDate = Date.now();
     const startDate = endDate - days * 24 * 60 * 60 * 1000;
@@ -71,22 +53,22 @@ export async function POST(request: NextRequest) {
           ga4Connection.propertyId,
           startDateStr,
           endDateStr,
-          async (newTokens: any) => {
-            if (apiLocal) {
-              try {
-                await callConvexMutation(
-                  (apiLocal as any).integrations.ga4Connections.upsertGA4Connection,
-                  {
-                    projectId: projectIdTyped,
-                    propertyId: ga4Connection.propertyId,
-                    propertyName: ga4Connection.propertyName ?? 'Unknown',
-                    accessToken: newTokens.access_token,
-                    refreshToken: newTokens.refresh_token || ga4Connection.refreshToken,
-                  }
-                );
-              } catch (error) {
-                console.warn('Failed to update GA4 tokens in sync:', error);
+          async (newTokens: Auth.Credentials) => {
+            try {
+              // Guard against null/undefined tokens
+              if (!newTokens.access_token) {
+                console.warn('No access token in refreshed credentials, skipping update');
+                return;
               }
+              await callConvexMutation(api.integrations.ga4Connections.upsertGA4Connection, {
+                projectId: projectIdTyped,
+                propertyId: ga4Connection.propertyId,
+                propertyName: ga4Connection.propertyName ?? 'Unknown',
+                accessToken: newTokens.access_token,
+                refreshToken: newTokens.refresh_token ?? ga4Connection.refreshToken,
+              });
+            } catch (tokenError) {
+              console.warn('Failed to update GA4 tokens in sync:', tokenError);
             }
           }
         );
@@ -100,7 +82,7 @@ export async function POST(request: NextRequest) {
             ? new Date(dateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')).getTime()
             : Date.now();
 
-          await callConvexMutation((apiLocal as any).analytics.analytics.storeAnalyticsData, {
+          await callConvexMutation(api.analytics.analytics.storeAnalyticsData, {
             projectId: projectIdTyped,
             date,
             source: 'ga4',
@@ -108,8 +90,8 @@ export async function POST(request: NextRequest) {
           });
           syncedDates.push(date);
         }
-      } catch (error) {
-        console.error('GA4 sync error:', error);
+      } catch (ga4Error) {
+        console.error('GA4 sync error:', ga4Error);
       }
     }
 
@@ -127,44 +109,40 @@ export async function POST(request: NextRequest) {
           startDateStr,
           endDateStr,
           100, // rowLimit default
-          async (newTokens: any) => {
-            if (apiLocal) {
-              try {
-                await callConvexMutation(
-                  (apiLocal as any).integrations.gscConnections.upsertGSCConnection,
-                  {
-                    projectId: projectIdTyped,
-                    siteUrl: gscConnection.siteUrl,
-                    accessToken: newTokens.access_token,
-                    refreshToken: newTokens.refresh_token || gscConnection.refreshToken,
-                  }
-                );
-              } catch (error) {
-                console.warn('Failed to update GSC tokens in sync:', error);
+          async (newTokens: Auth.Credentials) => {
+            try {
+              // Guard against null/undefined tokens
+              if (!newTokens.access_token) {
+                console.warn('No access token in refreshed credentials, skipping update');
+                return;
               }
+              await callConvexMutation(api.integrations.gscConnections.upsertGSCConnection, {
+                projectId: projectIdTyped,
+                siteUrl: gscConnection.siteUrl,
+                accessToken: newTokens.access_token,
+                refreshToken: newTokens.refresh_token ?? gscConnection.refreshToken,
+              });
+            } catch (tokenError) {
+              console.warn('Failed to update GSC tokens in sync:', tokenError);
             }
           }
         );
 
         // Parse GSC response - it returns aggregated data, not daily
         // For now, store as single data point or parse if daily data available
-        const rows = gscData.rows || [];
+        const rows: GSCRow[] = gscData.rows || [];
         if (rows.length > 0) {
           // GSC typically returns aggregated data, store as end date
-          const totalClicks = rows.reduce(
-            (sum: number, r: any) => sum + (parseInt(r.clicks) || 0),
-            0
-          );
+          const totalClicks = rows.reduce((sum: number, r: GSCRow) => sum + (r.clicks || 0), 0);
           const totalImpressions = rows.reduce(
-            (sum: number, r: any) => sum + (parseInt(r.impressions) || 0),
+            (sum: number, r: GSCRow) => sum + (r.impressions || 0),
             0
           );
           const avgCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
           const avgPos =
-            rows.reduce((sum: number, r: any) => sum + (parseFloat(r.position) || 0), 0) /
-            rows.length;
+            rows.reduce((sum: number, r: GSCRow) => sum + (r.position || 0), 0) / rows.length;
 
-          await callConvexMutation((apiLocal as any).analytics.analytics.storeAnalyticsData, {
+          await callConvexMutation(api.analytics.analytics.storeAnalyticsData, {
             projectId: projectIdTyped,
             date: endDate,
             source: 'gsc',
@@ -175,8 +153,8 @@ export async function POST(request: NextRequest) {
           });
           syncedDates.push(endDate);
         }
-      } catch (error) {
-        console.error('GSC sync error:', error);
+      } catch (gscError) {
+        console.error('GSC sync error:', gscError);
       }
     }
 
@@ -197,25 +175,23 @@ export async function POST(request: NextRequest) {
 }
 
 async function generateInsights(projectId: ProjectId, startDate: number, endDate: number) {
-  if (!apiLocal) return;
-
   try {
-    const data = await callConvexQuery((apiLocal as any).analytics.analytics.getAnalyticsData, {
+    const data = await callConvexQuery(api.analytics.analytics.getAnalyticsData, {
       projectId,
       startDate,
       endDate,
     });
 
-    // Simple insight generation
-    const ga4Data = data.filter((d: any) => d.source === 'ga4');
-    const gscData = data.filter((d: any) => d.source === 'gsc');
+    // Simple insight generation - type the data properly
+    const analyticsData = data as AnalyticsDataPoint[];
+    const ga4Data = analyticsData.filter((d) => d.source === 'ga4');
+    const gscData = analyticsData.filter((d) => d.source === 'gsc');
 
     // Top gainers - pages with most traffic growth
     if (ga4Data.length > 0) {
-      const avgSessions =
-        ga4Data.reduce((sum: number, d: any) => sum + (d.sessions || 0), 0) / ga4Data.length;
+      const avgSessions = ga4Data.reduce((sum, d) => sum + (d.sessions || 0), 0) / ga4Data.length;
       if (avgSessions > 1000) {
-        await callConvexMutation((apiLocal as any).analytics.analytics.storeInsight, {
+        await callConvexMutation(api.analytics.analytics.storeInsight, {
           projectId,
           type: 'top_gainer',
           title: 'Strong Traffic Growth',
@@ -227,10 +203,9 @@ async function generateInsights(projectId: ProjectId, startDate: number, endDate
 
     // Underperformers - low CTR
     if (gscData.length > 0) {
-      const avgCTR =
-        gscData.reduce((sum: number, d: any) => sum + (d.ctr || 0), 0) / gscData.length;
+      const avgCTR = gscData.reduce((sum, d) => sum + (d.ctr || 0), 0) / gscData.length;
       if (avgCTR < 2) {
-        await callConvexMutation((apiLocal as any).analytics.analytics.storeInsight, {
+        await callConvexMutation(api.analytics.analytics.storeInsight, {
           projectId,
           type: 'underperformer',
           title: 'Low Click-Through Rate',
@@ -242,10 +217,10 @@ async function generateInsights(projectId: ProjectId, startDate: number, endDate
 
     // Quick wins - high impressions, low clicks
     const highImpressions = gscData.filter(
-      (d: any) => (d.impressions || 0) > 1000 && (d.clicks || 0) < 50
+      (d) => (d.impressions || 0) > 1000 && (d.clicks || 0) < 50
     );
     if (highImpressions.length > 0) {
-      await callConvexMutation((apiLocal as any).analytics.analytics.storeInsight, {
+      await callConvexMutation(api.analytics.analytics.storeInsight, {
         projectId,
         type: 'quick_win',
         title: 'Quick Win Opportunity',
@@ -253,7 +228,7 @@ async function generateInsights(projectId: ProjectId, startDate: number, endDate
         action: 'optimize_keywords',
       });
     }
-  } catch (error) {
-    console.error('Generate insights error:', error);
+  } catch (insightError) {
+    console.error('Generate insights error:', insightError);
   }
 }

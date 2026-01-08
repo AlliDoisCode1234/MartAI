@@ -1,35 +1,7 @@
 import { ConvexHttpClient } from 'convex/browser';
-import type { FunctionReference } from 'convex/server';
-import type {
-  ProjectId,
-  BriefId,
-  DraftId,
-  ClusterId,
-  PlanId,
-  UserId,
-  ClientId,
-  InsightId,
-  CompetitorId,
-  BriefVersionId,
-  ScheduledPostId,
-} from '@/types';
+import type { FunctionReference, FunctionArgs, FunctionReturnType } from 'convex/server';
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || '';
-
-// Dynamically import api to avoid build errors when Convex not initialized
-// Use any for the dynamic import since it may not exist during build
-let api: any = null;
-
-// Only try to import in Node.js environment (not during build)
-if (typeof window === 'undefined') {
-  try {
-    const apiModule = require('../convex/_generated/api');
-    api = apiModule?.api || null;
-  } catch (error) {
-    // API not generated yet - this is expected until npx convex dev is run
-    api = null;
-  }
-}
 
 if (!convexUrl) {
   console.warn('NEXT_PUBLIC_CONVEX_URL is not set. Convex features will not work.');
@@ -37,18 +9,17 @@ if (!convexUrl) {
 
 export const convexClient = convexUrl ? new ConvexHttpClient(convexUrl) : null;
 
-// Type-safe helper to call Convex mutations from API routes
-// Generic type preserves the mutation's argument and return types
-export async function callConvexMutation<Args = any, Return = any>(
-  mutation: any,
-  args: Args,
+/**
+ * Type-safe helper to call Convex mutations from API routes.
+ * Uses FunctionReference generics to preserve type safety.
+ */
+export async function callConvexMutation<Fn extends FunctionReference<'mutation'>>(
+  mutation: Fn,
+  args: FunctionArgs<Fn>,
   token?: string
-): Promise<Return> {
+): Promise<FunctionReturnType<Fn>> {
   if (!convexUrl || !convexClient) {
     throw new Error('Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL');
-  }
-  if (!api) {
-    throw new Error("Convex API not generated. Run 'npx convex dev'");
   }
   if (token) {
     convexClient.setAuth(token);
@@ -56,18 +27,17 @@ export async function callConvexMutation<Args = any, Return = any>(
   return await convexClient.mutation(mutation, args);
 }
 
-// Type-safe helper to call Convex queries from API routes
-// Generic type preserves the query's argument and return types
-export async function callConvexQuery<Args = any, Return = any>(
-  query: any,
-  args: Args,
+/**
+ * Type-safe helper to call Convex queries from API routes.
+ * Uses FunctionReference generics to preserve type safety.
+ */
+export async function callConvexQuery<Fn extends FunctionReference<'query'>>(
+  query: Fn,
+  args: FunctionArgs<Fn>,
   token?: string
-): Promise<Return> {
+): Promise<FunctionReturnType<Fn>> {
   if (!convexUrl || !convexClient) {
     throw new Error('Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL');
-  }
-  if (!api) {
-    throw new Error("Convex API not generated. Run 'npx convex dev'");
   }
   if (token) {
     convexClient.setAuth(token);
@@ -75,17 +45,17 @@ export async function callConvexQuery<Args = any, Return = any>(
   return await convexClient.query(query, args);
 }
 
-// Type-safe helper to call Convex actions from API routes
-export async function callConvexAction<Args = any, Return = any>(
-  action: any,
-  args: Args,
+/**
+ * Type-safe helper to call Convex actions from API routes.
+ * Uses FunctionReference generics to preserve type safety.
+ */
+export async function callConvexAction<Fn extends FunctionReference<'action'>>(
+  action: Fn,
+  args: FunctionArgs<Fn>,
   token?: string
-): Promise<Return> {
+): Promise<FunctionReturnType<Fn>> {
   if (!convexUrl || !convexClient) {
     throw new Error('Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL');
-  }
-  if (!api) {
-    throw new Error("Convex API not generated. Run 'npx convex dev'");
   }
   if (token) {
     convexClient.setAuth(token);
@@ -93,5 +63,5 @@ export async function callConvexAction<Args = any, Return = any>(
   return await convexClient.action(action, args);
 }
 
-// Export api for use in API routes
-export { api };
+// Re-export api from generated module for type-safe access
+export { api } from '@/convex/_generated/api';

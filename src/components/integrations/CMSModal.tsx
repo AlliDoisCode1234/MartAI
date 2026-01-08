@@ -31,12 +31,22 @@ type CMSPlatform = 'wordpress' | 'shopify' | 'webflow';
 
 type TestResult = { valid: boolean; error?: string; canPublish?: boolean } | null;
 
+interface CMSCredentials {
+  siteUrl?: string;
+  username?: string;
+  password?: string;
+  shopDomain?: string;
+  accessToken?: string;
+  siteId?: string;
+  collectionId?: string;
+}
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   platform: CMSPlatform | null;
-  credentials: any;
-  onCredentialsChange: (credentials: any) => void;
+  credentials: CMSCredentials;
+  onCredentialsChange: (credentials: CMSCredentials) => void;
   onTest: () => void;
   testResult: TestResult;
   loading: boolean;

@@ -142,15 +142,17 @@ Focus on keywords that would help improve their website's visibility and drive q
       });
     },
     {
-      onRetry: (err: any, attempt: number) =>
-        console.log(`Retry attempt ${attempt} for generateKeywords:`, err?.message || String(err)),
+      onRetry: (err: unknown, attempt: number) =>
+        console.log(
+          `Retry attempt ${attempt} for generateKeywords:`,
+          err instanceof Error ? err.message : String(err)
+        ),
     }
   );
 
-  // Extract keywords from tool results
   const toolResults = result.toolResults ?? [];
   if (toolResults.length > 0) {
-    const firstResult = toolResults[0] as any;
+    const firstResult = toolResults[0] as { output?: unknown; result?: unknown };
     // Check for 'output' or 'result' property
     const output = firstResult?.output ?? firstResult?.result;
     if (output && Array.isArray(output)) {
@@ -195,12 +197,18 @@ function parseKeywordsFromText(text: string): KeywordSuggestion[] {
       if (trimmed.toLowerCase().includes('intent:')) {
         const intentMatch = trimmed.match(/intent:\s*(\w+)/i);
         if (intentMatch) {
-          currentKeyword.intent = intentMatch[1].toLowerCase() as any;
+          const intent = intentMatch[1].toLowerCase();
+          if (['informational', 'commercial', 'transactional', 'navigational'].includes(intent)) {
+            currentKeyword.intent = intent as KeywordSuggestion['intent'];
+          }
         }
       } else if (trimmed.toLowerCase().includes('priority:')) {
         const priorityMatch = trimmed.match(/priority:\s*(\w+)/i);
         if (priorityMatch) {
-          currentKeyword.priority = priorityMatch[1].toLowerCase() as any;
+          const priority = priorityMatch[1].toLowerCase();
+          if (['high', 'medium', 'low'].includes(priority)) {
+            currentKeyword.priority = priority as KeywordSuggestion['priority'];
+          }
         }
       } else if (
         trimmed.toLowerCase().includes('reasoning:') ||

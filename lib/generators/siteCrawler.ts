@@ -159,8 +159,9 @@ export async function crawlWebsite(url: string): Promise<SiteAnalysisResult> {
         external: externalLinks,
       },
     };
-  } catch (error: any) {
+  } catch (error) {
     // Return a minimal result with the error as an issue
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return {
       url: normalizedUrl,
       title: null,
@@ -170,7 +171,7 @@ export async function crawlWebsite(url: string): Promise<SiteAnalysisResult> {
       wordCount: 0,
       loadTime: Date.now() - startTime,
       mobileFriendly: false,
-      issues: [`Crawl failed: ${error.message}`],
+      issues: [`Crawl failed: ${errorMessage}`],
       images: { total: 0, withoutAlt: 0 },
       links: { internal: 0, external: 0 },
     };
