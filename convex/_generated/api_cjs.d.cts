@@ -2367,7 +2367,7 @@ export declare const components: {
       updateSubscriptionQuantity: FunctionReference<
         "action",
         "internal",
-        { quantity: number; stripeSubscriptionId: string },
+        { apiKey: string; quantity: number; stripeSubscriptionId: string },
         null
       >;
     };

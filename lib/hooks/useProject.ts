@@ -11,6 +11,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useMemo, useState, useEffect, useCallback } from 'react';
+import type { MRScoreData, StrategyData, ConnectionData } from '@/types';
 
 interface UseProjectOptions {
   /** Skip fetching if true */
@@ -19,7 +20,7 @@ interface UseProjectOptions {
   autoSelect?: boolean;
 }
 
-/** Basic project document shape */
+/** Project document shape from hook */
 interface ProjectData {
   _id: Id<'projects'>;
   name: string;
@@ -27,64 +28,6 @@ interface ProjectData {
   industry?: string;
   projectType?: 'own' | 'competitor';
   serpAnalysisUsed?: boolean;
-}
-
-/** GA4/GSC connection shape */
-interface ConnectionData {
-  _id: string;
-  projectId: string;
-  [key: string]: unknown;
-}
-
-/** MR Score shape */
-interface MRScoreData {
-  overall: number;
-  tier: string;
-  visibility?: number;
-  trafficHealth?: number;
-  ctrPerformance?: number;
-  engagementQuality?: number;
-  quickWinPotential?: number;
-  contentVelocity?: number;
-}
-
-/** Cluster data shape */
-interface ClusterData {
-  _id?: string;
-  clusterName?: string;
-  keywords?: string[];
-  intent?: string;
-}
-
-/** Brief data shape - matches ContentCalendarCard.Brief */
-interface BriefData {
-  _id: string;
-  title: string;
-  status: string;
-  scheduledDate: number;
-  week?: number;
-}
-
-/** Plan data shape */
-interface PlanData {
-  briefs?: BriefData[];
-  contentVelocity?: number;
-  goals?: {
-    traffic?: number;
-    leads?: number;
-  };
-  assumptions?: string;
-}
-
-/** Strategy data shape */
-interface StrategyData {
-  clusters?: ClusterData[];
-  plan?: PlanData;
-  stats?: {
-    briefCount?: number;
-    keywordCount?: number;
-    clusterCount?: number;
-  };
 }
 
 interface UseProjectResult {

@@ -1,7 +1,7 @@
 /**
  * Centralized TypeScript types for MartAI
  * Product-wide type definitions to maintain type safety and inference
- * 
+ *
  * This file should be the single source of truth for all domain types.
  * Import from here instead of defining types inline or using 'as any'.
  */
@@ -25,10 +25,11 @@ try {
 type ConvexIdModule = typeof import('../convex/_generated/dataModel');
 
 // Use actual Convex Id type if available, otherwise branded string
-export type Id<T extends string> = 
-  ConvexIdModule extends { Id: infer U } 
-    ? U extends (arg: any) => infer R ? R : string & { __brand: T }
-    : string & { __brand: T };
+export type Id<T extends string> = ConvexIdModule extends { Id: infer U }
+  ? U extends (arg: any) => infer R
+    ? R
+    : string & { __brand: T }
+  : string & { __brand: T };
 
 // Id type defined above to handle Convex not being initialized
 // Don't re-export to avoid conflicts
@@ -566,6 +567,40 @@ export interface KPIs {
   conversionRate: { value: number; change: number; previous: number };
 }
 
+/** MartAI Rating Score - computed from analytics data */
+export interface MRScoreData {
+  overall: number;
+  tier: string;
+  visibility?: number;
+  trafficHealth?: number;
+  ctrPerformance?: number;
+  engagementQuality?: number;
+  quickWinPotential?: number;
+  contentVelocity?: number;
+  previousScore?: number;
+}
+
+/** Strategy data aggregation for dashboard/strategy pages */
+export interface StrategyData {
+  clusters?: KeywordCluster[];
+  plan?: QuarterlyPlan;
+  stats?: {
+    briefCount?: number;
+    keywordCount?: number;
+    clusterCount?: number;
+  };
+}
+
+/** Generic connection shape for GA4/GSC */
+export interface ConnectionData {
+  _id: string;
+  projectId: string;
+  connected: boolean;
+  lastSync?: number;
+  siteUrl?: string; // GSC site URL
+  propertyName?: string; // GA4 property name
+}
+
 // ============================================================================
 // CMS Integration Types
 // ============================================================================
@@ -674,10 +709,10 @@ export interface PaginatedResponse<T> {
 }
 
 // Helper for Convex mutation/query args
-export type ConvexArgs<T> = T extends (...args: infer Args) => any 
-  ? Args extends [infer First, ...infer Rest] 
-    ? First 
-    : never 
+export type ConvexArgs<T> = T extends (...args: infer Args) => any
+  ? Args extends [infer First, ...infer Rest]
+    ? First
+    : never
   : never;
 
 // ============================================================================
@@ -755,4 +790,3 @@ export interface LexicalEditorProps {
 
 // ID conversion helpers are in lib/typeGuards.ts
 // Import from there: assertProjectId, assertBriefId, etc.
-
