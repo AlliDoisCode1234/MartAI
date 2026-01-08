@@ -1373,9 +1373,7 @@ export default defineSchema({
     scheduledDate: v.optional(v.number()), // Calendar scheduled date
     publishedUrl: v.optional(v.string()),
 
-    // Legacy migration (for rollback)
-    _legacyBriefId: v.optional(v.id('briefs')),
-    _legacyDraftId: v.optional(v.id('drafts')),
+    // Legacy fields removed - briefs/drafts tables deprecated
 
     createdAt: v.number(),
     updatedAt: v.number(),
