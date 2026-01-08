@@ -59,6 +59,20 @@ export const getAICostSummary = query({
       byModel[model].count += 1;
     }
 
+    // Calculate daily costs for trend chart (last 7 days)
+    const now = Date.now();
+    const dailyCosts: { date: string; count: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = now - i * 24 * 60 * 60 * 1000;
+      const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+      const dayCost = allCosts
+        .filter((c: any) => c._creationTime >= dayStart && c._creationTime < dayEnd)
+        .reduce((sum: number, c: any) => sum + (c.cost?.totalCost || 0), 0);
+      const date = new Date(dayStart).toISOString().slice(0, 10);
+      // Store as count for TrendChart compatibility (multiply by 100 for visibility)
+      dailyCosts.push({ date, count: Math.round(dayCost * 100) });
+    }
+
     return {
       totalCost,
       totalTokens,
@@ -68,6 +82,7 @@ export const getAICostSummary = query({
         cost: data.cost,
         count: data.count,
       })),
+      dailyCosts,
     };
   },
 });

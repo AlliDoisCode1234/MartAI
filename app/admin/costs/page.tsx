@@ -30,6 +30,7 @@ import { api } from '@/convex/_generated/api';
 import { FiDollarSign, FiActivity, FiCpu, FiTrendingUp } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
 import { StatsSkeleton, TableSkeleton } from '@/components/skeletons';
+import { TrendChart } from '@/src/components/admin/TrendChart';
 
 export default function AdminCostsPage() {
   const summary = useQuery(api.admin.costs.getAICostSummary);
@@ -137,6 +138,21 @@ export default function AdminCostsPage() {
             </CardBody>
           </Card>
         </Grid>
+
+        {/* Daily Cost Trend */}
+        {summary.dailyCosts && summary.dailyCosts.length > 0 && (
+          <Card bg={cardBg} borderWidth="1px" borderColor={borderColor}>
+            <CardBody>
+              <Heading size="md" mb={2}>
+                Daily Cost Trend
+              </Heading>
+              <Text fontSize="sm" color="gray.500" mb={4}>
+                AI spend over the last 7 days
+              </Text>
+              <TrendChart data={summary.dailyCosts} height={120} barColor="green.400" />
+            </CardBody>
+          </Card>
+        )}
 
         {/* Cost by Model */}
         <Card bg={cardBg} borderWidth="1px" borderColor={borderColor}>
