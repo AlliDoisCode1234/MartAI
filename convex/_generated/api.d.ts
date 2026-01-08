@@ -114,6 +114,7 @@ import type * as seo_statistics from "../seo/statistics.js";
 import type * as stripe_checkout from "../stripe/checkout.js";
 import type * as stripe_index from "../stripe/index.js";
 import type * as subscriptions_subscriptionLifecycle from "../subscriptions/subscriptionLifecycle.js";
+import type * as subscriptions_subscriptionMetrics from "../subscriptions/subscriptionMetrics.js";
 import type * as subscriptions_subscriptions from "../subscriptions/subscriptions.js";
 import type * as subscriptions_userHealth from "../subscriptions/userHealth.js";
 import type * as teams_invitations from "../teams/invitations.js";
@@ -243,6 +244,7 @@ declare const fullApi: ApiFromModules<{
   "stripe/checkout": typeof stripe_checkout;
   "stripe/index": typeof stripe_index;
   "subscriptions/subscriptionLifecycle": typeof subscriptions_subscriptionLifecycle;
+  "subscriptions/subscriptionMetrics": typeof subscriptions_subscriptionMetrics;
   "subscriptions/subscriptions": typeof subscriptions_subscriptions;
   "subscriptions/userHealth": typeof subscriptions_userHealth;
   "teams/invitations": typeof teams_invitations;

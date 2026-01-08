@@ -48,8 +48,16 @@ import {
 } from '@chakra-ui/react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { FiTrendingUp, FiUsers, FiActivity, FiTarget } from 'react-icons/fi';
+import {
+  FiTrendingUp,
+  FiUsers,
+  FiActivity,
+  FiTarget,
+  FiDollarSign,
+  FiPercent,
+} from 'react-icons/fi';
 import { useAuth } from '@/lib/useAuth';
+import { TrendChart } from '@/src/components/admin/TrendChart';
 
 // Types
 interface FunnelStep {
@@ -105,6 +113,10 @@ export default function AdminAnalyticsPage() {
   const trendData = useQuery(
     api.analytics.eventTracking.getEventTrends,
     isSuperAdmin ? { days, groupBy: 'day' } : 'skip'
+  );
+  const subscriptionMetrics = useQuery(
+    api.subscriptions.subscriptionMetrics.getSubscriptionMetrics,
+    isSuperAdmin ? {} : 'skip'
   );
 
   // Access denied state
@@ -240,6 +252,92 @@ export default function AdminAnalyticsPage() {
               </CardBody>
             </Card>
           </Grid>
+
+          {/* Revenue Metrics */}
+          {subscriptionMetrics && (
+            <Grid templateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }} gap={4}>
+              <Card bg="green.50" borderColor="green.200" borderWidth="1px">
+                <CardBody>
+                  <Stat>
+                    <StatLabel>
+                      <HStack>
+                        <FiDollarSign />
+                        <Text>MRR</Text>
+                      </HStack>
+                    </StatLabel>
+                    <StatNumber color="green.600">{subscriptionMetrics.mrrFormatted}</StatNumber>
+                    <StatHelpText>
+                      <StatArrow
+                        type={subscriptionMetrics.growthRate > 0 ? 'increase' : 'decrease'}
+                      />
+                      {Math.abs(subscriptionMetrics.growthRate)}% vs last month
+                    </StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
+              <Card>
+                <CardBody>
+                  <Stat>
+                    <StatLabel>
+                      <HStack>
+                        <FiUsers />
+                        <Text>Active Subscribers</Text>
+                      </HStack>
+                    </StatLabel>
+                    <StatNumber>{subscriptionMetrics.activeCount}</StatNumber>
+                    <StatHelpText>+{subscriptionMetrics.newThisMonth} this month</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
+              <Card>
+                <CardBody>
+                  <Stat>
+                    <StatLabel>
+                      <HStack>
+                        <FiPercent />
+                        <Text>Churn Rate</Text>
+                      </HStack>
+                    </StatLabel>
+                    <StatNumber color={subscriptionMetrics.churnRate > 5 ? 'red.500' : 'green.500'}>
+                      {subscriptionMetrics.churnRate}%
+                    </StatNumber>
+                    <StatHelpText>
+                      {subscriptionMetrics.churnedThisMonth} cancelled this month
+                    </StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
+              <Card>
+                <CardBody>
+                  <Stat>
+                    <StatLabel>
+                      <HStack>
+                        <FiTrendingUp />
+                        <Text>Est. LTV</Text>
+                      </HStack>
+                    </StatLabel>
+                    <StatNumber>{subscriptionMetrics.ltvFormatted}</StatNumber>
+                    <StatHelpText>12-month average</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
+            </Grid>
+          )}
+
+          {/* Event Trends Chart */}
+          {trendData && trendData.trend.length > 0 && (
+            <Card>
+              <CardHeader>
+                <Heading size="md">Event Trends</Heading>
+                <Text fontSize="sm" color="gray.600">
+                  Daily event volume over {days} days
+                </Text>
+              </CardHeader>
+              <CardBody>
+                <TrendChart data={trendData.trend} height={150} />
+              </CardBody>
+            </Card>
+          )}
 
           {/* Funnel Visualization */}
           <Card>
