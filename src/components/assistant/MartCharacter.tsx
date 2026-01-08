@@ -31,6 +31,7 @@ interface MartCharacterProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'full';
   showBubble?: boolean;
   state?: 'idle' | 'thinking' | 'active' | 'loading';
+  darkMode?: boolean; // Use dark background (for landing page)
 }
 
 export function MartCharacter({
@@ -38,6 +39,7 @@ export function MartCharacter({
   size = 'md',
   showBubble = true,
   state = 'idle',
+  darkMode = false,
 }: MartCharacterProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
@@ -111,7 +113,8 @@ export function MartCharacter({
       const progress = hoverProgressRef.current;
 
       // Clear with slight fade for trail effect
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      const bgColor = darkMode ? 'rgba(23, 25, 35, 0.15)' : 'rgba(255, 255, 255, 0.15)';
+      ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, config.canvas, config.canvas);
 
       // Breathing scale
@@ -206,7 +209,7 @@ export function MartCharacter({
 
     animate();
     return () => cancelAnimationFrame(animationRef.current);
-  }, [config.canvas, config.ball, centerX, centerY]);
+  }, [config.canvas, config.ball, centerX, centerY, darkMode]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();

@@ -28,7 +28,7 @@ export const HomePage: FC = () => {
   // Redirect authenticated users to dashboard
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      router.replace('/home');
+      router.replace('/dashboard');
     }
   }, [isAuthenticated, loading, router]);
 

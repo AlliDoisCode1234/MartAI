@@ -91,12 +91,11 @@ export function middleware(request: NextRequest) {
       (route) => pathname === route || pathname.startsWith(route + '/')
     );
 
-    // Block all other routes on phoo.ai domain → 404
+    // Redirect all other routes on phoo.ai domain to landing page
     if (!isAllowedRoute) {
-      return new NextResponse('Not Found', {
-        status: 404,
-        headers: { 'Content-Type': 'text/plain' },
-      });
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
     }
 
     // Allowed route - continue with security headers below
