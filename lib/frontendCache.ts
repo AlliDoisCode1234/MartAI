@@ -11,7 +11,7 @@ type CacheEntry<T> = {
 };
 
 class FrontendCache {
-  private cache: Map<string, CacheEntry<any>> = new Map();
+  private cache: Map<string, CacheEntry<unknown>> = new Map();
   private maxSize: number = 100;
 
   /**

@@ -1,4 +1,8 @@
-import type { KeywordCluster } from '@/types';
+import type { KeywordCluster, ClusterId, ProjectId } from '@/types';
+
+/** Helper to create demo IDs as branded types */
+const demoClusterId = (id: string): ClusterId => id as ClusterId;
+const demoProjectId = (id: string): ProjectId => id as ProjectId;
 
 type DemoRequest = {
   url: string;
@@ -72,8 +76,8 @@ export function generateDemoData(request: DemoRequest): DemoData {
 
   const keywordClusters: KeywordCluster[] = [
     {
-      _id: `demo-cluster-1` as any,
-      projectId: `demo-project` as any,
+      _id: demoClusterId('demo-cluster-1'),
+      projectId: demoProjectId('demo-project'),
       clusterName: `Best ${inferredIndustry} solutions`,
       keywords: [
         `${inferredIndustry} services`,
@@ -91,8 +95,8 @@ export function generateDemoData(request: DemoRequest): DemoData {
       updatedAt: Date.now(),
     },
     {
-      _id: `demo-cluster-2` as any,
-      projectId: `demo-project` as any,
+      _id: demoClusterId('demo-cluster-2'),
+      projectId: demoProjectId('demo-project'),
       clusterName: `${inferredAudience} pain points`,
       keywords: [
         `${inferredAudience} challenges`,
@@ -110,8 +114,8 @@ export function generateDemoData(request: DemoRequest): DemoData {
       updatedAt: Date.now(),
     },
     {
-      _id: `demo-cluster-3` as any,
-      projectId: `demo-project` as any,
+      _id: demoClusterId('demo-cluster-3'),
+      projectId: demoProjectId('demo-project'),
       clusterName: `${inferredIndustry} ROI`,
       keywords: [
         `${inferredIndustry} ROI calculator`,
@@ -207,7 +211,8 @@ export function generateDemoData(request: DemoRequest): DemoData {
     faqs: [
       {
         question: `How fast can I see results with ${inferredCompanyName(inferredCompany)}?`,
-        answer: 'Most teams see SEO traffic lift within 4-6 weeks after publishing the recommended content plan.',
+        answer:
+          'Most teams see SEO traffic lift within 4-6 weeks after publishing the recommended content plan.',
       },
       {
         question: `Do I need technical knowledge to use this platform?`,
@@ -215,7 +220,8 @@ export function generateDemoData(request: DemoRequest): DemoData {
       },
       {
         question: `What makes this different from generic AI writers?`,
-        answer: 'We analyze your website, audience, and goals to create channel-specific strategies, not just raw text output.',
+        answer:
+          'We analyze your website, audience, and goals to create channel-specific strategies, not just raw text output.',
       },
     ],
   };
@@ -332,4 +338,3 @@ function inferTone(industry: string): 'playful' | 'friendly' | 'professional' {
   if (/health|wellness|education/i.test(industry)) return 'friendly';
   return 'professional';
 }
-

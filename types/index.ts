@@ -10,26 +10,12 @@
 // Convex ID Types
 // ============================================================================
 
-// Import Convex generated types
-// Use try-catch pattern to handle when Convex not initialized
-let ConvexIdType: any;
-try {
-  ConvexIdType = require('../convex/_generated/dataModel').Id;
-} catch {
-  // Fallback when Convex not generated
-  ConvexIdType = <T extends string>(value: string): string & { __brand: T } => value as any;
-}
+// Branded type pattern for Convex IDs
+// Uses compile-time only branding with no runtime overhead
+declare const __tableName: unique symbol;
 
-// Import Convex Id type properly
-// Handle case where Convex types not generated yet
-type ConvexIdModule = typeof import('../convex/_generated/dataModel');
-
-// Use actual Convex Id type if available, otherwise branded string
-export type Id<T extends string> = ConvexIdModule extends { Id: infer U }
-  ? U extends (arg: any) => infer R
-    ? R
-    : string & { __brand: T }
-  : string & { __brand: T };
+/** Branded ID type compatible with Convex Id<TableName> */
+export type Id<T extends string> = string & { readonly [__tableName]: T };
 
 // Id type defined above to handle Convex not being initialized
 // Don't re-export to avoid conflicts

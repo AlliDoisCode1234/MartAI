@@ -12,6 +12,14 @@ export interface BriefDetails {
   schemaSuggestion: string;
 }
 
+/** Raw FAQ shape from AI response (may have 'q'/'a' or 'question'/'answer' keys) */
+interface RawFaq {
+  question?: string;
+  answer?: string;
+  q?: string;
+  a?: string;
+}
+
 export interface ClusterInfo {
   clusterName: string;
   keywords: string[];
@@ -127,7 +135,7 @@ Return ONLY a valid JSON object with this exact structure (no markdown):
       titleOptions: briefData.titleOptions ?? [],
       h2Outline: briefData.h2Outline ?? [],
       faqs: Array.isArray(briefData.faqs)
-        ? briefData.faqs.map((f: any) => ({
+        ? briefData.faqs.map((f: RawFaq) => ({
             question: f.question ?? f.q ?? '',
             answer: f.answer ?? f.a ?? '',
           }))

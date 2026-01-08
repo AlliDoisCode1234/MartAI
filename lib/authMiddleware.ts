@@ -6,14 +6,24 @@ import {
   unauthorizedResponse,
   type SecurityValidationOptions,
 } from './apiSecurity';
-import type { AuthUser } from '@/types';
+import type { AuthUser, UserRole } from '@/types';
 
 export interface AuthRequest extends NextRequest {
   user?: AuthUser;
 }
 
+/** JWT payload structure */
+interface JwtPayload {
+  sub?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  exp?: number;
+  iat?: number;
+}
+
 // Helper to decode JWT (Optimistic Auth - Verification happens at Convex layer)
-function decodeJwt(token: string): any {
+function decodeJwt(token: string): JwtPayload | null {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -25,8 +35,8 @@ function decodeJwt(token: string): any {
         })
         .join('')
     );
-    return JSON.parse(jsonPayload);
-  } catch (e) {
+    return JSON.parse(jsonPayload) as JwtPayload;
+  } catch {
     return null;
   }
 }
@@ -50,7 +60,7 @@ export function verifyAuth(request: NextRequest): { user: AuthUser; token: strin
     user: {
       userId: payload.sub,
       username: payload.name || payload.email || 'User',
-      role: payload.role || 'user',
+      role: (payload.role as UserRole) || 'user',
     },
     token, // Return token for passing to Convex
   };
@@ -91,9 +101,9 @@ export async function requireAuth(
   // Then verify authentication
   const auth = verifyAuth(request);
   if (!auth) {
-    const error = new Error('Unauthorized');
-    (error as any).status = 401;
-    (error as any).response = createUnauthorizedResponse(
+    const error = new Error('Unauthorized') as Error & { status?: number; response?: NextResponse };
+    error.status = 401;
+    error.response = createUnauthorizedResponse(
       'Invalid or missing authentication token',
       'INVALID_TOKEN'
     );
