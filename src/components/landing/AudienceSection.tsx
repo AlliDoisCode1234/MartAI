@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * AudienceSection
  *
@@ -5,8 +7,10 @@
  * App → LandingPage → AudienceSection
  *
  * Who It's For section for landing page.
+ * Uses Chakra UI for styling (project standard).
  */
 
+import { Box, Container, Heading, Text, SimpleGrid, HStack, Icon } from '@chakra-ui/react';
 import { Check } from 'lucide-react';
 
 const AUDIENCE_TRAITS = [
@@ -14,27 +18,39 @@ const AUDIENCE_TRAITS = [
   'Want sustainable growth, not gimmicks',
   'Believe their work has purpose',
   'Tired of marketing that feels busy but not effective',
-] as const;
+];
 
 export function AudienceSection() {
   return (
-    <section className="py-20 border-t border-white/5">
-      <div className="max-w-4xl mx-auto px-6 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-12">Who It&apos;s For</h2>
+    <Box as="section" py={20} borderTop="1px solid" borderColor="whiteAlpha.100" bg="gray.900">
+      <Container maxW="4xl" textAlign="center">
+        <Heading
+          as="h2"
+          fontSize={{ base: '3xl', md: '4xl' }}
+          fontWeight="bold"
+          mb={12}
+          color="white"
+        >
+          Who It&apos;s For
+        </Heading>
 
-        <p className="text-xl text-slate-300 mb-8">Phoo is built for local businesses who:</p>
+        <Text fontSize="xl" color="gray.300" mb={8}>
+          Phoo is built for local businesses who:
+        </Text>
 
-        <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
+        <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4} maxW="2xl" mx="auto" textAlign="left">
           {AUDIENCE_TRAITS.map((trait) => (
-            <div key={trait} className="flex items-center gap-3 p-4 rounded-lg bg-white/5">
-              <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-              <span>{trait}</span>
-            </div>
+            <HStack key={trait} gap={3} p={4} borderRadius="lg" bg="whiteAlpha.50">
+              <Icon as={Check} boxSize={5} color="green.400" flexShrink={0} />
+              <Text color="white">{trait}</Text>
+            </HStack>
           ))}
-        </div>
+        </SimpleGrid>
 
-        <p className="text-slate-500 mt-8 italic">(And yes — others are welcome too.)</p>
-      </div>
-    </section>
+        <Text color="gray.500" mt={8} fontStyle="italic">
+          (And yes — others are welcome too.)
+        </Text>
+      </Container>
+    </Box>
   );
 }

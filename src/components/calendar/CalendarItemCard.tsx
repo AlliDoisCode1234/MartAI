@@ -13,6 +13,7 @@
 import { Box, Text, Badge, HStack, Icon, Tooltip, VStack } from '@chakra-ui/react';
 import { FiClock, FiSearch } from 'react-icons/fi';
 import { getContentTypeIcon, getContentTypeLabel } from '@/lib/constants/contentTypes';
+import { getStatusColorScheme } from '@/lib/constants/statusColors';
 
 type Props = {
   id: string;
@@ -24,14 +25,6 @@ type Props = {
   keywordVolume?: number;
   keywordDifficulty?: number;
   onClick?: () => void;
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  idea: 'gray',
-  scheduled: 'blue',
-  in_progress: 'yellow',
-  draft: 'yellow',
-  published: 'green',
 };
 
 function formatDate(timestamp: number): string {
@@ -66,7 +59,7 @@ export function CalendarItemCard({
   onClick,
 }: Props) {
   const IconComponent = getContentTypeIcon(contentType);
-  const statusColor = STATUS_COLORS[status] || 'gray';
+  const statusColor = getStatusColorScheme(status);
 
   const tooltipContent = (
     <VStack align="start" spacing={1} p={1}>

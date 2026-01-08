@@ -19,6 +19,7 @@ import {
   FiLink,
   FiEdit3,
 } from 'react-icons/fi';
+import { getSeoGrade, getSeoColorScheme } from '@/lib/utils/grading';
 
 interface Props {
   seoScore?: number;
@@ -36,14 +37,6 @@ interface Props {
   };
 }
 
-function getGrade(score: number): { grade: string; color: string } {
-  if (score >= 90) return { grade: 'A+', color: '#22C55E' };
-  if (score >= 80) return { grade: 'A', color: '#22C55E' };
-  if (score >= 70) return { grade: 'B', color: '#FF9D00' };
-  if (score >= 60) return { grade: 'C', color: '#F59E0B' };
-  return { grade: 'D', color: '#EF4444' };
-}
-
 export function SEOScorePanel({
   seoScore = 0,
   wordCount = 0,
@@ -54,7 +47,7 @@ export function SEOScorePanel({
   internalLinkCount = 0,
   qualityMetrics,
 }: Props) {
-  const { grade, color } = getGrade(seoScore);
+  const { grade, color } = getSeoGrade(seoScore);
 
   const metrics = [
     {

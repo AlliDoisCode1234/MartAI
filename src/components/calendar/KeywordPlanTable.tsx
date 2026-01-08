@@ -27,6 +27,7 @@ import {
   WrapItem,
 } from '@chakra-ui/react';
 import { FiDownload } from 'react-icons/fi';
+import { getStatusColorScheme } from '@/lib/constants/statusColors';
 
 type TargetKeyword = {
   keyword: string;
@@ -55,26 +56,23 @@ const PAGE_TYPE_COLORS: Record<string, string> = {
   product: 'teal',
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  published: 'green',
-  scheduled: 'blue',
-  draft: 'yellow',
-  idea: 'gray',
-  in_progress: 'orange',
-};
-
 function formatKeywordsWithVolume(keywords?: TargetKeyword[], primaryKeyword?: string): string {
   if (keywords && keywords.length > 0) {
-    return keywords
-      .map((k) => (k.volume ? `${k.keyword} - ${k.volume}` : k.keyword))
-      .join(', ');
+    return keywords.map((k) => (k.volume ? `${k.keyword} - ${k.volume}` : k.keyword)).join(', ');
   }
   return primaryKeyword || '';
 }
 
 export function KeywordPlanTable({ items }: Props) {
   const handleExport = () => {
-    const headers = ['#', 'Page Type', 'Exact Title To Use', 'Status', 'Primary Keyword(s)', 'Notes'];
+    const headers = [
+      '#',
+      'Page Type',
+      'Exact Title To Use',
+      'Status',
+      'Primary Keyword(s)',
+      'Notes',
+    ];
     const rows = items.map((item, index) => [
       (index + 1).toString(),
       item.pageType || 'blog',
@@ -84,7 +82,9 @@ export function KeywordPlanTable({ items }: Props) {
       item.notes || '',
     ]);
 
-    const csv = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${cell}"`).join(','))
+      .join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -132,9 +132,7 @@ export function KeywordPlanTable({ items }: Props) {
                   </Text>
                 </Td>
                 <Td>
-                  <Badge colorScheme={STATUS_COLORS[item.status] || 'gray'}>
-                    {item.status}
-                  </Badge>
+                  <Badge colorScheme={getStatusColorScheme(item.status)}>{item.status}</Badge>
                 </Td>
                 <Td>
                   <Wrap spacing={1}>
@@ -142,7 +140,8 @@ export function KeywordPlanTable({ items }: Props) {
                       item.targetKeywords.map((kw, i) => (
                         <WrapItem key={i}>
                           <Badge variant="subtle" colorScheme="purple" fontSize="xs">
-                            {kw.keyword}{kw.volume ? ` - ${kw.volume}` : ''}
+                            {kw.keyword}
+                            {kw.volume ? ` - ${kw.volume}` : ''}
                           </Badge>
                         </WrapItem>
                       ))
@@ -151,7 +150,9 @@ export function KeywordPlanTable({ items }: Props) {
                         {item.primaryKeyword}
                       </Badge>
                     ) : (
-                      <Text color="gray.400" fontSize="xs">—</Text>
+                      <Text color="gray.400" fontSize="xs">
+                        —
+                      </Text>
                     )}
                   </Wrap>
                 </Td>
@@ -174,4 +175,3 @@ export function KeywordPlanTable({ items }: Props) {
     </Box>
   );
 }
-

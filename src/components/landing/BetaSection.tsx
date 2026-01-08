@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * BetaSection
  *
@@ -5,60 +7,98 @@
  * App → LandingPage → BetaSection
  *
  * Why Beta section for landing page.
+ * Uses Chakra UI for styling (project standard).
  */
 
+import {
+  Box,
+  Container,
+  Heading,
+  Text,
+  SimpleGrid,
+  VStack,
+  HStack,
+  Icon,
+  List,
+  ListItem,
+} from '@chakra-ui/react';
 import { Check } from 'lucide-react';
 
 const OUR_GOALS = [
   'Shape Phoo around real-world needs',
   'Gather feedback from business owners we trust',
   'Build something genuinely helpful — not bloated',
-] as const;
+];
 
 const BETA_BENEFITS = [
   'Early access to Phoo',
   'Founding beta pricing',
   'Direct input into product features',
   'Priority onboarding and support',
-] as const;
+];
 
 export function BetaSection() {
   return (
-    <section className="py-20 border-t border-white/5">
-      <div className="max-w-4xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">Why Beta?</h2>
-        <p className="text-xl text-slate-400 text-center mb-12 max-w-2xl mx-auto">
+    <Box as="section" py={20} borderTop="1px solid" borderColor="whiteAlpha.100" bg="gray.900">
+      <Container maxW="4xl">
+        <Heading
+          as="h2"
+          fontSize={{ base: '3xl', md: '4xl' }}
+          fontWeight="bold"
+          textAlign="center"
+          mb={6}
+          color="white"
+        >
+          Why Beta?
+        </Heading>
+        <Text fontSize="xl" color="gray.400" textAlign="center" mb={12} maxW="2xl" mx="auto">
           We&apos;re opening early beta access to a small group of businesses so we can:
-        </p>
+        </Text>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
           {/* What We Get */}
-          <div className="p-8 rounded-2xl bg-white/5 border border-white/10">
-            <h3 className="text-xl font-semibold mb-6 text-slate-300">We want to:</h3>
-            <ul className="space-y-4">
+          <Box
+            p={8}
+            borderRadius="2xl"
+            bg="whiteAlpha.50"
+            border="1px solid"
+            borderColor="whiteAlpha.100"
+          >
+            <Heading as="h3" fontSize="xl" fontWeight="semibold" mb={6} color="gray.300">
+              We want to:
+            </Heading>
+            <VStack align="start" spacing={4}>
               {OUR_GOALS.map((goal) => (
-                <li key={goal} className="flex gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-2.5 flex-shrink-0" />
-                  <span className="text-slate-400">{goal}</span>
-                </li>
+                <HStack key={goal} gap={3}>
+                  <Box w={1.5} h={1.5} borderRadius="full" bg="brand.orange" flexShrink={0} />
+                  <Text color="gray.400">{goal}</Text>
+                </HStack>
               ))}
-            </ul>
-          </div>
+            </VStack>
+          </Box>
 
           {/* What You Get */}
-          <div className="p-8 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
-            <h3 className="text-xl font-semibold mb-6 text-white">Beta users get:</h3>
-            <ul className="space-y-4">
+          <Box
+            p={8}
+            borderRadius="2xl"
+            bgGradient="linear(to-br, orange.900, red.900)"
+            border="1px solid"
+            borderColor="brand.orange"
+          >
+            <Heading as="h3" fontSize="xl" fontWeight="semibold" mb={6} color="white">
+              Beta users get:
+            </Heading>
+            <VStack align="start" spacing={4}>
               {BETA_BENEFITS.map((benefit) => (
-                <li key={benefit} className="flex gap-3">
-                  <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                  <span>{benefit}</span>
-                </li>
+                <HStack key={benefit} gap={3}>
+                  <Icon as={Check} boxSize={5} color="green.400" flexShrink={0} />
+                  <Text color="white">{benefit}</Text>
+                </HStack>
               ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
+            </VStack>
+          </Box>
+        </SimpleGrid>
+      </Container>
+    </Box>
   );
 }

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * ProblemSection
  *
@@ -5,44 +7,79 @@
  * App → LandingPage → ProblemSection
  *
  * Pain point section for phoo.ai landing page.
+ * Uses Chakra UI for styling (project standard).
  */
+
+import { Box, Container, Heading, Text, VStack } from '@chakra-ui/react';
 
 export function ProblemSection() {
   return (
-    <section className="py-20 border-t border-white/5">
-      <div className="max-w-4xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+    <Box as="section" py={20} borderTop="1px solid" borderColor="whiteAlpha.100" bg="gray.900">
+      <Container maxW="4xl">
+        <Heading
+          as="h2"
+          fontSize={{ base: '3xl', md: '4xl' }}
+          fontWeight="bold"
+          textAlign="center"
+          mb={12}
+          color="white"
+        >
           Does this sound familiar?
-        </h2>
+        </Heading>
 
-        <div className="space-y-6 text-lg text-slate-300 max-w-2xl mx-auto">
-          <div className="flex gap-4 items-start p-6 rounded-xl bg-white/5 border border-white/10">
-            <div className="w-2 h-2 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-            <p>Your website looks fine… but doesn&apos;t bring in consistent leads</p>
-          </div>
-          <div className="flex gap-4 items-start p-6 rounded-xl bg-white/5 border border-white/10">
-            <div className="w-2 h-2 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-            <p>
-              You&apos;re &quot;doing marketing,&quot; but you&apos;re not sure what&apos;s actually
-              working
-            </p>
-          </div>
-          <div className="flex gap-4 items-start p-6 rounded-xl bg-white/5 border border-white/10">
-            <div className="w-2 h-2 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-            <p>SEO feels confusing, slow, or like something only big companies can afford</p>
-          </div>
-        </div>
+        <VStack spacing={6} maxW="2xl" mx="auto">
+          {[
+            "Your website looks fine… but doesn't bring in consistent leads",
+            "You're \"doing marketing,\" but you're not sure what's actually working",
+            'SEO feels confusing, slow, or like something only big companies can afford',
+          ].map((problem, i) => (
+            <Box
+              key={i}
+              display="flex"
+              gap={4}
+              alignItems="flex-start"
+              p={6}
+              borderRadius="xl"
+              bg="whiteAlpha.50"
+              border="1px solid"
+              borderColor="whiteAlpha.100"
+              w="100%"
+            >
+              <Box w={2} h={2} borderRadius="full" bg="red.400" mt={2} flexShrink={0} />
+              <Text fontSize="lg" color="gray.300">
+                {problem}
+              </Text>
+            </Box>
+          ))}
+        </VStack>
 
-        <div className="mt-12 p-8 rounded-2xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 text-center">
-          <p className="text-xl text-slate-300 leading-relaxed">
-            <span className="font-semibold text-white">
+        <Box
+          mt={12}
+          p={8}
+          borderRadius="2xl"
+          bgGradient="linear(to-r, brand.orange, pink.500)"
+          opacity={0.1}
+          position="absolute"
+        />
+        <Box
+          mt={12}
+          p={8}
+          borderRadius="2xl"
+          bg="whiteAlpha.50"
+          border="1px solid"
+          borderColor="brand.orange"
+          textAlign="center"
+          position="relative"
+        >
+          <Text fontSize="xl" color="gray.300" lineHeight="relaxed">
+            <Text as="span" fontWeight="semibold" color="white">
               You didn&apos;t start your business just to chase algorithms.
-            </span>
+            </Text>
             <br />
             You started it to serve people and build something meaningful.
-          </p>
-        </div>
-      </div>
-    </section>
+          </Text>
+        </Box>
+      </Container>
+    </Box>
   );
 }

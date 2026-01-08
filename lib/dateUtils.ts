@@ -57,3 +57,21 @@ export function getEndOfDay(date: Date | number = new Date()): Date {
 export function subtractDays(date: Date | number, amount: number): Date {
   return subDays(new Date(date), amount);
 }
+
+/**
+ * Formats a timestamp as a human-readable relative time string.
+ * Examples: "5m ago", "2h ago", "3d ago", or a formatted date for older items.
+ */
+export function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return new Date(timestamp).toLocaleDateString();
+}

@@ -50,20 +50,50 @@ interface MultiPermissionProps {
 
 type Props = SinglePermissionProps | MultiPermissionProps;
 
+// Sub-component for single permission check - hooks called unconditionally
+const SinglePermissionGate: FC<{
+  permission: Permission;
+  children: ReactNode;
+  fallback: ReactNode;
+}> = ({ permission, children, fallback }) => {
+  const hasAccess = usePermission(permission);
+  return hasAccess ? <>{children}</> : <>{fallback}</>;
+};
+
+// Sub-component for multiple permissions check - hooks called unconditionally
+const MultiPermissionGate: FC<{
+  permissions: Permission[];
+  mode: 'all' | 'any';
+  children: ReactNode;
+  fallback: ReactNode;
+}> = ({ permissions, mode, children, fallback }) => {
+  const hasAccess = usePermissions(permissions, mode);
+  return hasAccess ? <>{children}</> : <>{fallback}</>;
+};
+
 export const PermissionGate: FC<Props> = (props) => {
   const { children, fallback = null } = props;
 
-  // Single permission check
+  // Single permission check - delegate to sub-component
   if ('permission' in props && props.permission) {
-    const hasAccess = usePermission(props.permission);
-    return hasAccess ? <>{children}</> : <>{fallback}</>;
+    return (
+      <SinglePermissionGate permission={props.permission} fallback={fallback}>
+        {children}
+      </SinglePermissionGate>
+    );
   }
 
-  // Multiple permissions check
+  // Multiple permissions check - delegate to sub-component
   if ('permissions' in props && props.permissions) {
-    const mode = props.mode ?? 'all';
-    const hasAccess = usePermissions(props.permissions, mode);
-    return hasAccess ? <>{children}</> : <>{fallback}</>;
+    return (
+      <MultiPermissionGate
+        permissions={props.permissions}
+        mode={props.mode ?? 'all'}
+        fallback={fallback}
+      >
+        {children}
+      </MultiPermissionGate>
+    );
   }
 
   // No permission specified - render children

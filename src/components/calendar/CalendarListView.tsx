@@ -24,6 +24,7 @@ import {
   Icon,
 } from '@chakra-ui/react';
 import { FiCalendar, FiEdit3, FiFileText } from 'react-icons/fi';
+import { getStatusColorScheme } from '@/lib/constants/statusColors';
 
 type CalendarItem = {
   _id: string;
@@ -42,14 +43,6 @@ type WeekGroup = {
   weekStart: Date;
   weekEnd: Date;
   items: CalendarItem[];
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  idea: 'gray',
-  scheduled: 'blue',
-  in_progress: 'yellow',
-  draft: 'yellow',
-  published: 'green',
 };
 
 function getWeekStart(date: Date): Date {
@@ -154,7 +147,7 @@ export function CalendarListView({ items }: Props) {
                     </Box>
                   </HStack>
                   <HStack>
-                    <Badge colorScheme={STATUS_COLORS[item.status] || 'gray'}>{item.status}</Badge>
+                    <Badge colorScheme={getStatusColorScheme(item.status)}>{item.status}</Badge>
                     <Button
                       size="sm"
                       variant="ghost"

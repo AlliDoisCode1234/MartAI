@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * HeroSection
  *
@@ -5,9 +7,11 @@
  * App → LandingPage → HeroSection
  *
  * Hero section for phoo.ai landing page with headline and primary CTA.
+ * Uses Chakra UI for styling (project standard).
  */
 
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { Box, Container, Heading, Text, Button, HStack, Icon, VStack } from '@chakra-ui/react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 
 interface Props {
   onCtaClick?: () => void;
@@ -15,46 +19,100 @@ interface Props {
 
 export function HeroSection({ onCtaClick }: Props) {
   return (
-    <header className="relative overflow-hidden">
+    <Box as="header" position="relative" overflow="hidden" bg="gray.900">
       {/* Gradient orbs for visual interest */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+      <Box
+        position="absolute"
+        top="0"
+        left="25%"
+        w="24rem"
+        h="24rem"
+        bg="brand.orange"
+        opacity={0.2}
+        borderRadius="full"
+        filter="blur(60px)"
+      />
+      <Box
+        position="absolute"
+        bottom="0"
+        right="25%"
+        w="24rem"
+        h="24rem"
+        bg="brand.red"
+        opacity={0.2}
+        borderRadius="full"
+        filter="blur(60px)"
+      />
 
-      <div className="relative max-w-4xl mx-auto px-6 py-24 lg:py-32 text-center">
+      <Container maxW="4xl" py={{ base: 24, lg: 32 }} textAlign="center" position="relative">
         {/* Badge */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span className="text-sm text-slate-300">Built by the team behind Helps2</span>
-          </div>
-        </div>
+        <HStack justify="center" mb={8}>
+          <HStack
+            gap={2}
+            px={4}
+            py={2}
+            borderRadius="full"
+            bg="whiteAlpha.100"
+            border="1px solid"
+            borderColor="whiteAlpha.200"
+            backdropFilter="blur(8px)"
+          >
+            <Icon as={Sparkles} boxSize={4} color="brand.orange" />
+            <Text fontSize="sm" color="gray.300">
+              Built by the team behind Helps2
+            </Text>
+          </HStack>
+        </HStack>
 
         {/* Headline */}
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+        <Heading
+          as="h1"
+          fontSize={{ base: '4xl', md: '5xl', lg: '6xl' }}
+          fontWeight="bold"
+          lineHeight="tight"
+          mb={6}
+          color="white"
+        >
           Turn Your Website Into a
           <br />
-          <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+          <Text
+            as="span"
+            bgGradient="linear(to-r, brand.orange, brand.red, orange.300)"
+            bgClip="text"
+          >
             Steady Source of Leads
-          </span>
+          </Text>
           <br />— Automatically
-        </h1>
+        </Heading>
 
         {/* Subheadline */}
-        <p className="text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto mb-10">
+        <Text fontSize={{ base: 'xl', md: '2xl' }} color="gray.400" maxW="3xl" mx="auto" mb={10}>
           Phoo helps purpose-driven local businesses grow traffic, leads, and revenue with an
           automated SEO system that actually works.
-        </p>
+        </Text>
 
         {/* Primary CTA */}
-        <a
+        <Button
+          as="a"
           href="#join-beta"
           onClick={onCtaClick}
-          className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 font-semibold text-lg text-white transition-all duration-200 shadow-lg shadow-purple-500/25"
+          size="lg"
+          px={8}
+          py={7}
+          fontSize="lg"
+          fontWeight="semibold"
+          bgGradient="linear(to-r, brand.orange, brand.red)"
+          color="white"
+          _hover={{
+            bgGradient: 'linear(to-r, orange.600, red.500)',
+          }}
+          borderRadius="xl"
+          boxShadow="0 10px 40px rgba(237, 137, 54, 0.25)"
+          rightIcon={<Icon as={ArrowRight} boxSize={5} />}
         >
           Join the Phoo Beta
-          <ArrowRight className="w-5 h-5" />
-        </a>
-      </div>
-    </header>
+        </Button>
+      </Container>
+    </Box>
   );
 }

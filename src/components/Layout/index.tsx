@@ -36,7 +36,12 @@ const PUBLIC_ROUTES = [
   '/pricing',
   '/about',
   '/invite',
+  '/landing', // phoo.ai landing page
 ];
+
+// Routes that bypass the entire app shell (no Navigation, no Phoo)
+// These render raw children for full control over styling
+const STANDALONE_ROUTES = ['/landing'];
 
 export const Layout: FC<Props> = ({ children }) => {
   const pathname = usePathname();
@@ -49,6 +54,11 @@ export const Layout: FC<Props> = ({ children }) => {
 
   // Check if current route is public (doesn't require onboarding)
   const isPublicRoute = PUBLIC_ROUTES.some((p) => pathname === p || pathname?.startsWith(p + '/'));
+
+  // Check if current route is standalone (bypasses app shell entirely)
+  const isStandaloneRoute = STANDALONE_ROUTES.some(
+    (p) => pathname === p || pathname?.startsWith(p + '/')
+  );
 
   // Redirect to onboarding if authenticated but not completed
   useEffect(() => {
@@ -63,6 +73,12 @@ export const Layout: FC<Props> = ({ children }) => {
       router.replace('/onboarding');
     }
   }, [authLoading, isAuthenticated, isPublicRoute, user, router, pathname]);
+
+  // Standalone routes render raw children (e.g., /landing)
+  // These pages have full control over their own styling
+  if (isStandaloneRoute) {
+    return <>{children}</>;
+  }
 
   // Pages where we hide PhooFab (onboarding, auth, admin)
   // Note: / (marketing) now shows Phoo for guest engagement

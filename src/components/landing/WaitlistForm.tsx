@@ -8,11 +8,13 @@
  *
  * Email capture form for phoo.ai beta waitlist.
  * Submits to Convex waitlist mutation which syncs to HubSpot.
+ * Uses Chakra UI for styling (project standard).
  */
 
 import { useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { Box, Container, Heading, Text, Input, Button, VStack, Icon } from '@chakra-ui/react';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export function WaitlistForm() {
@@ -48,61 +50,114 @@ export function WaitlistForm() {
   };
 
   return (
-    <section id="join-beta" className="py-24 border-t border-white/5">
-      <div className="max-w-xl mx-auto px-6 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-6">
+    <Box
+      as="section"
+      id="join-beta"
+      py={24}
+      borderTop="1px solid"
+      borderColor="whiteAlpha.100"
+      bg="gray.900"
+    >
+      <Container maxW="xl" textAlign="center">
+        <Heading
+          as="h2"
+          fontSize={{ base: '3xl', md: '4xl' }}
+          fontWeight="bold"
+          mb={6}
+          color="white"
+        >
           Ready to make your website work for your business?
-        </h2>
-        <p className="text-xl text-slate-400 mb-10">
+        </Heading>
+        <Text fontSize="xl" color="gray.400" mb={10}>
           Join the Phoo beta and be part of building a smarter, more meaningful way to grow.
-        </p>
+        </Text>
 
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
+        <Box
+          bg="whiteAlpha.50"
+          backdropFilter="blur(8px)"
+          borderRadius="2xl"
+          p={8}
+          border="1px solid"
+          borderColor="whiteAlpha.100"
+        >
           {status === 'success' ? (
-            <div className="flex flex-col items-center gap-4">
-              <CheckCircle2 className="w-12 h-12 text-green-400" />
-              <p className="text-xl text-green-300 font-medium">You&apos;re on the list!</p>
-              <p className="text-slate-400">We&apos;ll be in touch soon.</p>
-            </div>
+            <VStack spacing={4}>
+              <Icon as={CheckCircle2} boxSize={12} color="green.400" />
+              <Text fontSize="xl" color="green.300" fontWeight="medium">
+                You&apos;re on the list!
+              </Text>
+              <Text color="gray.400">We&apos;ll be in touch soon.</Text>
+            </VStack>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-                className="w-full px-6 py-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-lg"
-                disabled={status === 'loading'}
-              />
-              <button
-                type="submit"
-                disabled={status === 'loading'}
-                className="w-full inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 font-semibold text-lg text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25"
-              >
-                {status === 'loading' ? (
-                  <span className="animate-pulse">Joining...</span>
-                ) : (
-                  <>
-                    Join the Phoo Beta
-                    <ArrowRight className="w-5 h-5" />
-                  </>
-                )}
-              </button>
+            <form onSubmit={handleSubmit}>
+              <VStack spacing={4}>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  size="lg"
+                  bg="whiteAlpha.50"
+                  border="1px solid"
+                  borderColor="whiteAlpha.100"
+                  color="white"
+                  _placeholder={{ color: 'gray.500' }}
+                  _focus={{
+                    borderColor: 'brand.orange',
+                    boxShadow: '0 0 0 1px var(--chakra-colors-purple-500)',
+                  }}
+                  borderRadius="xl"
+                  py={7}
+                  px={6}
+                  fontSize="lg"
+                  isDisabled={status === 'loading'}
+                />
+                <Button
+                  type="submit"
+                  isLoading={status === 'loading'}
+                  loadingText="Joining..."
+                  size="lg"
+                  w="100%"
+                  py={7}
+                  fontSize="lg"
+                  fontWeight="semibold"
+                  bgGradient="linear(to-r, brand.orange, brand.red)"
+                  color="white"
+                  _hover={{
+                    bgGradient: 'linear(to-r, orange.600, red.500)',
+                  }}
+                  _disabled={{
+                    opacity: 0.5,
+                    cursor: 'not-allowed',
+                  }}
+                  borderRadius="xl"
+                  boxShadow="0 10px 40px rgba(237, 137, 54, 0.25)"
+                  rightIcon={<Icon as={ArrowRight} boxSize={5} />}
+                >
+                  Join the Phoo Beta
+                </Button>
 
-              {status === 'error' && <p className="text-red-400 text-sm">{errorMessage}</p>}
+                {status === 'error' && (
+                  <Text color="red.400" fontSize="sm">
+                    {errorMessage}
+                  </Text>
+                )}
+              </VStack>
             </form>
           )}
-        </div>
+        </Box>
 
-        <p className="mt-6 text-slate-500 text-sm">Spots are limited.</p>
+        <Text mt={6} color="gray.500" fontSize="sm">
+          Spots are limited.
+        </Text>
 
         {waitlistData && waitlistData.count > 0 && (
-          <p className="mt-4 text-sm text-slate-400">
+          <Text mt={4} fontSize="sm" color="gray.400">
             Join {waitlistData.count.toLocaleString()}+ others on the waitlist
-          </p>
+          </Text>
         )}
-      </div>
-    </section>
+      </Container>
+    </Box>
   );
 }
