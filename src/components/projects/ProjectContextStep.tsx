@@ -48,8 +48,15 @@ const INDUSTRIES = [
   'Other',
 ];
 
+type FormValues = {
+  industry?: string;
+  targetAudience?: string;
+  businessGoals?: string;
+  competitors?: string;
+};
+
 type Props = {
-  register: UseFormRegister<any>;
+  register: UseFormRegister<FormValues>;
   onBack: () => void;
   isSubmitting: boolean;
 };

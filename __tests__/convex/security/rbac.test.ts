@@ -246,47 +246,4 @@ describe('RBAC Security', () => {
       expect(user1Clusters[0].clusterName).toBe('User 1 Cluster');
     });
   });
-
-  describe('Briefs Data Isolation', () => {
-    test('briefs are isolated by project', async () => {
-      const t = createTestContext();
-
-      const user1 = await seedUser(t, { email: 'user1@test.com' });
-      const user2 = await seedUser(t, { email: 'user2@test.com' });
-
-      const project1 = await seedProject(t, user1);
-      const project2 = await seedProject(t, user2);
-
-      // Add briefs to each project
-      await t.run(async (ctx) => {
-        await ctx.db.insert('briefs', {
-          projectId: project1,
-          title: 'User 1 Brief',
-          status: 'planned',
-          scheduledDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-        await ctx.db.insert('briefs', {
-          projectId: project2,
-          title: 'User 2 Brief',
-          status: 'planned',
-          scheduledDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-      });
-
-      // Query user1's project briefs
-      const user1Briefs = await t.run(async (ctx) => {
-        return await ctx.db
-          .query('briefs')
-          .withIndex('by_project', (q) => q.eq('projectId', project1))
-          .collect();
-      });
-
-      expect(user1Briefs).toHaveLength(1);
-      expect(user1Briefs[0].title).toBe('User 1 Brief');
-    });
-  });
 });

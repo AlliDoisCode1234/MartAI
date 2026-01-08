@@ -1,5 +1,5 @@
 import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
-import { mode } from '@chakra-ui/theme-tools';
+import { mode, type StyleFunctionProps } from '@chakra-ui/theme-tools';
 
 /**
  * MartAI Theme Configuration
@@ -184,7 +184,7 @@ const transition = {
 // GLOBAL STYLES
 // ============================================
 const styles = {
-  global: (props: any) => ({
+  global: (props: StyleFunctionProps) => ({
     body: {
       bg: props.colorMode === 'dark' ? 'bg.dark' : 'bg.subtle',
       color: props.colorMode === 'dark' ? 'whiteAlpha.900' : 'gray.800',
@@ -210,7 +210,7 @@ const components = {
       transition: 'all 0.2s',
     },
     variants: {
-      solid: (props: any) => ({
+      solid: (props: StyleFunctionProps) => ({
         bg: props.colorScheme === 'brand' ? 'brand.gradient' : undefined,
         color: 'white',
         _hover: {
@@ -263,7 +263,7 @@ const components = {
       },
     },
     variants: {
-      glass: (props: any) => ({
+      glass: (props: StyleFunctionProps) => ({
         container: {
           bg: mode('whiteAlpha.800', 'whiteAlpha.100')(props),
           backdropFilter: 'blur(10px)',

@@ -1,5 +1,5 @@
 import { convexTest } from 'convex-test';
-import { expect, test, describe, beforeEach } from 'vitest';
+import { expect, test, describe, beforeEach, afterEach } from 'vitest';
 import { api } from './_generated/api';
 import schema from './schema';
 
@@ -11,6 +11,10 @@ import schema from './schema';
  * - Idempotency (duplicate signups)
  * - User record creation
  * - Metadata capture
+ *
+ * Note: joinWaitlist schedules a HubSpot sync action. We call
+ * finishInProgressScheduledFunctions() after each mutation to prevent
+ * "Write outside of transaction" errors in convex-test.
  */
 
 describe('joinWaitlist', () => {
@@ -20,11 +24,21 @@ describe('joinWaitlist', () => {
     t = convexTest(schema);
   });
 
+  afterEach(async () => {
+    // Cleanup any remaining scheduled functions
+    try {
+      await t.finishInProgressScheduledFunctions();
+    } catch {
+      // Ignore errors from scheduled Node.js actions (e.g., HubSpot without API key)
+    }
+  });
+
   test('should create waitlist entry for valid email', async () => {
     const result = await t.mutation(api.waitlist.joinWaitlist, {
       email: 'test@example.com',
       source: 'phoo.ai',
     });
+    await t.finishInProgressScheduledFunctions();
 
     expect(result.id).toBeDefined();
     expect(result.alreadyExists).toBe(false);
@@ -35,6 +49,7 @@ describe('joinWaitlist', () => {
       email: 'TEST@EXAMPLE.COM',
       source: 'phoo.ai',
     });
+    await t.finishInProgressScheduledFunctions();
 
     expect(result.id).toBeDefined();
 
@@ -50,9 +65,10 @@ describe('joinWaitlist', () => {
       email: 'dupe@example.com',
       source: 'phoo.ai',
     });
+    await t.finishInProgressScheduledFunctions();
     expect(first.alreadyExists).toBe(false);
 
-    // Second signup with same email
+    // Second signup with same email (no new scheduler since user exists)
     const second = await t.mutation(api.waitlist.joinWaitlist, {
       email: 'dupe@example.com',
       source: 'phoo.ai',
@@ -81,6 +97,7 @@ describe('joinWaitlist', () => {
         referrer: 'https://google.com',
       },
     });
+    await t.finishInProgressScheduledFunctions();
 
     expect(result.id).toBeDefined();
 
@@ -97,6 +114,7 @@ describe('joinWaitlist', () => {
       email: 'newuser@example.com',
       source: 'phoo.ai',
     });
+    await t.finishInProgressScheduledFunctions();
 
     expect(result.userId).toBeDefined();
 
@@ -111,6 +129,7 @@ describe('joinWaitlist', () => {
       email: 'existing@example.com',
       source: 'phoo.ai',
     });
+    await t.finishInProgressScheduledFunctions();
 
     // Second waitlist signup with same email should be idempotent
     const result = await t.mutation(api.waitlist.joinWaitlist, {
@@ -130,6 +149,14 @@ describe('getWaitlistCount', () => {
     t = convexTest(schema);
   });
 
+  afterEach(async () => {
+    try {
+      await t.finishInProgressScheduledFunctions();
+    } catch {
+      // Ignore errors from scheduled Node.js actions
+    }
+  });
+
   test('should return zero for empty waitlist', async () => {
     const result = await t.query(api.waitlist.getWaitlistCount, {});
     expect(result.count).toBe(0);
@@ -140,10 +167,13 @@ describe('getWaitlistCount', () => {
       email: 'count1@example.com',
       source: 'phoo.ai',
     });
+    await t.finishInProgressScheduledFunctions();
+
     await t.mutation(api.waitlist.joinWaitlist, {
       email: 'count2@example.com',
       source: 'phoo.ai',
     });
+    await t.finishInProgressScheduledFunctions();
 
     const result = await t.query(api.waitlist.getWaitlistCount, {});
     expect(result.count).toBe(2);

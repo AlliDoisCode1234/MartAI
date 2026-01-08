@@ -113,10 +113,11 @@ export function SerpAnalyzer({ projectId }: Props) {
       } else {
         throw new Error(response.error || 'Analysis failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Please try again';
       toast({
         title: 'Analysis failed',
-        description: error?.message || 'Please try again',
+        description: errorMessage,
         status: 'error',
         duration: 3000,
       });

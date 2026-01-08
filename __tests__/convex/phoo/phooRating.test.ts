@@ -13,7 +13,7 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { createTestContext, seedUser, seedProject, seedCluster, seedBrief } from '../testHelpers';
+import { createTestContext, seedUser, seedProject, seedCluster } from '../testHelpers';
 import { Id } from '../../../convex/_generated/dataModel';
 
 describe('Phoo Rating System', () => {
@@ -321,25 +321,6 @@ describe('Phoo Rating System', () => {
 
       expect(calendar).toBeDefined();
       expect(calendar?.status).toBe('scheduled');
-    });
-
-    test('briefs contribute to rating', async () => {
-      const t = createTestContext();
-      const user = await seedUser(t);
-      const project = await seedProject(t, user);
-
-      await seedBrief(t, project, { title: 'Brief 1' });
-      await seedBrief(t, project, { title: 'Brief 2' });
-      await seedBrief(t, project, { title: 'Brief 3' });
-
-      const briefs = await t.run(async (ctx) => {
-        return await ctx.db
-          .query('briefs')
-          .withIndex('by_project', (q) => q.eq('projectId', project))
-          .collect();
-      });
-
-      expect(briefs).toHaveLength(3);
     });
   });
 

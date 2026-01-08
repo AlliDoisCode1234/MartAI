@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getRoot, $isTextNode } from 'lexical';
+import { $getRoot, $isTextNode, $isElementNode, type LexicalNode } from 'lexical';
 import { Text } from '@chakra-ui/react';
 
 export function useWordCount(): number {
@@ -15,10 +15,10 @@ export function useWordCount(): number {
         const root = $getRoot();
         let text = '';
 
-        function traverse(node: any) {
+        function traverse(node: LexicalNode) {
           if ($isTextNode(node)) {
             text += node.getTextContent() + ' ';
-          } else {
+          } else if ($isElementNode(node)) {
             const children = node.getChildren();
             for (const child of children) {
               traverse(child);
@@ -27,11 +27,14 @@ export function useWordCount(): number {
         }
 
         traverse(root);
-        
+
         // Count words (split by whitespace, filter empty)
-        const wordArray = text.trim().split(/\s+/).filter(word => word.length > 0);
+        const wordArray = text
+          .trim()
+          .split(/\s+/)
+          .filter((word) => word.length > 0);
         const words = wordArray.length;
-        
+
         setWordCount(words);
       });
     });
@@ -40,19 +43,22 @@ export function useWordCount(): number {
   return wordCount;
 }
 
-export function WordCountPlugin({ onWordCountChange }: { onWordCountChange?: (count: number) => void }) {
+export function WordCountPlugin({
+  onWordCountChange,
+}: {
+  onWordCountChange?: (count: number) => void;
+}) {
   const wordCount = useWordCount();
-  
+
   useEffect(() => {
     if (onWordCountChange) {
       onWordCountChange(wordCount);
     }
   }, [wordCount, onWordCountChange]);
-  
+
   return (
     <Text fontSize="sm" color="gray.600">
       {wordCount} words
     </Text>
   );
 }
-

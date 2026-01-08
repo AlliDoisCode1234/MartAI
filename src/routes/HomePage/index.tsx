@@ -171,7 +171,7 @@ const FeatureCard = ({
   description,
   delay,
 }: {
-  icon: any;
+  icon: React.ComponentType;
   title: string;
   description: string;
   delay: number;

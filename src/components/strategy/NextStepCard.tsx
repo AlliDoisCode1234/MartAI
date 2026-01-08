@@ -37,6 +37,8 @@ import {
   FiExternalLink,
 } from 'react-icons/fi';
 
+import { IconType } from 'react-icons';
+
 const MotionCard = motion(Card);
 
 interface Props {
@@ -50,11 +52,11 @@ interface Props {
 }
 
 interface StageConfig {
-  icon: any;
+  icon: IconType;
   title: string;
   description: string;
   ctaText: string;
-  ctaIcon: any;
+  ctaIcon: IconType;
   statLabel?: string;
   statValue?: number;
   celebrationEmoji?: string;

@@ -32,7 +32,7 @@ const MotionCard = motion(Card);
 type FormValues = { name: string; websiteUrl: string };
 
 type Props = {
-  register: UseFormRegister<any>;
+  register: UseFormRegister<FormValues>;
   errors: FieldErrors<FormValues>;
   onNext: () => void;
   isNextDisabled: boolean;
