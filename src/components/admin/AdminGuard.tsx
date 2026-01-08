@@ -49,27 +49,29 @@ export function AdminGuard({ children, requiredRole = 'admin' }: AdminGuardProps
       return;
     }
 
-    // RBAC Logic
+    // RBAC Logic - Admin portal access roles
+    // Allowed: super_admin, admin, viewer
+    // NOT allowed: user (they only get member portal)
     const userRole = user.role;
-    const isSuperAdmin = userRole === 'super_admin';
-    const isAdmin = userRole === 'admin';
+    const allowedRoles = ['super_admin', 'admin', 'viewer'];
 
-    // Super admin can access everything
-    if (isSuperAdmin) {
-      setAuthorized(true);
+    // Check if user has an admin portal role
+    if (!allowedRoles.includes(userRole)) {
+      setAuthorized(false);
+      // Regular users go to member portal
+      router.replace('/dashboard');
       return;
     }
 
-    // Admin can access admin routes, but not super_admin routes
-    if (isAdmin && requiredRole === 'admin') {
-      setAuthorized(true);
+    // For super_admin required routes, only super_admin can access
+    if (requiredRole === 'super_admin' && userRole !== 'super_admin') {
+      setAuthorized(false);
+      router.replace('/admin');
       return;
     }
 
-    // Otherwise unauthorized - user is logged in but wrong role
-    setAuthorized(false);
-    // Redirect regular users to home
-    router.replace('/');
+    // User has valid admin portal role
+    setAuthorized(true);
   }, [isLoading, isAuthenticated, user, router, requiredRole]);
 
   if (isLoading) {
