@@ -41,3 +41,6 @@ docs/legal/private/
 
 # internal knowledge (client data, intelligence)
 docs/.internal/
+
+# LDDs and design docs (kept locally)
+docs/
