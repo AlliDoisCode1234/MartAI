@@ -9,8 +9,19 @@ import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { Resend } from 'resend';
 
-// Initialize Resend client
-const resend = new Resend(process.env.AUTH_RESEND_KEY);
+// Lazy initialization to avoid module-load-time errors when key is missing
+let _resend: Resend | null = null;
+
+function getResendClient(): Resend {
+  if (!_resend) {
+    const apiKey = process.env.AUTH_RESEND_KEY;
+    if (!apiKey) {
+      throw new Error('AUTH_RESEND_KEY environment variable is not set');
+    }
+    _resend = new Resend(apiKey);
+  }
+  return _resend;
+}
 
 // From address - change after domain verification
 const FROM_EMAIL = 'Phoo <onboarding@resend.dev>';
@@ -176,7 +187,7 @@ async function sendEmailInternal(args: {
   }
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResendClient().emails.send({
       from: FROM_EMAIL,
       to: args.to,
       subject: template.subject,

@@ -86,6 +86,8 @@ export function middleware(request: NextRequest) {
     // Allowed public routes on phoo.ai (whitelist approach)
     const allowedPublicRoutes = [
       '/landing', // Landing page
+      '/auth/callback', // OAuth callback - must be allowed for Google sign-in
+      '/auth/login', // Login page
       '/api/waitlist', // Waitlist API (for form submission)
       '/api/convex', // Convex backend
     ];

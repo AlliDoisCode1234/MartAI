@@ -6,17 +6,36 @@
  * Component Hierarchy:
  * App → Auth → Callback (this file)
  *
- * This page is the target of OAuth redirects. It checks if the user
- * has completed onboarding and routes them accordingly:
+ * Premium "Authenticating..." screen inspired by Vercel's OAuth flow.
+ * This page handles OAuth redirects and routes users based on their status:
  * - New users → /onboarding
  * - Returning users → /dashboard
  */
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, VStack, Spinner, Text } from '@chakra-ui/react';
+import { Box, VStack, Text, keyframes } from '@chakra-ui/react';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+
+// Subtle pulse animation for the loader
+const pulse = keyframes`
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.95); }
+`;
+
+// Gradient animation for the background
+const gradientShift = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`;
+
+// Spinner dots animation
+const dotPulse = keyframes`
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+`;
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -37,8 +56,6 @@ export default function AuthCallbackPage() {
     if (user === undefined) return;
 
     // User authenticated but no user record found - treat as new user needing onboarding
-    // This can happen when Convex Auth creates the auth account but user table entry
-    // doesn't exist or has schema issues
     if (user === null) {
       router.replace('/onboarding');
       return;
@@ -53,10 +70,66 @@ export default function AuthCallbackPage() {
   }, [authLoading, isAuthenticated, user, router]);
 
   return (
-    <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
-      <VStack spacing={4}>
-        <Spinner size="xl" color="brand.orange" thickness="4px" speed="0.8s" />
-        <Text color="gray.600">Setting up your account...</Text>
+    <Box
+      minH="100vh"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      bg="linear-gradient(-45deg, #0a0a0a, #1a1a2e, #16213e, #0f0f23)"
+      backgroundSize="400% 400%"
+      animation={`${gradientShift} 15s ease infinite`}
+      position="relative"
+      overflow="hidden"
+    >
+      {/* Subtle radial glow */}
+      <Box
+        position="absolute"
+        top="50%"
+        left="50%"
+        transform="translate(-50%, -50%)"
+        width="600px"
+        height="600px"
+        borderRadius="50%"
+        background="radial-gradient(circle, rgba(249, 159, 42, 0.08) 0%, transparent 70%)"
+        pointerEvents="none"
+      />
+
+      {/* Main content card */}
+      <VStack
+        spacing={8}
+        p={12}
+        borderRadius="24px"
+        bg="rgba(255, 255, 255, 0.03)"
+        backdropFilter="blur(20px)"
+        border="1px solid rgba(255, 255, 255, 0.08)"
+        boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
+        animation={`${pulse} 3s ease-in-out infinite`}
+        zIndex={1}
+      >
+        {/* Custom dot loader */}
+        <Box display="flex" gap={3}>
+          {[0, 1, 2].map((i) => (
+            <Box
+              key={i}
+              w="12px"
+              h="12px"
+              borderRadius="50%"
+              bg="#F99F2A"
+              animation={`${dotPulse} 1.4s ease-in-out infinite`}
+              style={{ animationDelay: `${i * 0.16}s` }}
+            />
+          ))}
+        </Box>
+
+        {/* Text */}
+        <VStack spacing={2}>
+          <Text fontSize="xl" fontWeight="600" color="white" letterSpacing="-0.02em">
+            Authenticating...
+          </Text>
+          <Text fontSize="sm" color="rgba(255, 255, 255, 0.5)" fontWeight="400">
+            Securing your session
+          </Text>
+        </VStack>
       </VStack>
     </Box>
   );
