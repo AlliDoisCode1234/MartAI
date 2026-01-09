@@ -47,9 +47,18 @@ export default function AuthCallbackPage() {
     // Wait for auth to load
     if (authLoading) return;
 
+    // Check if we're on phoo.ai domain (requires /v1 prefix for app routes)
+    const isPhooAi =
+      typeof window !== 'undefined' &&
+      (window.location.hostname.includes('phoo.ai') ||
+        window.location.hostname.includes('phoo-ai'));
+
+    // Route prefix for phoo.ai domain
+    const routePrefix = isPhooAi ? '/v1' : '';
+
     // Not authenticated - redirect to login
     if (!isAuthenticated) {
-      router.replace('/auth/login');
+      router.replace(`${routePrefix}/auth/login`);
       return;
     }
 
@@ -58,15 +67,15 @@ export default function AuthCallbackPage() {
 
     // User authenticated but no user record found - treat as new user needing onboarding
     if (user === null) {
-      router.replace('/onboarding');
+      router.replace(`${routePrefix}/onboarding`);
       return;
     }
 
     // Route based on onboarding status
     if (user.onboardingStatus === 'completed') {
-      router.replace('/dashboard');
+      router.replace(`${routePrefix}/dashboard`);
     } else {
-      router.replace('/onboarding');
+      router.replace(`${routePrefix}/onboarding`);
     }
   }, [authLoading, isAuthenticated, user, router]);
 
