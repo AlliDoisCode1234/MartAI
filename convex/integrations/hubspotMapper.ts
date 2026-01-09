@@ -203,12 +203,17 @@ export function mapWaitlistToHubSpot(data: {
   utmMedium?: string;
   utmCampaign?: string;
 }): Record<string, string | number | boolean> {
+  // NOTE: We don't set phoo_acquisition_date because Convex runs in UTC
+  // and we can't reliably determine the user's local date. HubSpot tracks
+  // create date natively via the built-in 'createdate' property.
+
   const props: Record<string, string | number | boolean> = {
     lifecyclestage: 'lead',
     hs_lead_status: 'NEW',
-    phoo_waitlist_signup: true,
-    phoo_lead_source: data.source || 'waitlist_beta',
-    phoo_acquisition_date: Date.now(),
+    // HubSpot has this as dropdown with signed_up/not_signed_up options
+    phoo_waitlist_signup: 'signed_up',
+    // Always use waitlist_beta (phoo.ai is not in allowed options)
+    phoo_lead_source: 'waitlist_beta',
     phoo_onboarding_status: 'not_started',
     phoo_account_status: 'inactive',
   };
