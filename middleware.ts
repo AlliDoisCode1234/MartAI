@@ -57,56 +57,51 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ==========================================================================
-  // Phoo.ai Domain Routing (STRICT)
-  // Only allowed routes: /, /v1/*, /landing, /api/waitlist, /api/convex
-  // All other routes return 404 to prevent access to main app without auth
+  // Phoo.ai Domain Routing (STRICT JOIN-FIRST)
+  //
+  // Architecture:
+  // - /join → Only public route (waitlist signup)
+  // - /v1/* → Password-protected entry for testers (Basic Auth required)
+  // - Everything else → Redirects to /join (protected, need to auth via /v1/*)
   // ==========================================================================
   if (isPhooAiDomain(request)) {
-    // Root path on phoo.ai → landing page
+    // Root path on phoo.ai → /join (waitlist)
     if (pathname === '/' || pathname === '') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/join';
+      return NextResponse.redirect(url);
+    }
+
+    // /join route → Rewrite to /landing (our waitlist page)
+    if (pathname === '/join') {
       const url = request.nextUrl.clone();
       url.pathname = '/landing';
       return NextResponse.rewrite(url);
     }
 
-    // /v1/* routes require password protection (except auth routes)
+    // /v1/* routes → Password-protected entry point for testers
+    // After Basic Auth, they can access the full product
     if (pathname.startsWith('/v1')) {
-      // Auth routes are public - users need to access login without Basic Auth
-      const isAuthRoute = pathname.startsWith('/v1/auth');
-
-      if (!isAuthRoute && !checkBasicAuth(request)) {
+      // Check Basic Auth for all /v1 routes
+      if (!checkBasicAuth(request)) {
         return unauthorizedResponse();
       }
       // Authenticated - rewrite /v1/path to /path for the actual app
       const url = request.nextUrl.clone();
-      url.pathname = pathname.replace(/^\/v1/, '') || '/studio';
+      url.pathname = pathname.replace(/^\/v1/, '') || '/dashboard';
       return NextResponse.rewrite(url);
     }
 
-    // Allowed public routes on phoo.ai (whitelist approach)
-    const allowedPublicRoutes = [
-      '/landing', // Landing page
-      '/auth/callback', // OAuth callback - must be allowed for Google sign-in
-      '/auth/login', // Login page
-      '/onboarding', // Onboarding - OAuth users land here
-      '/dashboard', // Dashboard - returning OAuth users land here
-      '/studio', // Content Studio
-      '/api/waitlist', // Waitlist API (for form submission)
-      '/api/convex', // Convex backend
-    ];
-
-    const isAllowedRoute = allowedPublicRoutes.some(
-      (route) => pathname === route || pathname.startsWith(route + '/')
-    );
-
-    // Redirect all other routes on phoo.ai domain to landing page
-    if (!isAllowedRoute) {
+    // API routes must be allowed for the app to function
+    if (pathname.startsWith('/api')) {
+      // Continue to security headers
+    } else {
+      // All other routes on phoo.ai → Redirect to /join
+      // Users must enter via /v1/auth/login to access the product
       const url = request.nextUrl.clone();
-      url.pathname = '/';
+      url.pathname = '/join';
       return NextResponse.redirect(url);
     }
-
-    // Allowed route - continue with security headers below
   }
 
   // ==========================================================================

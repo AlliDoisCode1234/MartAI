@@ -41,7 +41,7 @@ const PUBLIC_ROUTES = [
 
 // Routes that bypass the entire app shell (no Navigation, no Phoo)
 // These render raw children for full control over styling
-const STANDALONE_ROUTES = ['/', '/landing', '/auth/callback', '/auth/login'];
+const STANDALONE_ROUTES = ['/', '/landing', '/join', '/auth/callback', '/auth/login'];
 
 export const Layout: FC<Props> = ({ children }) => {
   const pathname = usePathname();
