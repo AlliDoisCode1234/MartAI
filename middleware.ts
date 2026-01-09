@@ -80,13 +80,15 @@ export function middleware(request: NextRequest) {
     }
 
     // /v1/* routes → Password-protected entry point for testers
-    // After Basic Auth, they can access the full product
+    // EXCEPT /v1/auth/* routes which must be public for login flow
     if (pathname.startsWith('/v1')) {
-      // Check Basic Auth for all /v1 routes
-      if (!checkBasicAuth(request)) {
+      // Auth routes are exempt from Basic Auth - users need to access login page first
+      const isAuthRoute = pathname.startsWith('/v1/auth');
+
+      if (!isAuthRoute && !checkBasicAuth(request)) {
         return unauthorizedResponse();
       }
-      // Authenticated - rewrite /v1/path to /path for the actual app
+      // Rewrite /v1/path to /path for the actual app
       const url = request.nextUrl.clone();
       url.pathname = pathname.replace(/^\/v1/, '') || '/dashboard';
       return NextResponse.rewrite(url);
