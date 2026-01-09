@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * Phoo.ai Landing Page
+ * Phoo.ai Join/Waitlist Page
  *
  * Component Hierarchy:
- * └── app/landing/page.tsx (this file)
+ * └── app/join/page.tsx (this file)
  *     ├── HeroSection
  *     ├── ProblemSection
  *     ├── FeaturesSection
@@ -13,8 +13,8 @@
  *     ├── WaitlistForm
  *     └── Footer
  *
- * Public landing page for phoo.ai domain with beta signup.
- * Accessible at phoo.ai/ (root) via middleware routing.
+ * Public waitlist page for phoo.ai domain.
+ * Accessible at phoo.ai/join (and phoo.ai/ redirects here).
  * Uses Chakra UI with brand.orange/white palette.
  */
 
@@ -28,7 +28,7 @@ import {
   WaitlistForm,
 } from '@/src/components/landing';
 
-export default function LandingPage() {
+export default function JoinPage() {
   return (
     <Box minH="100vh" bg="gray.900" color="white">
       <HeroSection />

@@ -72,11 +72,9 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // /join route → Rewrite to /landing (our waitlist page)
+    // /join route → Serve directly (public waitlist page)
     if (pathname === '/join') {
-      const url = request.nextUrl.clone();
-      url.pathname = '/landing';
-      return NextResponse.rewrite(url);
+      // Fall through to security headers - page is at app/join/page.tsx
     }
 
     // /v1/* routes → Password-protected entry point for testers
