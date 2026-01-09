@@ -44,6 +44,14 @@ export default function AuthCallbackPage() {
   const user = useQuery(api.users.me);
 
   useEffect(() => {
+    // Debug logging
+    console.log('[AuthCallback] State:', {
+      authLoading,
+      isAuthenticated,
+      user: user === undefined ? 'loading' : user === null ? 'null' : 'exists',
+      hostname: typeof window !== 'undefined' ? window.location.hostname : 'ssr',
+    });
+
     // Wait for auth to load
     if (authLoading) return;
 
@@ -56,28 +64,52 @@ export default function AuthCallbackPage() {
     // Route prefix for phoo.ai domain
     const routePrefix = isPhooAi ? '/v1' : '';
 
+    console.log('[AuthCallback] Routing decision:', { isPhooAi, routePrefix, isAuthenticated });
+
     // Not authenticated - redirect to login
     if (!isAuthenticated) {
+      console.log('[AuthCallback] Not authenticated, redirecting to login');
       router.replace(`${routePrefix}/auth/login`);
       return;
     }
 
     // Wait for user data to load
-    if (user === undefined) return;
+    if (user === undefined) {
+      console.log('[AuthCallback] Waiting for user data...');
+      return;
+    }
 
     // User authenticated but no user record found - treat as new user needing onboarding
     if (user === null) {
+      console.log('[AuthCallback] No user record, redirecting to onboarding');
       router.replace(`${routePrefix}/onboarding`);
       return;
     }
 
     // Route based on onboarding status
-    if (user.onboardingStatus === 'completed') {
-      router.replace(`${routePrefix}/dashboard`);
-    } else {
-      router.replace(`${routePrefix}/onboarding`);
-    }
+    const destination =
+      user.onboardingStatus === 'completed'
+        ? `${routePrefix}/dashboard`
+        : `${routePrefix}/onboarding`;
+
+    console.log('[AuthCallback] User found, redirecting to:', destination);
+    router.replace(destination);
   }, [authLoading, isAuthenticated, user, router]);
+
+  // Timeout fallback - if stuck for more than 10 seconds, force redirect
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      console.log('[AuthCallback] Timeout reached, forcing redirect');
+      const isPhooAi =
+        typeof window !== 'undefined' &&
+        (window.location.hostname.includes('phoo.ai') ||
+          window.location.hostname.includes('phoo-ai'));
+      const routePrefix = isPhooAi ? '/v1' : '';
+      router.replace(`${routePrefix}/onboarding`);
+    }, 7000);
+
+    return () => clearTimeout(timeout);
+  }, [router]);
 
   return (
     <Box
