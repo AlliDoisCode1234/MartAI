@@ -23,12 +23,14 @@ import {
   Textarea,
   useToast,
   Progress,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { StudioLayout } from '@/src/components/studio';
 import { ContentTypeSelector } from '@/src/components/studio/ContentTypeSelector';
-import { FiTarget, FiArrowLeft, FiZap } from 'react-icons/fi';
+import { KeywordLibraryPicker } from '@/src/components/studio/KeywordLibraryPicker';
+import { FiTarget, FiArrowLeft, FiZap, FiBookOpen } from 'react-icons/fi';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -69,12 +71,20 @@ export default function CreateContentPage() {
   const [keywords, setKeywords] = useState('');
   const [progress, setProgress] = useState(0);
 
+  // Keyword library picker modal
+  const { isOpen: isPickerOpen, onOpen: onPickerOpen, onClose: onPickerClose } = useDisclosure();
+
   // Get active project
   const projects = useQuery(api.projects.projects.list);
   const activeProject = projects?.[0];
 
   // Content generation action
   const generateContent = useAction(api.contentGeneration.generateContent);
+
+  // Handle keyword selection from library
+  const handleKeywordsFromLibrary = (selectedKeywords: string[]) => {
+    setKeywords(selectedKeywords.join(', '));
+  };
 
   const handleTypeSelect = (typeId: string) => {
     setSelectedType(typeId as ContentType);
@@ -235,7 +245,22 @@ export default function CreateContentPage() {
               </FormControl>
 
               <FormControl>
-                <FormLabel color="gray.300">Target Keywords (comma-separated)</FormLabel>
+                <HStack justify="space-between" mb={2}>
+                  <FormLabel color="gray.300" mb={0}>
+                    Target Keywords
+                  </FormLabel>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    color="#FF9D00"
+                    borderColor="#FF9D00"
+                    leftIcon={<Icon as={FiBookOpen} />}
+                    onClick={onPickerOpen}
+                    _hover={{ bg: 'rgba(255, 157, 0, 0.1)' }}
+                  >
+                    From Library
+                  </Button>
+                </HStack>
                 <Textarea
                   placeholder="seo tips, content marketing, keyword research..."
                   color="white"
@@ -250,6 +275,9 @@ export default function CreateContentPage() {
                   onChange={(e) => setKeywords(e.target.value)}
                   rows={3}
                 />
+                <Text color="gray.500" fontSize="xs" mt={1}>
+                  Comma-separated or select from your keyword library
+                </Text>
               </FormControl>
 
               <HStack justify="flex-end" pt={4}>
@@ -312,6 +340,18 @@ export default function CreateContentPage() {
           </Box>
         )}
       </VStack>
+
+      {/* Keyword Library Picker Modal */}
+      <KeywordLibraryPicker
+        isOpen={isPickerOpen}
+        onClose={onPickerClose}
+        projectId={activeProject?._id ?? null}
+        onSelect={handleKeywordsFromLibrary}
+        selectedKeywords={keywords
+          .split(',')
+          .map((k) => k.trim())
+          .filter(Boolean)}
+      />
     </StudioLayout>
   );
 }
