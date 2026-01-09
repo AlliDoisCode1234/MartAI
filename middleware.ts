@@ -146,15 +146,15 @@ export function middleware(request: NextRequest) {
     ...(process.env.NODE_ENV === 'production' && {
       'Content-Security-Policy': [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-* needed for Next.js
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com", // Google OAuth
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
         "font-src 'self' https://fonts.gstatic.com data:",
         "img-src 'self' data: https: blob:",
-        "connect-src 'self' https://*.convex.cloud https://api.openai.com",
-        "frame-src 'none'",
+        "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://api.openai.com https://accounts.google.com",
+        'frame-src https://accounts.google.com', // Google OAuth popup
         "object-src 'none'",
         "base-uri 'self'",
-        "form-action 'self'",
+        "form-action 'self' https://accounts.google.com",
         "frame-ancestors 'none'",
         'upgrade-insecure-requests',
       ].join('; '),
