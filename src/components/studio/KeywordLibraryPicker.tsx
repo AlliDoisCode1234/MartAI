@@ -34,7 +34,10 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useState, useMemo } from 'react';
 import { FiSearch, FiTarget } from 'react-icons/fi';
-import type { Id } from '@/convex/_generated/dataModel';
+import type { Id, Doc } from '@/convex/_generated/dataModel';
+
+// Use Convex Doc type for proper schema-synced typing
+type Keyword = Doc<'keywords'>;
 
 interface Props {
   isOpen: boolean;
@@ -42,16 +45,6 @@ interface Props {
   projectId: Id<'projects'> | null;
   onSelect: (keywords: string[]) => void;
   selectedKeywords?: string[];
-}
-
-// Keyword type from the query
-interface Keyword {
-  _id: Id<'keywords'>;
-  keyword: string;
-  searchVolume?: number;
-  difficulty?: number;
-  priority?: string;
-  status?: string;
 }
 
 export function KeywordLibraryPicker({
@@ -71,11 +64,11 @@ export function KeywordLibraryPicker({
   );
 
   // Filter by search
-  const filteredKeywords = useMemo(() => {
+  const filteredKeywords = useMemo((): Keyword[] => {
     if (!keywords) return [];
     if (!search.trim()) return keywords;
     const searchLower = search.toLowerCase();
-    return keywords.filter((kw) => kw.keyword.toLowerCase().includes(searchLower));
+    return keywords.filter((kw: Keyword) => kw.keyword.toLowerCase().includes(searchLower));
   }, [keywords, search]);
 
   const handleToggle = (keyword: string) => {
