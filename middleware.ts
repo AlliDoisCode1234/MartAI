@@ -88,6 +88,9 @@ export function middleware(request: NextRequest) {
       '/landing', // Landing page
       '/auth/callback', // OAuth callback - must be allowed for Google sign-in
       '/auth/login', // Login page
+      '/onboarding', // Onboarding - OAuth users land here
+      '/dashboard', // Dashboard - returning OAuth users land here
+      '/studio', // Content Studio
       '/api/waitlist', // Waitlist API (for form submission)
       '/api/convex', // Convex backend
     ];

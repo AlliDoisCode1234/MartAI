@@ -55,21 +55,10 @@ export default function AuthCallbackPage() {
     // Wait for auth to load
     if (authLoading) return;
 
-    // Check if we're on phoo.ai domain (requires /v1 prefix for app routes)
-    const isPhooAi =
-      typeof window !== 'undefined' &&
-      (window.location.hostname.includes('phoo.ai') ||
-        window.location.hostname.includes('phoo-ai'));
-
-    // Route prefix for phoo.ai domain
-    const routePrefix = isPhooAi ? '/v1' : '';
-
-    console.log('[AuthCallback] Routing decision:', { isPhooAi, routePrefix, isAuthenticated });
-
     // Not authenticated - redirect to login
     if (!isAuthenticated) {
       console.log('[AuthCallback] Not authenticated, redirecting to login');
-      router.replace(`${routePrefix}/auth/login`);
+      router.replace('/auth/login');
       return;
     }
 
@@ -82,34 +71,16 @@ export default function AuthCallbackPage() {
     // User authenticated but no user record found - treat as new user needing onboarding
     if (user === null) {
       console.log('[AuthCallback] No user record, redirecting to onboarding');
-      router.replace(`${routePrefix}/onboarding`);
+      router.replace('/onboarding');
       return;
     }
 
     // Route based on onboarding status
-    const destination =
-      user.onboardingStatus === 'completed'
-        ? `${routePrefix}/dashboard`
-        : `${routePrefix}/onboarding`;
+    const destination = user.onboardingStatus === 'completed' ? '/dashboard' : '/onboarding';
 
     console.log('[AuthCallback] User found, redirecting to:', destination);
     router.replace(destination);
   }, [authLoading, isAuthenticated, user, router]);
-
-  // Timeout fallback - if stuck for more than 10 seconds, force redirect
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      console.log('[AuthCallback] Timeout reached, forcing redirect');
-      const isPhooAi =
-        typeof window !== 'undefined' &&
-        (window.location.hostname.includes('phoo.ai') ||
-          window.location.hostname.includes('phoo-ai'));
-      const routePrefix = isPhooAi ? '/v1' : '';
-      router.replace(`${routePrefix}/onboarding`);
-    }, 7000);
-
-    return () => clearTimeout(timeout);
-  }, [router]);
 
   return (
     <Box
