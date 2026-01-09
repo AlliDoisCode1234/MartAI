@@ -14,7 +14,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, VStack, Text, keyframes } from '@chakra-ui/react';
+import { Box, VStack, Text } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 
