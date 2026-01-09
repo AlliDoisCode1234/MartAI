@@ -60,39 +60,41 @@ export const Layout: FC<Props> = ({ children }) => {
     (p) => pathname === p || pathname?.startsWith(p + '/')
   );
 
-  // Redirect logic for authenticated/unauthenticated users
+  // Redirect logic for unauthenticated users
+  // NOTE: Only redirects when NOT authenticated. Does NOT re-trigger on navigation.
   useEffect(() => {
     if (authLoading) return;
-    if (isPublicRoute) return; // Don't redirect on public routes
-    if (isStandaloneRoute) return; // Don't redirect on standalone routes
+    if (isPublicRoute) return;
+    if (isStandaloneRoute) return;
 
-    // Check if we're on phoo.ai domain
+    // CRITICAL: If authenticated, do nothing - let user navigate freely
+    if (isAuthenticated) return;
+
+    // Not authenticated - redirect to appropriate page
     const isPhooAi =
       typeof window !== 'undefined' &&
       (window.location.hostname.includes('phoo.ai') ||
         window.location.hostname.includes('phoo-ai'));
 
-    // Not authenticated - redirect to appropriate page
-    if (!isAuthenticated) {
-      if (isPhooAi) {
-        // On phoo.ai, unauthenticated users go to waitlist
-        router.replace('/join');
-      } else {
-        // On other domains, go to login
-        router.replace('/auth/login');
-      }
-      return;
+    if (isPhooAi) {
+      router.replace('/join');
+    } else {
+      router.replace('/auth/login');
     }
+  }, [authLoading, isAuthenticated, isPublicRoute, isStandaloneRoute, router]);
 
-    // Wait for user data to load
+  // Separate effect for onboarding redirect (only for authenticated users)
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) return;
+    if (isPublicRoute) return;
     if (user === undefined) return;
-    if (user === null) return; // No user found, let page handle it
+    if (user === null) return;
 
-    // User is authenticated but hasn't completed onboarding
     if (user.onboardingStatus !== 'completed') {
       router.replace('/onboarding');
     }
-  }, [authLoading, isAuthenticated, isPublicRoute, isStandaloneRoute, user, router, pathname]);
+  }, [authLoading, isAuthenticated, isPublicRoute, user, router]);
 
   // Standalone routes render raw children (e.g., /landing)
   // These pages have full control over their own styling
