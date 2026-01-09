@@ -352,7 +352,7 @@ export const schedule = mutation({
 
     await ctx.db.patch(args.contentPieceId, {
       status: 'scheduled',
-      publishDate: args.publishDate,
+      scheduledDate: args.publishDate, // Use scheduledDate (indexed field for calendar)
       updatedAt: Date.now(),
     });
 

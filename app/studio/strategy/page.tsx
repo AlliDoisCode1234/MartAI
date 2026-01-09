@@ -27,7 +27,7 @@ import {
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/useAuth';
-import { useAction, useMutation } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { InsightList } from '@/src/components/insights';
@@ -75,6 +75,12 @@ function StrategyContent() {
     isLoading: projectLoading,
   } = useProject(null, { autoSelect: true });
   const typedProjectId = projectId as Id<'projects'> | null;
+
+  // Fetch real content piece stats
+  const contentStats = useQuery(
+    api.contentPieces.getStats,
+    typedProjectId ? { projectId: typedProjectId } : 'skip'
+  );
 
   // Mutations & Actions
   const createKeywordsMutation = useMutation(api.seo.keywords.createKeywords);
@@ -266,10 +272,10 @@ function StrategyContent() {
 
           {/* Stats */}
           <StrategyStatCards
-            clusterCount={clusterCount}
-            briefCount={briefCount}
-            contentVelocity={plan?.contentVelocity || 0}
-            keywordCount={keywordCount}
+            totalContent={contentStats?.total ?? 0}
+            draftsCount={contentStats?.drafts ?? 0}
+            scheduledCount={contentStats?.scheduled ?? 0}
+            publishedCount={contentStats?.published ?? 0}
           />
 
           {/* Insights + Phoo Rating */}
