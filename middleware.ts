@@ -69,9 +69,12 @@ export function middleware(request: NextRequest) {
       return NextResponse.rewrite(url);
     }
 
-    // /v1/* routes require password protection
+    // /v1/* routes require password protection (except auth routes)
     if (pathname.startsWith('/v1')) {
-      if (!checkBasicAuth(request)) {
+      // Auth routes are public - users need to access login without Basic Auth
+      const isAuthRoute = pathname.startsWith('/v1/auth');
+
+      if (!isAuthRoute && !checkBasicAuth(request)) {
         return unauthorizedResponse();
       }
       // Authenticated - rewrite /v1/path to /path for the actual app
