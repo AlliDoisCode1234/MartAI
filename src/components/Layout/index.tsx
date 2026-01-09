@@ -60,19 +60,39 @@ export const Layout: FC<Props> = ({ children }) => {
     (p) => pathname === p || pathname?.startsWith(p + '/')
   );
 
-  // Redirect to onboarding if authenticated but not completed
+  // Redirect logic for authenticated/unauthenticated users
   useEffect(() => {
     if (authLoading) return;
-    if (!isAuthenticated) return; // Let individual pages handle login redirect
     if (isPublicRoute) return; // Don't redirect on public routes
-    if (user === undefined) return; // Still loading user
+    if (isStandaloneRoute) return; // Don't redirect on standalone routes
+
+    // Check if we're on phoo.ai domain
+    const isPhooAi =
+      typeof window !== 'undefined' &&
+      (window.location.hostname.includes('phoo.ai') ||
+        window.location.hostname.includes('phoo-ai'));
+
+    // Not authenticated - redirect to appropriate page
+    if (!isAuthenticated) {
+      if (isPhooAi) {
+        // On phoo.ai, unauthenticated users go to waitlist
+        router.replace('/join');
+      } else {
+        // On other domains, go to login
+        router.replace('/auth/login');
+      }
+      return;
+    }
+
+    // Wait for user data to load
+    if (user === undefined) return;
     if (user === null) return; // No user found, let page handle it
 
     // User is authenticated but hasn't completed onboarding
     if (user.onboardingStatus !== 'completed') {
       router.replace('/onboarding');
     }
-  }, [authLoading, isAuthenticated, isPublicRoute, user, router, pathname]);
+  }, [authLoading, isAuthenticated, isPublicRoute, isStandaloneRoute, user, router, pathname]);
 
   // Standalone routes render raw children (e.g., /landing)
   // These pages have full control over their own styling

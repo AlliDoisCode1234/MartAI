@@ -57,12 +57,14 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ==========================================================================
-  // Phoo.ai Domain Routing (STRICT JOIN-FIRST)
+  // Phoo.ai Domain Routing
   //
   // Architecture:
-  // - /join → Only public route (waitlist signup)
-  // - /v1/* → Password-protected entry for testers (Basic Auth required)
-  // - Everything else → Redirects to /join (protected, need to auth via /v1/*)
+  // - /join → Public waitlist page
+  // - /auth/* → Public auth routes (login, callback)
+  // - /api/* → API routes (needed for app to function)
+  // - Everything else → Let Layout handle auth gating
+  //   (Layout redirects unauthenticated users to /join)
   // ==========================================================================
   if (isPhooAiDomain(request)) {
     // Root path on phoo.ai → /join (waitlist)
@@ -72,35 +74,21 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // /join route → Serve directly (public waitlist page)
-    if (pathname === '/join') {
-      // Fall through to security headers - page is at app/join/page.tsx
-    }
+    // Public routes - always accessible
+    const publicRoutes = ['/join', '/auth'];
+    const isPublicRoute = publicRoutes.some(
+      (route) => pathname === route || pathname.startsWith(route + '/')
+    );
 
-    // /v1/* routes → Password-protected entry point for testers
-    // EXCEPT /v1/auth/* routes which must be public for login flow
-    if (pathname.startsWith('/v1')) {
-      // Auth routes are exempt from Basic Auth - users need to access login page first
-      const isAuthRoute = pathname.startsWith('/v1/auth');
+    // API routes - always accessible (needed for app functionality)
+    const isApiRoute = pathname.startsWith('/api');
 
-      if (!isAuthRoute && !checkBasicAuth(request)) {
-        return unauthorizedResponse();
-      }
-      // Rewrite /v1/path to /path for the actual app
-      const url = request.nextUrl.clone();
-      url.pathname = pathname.replace(/^\/v1/, '') || '/dashboard';
-      return NextResponse.rewrite(url);
-    }
-
-    // API routes must be allowed for the app to function
-    if (pathname.startsWith('/api')) {
-      // Continue to security headers
-    } else {
-      // All other routes on phoo.ai → Redirect to /join
-      // Users must enter via /v1/auth/login to access the product
-      const url = request.nextUrl.clone();
-      url.pathname = '/join';
-      return NextResponse.redirect(url);
+    // All other routes pass through - Layout handles auth gating
+    // If user is authenticated (via OAuth), they can access the product
+    // If not authenticated, Layout redirects them to /join
+    if (!isPublicRoute && !isApiRoute) {
+      // Fall through to security headers
+      // Layout component will check auth and redirect to /join if needed
     }
   }
 
