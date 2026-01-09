@@ -221,6 +221,7 @@ export default function CreateContentPage() {
                 <FormLabel color="gray.300">Title</FormLabel>
                 <Input
                   placeholder="Enter your content title..."
+                  color="white"
                   bg="rgba(255, 255, 255, 0.05)"
                   border="1px solid rgba(255, 255, 255, 0.1)"
                   _placeholder={{ color: 'gray.500' }}
@@ -237,6 +238,7 @@ export default function CreateContentPage() {
                 <FormLabel color="gray.300">Target Keywords (comma-separated)</FormLabel>
                 <Textarea
                   placeholder="seo tips, content marketing, keyword research..."
+                  color="white"
                   bg="rgba(255, 255, 255, 0.05)"
                   border="1px solid rgba(255, 255, 255, 0.1)"
                   _placeholder={{ color: 'gray.500' }}
