@@ -269,10 +269,12 @@ export interface Keyword {
   _id: KeywordId;
   projectId: ProjectId;
   keyword: string;
-  intent?: 'informational' | 'commercial' | 'transactional' | 'navigational';
+  searchVolume?: number;
   difficulty?: number;
-  volume?: number;
-  priority?: number;
+  cpc?: number;
+  intent?: 'informational' | 'commercial' | 'transactional' | 'navigational';
+  priority?: 'high' | 'medium' | 'low';
+  status: 'suggested' | 'approved' | 'implemented';
   createdAt: number;
 }
 
