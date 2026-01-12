@@ -32,7 +32,7 @@ const OUR_GOALS = [
 
 const BETA_BENEFITS = [
   'Early access to Phoo',
-  'Founding beta pricing',
+  'Founding beta access for 6 months',
   'Direct input into product features',
   'Priority onboarding and support',
 ];
