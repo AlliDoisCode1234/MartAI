@@ -1,3 +1,147 @@
+/* ===========================================================================
+   PHOO DESIGN TOKENS
+   Unified dark glassmorphic design system for cohesive member portal
+   =========================================================================== */
+
+:root {
+  /* ===========================================
+     BACKGROUND HIERARCHY (Light to Dark)
+     =========================================== */
+  --phoo-bg-primary: #0a0a0f; /* Page base - deepest */
+  --phoo-bg-surface: #111118; /* Cards, panels */
+  --phoo-bg-elevated: #1a1a24; /* Modals, dropdowns, hover states */
+  --phoo-bg-hover: #22222e; /* Interactive hover */
+
+  /* ===========================================
+     TEXT HIERARCHY
+     =========================================== */
+  --phoo-text-primary: rgba(255, 255, 255, 0.95); /* Headings, important */
+  --phoo-text-secondary: rgba(255, 255, 255, 0.65); /* Body text */
+  --phoo-text-muted: rgba(255, 255, 255, 0.4); /* Labels, hints */
+  --phoo-text-disabled: rgba(255, 255, 255, 0.25); /* Disabled states */
+
+  /* ===========================================
+     ACCENT COLORS (Brand)
+     =========================================== */
+  --phoo-accent: #8b5cf6; /* Primary violet */
+  --phoo-accent-hover: #a78bfa; /* Lighter on hover */
+  --phoo-accent-muted: rgba(139, 92, 246, 0.15); /* Backgrounds */
+  --phoo-accent-glow: rgba(139, 92, 246, 0.4); /* Glow effects */
+
+  /* ===========================================
+     SEMANTIC COLORS
+     =========================================== */
+  --phoo-success: #10b981; /* Emerald - published, complete */
+  --phoo-success-muted: rgba(16, 185, 129, 0.15);
+  --phoo-warning: #f59e0b; /* Amber - pending, attention */
+  --phoo-warning-muted: rgba(245, 158, 11, 0.15);
+  --phoo-error: #ef4444; /* Red - failed, critical */
+  --phoo-error-muted: rgba(239, 68, 68, 0.15);
+  --phoo-info: #3b82f6; /* Blue - informational */
+  --phoo-info-muted: rgba(59, 130, 246, 0.15);
+
+  /* ===========================================
+     BORDERS
+     =========================================== */
+  --phoo-border: rgba(255, 255, 255, 0.08); /* Subtle dividers */
+  --phoo-border-hover: rgba(255, 255, 255, 0.15); /* Hover state */
+  --phoo-border-accent: rgba(139, 92, 246, 0.4); /* Focus / active */
+
+  /* ===========================================
+     GRADIENTS
+     =========================================== */
+  --phoo-gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #4f46e5 100%);
+  --phoo-gradient-surface: linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, transparent 100%);
+  --phoo-gradient-hero: linear-gradient(180deg, rgba(139, 92, 246, 0.15) 0%, transparent 40%);
+
+  /* ===========================================
+     SHADOWS & EFFECTS
+     =========================================== */
+  --phoo-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --phoo-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --phoo-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --phoo-shadow-glow: 0 0 20px rgba(139, 92, 246, 0.25);
+  --phoo-blur: blur(12px);
+
+  /* ===========================================
+     SPACING (8px grid)
+     =========================================== */
+  --phoo-space-xs: 4px;
+  --phoo-space-sm: 8px;
+  --phoo-space-md: 16px;
+  --phoo-space-lg: 24px;
+  --phoo-space-xl: 32px;
+  --phoo-space-2xl: 48px;
+
+  /* ===========================================
+     BORDER RADIUS
+     =========================================== */
+  --phoo-radius-sm: 6px;
+  --phoo-radius-md: 12px;
+  --phoo-radius-lg: 16px;
+  --phoo-radius-full: 9999px;
+
+  /* ===========================================
+     TYPOGRAPHY
+     =========================================== */
+  --phoo-font-display: 'Poppins', sans-serif;
+  --phoo-font-body: 'Inter', sans-serif;
+}
+
+/* ===========================================================================
+   UTILITY CLASSES
+   =========================================================================== */
+
+/* Glass Card - primary container style */
+.phoo-glass {
+  background: rgba(17, 17, 24, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--phoo-border);
+  border-radius: var(--phoo-radius-md);
+}
+
+.phoo-glass-hover:hover {
+  background: rgba(26, 26, 36, 0.9);
+  border-color: var(--phoo-border-hover);
+}
+
+/* Surface Card - solid background */
+.phoo-surface {
+  background: var(--phoo-bg-surface);
+  border: 1px solid var(--phoo-border);
+  border-radius: var(--phoo-radius-md);
+}
+
+/* Elevated elements */
+.phoo-elevated {
+  background: var(--phoo-bg-elevated);
+  border: 1px solid var(--phoo-border);
+  border-radius: var(--phoo-radius-md);
+  box-shadow: var(--phoo-shadow-md);
+}
+
+/* Accent border on focus/active */
+.phoo-focus {
+  border-color: var(--phoo-border-accent);
+  box-shadow: 0 0 0 2px var(--phoo-accent-muted);
+}
+
+/* Text utilities */
+.phoo-text-primary {
+  color: var(--phoo-text-primary);
+}
+.phoo-text-secondary {
+  color: var(--phoo-text-secondary);
+}
+.phoo-text-muted {
+  color: var(--phoo-text-muted);
+}
+
+/* ===========================================================================
+   GLOBAL RESETS
+   =========================================================================== */
+
 * {
   margin: 0;
   padding: 0;
@@ -5,14 +149,13 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--phoo-font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--phoo-bg-primary);
+  color: var(--phoo-text-primary);
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }

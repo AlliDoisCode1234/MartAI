@@ -99,11 +99,11 @@ export default function KeywordsPage() {
   // Show loading while data is being fetched
   if (authLoading || projectLoading) {
     return (
-      <Box minH="calc(100vh - 64px)" bg="brand.light" p={8}>
+      <Box minH="calc(100vh - 64px)" bg="var(--phoo-bg-primary)" p={8}>
         <Container maxW="container.xl">
           <VStack spacing={4} align="stretch">
-            <Skeleton height="40px" width="300px" />
-            <Skeleton height="200px" />
+            <Skeleton height="40px" width="300px" startColor="gray.700" endColor="gray.600" />
+            <Skeleton height="200px" startColor="gray.700" endColor="gray.600" />
           </VStack>
         </Container>
       </Box>
@@ -111,7 +111,7 @@ export default function KeywordsPage() {
   }
 
   return (
-    <Box minH="calc(100vh - 64px)" bg="brand.light">
+    <Box minH="calc(100vh - 64px)" bg="var(--phoo-bg-primary)">
       <Container
         maxW="container.xl"
         py={{ base: 8, md: 12 }}
@@ -120,23 +120,34 @@ export default function KeywordsPage() {
         <VStack spacing={8} align="stretch">
           <HStack justify="space-between">
             <VStack align="start" spacing={1}>
-              <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="gray.800">
+              <Heading
+                size="2xl"
+                fontWeight="bold"
+                fontFamily="heading"
+                color="var(--phoo-text-primary)"
+              >
                 Keyword Research
               </Heading>
-              <Text color="gray.500">Project: {project?.name || 'Loading...'}</Text>
+              <Text color="var(--phoo-text-secondary)">
+                Project: {project?.name || 'Loading...'}
+              </Text>
             </VStack>
             <HStack>
               <Button
-                bg="brand.orange"
+                bg="var(--phoo-accent)"
                 color="white"
+                _hover={{ bg: 'var(--phoo-accent-hover)' }}
                 onClick={() => handleCreatePage('wordpress')}
                 isDisabled={selectedKeywords.length === 0}
               >
                 Create WordPress Page
               </Button>
               <Button
-                bg="brand.teal"
-                color="white"
+                bg="var(--phoo-bg-elevated)"
+                color="var(--phoo-text-primary)"
+                border="1px solid"
+                borderColor="var(--phoo-border)"
+                _hover={{ bg: 'var(--phoo-bg-hover)', borderColor: 'var(--phoo-border-hover)' }}
                 onClick={() => handleCreatePage('shopify')}
                 isDisabled={selectedKeywords.length === 0}
               >
@@ -154,7 +165,14 @@ export default function KeywordsPage() {
                   value={filter.status}
                   onChange={(e) => setFilter({ ...filter, status: e.target.value })}
                   maxW="200px"
-                  bg="white"
+                  bg="var(--phoo-bg-surface)"
+                  color="var(--phoo-text-primary)"
+                  border="1px solid"
+                  borderColor="var(--phoo-border)"
+                  _hover={{ borderColor: 'var(--phoo-border-hover)' }}
+                  sx={{
+                    option: { bg: 'var(--phoo-bg-elevated)', color: 'var(--phoo-text-primary)' },
+                  }}
                 >
                   <option value="all">All Status</option>
                   <option value="suggested">Suggested</option>
@@ -165,35 +183,63 @@ export default function KeywordsPage() {
                   value={filter.priority}
                   onChange={(e) => setFilter({ ...filter, priority: e.target.value })}
                   maxW="200px"
-                  bg="white"
+                  bg="var(--phoo-bg-surface)"
+                  color="var(--phoo-text-primary)"
+                  border="1px solid"
+                  borderColor="var(--phoo-border)"
+                  _hover={{ borderColor: 'var(--phoo-border-hover)' }}
+                  sx={{
+                    option: { bg: 'var(--phoo-bg-elevated)', color: 'var(--phoo-text-primary)' },
+                  }}
                 >
                   <option value="all">All Priority</option>
                   <option value="high">High</option>
                   <option value="medium">Medium</option>
                   <option value="low">Low</option>
                 </Select>
-                <Text color="gray.600">
+                <Text color="var(--phoo-text-muted)">
                   Showing {filteredKeywords.length} of {results.length} loaded
                 </Text>
               </HStack>
 
-              <Box bg="white" p={6} borderRadius="lg" shadow="md" overflowX="auto">
+              <Box
+                bg="var(--phoo-bg-surface)"
+                p={6}
+                borderRadius="var(--phoo-radius-md)"
+                border="1px solid"
+                borderColor="var(--phoo-border)"
+                overflowX="auto"
+              >
                 <Table variant="simple">
                   <Thead>
                     <Tr>
-                      <Th>Select</Th>
-                      <Th>Keyword</Th>
-                      <Th>Intent</Th>
-                      <Th>Priority</Th>
-                      <Th>Volume</Th>
-                      <Th>Difficulty</Th>
-                      <Th>Status</Th>
+                      <Th color="var(--phoo-text-muted)" borderColor="var(--phoo-border)">
+                        Select
+                      </Th>
+                      <Th color="var(--phoo-text-muted)" borderColor="var(--phoo-border)">
+                        Keyword
+                      </Th>
+                      <Th color="var(--phoo-text-muted)" borderColor="var(--phoo-border)">
+                        Intent
+                      </Th>
+                      <Th color="var(--phoo-text-muted)" borderColor="var(--phoo-border)">
+                        Priority
+                      </Th>
+                      <Th color="var(--phoo-text-muted)" borderColor="var(--phoo-border)">
+                        Volume
+                      </Th>
+                      <Th color="var(--phoo-text-muted)" borderColor="var(--phoo-border)">
+                        Difficulty
+                      </Th>
+                      <Th color="var(--phoo-text-muted)" borderColor="var(--phoo-border)">
+                        Status
+                      </Th>
                     </Tr>
                   </Thead>
                   <Tbody>
                     {filteredKeywords.map((keyword) => (
-                      <Tr key={keyword._id} _hover={{ bg: 'gray.50' }}>
-                        <Td>
+                      <Tr key={keyword._id} _hover={{ bg: 'var(--phoo-bg-hover)' }}>
+                        <Td borderColor="var(--phoo-border)">
                           <input
                             type="checkbox"
                             checked={selectedKeywords.includes(keyword._id)}
@@ -207,30 +253,33 @@ export default function KeywordsPage() {
                             }}
                           />
                         </Td>
-                        <Td>
+                        <Td borderColor="var(--phoo-border)">
                           <Link
                             as={NextLink}
                             href={`/keywords/${keyword._id}`}
-                            _hover={{ textDecor: 'underline', color: 'brand.orange' }}
+                            color="var(--phoo-text-primary)"
+                            _hover={{ textDecor: 'underline', color: 'var(--phoo-accent-hover)' }}
                           >
                             <Text fontWeight="medium">{keyword.keyword}</Text>
                           </Link>
                         </Td>
-                        <Td>
+                        <Td borderColor="var(--phoo-border)">
                           <Badge colorScheme={getIntentColor(keyword.intent)}>
                             {keyword.intent || 'N/A'}
                           </Badge>
                         </Td>
-                        <Td>
+                        <Td borderColor="var(--phoo-border)">
                           <Badge colorScheme={getPriorityColor(keyword.priority)}>
                             {keyword.priority || 'medium'}
                           </Badge>
                         </Td>
-                        <Td>
+                        <Td borderColor="var(--phoo-border)" color="var(--phoo-text-secondary)">
                           {keyword.searchVolume ? keyword.searchVolume.toLocaleString() : 'N/A'}
                         </Td>
-                        <Td>{keyword.difficulty ? `${keyword.difficulty}/100` : 'N/A'}</Td>
-                        <Td>
+                        <Td borderColor="var(--phoo-border)" color="var(--phoo-text-secondary)">
+                          {keyword.difficulty ? `${keyword.difficulty}/100` : 'N/A'}
+                        </Td>
+                        <Td borderColor="var(--phoo-border)">
                           <Badge>{keyword.status}</Badge>
                         </Td>
                       </Tr>
@@ -242,6 +291,11 @@ export default function KeywordsPage() {
                   <Button
                     mt={4}
                     w="full"
+                    bg="var(--phoo-bg-elevated)"
+                    color="var(--phoo-text-primary)"
+                    border="1px solid"
+                    borderColor="var(--phoo-border)"
+                    _hover={{ bg: 'var(--phoo-bg-hover)', borderColor: 'var(--phoo-border-hover)' }}
                     onClick={() => loadMore(50)}
                     isLoading={status === 'LoadingMore'}
                     disabled={status === 'LoadingMore'}
