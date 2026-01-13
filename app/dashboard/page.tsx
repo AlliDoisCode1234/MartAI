@@ -10,7 +10,7 @@
  * Per Board Decision: Dashboard = glance, Studio = workspace.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -30,7 +30,7 @@ import {
   Spacer,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { useConvexAuth, useQuery } from 'convex/react';
+import { useConvexAuth, useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import {
@@ -45,11 +45,7 @@ import { useProject } from '@/lib/hooks';
 import Link from 'next/link';
 
 // Dashboard components
-import {
-  MartAIRatingWidget,
-  WelcomeEmptyState,
-  DashboardSkeleton,
-} from '@/src/components/dashboard';
+import { PRScoreWidget, WelcomeEmptyState, DashboardSkeleton } from '@/src/components/dashboard';
 import { MartCharacter } from '@/src/components/assistant';
 import { MetricCard } from '@/src/components/shared';
 
@@ -69,6 +65,18 @@ export default function DashboardPage() {
     strategyData,
     isLoading: projectLoading,
   } = useProject(null, { autoSelect: true });
+
+  // Auto-generate PR if missing
+  const generateScore = useMutation(api.analytics.martaiRatingQueries.generatePreliminaryScore);
+  const [hasGenerated, setHasGenerated] = useState(false);
+
+  useEffect(() => {
+    // If we have a project but no score, generate one
+    if (projectId && mrScore === null && !hasGenerated && !projectLoading) {
+      setHasGenerated(true);
+      generateScore({ projectId: projectId as Id<'projects'> }).catch(console.error);
+    }
+  }, [projectId, mrScore, hasGenerated, projectLoading, generateScore]);
 
   // Auth redirect
   useEffect(() => {
@@ -173,7 +181,7 @@ export default function DashboardPage() {
           <Grid templateColumns={{ base: '1fr', lg: '300px 1fr' }} gap={6}>
             {/* Health Score Widget */}
             <GridItem>
-              <MartAIRatingWidget
+              <PRScoreWidget
                 score={
                   mrScore
                     ? {

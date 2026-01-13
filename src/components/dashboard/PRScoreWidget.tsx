@@ -10,7 +10,7 @@ const MotionBox = motion(Box);
 const MotionText = motion(Text);
 
 // Types
-export interface MRScoreData {
+export interface PRScoreData {
   overall: number;
   tier: string;
   visibility: number;
@@ -22,12 +22,12 @@ export interface MRScoreData {
   previousScore?: number;
 }
 
-interface MartAIRatingWidgetProps {
-  score: MRScoreData | null;
+interface Props {
+  score: PRScoreData | null;
   loading?: boolean;
 }
 
-export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) {
+export function PRScoreWidget({ score, loading }: Props) {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const textMuted = useColorModeValue('gray.600', 'gray.400');
@@ -44,7 +44,7 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
       >
         <VStack spacing={6}>
           <Box w="180px" h="180px" borderRadius="full" bg="gray.200" />
-          <Text color={textMuted}>Calculating Phoo Rating...</Text>
+          <Text color={textMuted}>Calculating PR...</Text>
         </VStack>
       </Box>
     );
@@ -66,7 +66,7 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
           <Icon as={FiAward} boxSize={16} color="gray.400" />
           <VStack spacing={2}>
             <Text fontSize="lg" fontWeight="bold" color={textMuted}>
-              No Phoo Rating Yet
+              No PR Score Yet
             </Text>
             <Text fontSize="sm" color={textMuted} textAlign="center" maxW="280px">
               Connect GA4 & Search Console to see your SEO health score
@@ -94,7 +94,7 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
       <VStack spacing={8}>
         <HStack justify="space-between" w="full">
           <Text fontSize="lg" fontWeight="bold" letterSpacing="tight">
-            Phoo Rating
+            PR
           </Text>
           <ChangeIndicator current={score.overall} previous={score.previousScore} />
         </HStack>
@@ -152,7 +152,7 @@ export function MartAIRatingWidget({ score, loading }: MartAIRatingWidgetProps) 
               <ScoreBar
                 key={comp.key}
                 label={comp.label}
-                value={score[comp.key as keyof MRScoreData] as number}
+                value={score[comp.key as keyof PRScoreData] as number}
                 icon={comp.icon}
                 weight={comp.weight}
                 description={comp.description}
