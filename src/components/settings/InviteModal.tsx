@@ -179,7 +179,7 @@ export function InviteModal({ isOpen, onClose, organizationId }: Props) {
                 </FormControl>
 
                 <Text fontSize="sm" color="gray.500">
-                  The invitee will need to sign up or log in to accept.
+                  Share this link with the invitee to accept the invitation.
                 </Text>
               </>
             )}
