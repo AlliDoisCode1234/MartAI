@@ -29,8 +29,9 @@ import {
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useConvexAuth, useQuery, useMutation } from 'convex/react';
+import { useAuthActions } from '@convex-dev/auth/react';
 import { api } from '@/convex/_generated/api';
-import { FiMail, FiUsers, FiCheckCircle, FiAlertTriangle, FiLogIn } from 'react-icons/fi';
+import { FiMail, FiUsers, FiCheckCircle, FiAlertTriangle, FiLogIn, FiLogOut } from 'react-icons/fi';
 import Link from 'next/link';
 
 const MotionBox = motion(Box);
@@ -41,6 +42,7 @@ export default function InviteAcceptPage() {
   const token = params.token as string;
 
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
+  const { signOut } = useAuthActions();
   const user = useQuery(api.users.current);
 
   // Validate token (public query - no auth needed to view invite details)
@@ -48,8 +50,22 @@ export default function InviteAcceptPage() {
   const acceptInvite = useMutation(api.teams.invitations.acceptInvitation);
 
   const [accepting, setAccepting] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Handle sign out (preserves current URL so user can sign back in)
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+      // Page will re-render as unauthenticated, showing "Sign In to Accept"
+    } catch (err) {
+      console.error('Sign out failed:', err);
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   // Handle accept
   const handleAccept = async () => {
@@ -274,8 +290,24 @@ export default function InviteAcceptPage() {
                     </Text>
                   </Box>
                 </Alert>
-                <Text color="gray.400" fontSize="sm" textAlign="center">
-                  Sign out and sign in with the correct email address
+                <Button
+                  w="full"
+                  size="lg"
+                  variant="outline"
+                  borderColor="orange.400"
+                  color="orange.400"
+                  leftIcon={<FiLogOut />}
+                  onClick={handleSignOut}
+                  isLoading={signingOut}
+                  loadingText="Signing out..."
+                  _hover={{
+                    bg: 'whiteAlpha.100',
+                  }}
+                >
+                  Sign Out & Switch Account
+                </Button>
+                <Text color="gray.500" fontSize="xs" textAlign="center">
+                  You'll be redirected to sign in with the correct email
                 </Text>
               </VStack>
             ) : (
