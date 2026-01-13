@@ -305,8 +305,12 @@ export const acceptInvitation = mutation({
       updatedAt: now,
     });
 
-    // Update user's organizationId
-    await ctx.db.patch(userId, { organizationId: invitation.organizationId });
+    // Update user's organizationId and mark onboarding as complete
+    // Team members joining via invite don't need onboarding - they're joining an existing org
+    await ctx.db.patch(userId, {
+      organizationId: invitation.organizationId,
+      onboardingStatus: 'completed',
+    });
 
     // Mark invitation as accepted
     await ctx.db.patch(invitation._id, { status: 'accepted' });
