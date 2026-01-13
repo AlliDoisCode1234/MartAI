@@ -1,45 +1,119 @@
-# MartAI
+<p align="center">
+  <img src="./public/images/phoo-logo-orange.png" alt="Phoo Logo" width="200" />
+</p>
 
-MartAI is a Next.js + Convex workspace for generating AI-driven SEO roadmaps, demo data, and dashboards without relying on third-party keyword APIs.
+<h1 align="center">Phoo</h1>
 
-## Spin It Up
+<p align="center">
+  <strong>AI-Powered SEO Automation for Small Businesses</strong>
+</p>
+
+<p align="center">
+  <a href="https://phoo.ai">Website</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#features">Features</a> •
+  <a href="./docs/VERCEL_SETUP.md">Deployment</a>
+</p>
+
+---
+
+## What is Phoo?
+
+Phoo helps small businesses grow their online presence with intelligent content strategy, automated keyword research, and AI-generated content — all without needing to be an SEO expert.
+
+### Built For
+
+- Small businesses under $500k annual revenue
+- Solopreneurs and small marketing teams
+- Non-SEO experts who need results, not tools
+
+---
+
+## Features
+
+| Feature      | Description                                           |
+| ------------ | ----------------------------------------------------- |
+| **Strategy** | AI-generated keyword clusters and topic planning      |
+| **Calendar** | Zero-click content calendar with automated scheduling |
+| **Library**  | Centralized content management with status tracking   |
+| **Create**   | AI-powered brief and draft generation                 |
+| **Insights** | Analytics and performance tracking                    |
+
+---
+
+## Tech Stack
+
+| Layer    | Technology                                        |
+| -------- | ------------------------------------------------- |
+| Frontend | Next.js 15, React 19, Chakra UI                   |
+| Backend  | Convex (realtime database + serverless functions) |
+| AI       | OpenAI GPT-4, multi-model routing                 |
+| Auth     | Convex Auth (Google OAuth + Email/Password)       |
+| Payments | Stripe                                            |
+| Hosting  | Vercel + Convex Cloud                             |
+
+---
+
+## Quick Start
 
 ```bash
+# Install dependencies
 npm install
-npx convex dev                # generates Convex schema/types and runs the backend
-npm run dev                   # Next.js app at http://localhost:3000
+
+# Start Convex backend (generates types)
+npx convex dev
+
+# Start Next.js frontend
+npm run dev
 ```
 
-Need to restart everything? Use the helper script:
+Visit `http://localhost:3000` to see the app.
 
-```bash
-npm run server:restart
-```
+### Environment Variables
 
-## Environment
+Create `.env.local`:
 
-Create `.env.local` with at least:
-
-```
+```env
 NEXT_PUBLIC_CONVEX_URL=<your convex deployment url>
-JWT_SECRET=<secure random string>
-JWT_REFRESH_SECRET=<secure random string>
-GOOGLE_CLIENT_ID=<your google oauth client id>
-GOOGLE_CLIENT_SECRET=<your google oauth client secret>
+GOOGLE_CLIENT_ID=<google oauth client id>
+GOOGLE_CLIENT_SECRET=<google oauth client secret>
 ```
 
-See `docs/VERCEL_SETUP.md` for complete environment variable setup and deployment guide.
+---
 
-Seed demo data (admin user, project, fake analytics) any time with:
+## Project Structure
+
+```
+├── app/                    # Next.js App Router pages
+│   ├── studio/            # Content Studio (main product)
+│   ├── admin/             # Admin portal
+│   └── auth/              # Authentication pages
+├── convex/                 # Convex backend
+├── src/components/         # React components
+└── lib/                    # Utilities and hooks
+```
+
+---
+
+## Development
 
 ```bash
-npx tsx scripts/seedDemoAccount.ts
+npm test          # Run tests
+npm run typecheck # Type check
+npm run lint      # Lint
+npm run build     # Production build
 ```
 
-That’s it—after the servers start, visit `/auth/login` (demo credentials are printed by the seed script) and explore the dashboard, onboarding journey, and AI demo data.
+---
 
-## Core Convex Workflows
+## Documentation
 
-- `api.seo.keywordClusters.generateClusters` replaces the legacy `/api/clusters/generate` route and handles optional GSC imports before persisting clusters.
-- `api.content.quarterlyPlans.generatePlan` replaces `/api/plans/generate`, validating inputs and creating the 12-week calendar directly in Convex.
+- [Deployment Guide](./docs/VERCEL_SETUP.md)
+- [Project Status](./PROJECT_STATUS.md)
+- [Roadmap](./ROADMAP.md)
 
+---
+
+<p align="center">
+  <strong>Phoo</strong> — Making SEO accessible for small businesses
+</p>
