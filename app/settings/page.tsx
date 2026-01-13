@@ -33,6 +33,8 @@ import {
   TabPanel,
 } from '@chakra-ui/react';
 import { WordPressConnect } from '@/src/components/settings/WordPressConnect';
+import { ShopifyConnect } from '@/src/components/settings/ShopifyConnect';
+import { WixConnect } from '@/src/components/settings/WixConnect';
 import { ChangePasswordForm } from '@/src/components/settings/ChangePasswordForm';
 import { useProject } from '@/lib/hooks';
 import { useMe } from '@/lib/useMe';
@@ -189,59 +191,18 @@ export default function SettingsPage() {
                     <Divider />
 
                     {activeProject ? (
-                      <WordPressConnect projectId={activeProject._id} />
+                      <VStack spacing={4} align="stretch">
+                        <WordPressConnect projectId={activeProject._id} />
+                        <ShopifyConnect projectId={activeProject._id} />
+                      </VStack>
                     ) : (
                       <Box p={4} bg="gray.50" borderRadius="md">
                         <Text color="gray.500">Create a project first to connect integrations</Text>
                       </Box>
                     )}
 
-                    {/* Future integrations */}
-                    <VStack spacing={3} align="stretch">
-                      <Box
-                        p={4}
-                        borderWidth="1px"
-                        borderRadius="lg"
-                        borderColor="gray.200"
-                        opacity={0.6}
-                      >
-                        <HStack justify="space-between">
-                          <VStack align="start" spacing={0}>
-                            <HStack>
-                              <Text fontWeight="medium">Shopify</Text>
-                              <Badge colorScheme="gray" size="sm">
-                                Coming Soon
-                              </Badge>
-                            </HStack>
-                            <Text fontSize="sm" color="gray.500">
-                              Publish blog posts to your Shopify store
-                            </Text>
-                          </VStack>
-                        </HStack>
-                      </Box>
-
-                      <Box
-                        p={4}
-                        borderWidth="1px"
-                        borderRadius="lg"
-                        borderColor="gray.200"
-                        opacity={0.6}
-                      >
-                        <HStack justify="space-between">
-                          <VStack align="start" spacing={0}>
-                            <HStack>
-                              <Text fontWeight="medium">Webflow</Text>
-                              <Badge colorScheme="gray" size="sm">
-                                Coming Soon
-                              </Badge>
-                            </HStack>
-                            <Text fontSize="sm" color="gray.500">
-                              Publish CMS items to Webflow
-                            </Text>
-                          </VStack>
-                        </HStack>
-                      </Box>
-                    </VStack>
+                    {/* Wix Integration */}
+                    {activeProject && <WixConnect projectId={activeProject._id} />}
                   </VStack>
                 </TabPanel>
 
