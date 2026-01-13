@@ -13,3 +13,4 @@ export { DashboardSkeleton } from './DashboardSkeleton';
 export { TopKeywordsCard } from './TopKeywordsCard';
 export { QuickWinsCard } from './QuickWinsCard';
 export { BadgeModal } from './BadgeModal';
+export { GSCAnalyticsCard } from './GSCAnalyticsCard';

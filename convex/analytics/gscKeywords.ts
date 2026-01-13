@@ -184,3 +184,71 @@ export const getKeywordChanges = internalQuery({
     return changes;
   },
 });
+
+/**
+ * Get aggregated GSC stats for dashboard display
+ * Returns: total clicks, impressions, avg CTR, avg position, top 5 keywords
+ */
+export const getGSCDashboardStats = query({
+  args: {
+    projectId: v.id('projects'),
+  },
+  handler: async (ctx, args) => {
+    // Get most recent snapshots (last 7 days worth)
+    const snapshots = await ctx.db
+      .query('gscKeywordSnapshots')
+      .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
+      .order('desc')
+      .take(500);
+
+    if (snapshots.length === 0) {
+      return null;
+    }
+
+    // Get unique keywords (most recent entry per keyword)
+    const keywordMap = new Map<string, (typeof snapshots)[0]>();
+    for (const kw of snapshots) {
+      if (!keywordMap.has(kw.keyword)) {
+        keywordMap.set(kw.keyword, kw);
+      }
+    }
+
+    const uniqueKeywords = Array.from(keywordMap.values());
+
+    // Calculate aggregates
+    let totalClicks = 0;
+    let totalImpressions = 0;
+    let totalPosition = 0;
+
+    for (const kw of uniqueKeywords) {
+      totalClicks += kw.clicks;
+      totalImpressions += kw.impressions;
+      totalPosition += kw.position;
+    }
+
+    const avgCtr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+    const avgPosition = uniqueKeywords.length > 0 ? totalPosition / uniqueKeywords.length : 0;
+
+    // Get top 5 keywords by impressions
+    const topKeywords = uniqueKeywords
+      .sort((a, b) => b.impressions - a.impressions)
+      .slice(0, 5)
+      .map((kw) => ({
+        keyword: kw.keyword,
+        clicks: kw.clicks,
+        impressions: kw.impressions,
+        ctr: kw.ctr,
+        position: kw.position,
+      }));
+
+    return {
+      totalClicks,
+      totalImpressions,
+      avgCtr: Math.round(avgCtr * 100) / 100,
+      avgPosition: Math.round(avgPosition * 10) / 10,
+      topKeywords,
+      keywordCount: uniqueKeywords.length,
+      lastSyncDate: snapshots[0]?.syncDate || null,
+    };
+  },
+});

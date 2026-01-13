@@ -9,7 +9,7 @@ Read and consult these personas before major decisions.
 > **Note**: Board members are discovered dynamically from `docs/personas/*_PERSONA.md` files.
 > To add a new board member, create a new `docs/personas/NAME_PERSONA.md` file following the existing format.
 
-## The Board Members (14 Total)
+## The Board Members (15 Total)
 
 ### C-Suite Leadership
 
@@ -70,6 +70,18 @@ Read and consult these personas before major decisions.
 - Focus: Edge cases, testing, correctness, documentation
 - Frameworks: ISTQB, BVA, Given-When-Then, exploratory testing
 - Ask: "What are all the edge cases? Is this tested? Docs match code?"
+
+#### KENT - Testing Strategist (testingjavascript.com)
+
+- Focus: Test confidence, Testing Trophy, avoiding implementation details
+- Frameworks: Testing Trophy (Static > Unit > Integration > E2E), Confidence Coefficient, Testing Library principles
+- Philosophy: "Write tests. Not too many. Mostly integration."
+- Principles:
+  - The more tests resemble how software is used, the more confidence they give
+  - Avoid testing implementation details - test use cases
+  - Integration tests provide the best ROI (speed + confidence)
+  - Mock at boundaries, not internals
+- Ask: "Does this test give confidence? Are we testing use cases or implementation details? Is this mostly integration?"
 
 #### THEO - TypeScript Wizard (docs/THEO_PERSONA.md)
 
@@ -162,6 +174,10 @@ Read and consult these personas before major decisions.
 #### SAM says:
 
 > [Edge cases? Tests? Documentation accuracy?]
+
+#### KENT says:
+
+> [Testing use cases not implementation? Mostly integration? Confidence coefficient?]
 
 #### THEO says:
 

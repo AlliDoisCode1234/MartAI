@@ -2,6 +2,8 @@
 description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes - four-phase framework (root cause investigation, pattern analysis, hypothesis testing, implementation) that ensures understanding before attempting solutions
 ---
 
+// turbo-all
+
 Systematic Debugging
 Overview
 Random fixes waste time and create new bugs. Quick patches mask underlying issues.
@@ -66,10 +68,11 @@ WHEN system has multiple components (CI → build → signing, API → service �
 BEFORE proposing fixes, add diagnostic instrumentation:
 
 For EACH component boundary:
-  - Log what data enters component
-  - Log what data exits component
-  - Verify environment/config propagation
-  - Check state at each layer
+
+- Log what data enters component
+- Log what data exits component
+- Verify environment/config propagation
+- Check state at each layer
 
 Run once to gather evidence showing WHERE it breaks
 THEN analyze evidence to identify failing component
@@ -77,19 +80,23 @@ THEN investigate that specific component
 Example (multi-layer system):
 
 # Layer 1: Workflow
+
 echo "=== Secrets available in workflow: ==="
 echo "IDENTITY: ${IDENTITY:+SET}${IDENTITY:-UNSET}"
 
 # Layer 2: Build script
+
 echo "=== Env vars in build script: ==="
 env | grep IDENTITY || echo "IDENTITY not in environment"
 
 # Layer 3: Signing script
+
 echo "=== Keychain state: ==="
 security list-keychains
 security find-identity -v
 
 # Layer 4: Actual signing
+
 codesign --sign "$IDENTITY" --verbose=4 "$APP"
 This reveals: Which layer fails (secrets → workflow ✓, workflow → build ✗)
 
@@ -224,23 +231,24 @@ Watch for these redirections:
 When you see these: STOP. Return to Phase 1.
 
 Common Rationalizations
-Excuse	Reality
-"Issue is simple, don't need process"	Simple issues have root causes too. Process is fast for simple bugs.
-"Emergency, no time for process"	Systematic debugging is FASTER than guess-and-check thrashing.
-"Just try this first, then investigate"	First fix sets the pattern. Do it right from the start.
-"I'll write test after confirming fix works"	Untested fixes don't stick. Test first proves it.
-"Multiple fixes at once saves time"	Can't isolate what worked. Causes new bugs.
-"Reference too long, I'll adapt the pattern"	Partial understanding guarantees bugs. Read it completely.
-"I see the problem, let me fix it"	Seeing symptoms ≠ understanding root cause.
-"One more fix attempt" (after 2+ failures)	3+ failures = architectural problem. Question pattern, don't fix again.
+Excuse Reality
+"Issue is simple, don't need process" Simple issues have root causes too. Process is fast for simple bugs.
+"Emergency, no time for process" Systematic debugging is FASTER than guess-and-check thrashing.
+"Just try this first, then investigate" First fix sets the pattern. Do it right from the start.
+"I'll write test after confirming fix works" Untested fixes don't stick. Test first proves it.
+"Multiple fixes at once saves time" Can't isolate what worked. Causes new bugs.
+"Reference too long, I'll adapt the pattern" Partial understanding guarantees bugs. Read it completely.
+"I see the problem, let me fix it" Seeing symptoms ≠ understanding root cause.
+"One more fix attempt" (after 2+ failures) 3+ failures = architectural problem. Question pattern, don't fix again.
 Quick Reference
-Phase	Key Activities	Success Criteria
-1. Root Cause	Read errors, reproduce, check changes, gather evidence	Understand WHAT and WHY
-2. Pattern	Find working examples, compare	Identify differences
-3. Hypothesis	Form theory, test minimally	Confirmed or new hypothesis
-4. Implementation	Create test, fix, verify	Bug resolved, tests pass
-When Process Reveals "No Root Cause"
-If systematic investigation reveals issue is truly environmental, timing-dependent, or external:
+Phase Key Activities Success Criteria
+
+1. Root Cause Read errors, reproduce, check changes, gather evidence Understand WHAT and WHY
+2. Pattern Find working examples, compare Identify differences
+3. Hypothesis Form theory, test minimally Confirmed or new hypothesis
+4. Implementation Create test, fix, verify Bug resolved, tests pass
+   When Process Reveals "No Root Cause"
+   If systematic investigation reveals issue is truly environmental, timing-dependent, or external:
 
 You've completed the process
 Document what you investigated

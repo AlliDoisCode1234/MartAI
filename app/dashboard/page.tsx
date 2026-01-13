@@ -42,7 +42,7 @@ import {
 } from 'react-icons/fi';
 import { useProject } from '@/lib/hooks';
 import Link from 'next/link';
-import { DashboardSkeleton, WelcomeEmptyState } from '@/src/components/dashboard';
+import { DashboardSkeleton, WelcomeEmptyState, GSCAnalyticsCard } from '@/src/components/dashboard';
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -73,6 +73,16 @@ export default function DashboardPage() {
     strategyData,
     isLoading: projectLoading,
   } = useProject(null, { autoSelect: true });
+
+  // GSC data queries
+  const gscConnection = useQuery(
+    api.integrations.gscConnections.getGSCConnection,
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+  );
+  const gscStats = useQuery(
+    api.analytics.gscKeywords.getGSCDashboardStats,
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+  );
 
   // Auto-generate PR if missing
   const generateScore = useMutation(api.analytics.martaiRatingQueries.generatePreliminaryScore);
@@ -419,6 +429,13 @@ export default function DashboardPage() {
                     ))}
                   </Grid>
                 </Box>
+
+                {/* GSC Analytics Section */}
+                <GSCAnalyticsCard
+                  gscStats={gscStats ?? null}
+                  isLoading={gscStats === undefined}
+                  isConnected={!!gscConnection}
+                />
 
                 {/* Action Banner */}
                 {!hasStrategy && (
