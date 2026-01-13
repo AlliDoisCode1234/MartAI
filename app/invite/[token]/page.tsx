@@ -257,12 +257,15 @@ export default function InviteAcceptPage() {
 
             {/* Actions */}
             {!isAuthenticated ? (
-              // Not logged in - show login prompt
+              // Not logged in - show signup/login prompt
               <VStack spacing={4} w="full">
                 <Text color="gray.400" fontSize="sm" textAlign="center">
-                  Sign in with the email address above to accept this invitation
+                  Create an account with the email address above to join the team
                 </Text>
-                <Link href={`/auth/login?redirect=/invite/${token}`} style={{ width: '100%' }}>
+                <Link
+                  href={`/auth/signup?email=${encodeURIComponent(invite?.email || '')}&invite=${token}`}
+                  style={{ width: '100%' }}
+                >
                   <Button
                     w="full"
                     size="lg"
@@ -274,9 +277,15 @@ export default function InviteAcceptPage() {
                       boxShadow: '0 10px 30px rgba(249, 159, 42, 0.3)',
                     }}
                   >
-                    Sign In to Accept
+                    Create Account to Join
                   </Button>
                 </Link>
+                <Text color="gray.500" fontSize="xs">
+                  Already have an account?{' '}
+                  <Link href={`/auth/login?redirect=/invite/${token}`} style={{ color: '#F99F2A' }}>
+                    Sign in
+                  </Link>
+                </Text>
               </VStack>
             ) : !emailMatch ? (
               // Logged in but wrong email

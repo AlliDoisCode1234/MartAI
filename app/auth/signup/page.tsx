@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Container,
   VStack,
@@ -18,21 +18,38 @@ import {
   Divider,
   HStack,
   FormHelperText,
+  Badge,
 } from '@chakra-ui/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { FaGoogle } from 'react-icons/fa';
+import { FiUsers } from 'react-icons/fi';
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signIn } = useAuthActions();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get invite params from URL
+  const inviteEmail = searchParams.get('email');
+  const inviteToken = searchParams.get('invite');
+  const isInviteFlow = !!(inviteEmail && inviteToken);
+
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    email: inviteEmail || '',
     password: '',
     confirmPassword: '',
   });
+
+  // Sync email from URL params on mount only
+
+  useEffect(() => {
+    if (inviteEmail) {
+      setFormData((prev) => ({ ...prev, email: inviteEmail }));
+    }
+  }, [inviteEmail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,9 +76,15 @@ export default function SignupPage() {
         flow: 'signUp',
       });
 
-      // Redirect to onboarding (only for new signups)
-      console.log('🚀 Signup successful, redirecting to /onboarding');
-      router.push('/onboarding');
+      // If from invite, redirect back to invite page to accept
+      if (isInviteFlow && inviteToken) {
+        console.log('🚀 Signup successful, redirecting to invite page');
+        router.push(`/invite/${inviteToken}`);
+      } else {
+        // Regular signup - go to onboarding
+        console.log('🚀 Signup successful, redirecting to /onboarding');
+        router.push('/onboarding');
+      }
     } catch (err) {
       setError('Failed to create account. Email might be already in use.');
       // Clear password fields on error for security
@@ -85,6 +108,21 @@ export default function SignupPage() {
       <Container maxW="container.sm" py={12}>
         <Box bg="white" p={8} borderRadius="lg" shadow="md">
           <VStack spacing={6} align="stretch">
+            {/* Invite context banner */}
+            {isInviteFlow && (
+              <Alert status="info" borderRadius="lg" bg="blue.50">
+                <Box as={FiUsers} color="blue.500" mr={3} flexShrink={0} />
+                <Box>
+                  <Text fontWeight="bold" color="blue.800">
+                    Team Invitation
+                  </Text>
+                  <Text fontSize="sm" color="blue.700">
+                    Create your account to join the team
+                  </Text>
+                </Box>
+              </Alert>
+            )}
+
             <Heading
               size="xl"
               fontWeight="bold"
@@ -92,10 +130,12 @@ export default function SignupPage() {
               color="gray.800"
               textAlign="center"
             >
-              Get Started Today
+              {isInviteFlow ? 'Create Your Account' : 'Get Started Today'}
             </Heading>
             <Text color="gray.600" textAlign="center">
-              No SEO knowledge needed. We'll help you get found on Google.
+              {isInviteFlow
+                ? 'Set up your password to accept the invitation'
+                : "No SEO knowledge needed. We'll help you get found on Google."}
             </Text>
 
             {error && (
@@ -151,12 +191,16 @@ export default function SignupPage() {
                       setFormData({ ...formData, email: e.target.value.toLowerCase() })
                     }
                     disabled={loading}
+                    isReadOnly={isInviteFlow}
+                    bg={isInviteFlow ? 'gray.100' : 'white'}
                     size="lg"
                     autoComplete="off"
                     aria-describedby="email-helper"
                   />
                   <FormHelperText id="email-helper" color="gray.500">
-                    Your email doubles as your username so sign-ins stay simple.
+                    {isInviteFlow
+                      ? 'This email is linked to your team invitation'
+                      : 'Your email doubles as your username so sign-ins stay simple.'}
                   </FormHelperText>
                 </FormControl>
 
