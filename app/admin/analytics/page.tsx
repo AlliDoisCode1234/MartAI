@@ -15,7 +15,7 @@
  * ACCESS: super_admin only (RLS protected)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -85,18 +85,20 @@ export default function AdminAnalyticsPage() {
   const { user, loading: authLoading } = useAuth();
   const [dateRange, setDateRange] = useState('30');
   const days = parseInt(dateRange);
-  const startDate = Date.now() - days * 24 * 60 * 60 * 1000;
+  // Memoize to prevent re-computation on every render
+  const startDate = useMemo(() => Date.now() - days * 24 * 60 * 60 * 1000, [days]);
 
   // Route-level protection: super_admin only
   useEffect(() => {
     if (!authLoading && user && user.role !== 'super_admin') {
       router.replace('/admin');
     }
-  }, [authLoading, user, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.role]);
 
   // Queries (will fail on backend too if not super_admin)
   // Only run queries when user is confirmed to be super_admin
-  const isSuperAdmin = user && user.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'super_admin';
 
   const funnelData = useQuery(
     api.analytics.eventTracking.getFunnelMetrics,

@@ -46,7 +46,7 @@ import {
 
 interface Props {}
 
-type ProviderStatus = 'healthy' | 'degraded' | 'unhealthy' | 'circuit_open';
+type ProviderStatus = 'healthy' | 'degraded' | 'unhealthy' | 'circuit_open' | 'unknown';
 type CircuitState = 'closed' | 'open' | 'half_open';
 
 interface ProviderHealth {
@@ -145,6 +145,7 @@ function ProviderCard({ provider, onResetCircuit }: ProviderCardProps) {
     degraded: { color: 'yellow', icon: FiAlertTriangle },
     unhealthy: { color: 'red', icon: FiAlertCircle },
     circuit_open: { color: 'red', icon: FiSlash },
+    unknown: { color: 'gray', icon: FiAlertCircle },
   };
 
   const circuitConfig: Record<CircuitState, { color: string; label: string }> = {
@@ -155,8 +156,9 @@ function ProviderCard({ provider, onResetCircuit }: ProviderCardProps) {
 
   const status = health?.status || 'healthy';
   const circuit = health?.circuitState || 'closed';
-  const { color, icon: StatusIcon } = statusConfig[status];
-  const circuitInfo = circuitConfig[circuit];
+  // Defensive fallback for unknown status values
+  const { color, icon: StatusIcon } = statusConfig[status] || statusConfig.healthy;
+  const circuitInfo = circuitConfig[circuit] || circuitConfig.closed;
 
   const totalRequests = (health?.successCount || 0) + (health?.errorCount || 0);
   const successRate = totalRequests > 0 ? ((health?.successCount || 0) / totalRequests) * 100 : 100;

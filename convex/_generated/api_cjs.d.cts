@@ -97,6 +97,7 @@ import type * as projects_projects from "../projects/projects.js";
 import type * as prospects_prospects from "../prospects/prospects.js";
 import type * as publishing_scheduledPosts from "../publishing/scheduledPosts.js";
 import type * as publishing_shopifyActions from "../publishing/shopifyActions.js";
+import type * as publishing_wixActions from "../publishing/wixActions.js";
 import type * as publishing_wordpressActions from "../publishing/wordpressActions.js";
 import type * as rateLimits from "../rateLimits.js";
 import type * as scores from "../scores.js";
@@ -232,6 +233,7 @@ declare const fullApi: ApiFromModules<{
   "prospects/prospects": typeof prospects_prospects;
   "publishing/scheduledPosts": typeof publishing_scheduledPosts;
   "publishing/shopifyActions": typeof publishing_shopifyActions;
+  "publishing/wixActions": typeof publishing_wixActions;
   "publishing/wordpressActions": typeof publishing_wordpressActions;
   rateLimits: typeof rateLimits;
   scores: typeof scores;

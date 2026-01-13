@@ -144,8 +144,8 @@ export default function AdminProspectsPage() {
                 </Tr>
               </Thead>
               <Tbody>
-                {prospects.map((prospect: ProspectData) => (
-                  <Tr key={prospect._id}>
+                {prospects.map((prospect: ProspectData, index: number) => (
+                  <Tr key={prospect._id || `prospect-${index}`}>
                     <Td>
                       <HStack>
                         <Avatar

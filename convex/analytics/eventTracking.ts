@@ -7,9 +7,12 @@
 
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
+import { auth } from '../auth';
+import { requireSuperAdmin } from '../lib/rbac';
 
 /**
  * Track an analytics event
+ * Public: Can be called without auth for landing page tracking
  */
 export const trackEvent = mutation({
   args: {
@@ -22,17 +25,11 @@ export const trackEvent = mutation({
     trackId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const userId = identity?.subject
-      ? await ctx.db
-          .query('users')
-          .filter((q) => q.eq(q.field('email'), identity.email))
-          .first()
-          .then((u) => u?._id)
-      : undefined;
+    // Try to get userId from auth (optional - tracks work without auth)
+    const userId = await auth.getUserId(ctx);
 
     return await ctx.db.insert('analyticsEvents', {
-      userId,
+      userId: userId ?? undefined,
       sessionId: args.sessionId,
       event: args.event,
       properties: args.properties,
@@ -47,6 +44,7 @@ export const trackEvent = mutation({
 
 /**
  * Get funnel metrics for admin dashboard
+ * Security: super_admin only
  */
 export const getFunnelMetrics = query({
   args: {
@@ -54,17 +52,8 @@ export const getFunnelMetrics = query({
     endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Unauthorized');
-
-    // Check super_admin role (funnel data is sensitive BI)
-    const user = await ctx.db
-      .query('users')
-      .filter((q) => q.eq(q.field('email'), identity.email))
-      .first();
-    if (!user || user.role !== 'super_admin') {
-      throw new Error('Super admin access required');
-    }
+    // Use consistent RBAC pattern
+    await requireSuperAdmin(ctx);
 
     const now = Date.now();
     const startDate = args.startDate || now - 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -128,6 +117,7 @@ export const getFunnelMetrics = query({
 
 /**
  * Get event trends over time
+ * Security: super_admin only
  */
 export const getEventTrends = query({
   args: {
@@ -136,17 +126,7 @@ export const getEventTrends = query({
     days: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Unauthorized');
-
-    // Check super_admin role
-    const user = await ctx.db
-      .query('users')
-      .filter((q) => q.eq(q.field('email'), identity.email))
-      .first();
-    if (!user || user.role !== 'super_admin') {
-      throw new Error('Super admin access required');
-    }
+    await requireSuperAdmin(ctx);
 
     const days = args.days || 30;
     const startDate = Date.now() - days * 24 * 60 * 60 * 1000;
@@ -194,6 +174,7 @@ export const getEventTrends = query({
 
 /**
  * Get top events
+ * Security: super_admin only
  */
 export const getTopEvents = query({
   args: {
@@ -201,16 +182,7 @@ export const getTopEvents = query({
     days: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Unauthorized');
-
-    const user = await ctx.db
-      .query('users')
-      .filter((q) => q.eq(q.field('email'), identity.email))
-      .first();
-    if (!user || user.role !== 'super_admin') {
-      throw new Error('Super admin access required');
-    }
+    await requireSuperAdmin(ctx);
 
     const days = args.days || 7;
     const startDate = Date.now() - days * 24 * 60 * 60 * 1000;
@@ -239,22 +211,14 @@ export const getTopEvents = query({
 
 /**
  * Get recent events (for live feed)
+ * Security: super_admin only
  */
 export const getRecentEvents = query({
   args: {
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Unauthorized');
-
-    const user = await ctx.db
-      .query('users')
-      .filter((q) => q.eq(q.field('email'), identity.email))
-      .first();
-    if (!user || user.role !== 'super_admin') {
-      throw new Error('Super admin access required');
-    }
+    await requireSuperAdmin(ctx);
 
     const events = await ctx.db
       .query('analyticsEvents')

@@ -277,6 +277,50 @@ export const remove = mutation({
   },
 });
 
+/**
+ * Duplicate a content piece
+ */
+export const duplicate = mutation({
+  args: {
+    contentPieceId: v.id('contentPieces'),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    const piece = await ctx.db.get(args.contentPieceId);
+    if (!piece) throw new Error('Content not found');
+
+    // Verify project ownership
+    const project = await ctx.db.get(piece.projectId);
+    if (!project || project.userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const now = Date.now();
+
+    // Create duplicate with "(Copy)" suffix
+    const newId = await ctx.db.insert('contentPieces', {
+      projectId: piece.projectId,
+      clusterId: piece.clusterId,
+      contentType: piece.contentType,
+      title: `${piece.title} (Copy)`,
+      content: piece.content,
+      h2Outline: piece.h2Outline || [],
+      metaTitle: piece.metaTitle,
+      metaDescription: piece.metaDescription,
+      keywords: piece.keywords || [],
+      status: 'draft', // Always start as draft
+      seoScore: piece.seoScore,
+      wordCount: piece.wordCount,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return newId;
+  },
+});
+
 // ============================================================================
 // Stats
 // ============================================================================
