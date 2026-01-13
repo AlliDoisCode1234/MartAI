@@ -39,7 +39,8 @@ import {
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { StudioLayout } from '@/src/components/studio';
-import { FiSettings, FiEdit3, FiGlobe, FiLink, FiBell, FiSave, FiRefreshCw } from 'react-icons/fi';
+import { FiSettings, FiEdit3, FiGlobe, FiLink, FiBell, FiSave, FiHelpCircle } from 'react-icons/fi';
+import { BRAND } from '@/lib/constants/brand';
 
 const MotionCard = motion(Card);
 
@@ -188,6 +189,9 @@ export default function SettingsPage() {
             </Tab>
             <Tab color="gray.400" _selected={{ color: 'white', bg: 'rgba(255, 157, 0, 0.3)' }}>
               Notifications
+            </Tab>
+            <Tab color="gray.400" _selected={{ color: 'white', bg: 'rgba(255, 157, 0, 0.3)' }}>
+              Support
             </Tab>
           </TabList>
 
@@ -530,6 +534,39 @@ export default function SettingsPage() {
                         onChange={(e) => updateSetting('weeklyDigest', e.target.checked)}
                       />
                     </FormControl>
+                  </VStack>
+                </SettingSection>
+              </VStack>
+            </TabPanel>
+
+            {/* Support Tab */}
+            <TabPanel p={0}>
+              <VStack spacing={6} align="stretch">
+                <SettingSection
+                  icon={FiHelpCircle}
+                  title="Need Help?"
+                  description="Get support from the Phoo team"
+                  delay={0.1}
+                >
+                  <VStack spacing={4} align="stretch">
+                    <Box p={4} borderRadius="lg" bg="rgba(255, 255, 255, 0.05)">
+                      <Text color="gray.300" mb={2}>
+                        Have a question or need assistance? Reach out to our support team:
+                      </Text>
+                      <Button
+                        as="a"
+                        href={`mailto:${BRAND.supportEmail}`}
+                        variant="outline"
+                        colorScheme="orange"
+                        size="lg"
+                        leftIcon={<FiHelpCircle />}
+                      >
+                        {BRAND.supportEmail}
+                      </Button>
+                    </Box>
+                    <Text color="gray.500" fontSize="sm">
+                      We typically respond within 24 hours during business days.
+                    </Text>
                   </VStack>
                 </SettingSection>
               </VStack>
