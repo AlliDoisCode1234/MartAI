@@ -1,28 +1,43 @@
-# Phoo
+<p align="center">
+  <img src="./public/images/phoo-logo-orange.png" alt="Phoo Logo" width="200" />
+</p>
 
-**AI-Powered SEO Automation for Small Businesses**
+<h1 align="center">Phoo</h1>
 
-Phoo (powered by MartAI) helps small businesses grow their online presence with intelligent content strategy, automated keyword research, and AI-generated content — all without needing to be an SEO expert.
+<p align="center">
+  <strong>AI-Powered SEO Automation for Small Businesses</strong>
+</p>
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/AlliDoisCode1234/MartAI)
+<p align="center">
+  <a href="https://phoo.ai">Website</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#features">Features</a> •
+  <a href="./docs/VERCEL_SETUP.md">Deployment</a>
+</p>
 
 ---
 
 ## What is Phoo?
 
-Phoo is a unified Content Studio that automates the entire SEO workflow:
-
-- **Strategy** — AI-generated keyword clusters and topic planning
-- **Calendar** — Zero-click content calendar with automated scheduling
-- **Library** — Centralized content management with status tracking
-- **Create** — AI-powered brief and draft generation
-- **Insights** — Analytics and performance tracking
+Phoo helps small businesses grow their online presence with intelligent content strategy, automated keyword research, and AI-generated content — all without needing to be an SEO expert.
 
 ### Built For
 
 - Small businesses under $500k annual revenue
 - Solopreneurs and small marketing teams
 - Non-SEO experts who need results, not tools
+
+---
+
+## Features
+
+| Feature      | Description                                           |
+| ------------ | ----------------------------------------------------- |
+| **Strategy** | AI-generated keyword clusters and topic planning      |
+| **Calendar** | Zero-click content calendar with automated scheduling |
+| **Library**  | Centralized content management with status tracking   |
+| **Create**   | AI-powered brief and draft generation                 |
+| **Insights** | Analytics and performance tracking                    |
 
 ---
 
@@ -52,7 +67,7 @@ npx convex dev
 npm run dev
 ```
 
-Visit `http://localhost:3000` to see the landing page.
+Visit `http://localhost:3000` to see the app.
 
 ### Environment Variables
 
@@ -64,8 +79,6 @@ GOOGLE_CLIENT_ID=<google oauth client id>
 GOOGLE_CLIENT_SECRET=<google oauth client secret>
 ```
 
-See `docs/VERCEL_SETUP.md` for complete deployment guide.
-
 ---
 
 ## Project Structure
@@ -75,78 +88,29 @@ See `docs/VERCEL_SETUP.md` for complete deployment guide.
 │   ├── studio/            # Content Studio (main product)
 │   ├── admin/             # Admin portal
 │   └── auth/              # Authentication pages
-├── convex/                 # Convex backend (queries, mutations, actions)
+├── convex/                 # Convex backend
 ├── src/components/         # React components
-├── lib/                    # Utilities and hooks
-└── docs/                   # Documentation
+└── lib/                    # Utilities and hooks
 ```
-
----
-
-## Key Features
-
-### Content Studio
-
-The unified workspace for all content operations — Strategy, Calendar, Library, Create, and Insights in one place.
-
-### Zero-Click Automation
-
-Content calendars auto-generate based on industry templates. No manual configuration required.
-
-### MartAI Rating (MR)
-
-Proprietary composite SEO score (0-100) that predicts content performance.
-
-### Multi-Model AI
-
-Intelligent routing across AI models for cost optimization and reliability.
 
 ---
 
 ## Development
 
 ```bash
-# Run tests
-npm test
-
-# Type check
-npm run typecheck
-
-# Lint
-npm run lint
-
-# Full build
-npm run build
+npm test          # Run tests
+npm run typecheck # Type check
+npm run lint      # Lint
+npm run build     # Production build
 ```
-
----
-
-## Deployment
-
-### Production
-
-Push to `main` branch triggers automatic deployment to Vercel + Convex.
-
-### Environment Setup
-
-1. Connect repository to Vercel
-2. Add Convex integration in Vercel
-3. Configure environment variables
-4. Deploy
 
 ---
 
 ## Documentation
 
-- [Vercel Setup Guide](./docs/VERCEL_SETUP.md)
+- [Deployment Guide](./docs/VERCEL_SETUP.md)
 - [Project Status](./PROJECT_STATUS.md)
 - [Roadmap](./ROADMAP.md)
-
----
-
-## License
-
-Private repository. All rights reserved.
 
 ---
 
