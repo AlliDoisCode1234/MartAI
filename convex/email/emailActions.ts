@@ -23,8 +23,8 @@ function getResendClient(): Resend {
   return _resend;
 }
 
-// From address - change after domain verification
-const FROM_EMAIL = 'Phoo <onboarding@resend.dev>';
+// From address - verified domain
+const FROM_EMAIL = 'Phoo <noreply@phoo.ai>';
 const APP_URL = process.env.SITE_URL || 'http://localhost:3000';
 
 // Email templates
@@ -214,15 +214,7 @@ async function sendEmailInternal(args: {
     throw new Error(`Unknown email template: ${args.template}`);
   }
 
-  // Skip in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[Email] Would send:', {
-      to: args.to,
-      template: args.template,
-      subject: template.subject,
-    });
-    return { success: true, skipped: true };
-  }
+  // Note: Emails will send if AUTH_RESEND_KEY is configured
 
   try {
     const { data, error } = await getResendClient().emails.send({
