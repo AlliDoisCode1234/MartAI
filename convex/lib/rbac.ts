@@ -175,3 +175,57 @@ export async function checkOrgRole(
     return null;
   }
 }
+
+/**
+ * Check if user can access a feature based on subscription
+ *
+ * AUTHORITATIVE source for feature gating - always use this, not users.membershipTier
+ *
+ * @example
+ * if (!await canAccessFeature(ctx, userId, 'advancedKeywords')) {
+ *   throw new Error('Upgrade required');
+ * }
+ */
+export async function canAccessFeature(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<'users'>,
+  feature: string
+): Promise<boolean> {
+  const subscription = await ctx.db
+    .query('subscriptions')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .first();
+
+  // No subscription = no access (unless feature is free tier)
+  if (!subscription || subscription.status !== 'active') {
+    return false;
+  }
+
+  // Check if feature is included in subscription
+  // features is an object like { advancedKeywords: true, maxUrls: 10 }
+  const features = subscription.features as Record<string, boolean | number> | undefined;
+  const featureValue = features?.[feature];
+
+  // Consider feature enabled if true or if numeric (quota exists)
+  return featureValue === true || (typeof featureValue === 'number' && featureValue > 0);
+}
+
+/**
+ * Get user's active subscription plan tier
+ * Returns null if no active subscription
+ */
+export async function getSubscriptionTier(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<'users'>
+): Promise<string | null> {
+  const subscription = await ctx.db
+    .query('subscriptions')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .first();
+
+  if (!subscription || subscription.status !== 'active') {
+    return null;
+  }
+
+  return subscription.planTier;
+}

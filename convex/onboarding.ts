@@ -200,16 +200,39 @@ export const getProgress = internalQuery({
 
 /**
  * Mark onboarding as complete
+ *
+ * Sets onboardingStatus = 'completed' and:
+ * - If user has active subscription → accountStatus = 'active'
+ * - If no subscription (beta/bypass) but BYPASS_PAYMENT → accountStatus = 'active'
+ * - Otherwise keeps existing accountStatus
  */
 export const markComplete = internalMutation({
   args: {
     userId: v.id('users'),
+    bypassPayment: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error('User not found');
+
+    // Check if user has active subscription
+    const subscription = await ctx.db
+      .query('subscriptions')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .first();
+
+    const hasActiveSubscription = subscription?.status === 'active';
+
+    // Determine account status:
+    // - Active subscription = active
+    // - BYPASS_PAYMENT flag = active (for beta)
+    // - Neither = keep current status
+    const shouldActivate = hasActiveSubscription || args.bypassPayment === true;
 
     await ctx.db.patch(args.userId, {
       onboardingStatus: 'completed',
+      accountStatus: shouldActivate ? 'active' : user.accountStatus,
       lastActiveAt: now,
       updatedAt: now,
     });
@@ -219,6 +242,8 @@ export const markComplete = internalMutation({
       userId: args.userId,
     });
 
-    return { success: true };
+    console.log(`[Onboarding] Marked complete for ${args.userId}. Active: ${shouldActivate}`);
+
+    return { success: true, accountStatus: shouldActivate ? 'active' : user.accountStatus };
   },
 });
