@@ -12,11 +12,14 @@ import {
   Icon,
   useColorModeValue,
   VStack,
+  HStack,
+  Link as ChakraLink,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { ArrowForwardIcon, CheckCircleIcon, StarIcon, SettingsIcon } from '@chakra-ui/icons';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
+import Link from 'next/link';
 
 const MotionBox = motion(Box);
 const MotionStack = motion(Stack);
@@ -161,6 +164,27 @@ export const HomePage: FC = () => {
           </SimpleGrid>
         </Box>
       </Container>
+
+      {/* Footer */}
+      <Box as="footer" py={8} borderTop="1px solid" borderColor="gray.100">
+        <Container maxW="container.xl" textAlign="center">
+          <HStack justify="center" spacing={6} mb={4}>
+            <Link href="/privacy">
+              <ChakraLink color="gray.500" fontSize="sm" _hover={{ color: 'brand.orange' }}>
+                Privacy Policy
+              </ChakraLink>
+            </Link>
+            <Link href="/terms">
+              <ChakraLink color="gray.500" fontSize="sm" _hover={{ color: 'brand.orange' }}>
+                Terms of Service
+              </ChakraLink>
+            </Link>
+          </HStack>
+          <Text color="gray.400" fontSize="sm">
+            © {new Date().getFullYear()} Phoo AI. All rights reserved.
+          </Text>
+        </Container>
+      </Box>
     </Box>
   );
 };

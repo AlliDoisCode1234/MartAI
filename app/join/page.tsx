@@ -18,7 +18,8 @@
  * Uses Chakra UI with brand.orange/white palette.
  */
 
-import { Box, Container, Text } from '@chakra-ui/react';
+import { Box, Container, Text, HStack, Link as ChakraLink } from '@chakra-ui/react';
+import Link from 'next/link';
 import {
   HeroSection,
   ProblemSection,
@@ -41,6 +42,18 @@ export default function JoinPage() {
       {/* Footer */}
       <Box as="footer" py={12} borderTop="1px solid" borderColor="whiteAlpha.100">
         <Container maxW="6xl" textAlign="center">
+          <HStack justify="center" spacing={6} mb={4}>
+            <Link href="/privacy">
+              <ChakraLink color="gray.400" fontSize="sm" _hover={{ color: 'white' }}>
+                Privacy Policy
+              </ChakraLink>
+            </Link>
+            <Link href="/terms">
+              <ChakraLink color="gray.400" fontSize="sm" _hover={{ color: 'white' }}>
+                Terms of Service
+              </ChakraLink>
+            </Link>
+          </HStack>
           <Text color="gray.500" fontSize="sm">
             © {new Date().getFullYear()} Phoo AI. All rights reserved.
           </Text>
