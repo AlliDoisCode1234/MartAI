@@ -12,7 +12,7 @@ const convex = new ConvexHttpClient(convexUrl as string);
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
-  const state = req.nextUrl.searchParams.get('state'); // This is the ProjectId we passed
+  const stateParam = req.nextUrl.searchParams.get('state'); // Base64-encoded JSON with {projectId, returnTo}
   const error = req.nextUrl.searchParams.get('error');
 
   const baseUrl = new URL(req.url).origin;
@@ -21,17 +21,35 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL(`/integrations?error=${error}`, baseUrl));
   }
 
-  if (!code || !state) {
+  if (!code || !stateParam) {
     return NextResponse.redirect(new URL('/integrations?error=missing_params', baseUrl));
   }
 
+  // Decode the base64 state parameter to extract projectId
+  let projectId: string | undefined;
+  let returnTo: string | undefined;
   try {
-    console.log(`[GoogleCallback] Exchanging code for Project: ${state}`);
+    const stateJson = Buffer.from(stateParam, 'base64').toString('utf-8');
+    const stateData = JSON.parse(stateJson);
+    projectId = stateData.projectId;
+    returnTo = stateData.returnTo;
+    console.log(`[GoogleCallback] Decoded state - projectId: ${projectId}, returnTo: ${returnTo}`);
+  } catch {
+    console.error('[GoogleCallback] Failed to decode state parameter');
+    return NextResponse.redirect(new URL('/integrations?error=invalid_state', baseUrl));
+  }
+
+  if (!projectId) {
+    return NextResponse.redirect(new URL('/integrations?error=missing_project_id', baseUrl));
+  }
+
+  try {
+    console.log(`[GoogleCallback] Exchanging code for Project: ${projectId}`);
 
     // Exchange code for tokens
     const tokens = await convex.action(api.integrations.google.exchangeCode, {
       code,
-      projectId: state as any,
+      projectId: projectId as any,
     });
 
     // Encode tokens to pass to frontend for Property ID entry
@@ -40,14 +58,14 @@ export async function GET(req: NextRequest) {
       JSON.stringify({
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        projectId: state,
+        projectId: projectId,
       })
     ).toString('base64');
 
-    // Redirect to integrations page with tokens in URL
-    // The frontend will prompt for Property ID and save
+    // Redirect to integrations page (or returnTo if specified) with tokens in URL
+    const redirectPath = returnTo || '/integrations';
     return NextResponse.redirect(
-      new URL(`/integrations?setup=ga4&tokens=${encodeURIComponent(tokenData)}`, baseUrl)
+      new URL(`${redirectPath}?setup=ga4&tokens=${encodeURIComponent(tokenData)}`, baseUrl)
     );
   } catch (e) {
     console.error('[GoogleCallback] Error:', e);
