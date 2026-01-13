@@ -37,18 +37,20 @@ import { ChangePasswordForm } from '@/src/components/settings/ChangePasswordForm
 import { useProject } from '@/lib/hooks';
 import { useMe } from '@/lib/useMe';
 import Link from 'next/link';
-import { FiUser, FiGrid, FiUsers, FiArrowRight } from 'react-icons/fi';
+import { FiUser, FiGrid, FiUsers, FiArrowRight, FiHelpCircle } from 'react-icons/fi';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { BRAND } from '@/lib/constants/brand';
 
 // Map tab names to indices
 const TAB_MAP: Record<string, number> = {
   account: 0,
   integrations: 1,
   team: 2,
+  support: 3,
 };
 
-const INDEX_TO_TAB = ['account', 'integrations', 'team'];
+const INDEX_TO_TAB = ['account', 'integrations', 'team', 'support'];
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -119,6 +121,12 @@ export default function SettingsPage() {
                   <HStack spacing={2}>
                     <Icon as={FiUsers} />
                     <Text>Team</Text>
+                  </HStack>
+                </Tab>
+                <Tab py={4} fontWeight="medium">
+                  <HStack spacing={2}>
+                    <Icon as={FiHelpCircle} />
+                    <Text>Support</Text>
                   </HStack>
                 </Tab>
               </TabList>
@@ -297,6 +305,53 @@ export default function SettingsPage() {
                         </VStack>
                       </Box>
                     )}
+                  </VStack>
+                </TabPanel>
+
+                {/* Support Tab */}
+                <TabPanel p={6}>
+                  <VStack align="stretch" spacing={6}>
+                    <Box>
+                      <Heading size="md" mb={1}>
+                        Support
+                      </Heading>
+                      <Text color="gray.600" fontSize="sm">
+                        Get help from the Phoo team
+                      </Text>
+                    </Box>
+                    <Divider />
+
+                    <Box
+                      p={6}
+                      bg="orange.50"
+                      borderRadius="lg"
+                      borderWidth="1px"
+                      borderColor="orange.200"
+                    >
+                      <VStack align="start" spacing={3}>
+                        <HStack spacing={2}>
+                          <Icon as={FiHelpCircle} color="orange.500" boxSize={6} />
+                          <Text fontWeight="semibold" color="gray.800" fontSize="lg">
+                            Need Help?
+                          </Text>
+                        </HStack>
+                        <Text color="gray.600">
+                          Have a question or need assistance? Our support team is here to help.
+                        </Text>
+                        <Button
+                          as="a"
+                          href={`mailto:${BRAND.supportEmail}`}
+                          colorScheme="orange"
+                          size="lg"
+                          leftIcon={<FiHelpCircle />}
+                        >
+                          {BRAND.supportEmail}
+                        </Button>
+                        <Text color="gray.500" fontSize="sm">
+                          We typically respond within 24 hours during business days.
+                        </Text>
+                      </VStack>
+                    </Box>
                   </VStack>
                 </TabPanel>
               </TabPanels>
