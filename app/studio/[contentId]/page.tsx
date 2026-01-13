@@ -37,6 +37,7 @@ import {
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { StudioLayout, SEOScorePanel } from '@/src/components/studio';
+import { IntegrationsPanel } from '@/src/components/content';
 import {
   FiArrowLeft,
   FiSave,
@@ -437,17 +438,32 @@ export default function ContentEditorPage() {
             />
           </Box>
 
-          {/* SEO Score Panel */}
-          <SEOScorePanel
-            seoScore={contentPiece.seoScore ?? 0}
-            wordCount={wordCount}
-            targetWordCount={1200}
-            h2Count={h2Count}
-            keywordCount={10}
-            targetKeywords={12}
-            internalLinkCount={linkCount}
-            qualityMetrics={contentPiece.qualityMetrics}
-          />
+          {/* Sidebar */}
+          <VStack align="stretch" spacing={4} w="280px">
+            {/* SEO Score Panel */}
+            <SEOScorePanel
+              seoScore={contentPiece.seoScore ?? 0}
+              wordCount={wordCount}
+              targetWordCount={1200}
+              h2Count={h2Count}
+              keywordCount={10}
+              targetKeywords={12}
+              internalLinkCount={linkCount}
+              qualityMetrics={contentPiece.qualityMetrics}
+            />
+
+            {/* Integrations Panel */}
+            <IntegrationsPanel
+              projectId={contentPiece.projectId}
+              onPublish={(platform) => {
+                toast({
+                  title: `Publishing to ${platform}...`,
+                  status: 'info',
+                  duration: 2000,
+                });
+              }}
+            />
+          </VStack>
         </HStack>
       </VStack>
 

@@ -75,7 +75,7 @@ export function middleware(request: NextRequest) {
     }
 
     // Public routes - always accessible
-    const publicRoutes = ['/join', '/auth'];
+    const publicRoutes = ['/join', '/auth', '/privacy', '/terms'];
     const isPublicRoute = publicRoutes.some(
       (route) => pathname === route || pathname.startsWith(route + '/')
     );

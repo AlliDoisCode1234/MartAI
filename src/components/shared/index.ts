@@ -22,3 +22,6 @@ export { ScoreBar } from './ScoreBar';
 
 // Permission components
 export { PermissionGate } from './PermissionGate';
+
+// Integration components
+export { IntegrationStatusCard } from './IntegrationStatusCard';
