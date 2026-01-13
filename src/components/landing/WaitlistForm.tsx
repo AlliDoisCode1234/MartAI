@@ -15,7 +15,13 @@ import { useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Box, Container, Heading, Text, Input, Button, VStack, Icon } from '@chakra-ui/react';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Users } from 'lucide-react';
+
+/**
+ * Beta waitlist cap - when we hit this number, the form closes
+ * and shows "Beta Full" messaging instead.
+ */
+const BETA_CAP = 101;
 
 export function WaitlistForm() {
   const [email, setEmail] = useState('');
@@ -24,6 +30,9 @@ export function WaitlistForm() {
 
   const joinWaitlist = useMutation(api.waitlist.joinWaitlist);
   const waitlistData = useQuery(api.waitlist.getWaitlistCount);
+
+  // Check if beta is at capacity - automatically updates via Convex reactive query
+  const isBetaFull = waitlistData && waitlistData.count >= BETA_CAP;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +58,99 @@ export function WaitlistForm() {
     }
   };
 
+  // Render content based on state: beta full > success > form
+  const renderFormContent = () => {
+    // Beta Full State - highest priority
+    if (isBetaFull) {
+      return (
+        <VStack spacing={4}>
+          <Icon as={Users} boxSize={12} color="brand.orange" />
+          <Text fontSize="xl" color="white" fontWeight="medium">
+            The Beta is Full!
+          </Text>
+          <Text color="gray.400" textAlign="center" maxW="sm">
+            100+ businesses are already building with Phoo. We&apos;ll announce when more spots
+            open.
+          </Text>
+          {/* TODO: Add pre-launch pricing CTA once Stripe is configured (Thursday) */}
+        </VStack>
+      );
+    }
+
+    // Success State - after successful signup
+    if (status === 'success') {
+      return (
+        <VStack spacing={4}>
+          <Icon as={CheckCircle2} boxSize={12} color="green.400" />
+          <Text fontSize="xl" color="green.300" fontWeight="medium">
+            You&apos;re on the list!
+          </Text>
+          <Text color="gray.400">We&apos;ll be in touch soon.</Text>
+        </VStack>
+      );
+    }
+
+    // Default: Signup Form
+    return (
+      <form onSubmit={handleSubmit}>
+        <VStack spacing={4}>
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+            size="lg"
+            bg="whiteAlpha.50"
+            border="1px solid"
+            borderColor="whiteAlpha.100"
+            color="white"
+            _placeholder={{ color: 'gray.500' }}
+            _focus={{
+              borderColor: 'brand.orange',
+              boxShadow: '0 0 0 1px var(--chakra-colors-purple-500)',
+            }}
+            borderRadius="xl"
+            py={7}
+            px={6}
+            fontSize="lg"
+            isDisabled={status === 'loading'}
+          />
+          <Button
+            type="submit"
+            isLoading={status === 'loading'}
+            loadingText="Joining..."
+            size="lg"
+            w="100%"
+            py={7}
+            fontSize="lg"
+            fontWeight="semibold"
+            bgGradient="linear(to-r, brand.orange, brand.red)"
+            color="white"
+            _hover={{
+              bgGradient: 'linear(to-r, orange.600, red.500)',
+            }}
+            _disabled={{
+              opacity: 0.5,
+              cursor: 'not-allowed',
+            }}
+            borderRadius="xl"
+            boxShadow="0 10px 40px rgba(237, 137, 54, 0.25)"
+            rightIcon={<Icon as={ArrowRight} boxSize={5} />}
+          >
+            Join the Phoo Beta
+          </Button>
+
+          {status === 'error' && (
+            <Text color="red.400" fontSize="sm">
+              {errorMessage}
+            </Text>
+          )}
+        </VStack>
+      </form>
+    );
+  };
+
   return (
     <Box
       as="section"
@@ -66,10 +168,14 @@ export function WaitlistForm() {
           mb={6}
           color="white"
         >
-          Ready to make your website work for your business?
+          {isBetaFull
+            ? "You're Early — That's a Good Sign"
+            : 'Ready to make your website work for your business?'}
         </Heading>
         <Text fontSize="xl" color="gray.400" mb={10}>
-          Join the Phoo beta and be part of building a smarter, more meaningful way to grow.
+          {isBetaFull
+            ? "Our founding beta is at capacity, but stay tuned for what's next."
+            : 'Join the Phoo beta and be part of building a smarter, more meaningful way to grow.'}
         </Text>
 
         <Box
@@ -78,83 +184,24 @@ export function WaitlistForm() {
           borderRadius="2xl"
           p={8}
           border="1px solid"
-          borderColor="whiteAlpha.100"
+          borderColor={isBetaFull ? 'brand.orange' : 'whiteAlpha.100'}
         >
-          {status === 'success' ? (
-            <VStack spacing={4}>
-              <Icon as={CheckCircle2} boxSize={12} color="green.400" />
-              <Text fontSize="xl" color="green.300" fontWeight="medium">
-                You&apos;re on the list!
-              </Text>
-              <Text color="gray.400">We&apos;ll be in touch soon.</Text>
-            </VStack>
-          ) : (
-            <form onSubmit={handleSubmit}>
-              <VStack spacing={4}>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  required
-                  size="lg"
-                  bg="whiteAlpha.50"
-                  border="1px solid"
-                  borderColor="whiteAlpha.100"
-                  color="white"
-                  _placeholder={{ color: 'gray.500' }}
-                  _focus={{
-                    borderColor: 'brand.orange',
-                    boxShadow: '0 0 0 1px var(--chakra-colors-purple-500)',
-                  }}
-                  borderRadius="xl"
-                  py={7}
-                  px={6}
-                  fontSize="lg"
-                  isDisabled={status === 'loading'}
-                />
-                <Button
-                  type="submit"
-                  isLoading={status === 'loading'}
-                  loadingText="Joining..."
-                  size="lg"
-                  w="100%"
-                  py={7}
-                  fontSize="lg"
-                  fontWeight="semibold"
-                  bgGradient="linear(to-r, brand.orange, brand.red)"
-                  color="white"
-                  _hover={{
-                    bgGradient: 'linear(to-r, orange.600, red.500)',
-                  }}
-                  _disabled={{
-                    opacity: 0.5,
-                    cursor: 'not-allowed',
-                  }}
-                  borderRadius="xl"
-                  boxShadow="0 10px 40px rgba(237, 137, 54, 0.25)"
-                  rightIcon={<Icon as={ArrowRight} boxSize={5} />}
-                >
-                  Join the Phoo Beta
-                </Button>
-
-                {status === 'error' && (
-                  <Text color="red.400" fontSize="sm">
-                    {errorMessage}
-                  </Text>
-                )}
-              </VStack>
-            </form>
-          )}
+          {renderFormContent()}
         </Box>
 
-        <Text mt={6} color="gray.500" fontSize="sm">
-          Spots are limited.
-        </Text>
+        {/* Only show "spots are limited" when beta is NOT full */}
+        {!isBetaFull && (
+          <Text mt={6} color="gray.500" fontSize="sm">
+            Spots are limited.
+          </Text>
+        )}
 
+        {/* Social proof counter - show different message when full */}
         {waitlistData && waitlistData.count > 0 && (
           <Text mt={4} fontSize="sm" color="gray.400">
-            Join {waitlistData.count.toLocaleString()}+ others on the waitlist
+            {isBetaFull
+              ? `${waitlistData.count.toLocaleString()}+ businesses have joined the waitlist`
+              : `Join ${waitlistData.count.toLocaleString()}+ others on the waitlist`}
           </Text>
         )}
       </Container>

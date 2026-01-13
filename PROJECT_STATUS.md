@@ -1,8 +1,8 @@
 # MartAI Project Status Report
 
-**Last Updated**: January 3, 2026  
+**Last Updated**: January 12, 2026  
 **Current Phase**: Phase 3 - Production Hardening  
-**Active Task**: Security Audit & Marketing Alignment
+**Active Task**: Beta Launch Preparation
 
 ---
 
@@ -20,7 +20,27 @@ MartAI is an AI-driven SEO & Lead Generation Platform. The **Content Studio** ha
 
 ---
 
-## Recently Completed (January 3, 2026)
+## Recently Completed (January 12, 2026)
+
+### ✅ Beta Waitlist Cap Feature
+
+**Board Decision (0.9 confidence):**
+
+- Implemented 101-user cap on beta waitlist in `WaitlistForm.tsx`
+- Automatically displays "Beta Full" messaging when count >= 101
+- Dynamic headline and social proof updates based on waitlist state
+- Convex reactive query ensures real-time UI updates
+
+**Changes:**
+
+- Added `BETA_CAP = 101` constant
+- Added `isBetaFull` computed check from `getWaitlistCount` query
+- Three-way render: Beta Full > Success > Form
+- Orange border highlight on card when beta is full
+
+---
+
+## Previously Completed (January 3, 2026)
 
 ### ✅ Comprehensive Codebase Review
 
@@ -174,6 +194,26 @@ lib/hooks/useProject.ts(173): error TS2339: Property 'plan' does not exist
 6. **[MEDIUM]** Full End-to-End flow test (fresh signup → studio)
 7. **[MEDIUM]** Document Public API endpoints
 8. **[LOW]** Document `as any` cast justifications
+
+---
+
+## Pending Tickets
+
+### BETA-001: Pre-Launch Pricing CTA (Thursday 1/16/2026)
+
+**Blocked On**: Client providing Stripe payment link/price ID for $29/mo pre-launch tier
+
+**Scope**:
+
+- Add "Lock in Pre-Launch Pricing" button to "Beta Full" state in `WaitlistForm.tsx`
+- Link to Stripe checkout with 40% discount (Starter tier)
+- Consider 50-user cap on pre-launch signups for urgency
+
+**Board Decision Reference**: `board_decision_prelaunch_pricing.md`
+
+**Files to Modify**:
+
+- `src/components/landing/WaitlistForm.tsx` (uncomment TODO block, add Stripe URL)
 
 ---
 
