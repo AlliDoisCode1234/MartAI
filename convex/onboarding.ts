@@ -47,12 +47,20 @@ export const updateOnboardingStep = mutation({
       updatedSteps['organizationCreatedAt'] = now;
     }
 
-    await ctx.db.patch(userId, {
+    // Build patch object
+    const patchData: Record<string, any> = {
       onboardingSteps: updatedSteps,
       onboardingStatus: 'in_progress',
       lastActiveAt: now,
       updatedAt: now,
-    });
+    };
+
+    // When plan is selected, also update the user's membershipTier
+    if (args.step === 'planSelected' && typeof args.value === 'string') {
+      patchData.membershipTier = args.value;
+    }
+
+    await ctx.db.patch(userId, patchData);
 
     return { success: true };
   },
