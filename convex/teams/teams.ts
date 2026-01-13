@@ -156,6 +156,16 @@ export const getSeatUsage = query({
     const org = await ctx.db.get(args.organizationId);
     if (!org) throw new Error('Organization not found');
 
+    // Get owner's membership tier to calculate max seats dynamically
+    const owner = await ctx.db.get(org.ownerId);
+    let maxSeats = 1; // Default for solo/starter
+    if (owner?.membershipTier === 'growth') {
+      maxSeats = 3;
+    } else if (owner?.membershipTier === 'enterprise') {
+      // For enterprise, use stored value (set by admin) or default high number
+      maxSeats = org.seatsPurchased ?? org.maxMembers ?? 999;
+    }
+
     const activeMembers = await ctx.db
       .query('teamMembers')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
@@ -167,8 +177,6 @@ export const getSeatUsage = query({
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .filter((q) => q.eq(q.field('status'), 'pending'))
       .collect();
-
-    const maxSeats = org.seatsPurchased ?? org.maxMembers ?? 1;
 
     return {
       used: activeMembers.length,
