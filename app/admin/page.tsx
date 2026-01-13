@@ -33,17 +33,12 @@ import {
   Avatar,
   Icon,
   Skeleton,
+  Select,
 } from '@chakra-ui/react';
 import { useQuery } from 'convex/react';
+import { useState } from 'react';
 import { api } from '@/convex/_generated/api';
-import {
-  FiDollarSign,
-  FiUsers,
-  FiActivity,
-  FiTrendingUp,
-  FiUserPlus,
-  FiPercent,
-} from 'react-icons/fi';
+import { FiUsers, FiActivity, FiTrendingUp, FiUserPlus } from 'react-icons/fi';
 import { TrendChart } from '@/src/components/admin/TrendChart';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/lib/useAuth';
@@ -64,13 +59,11 @@ type RecentEvent = {
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'super_admin';
+  const [trendDays, setTrendDays] = useState(7);
 
+  // Dashboard metrics - all admins can see user/operational data
+  // Revenue metrics (MRR, Churn, LTV) are on /admin/analytics (super_admin only)
   const dashboardMetrics = useQuery(api.admin.dashboard.getAdminDashboardMetrics);
-  const subscriptionMetrics = useQuery(
-    api.subscriptions.subscriptionMetrics.getSubscriptionMetrics,
-    isSuperAdmin ? {} : 'skip'
-  );
 
   if (!dashboardMetrics) {
     return (
@@ -96,77 +89,7 @@ export default function AdminDashboardPage() {
         <Text color="gray.600">MartAI CRM & Intelligence Portal</Text>
       </Box>
 
-      {/* Revenue Metrics (super_admin only) */}
-      {isSuperAdmin && subscriptionMetrics && (
-        <SimpleGrid columns={{ base: 1, md: 4 }} gap={6} mb={6}>
-          <Card bg="green.50" borderColor="green.200" borderWidth="1px">
-            <CardBody>
-              <Stat>
-                <StatLabel>
-                  <HStack>
-                    <Icon as={FiDollarSign} color="green.500" />
-                    <Text>MRR</Text>
-                  </HStack>
-                </StatLabel>
-                <StatNumber color="green.600">{subscriptionMetrics.mrrFormatted}</StatNumber>
-                <StatHelpText>
-                  <StatArrow type={subscriptionMetrics.growthRate > 0 ? 'increase' : 'decrease'} />
-                  {Math.abs(subscriptionMetrics.growthRate)}% vs last month
-                </StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>
-                  <HStack>
-                    <Icon as={FiUsers} color="blue.500" />
-                    <Text>Subscribers</Text>
-                  </HStack>
-                </StatLabel>
-                <StatNumber>{subscriptionMetrics.activeCount}</StatNumber>
-                <StatHelpText>+{subscriptionMetrics.newThisMonth} this month</StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>
-                  <HStack>
-                    <Icon
-                      as={FiPercent}
-                      color={subscriptionMetrics.churnRate > 5 ? 'red.500' : 'green.500'}
-                    />
-                    <Text>Churn Rate</Text>
-                  </HStack>
-                </StatLabel>
-                <StatNumber color={subscriptionMetrics.churnRate > 5 ? 'red.500' : 'green.500'}>
-                  {subscriptionMetrics.churnRate}%
-                </StatNumber>
-                <StatHelpText>{subscriptionMetrics.churnedThisMonth} cancelled</StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>
-                  <HStack>
-                    <Icon as={FiTrendingUp} color="green.500" />
-                    <Text>Est. LTV</Text>
-                  </HStack>
-                </StatLabel>
-                <StatNumber>{subscriptionMetrics.ltvFormatted}</StatNumber>
-                <StatHelpText>12-month average</StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-        </SimpleGrid>
-      )}
-
-      {/* User Metrics */}
+      {/* User Metrics - visible to all admins */}
       <SimpleGrid columns={{ base: 1, md: 4 }} gap={6} mb={8}>
         <Card>
           <CardBody>
@@ -230,14 +153,28 @@ export default function AdminDashboardPage() {
         </Card>
       </SimpleGrid>
 
-      {/* Trend Chart */}
+      {/* Trend Chart with Date Selector */}
       {dashboardMetrics.userTrend.length > 0 && (
         <Card mb={8}>
           <CardHeader>
-            <Heading size="md">New User Trend</Heading>
-            <Text fontSize="sm" color="gray.600">
-              Daily signups over the last 7 days
-            </Text>
+            <HStack justify="space-between" align="center">
+              <Box>
+                <Heading size="md">New User Trend</Heading>
+                <Text fontSize="sm" color="gray.600">
+                  Daily signups over the last {trendDays} days
+                </Text>
+              </Box>
+              <Select
+                value={trendDays}
+                onChange={(e) => setTrendDays(Number(e.target.value))}
+                w="150px"
+                size="sm"
+              >
+                <option value={7}>Last 7 days</option>
+                <option value={30}>Last 30 days</option>
+                <option value={90}>Last 90 days</option>
+              </Select>
+            </HStack>
           </CardHeader>
           <CardBody>
             <TrendChart data={dashboardMetrics.userTrend} height={120} barColor="orange.400" />
