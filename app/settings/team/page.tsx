@@ -64,6 +64,8 @@ export default function TeamSettingsPage() {
   const updateRole = useMutation(api.teams.teams.updateMemberRole);
   const removeMember = useMutation(api.teams.teams.removeMember);
   const revokeInvite = useMutation(api.teams.invitations.revokeInvitation);
+  const syncSeats = useMutation(api.teams.teams.syncSeatsWithTier);
+  const [syncing, setSyncing] = useState(false);
 
   // Loading state
   if (organization === undefined) {
@@ -130,6 +132,23 @@ export default function TeamSettingsPage() {
       toast({ title: 'Invitation cancelled', status: 'success', duration: 2000 });
     } catch (error) {
       toast({ title: 'Failed to cancel invitation', status: 'error', duration: 3000 });
+    }
+  };
+
+  const handleSyncSeats = async () => {
+    setSyncing(true);
+    try {
+      const result = await syncSeats({});
+      toast({
+        title: 'Seats synced!',
+        description: `Your plan now has ${result.maxMembers} seats.`,
+        status: 'success',
+        duration: 3000,
+      });
+    } catch (error) {
+      toast({ title: 'Failed to sync seats', status: 'error', duration: 3000 });
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -264,6 +283,16 @@ export default function TeamSettingsPage() {
               {isAtLimit && (
                 <Text fontSize="sm" color="gray.500" mt={2} textAlign="center">
                   Seat limit reached.{' '}
+                  <Button
+                    variant="link"
+                    colorScheme="orange"
+                    size="sm"
+                    onClick={handleSyncSeats}
+                    isLoading={syncing}
+                  >
+                    Sync with plan
+                  </Button>
+                  {' or '}
                   <Button variant="link" colorScheme="orange" size="sm">
                     Upgrade plan
                   </Button>
