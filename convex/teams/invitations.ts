@@ -235,6 +235,16 @@ export const createInvitation = mutation({
       createdAt: now,
     });
 
+    // Send invitation email (fire-and-forget)
+    const caller = await ctx.db.get(userId);
+    ctx.scheduler.runAfter(0, api.email.emailActions.sendTeamInviteEmail, {
+      email: args.email.toLowerCase(),
+      inviterName: caller?.name,
+      orgName: org.name,
+      role: args.role,
+      token,
+    });
+
     return { inviteId, token };
   },
 });
