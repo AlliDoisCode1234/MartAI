@@ -24,7 +24,7 @@ function getResendClient(): Resend {
 }
 
 // From address - verified domain
-const FROM_EMAIL = 'Phoo <noreply@phoo.ai>';
+const FROM_EMAIL = 'Phoo <hello@phoo.ai>';
 const APP_URL = process.env.SITE_URL || 'http://localhost:3000';
 
 // Email templates
@@ -190,7 +190,7 @@ const EMAIL_TEMPLATES: Record<
           <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
           
           <p style="color: #999; font-size: 12px;">
-            Questions? Contact us at <a href="mailto:support@phoo.ai" style="color: #F99F2A;">support@phoo.ai</a>
+            Questions? Contact us at <a href="mailto:phoosupport@helps2.com" style="color: #F99F2A;">phoosupport@helps2.com</a>
           </p>
           <p style="color: #999; font-size: 12px;">
             — The Phoo Team
