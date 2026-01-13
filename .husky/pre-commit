@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Prevent committing secrets
+echo "🔒 Scanning for secrets..."
+
+# Check for common secret patterns in staged files
+if git diff --cached --name-only | xargs grep -E "(OPENAI_API_KEY|ANTHROPIC_API_KEY|GOOGLE_AI_API_KEY|CONVEX_DEPLOYMENT|sk-[a-zA-Z0-9]{48}|AIza[0-9A-Za-z-_]{35})" 2>/dev/null; then
+  echo "❌ ERROR: Potential API key or secret detected in staged files!"
+  echo "Remove secrets before committing."
+  exit 1
+fi
+
+# Check for .env files
+if git diff --cached --name-only | grep -E "\.env$|\.env\.local$|\.env\.production$"; then
+  echo "❌ ERROR: .env file detected in staged files!"
+  echo "Never commit .env files. Add to .gitignore."
+  exit 1
+fi
+
+echo "✅ No secrets detected. Safe to commit."
