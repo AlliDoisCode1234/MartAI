@@ -18,6 +18,7 @@ import type * as aiStorage from "../aiStorage.js";
 import type * as ai_analysis from "../ai/analysis.js";
 import type * as ai_health_circuitBreaker from "../ai/health/circuitBreaker.js";
 import type * as ai_health_healthActions from "../ai/health/healthActions.js";
+import type * as ai_health_seedProviders from "../ai/health/seedProviders.js";
 import type * as ai_personas from "../ai/personas.js";
 import type * as ai_providers_anthropic from "../ai/providers/anthropic.js";
 import type * as ai_providers_google from "../ai/providers/google.js";
@@ -154,6 +155,7 @@ declare const fullApi: ApiFromModules<{
   "ai/analysis": typeof ai_analysis;
   "ai/health/circuitBreaker": typeof ai_health_circuitBreaker;
   "ai/health/healthActions": typeof ai_health_healthActions;
+  "ai/health/seedProviders": typeof ai_health_seedProviders;
   "ai/personas": typeof ai_personas;
   "ai/providers/anthropic": typeof ai_providers_anthropic;
   "ai/providers/google": typeof ai_providers_google;

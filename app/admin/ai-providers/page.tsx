@@ -8,7 +8,8 @@
  *     └── HealthMetrics
  */
 
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
+import { useState } from 'react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import {
@@ -70,10 +71,42 @@ interface ProviderData {
   health?: ProviderHealth;
 }
 
+// Default models per provider (used by router)
+const DEFAULT_MODELS: Record<string, string> = {
+  openai: 'gpt-4o',
+  anthropic: 'claude-3-5-sonnet',
+  google: 'gemini-1.5-flash',
+};
+
 export default function AIProvidersPage({}: Props) {
   const providers = useQuery(api.ai.health.circuitBreaker.getAllProviderHealth, {});
   const resetHealth = useMutation(api.ai.health.circuitBreaker.resetHealth);
+  const runHealthCheck = useAction(api.ai.health.healthActions.runHealthChecks);
   const toast = useToast();
+  const [isChecking, setIsChecking] = useState(false);
+
+  const handleRunHealthCheck = async () => {
+    setIsChecking(true);
+    try {
+      const results = await runHealthCheck({});
+      const successCount = Object.values(results).filter((r: any) => r.healthy).length;
+      toast({
+        title: 'Health Check Complete',
+        description: `Tested ${Object.keys(results).length} providers. ${successCount} healthy.`,
+        status: successCount > 0 ? 'success' : 'warning',
+        duration: 3000,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Health Check Failed',
+        description: err.message,
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setIsChecking(false);
+    }
+  };
 
   const handleResetCircuit = async (providerId: Id<'aiProviders'>, name: string) => {
     try {
@@ -109,13 +142,26 @@ export default function AIProvidersPage({}: Props) {
           <Heading size="lg">AI Providers</Heading>
           <Text color="gray.500">Multi-agent failover infrastructure</Text>
         </Box>
-        <HStack>
-          <Badge colorScheme="green" fontSize="sm" px={3} py={1}>
-            {providers.filter((p: any) => p.health?.status === 'healthy').length} Healthy
-          </Badge>
-          <Badge colorScheme="yellow" fontSize="sm" px={3} py={1}>
-            {providers.filter((p: any) => p.health?.circuitState === 'open').length} Circuit Open
-          </Badge>
+        <HStack spacing={4}>
+          <Button
+            leftIcon={<FiActivity />}
+            onClick={handleRunHealthCheck}
+            isLoading={isChecking}
+            loadingText="Checking..."
+            size="sm"
+            colorScheme="blue"
+            variant="outline"
+          >
+            Run Health Check
+          </Button>
+          <HStack>
+            <Badge colorScheme="green" fontSize="sm" px={3} py={1}>
+              {providers.filter((p: any) => p.health?.status === 'healthy').length} Healthy
+            </Badge>
+            <Badge colorScheme="yellow" fontSize="sm" px={3} py={1}>
+              {providers.filter((p: any) => p.health?.circuitState === 'open').length} Circuit Open
+            </Badge>
+          </HStack>
         </HStack>
       </Flex>
 
@@ -140,12 +186,15 @@ interface ProviderCardProps {
 function ProviderCard({ provider, onResetCircuit }: ProviderCardProps) {
   const health = provider.health;
 
-  const statusConfig: Record<ProviderStatus, { color: string; icon: typeof FiCheckCircle }> = {
+  const statusConfig: Record<
+    ProviderStatus,
+    { color: string; icon: typeof FiCheckCircle; label?: string }
+  > = {
     healthy: { color: 'green', icon: FiCheckCircle },
     degraded: { color: 'yellow', icon: FiAlertTriangle },
     unhealthy: { color: 'red', icon: FiAlertCircle },
     circuit_open: { color: 'red', icon: FiSlash },
-    unknown: { color: 'gray', icon: FiAlertCircle },
+    unknown: { color: 'gray', icon: FiAlertCircle, label: 'NEVER TESTED' },
   };
 
   const circuitConfig: Record<CircuitState, { color: string; label: string }> = {
@@ -163,17 +212,34 @@ function ProviderCard({ provider, onResetCircuit }: ProviderCardProps) {
   const totalRequests = (health?.successCount || 0) + (health?.errorCount || 0);
   const successRate = totalRequests > 0 ? ((health?.successCount || 0) / totalRequests) * 100 : 100;
 
+  const activeModel = DEFAULT_MODELS[provider.name] || 'Unknown';
+
   return (
-    <Card p={5} borderRadius="xl" boxShadow="md" bg="whiteAlpha.50">
-      <VStack align="stretch" spacing={4}>
+    <Card
+      p={5}
+      borderRadius="xl"
+      boxShadow="md"
+      bg="whiteAlpha.50"
+      minH="420px"
+      display="flex"
+      flexDirection="column"
+    >
+      <VStack align="stretch" spacing={4} flex="1">
         {/* Header */}
-        <Flex justify="space-between" align="center">
-          <HStack>
-            <Icon as={StatusIcon} color={`${color}.400`} boxSize={5} />
-            <Heading size="md">{provider.displayName}</Heading>
-          </HStack>
-          <Badge colorScheme={color}>{status.replace('_', ' ').toUpperCase()}</Badge>
-        </Flex>
+        <Box>
+          <Flex justify="space-between" align="center" mb={2}>
+            <HStack>
+              <Icon as={StatusIcon} color={`${color}.400`} boxSize={5} />
+              <Heading size="md">{provider.displayName}</Heading>
+            </HStack>
+            <Badge colorScheme={color}>
+              {statusConfig[status]?.label || status.replace('_', ' ').toUpperCase()}
+            </Badge>
+          </Flex>
+          <Text fontSize="xs" color="gray.400" fontFamily="mono">
+            Model: {activeModel}
+          </Text>
+        </Box>
 
         {/* Circuit Breaker Status */}
         <Flex
@@ -236,7 +302,7 @@ function ProviderCard({ provider, onResetCircuit }: ProviderCardProps) {
 
         {/* Last Error */}
         {health?.lastErrorMessage && (
-          <Box p={2} bg="red.900" borderRadius="md">
+          <Box p={2} bg="red.900" borderRadius="md" mt="auto">
             <Text fontSize="xs" color="red.300" noOfLines={2}>
               {health.lastErrorMessage}
             </Text>
