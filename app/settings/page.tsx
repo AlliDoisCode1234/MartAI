@@ -61,8 +61,7 @@ export default function SettingsPage() {
   const { me, loading: meLoading } = useMe();
 
   // Check if user can manage team (Growth+ tiers)
-  const canManageTeam =
-    me?.subscriptionTier && ['growth', 'enterprise'].includes(me.subscriptionTier);
+  const canManageTeam = me?.membershipTier && ['growth', 'enterprise'].includes(me.membershipTier);
 
   // URL-synced tab state
   const tabParam = searchParams?.get('tab') || 'account';
@@ -262,7 +261,7 @@ export default function SettingsPage() {
                       </Box>
                       {canManageTeam && (
                         <Badge colorScheme="purple" textTransform="capitalize">
-                          {me?.subscriptionTier}
+                          {me?.membershipTier}
                         </Badge>
                       )}
                     </HStack>
