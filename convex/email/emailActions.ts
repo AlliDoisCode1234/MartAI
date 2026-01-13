@@ -30,10 +30,13 @@ const APP_URL = process.env.SITE_URL || 'http://localhost:3000';
 // Email templates
 const EMAIL_TEMPLATES: Record<
   string,
-  { subject: string; getHtml: (data: Record<string, unknown>) => string }
+  {
+    getSubject: (data: Record<string, unknown>) => string;
+    getHtml: (data: Record<string, unknown>) => string;
+  }
 > = {
   welcome: {
-    subject: "Welcome to Phoo! Let's grow your traffic 🚀",
+    getSubject: () => 'Welcome to Phoo - Get Started with AI-Powered SEO',
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #F99F2A;">Welcome to Phoo!</h1>
@@ -50,7 +53,7 @@ const EMAIL_TEMPLATES: Record<
   },
 
   phase_unlock: {
-    subject: '🎉 New features unlocked!',
+    getSubject: () => '🎉 New features unlocked!',
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #F99F2A;">You just leveled up!</h1>
@@ -64,7 +67,7 @@ const EMAIL_TEMPLATES: Record<
   },
 
   first_keywords: {
-    subject: 'Your first keywords are in! 📊',
+    getSubject: () => 'Your first keywords are in! 📊',
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #F99F2A;">Keywords Ready!</h1>
@@ -78,7 +81,7 @@ const EMAIL_TEMPLATES: Record<
   },
 
   first_publish: {
-    subject: '🏆 Congrats! Your first article is live!',
+    getSubject: () => '🏆 Congrats! Your first article is live!',
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #F99F2A;">Amazing work!</h1>
@@ -92,7 +95,7 @@ const EMAIL_TEMPLATES: Record<
   },
 
   inactive_7_days: {
-    subject: 'Miss you! Your keywords are waiting 👋',
+    getSubject: () => 'Miss you! Your keywords are waiting 👋',
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #F99F2A;">It's been a week!</h1>
@@ -108,7 +111,7 @@ const EMAIL_TEMPLATES: Record<
   },
 
   weekly_digest: {
-    subject: 'Your weekly SEO digest 📊',
+    getSubject: () => 'Your weekly SEO digest 📊',
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #F99F2A;">Weekly Digest</h1>
@@ -126,7 +129,7 @@ const EMAIL_TEMPLATES: Record<
   },
 
   password_reset: {
-    subject: 'Reset your Phoo password',
+    getSubject: () => 'Reset Your Phoo Password',
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #F99F2A;">Password Reset Requested</h1>
@@ -146,7 +149,7 @@ const EMAIL_TEMPLATES: Record<
   },
 
   team_invite_accepted: {
-    subject: '🎉 {{memberName}} joined your team!',
+    getSubject: (data) => `${data.memberName || 'Someone'} joined your team`,
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #F99F2A;">New Team Member!</h1>
@@ -163,7 +166,7 @@ const EMAIL_TEMPLATES: Record<
   },
 
   team_invite: {
-    subject: "You're invited to join {{orgName}} on Phoo!",
+    getSubject: (data) => `You're invited to join ${data.orgName || 'a team'} on Phoo`,
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9fafb; padding: 32px;">
         <div style="background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
@@ -220,7 +223,7 @@ async function sendEmailInternal(args: {
     const { data, error } = await getResendClient().emails.send({
       from: FROM_EMAIL,
       to: args.to,
-      subject: template.subject,
+      subject: template.getSubject(args.data || {}),
       html: template.getHtml(args.data || {}),
     });
 
