@@ -77,14 +77,31 @@ export default function InviteAcceptPage() {
     try {
       await acceptInvite({ token });
       setSuccess(true);
-      // Redirect to dashboard after short delay
-      setTimeout(() => router.push('/dashboard'), 2000);
+      // Redirect to dashboard immediately
+      router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to accept invitation');
-    } finally {
       setAccepting(false);
     }
   };
+
+  // Auto-accept when authenticated with matching email (for seamless signup flow)
+  const emailMatch = user?.email?.toLowerCase() === validation?.invitation?.email?.toLowerCase();
+
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      user &&
+      validation?.valid &&
+      emailMatch &&
+      !accepting &&
+      !success &&
+      !error
+    ) {
+      handleAccept();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user, validation, emailMatch]);
 
   // Loading state
   if (authLoading || validation === undefined) {
@@ -141,7 +158,6 @@ export default function InviteAcceptPage() {
   }
 
   const invite = validation.invitation;
-  const emailMatch = user?.email?.toLowerCase() === invite?.email?.toLowerCase();
 
   // Success state
   if (success) {
