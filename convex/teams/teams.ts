@@ -219,12 +219,20 @@ export const createOrganization = mutation({
 
     const now = Date.now();
 
+    // Determine max members based on user's membership tier
+    let maxMembers = 1; // Default for solo/starter
+    if (user?.membershipTier === 'growth') {
+      maxMembers = 3;
+    } else if (user?.membershipTier === 'enterprise') {
+      maxMembers = 999; // Unlimited
+    }
+
     // Create organization
     const orgId = await ctx.db.insert('organizations', {
       name: args.name || slug,
       slug,
-      plan: 'starter',
-      maxMembers: 1, // Starter = owner only
+      plan: user?.membershipTier || 'starter',
+      maxMembers,
       ownerId: userId,
       createdAt: now,
       updatedAt: now,
@@ -245,6 +253,42 @@ export const createOrganization = mutation({
     await ctx.db.patch(userId, { organizationId: orgId });
 
     return orgId;
+  },
+});
+
+/**
+ * Sync organization seats with owner's membership tier
+ * Call this when user's tier changes to update maxMembers
+ */
+export const syncSeatsWithTier = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) throw new Error('No organization found');
+
+    const org = await ctx.db.get(user.organizationId);
+    if (!org || org.ownerId !== userId) {
+      throw new Error('Only the organization owner can sync seats');
+    }
+
+    // Determine max members based on membership tier
+    let maxMembers = 1;
+    if (user.membershipTier === 'growth') {
+      maxMembers = 3;
+    } else if (user.membershipTier === 'enterprise') {
+      maxMembers = 999;
+    }
+
+    await ctx.db.patch(user.organizationId, {
+      plan: user.membershipTier || 'starter',
+      maxMembers,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, maxMembers };
   },
 });
 
