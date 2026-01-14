@@ -84,21 +84,36 @@ export const generateWithFallback = action({
           latencyMs: result.latencyMs,
         });
 
+        // Record usage for cost tracking (INFRA-003)
+        if (args.userId) {
+          await ctx.runMutation(internal.ai.admin.usageTracking.recordUsage, {
+            userId: args.userId,
+            projectId: undefined, // Can be extended to pass projectId
+            provider: provider.name,
+            model: modelId,
+            taskType: taskType,
+            inputTokens: result.usage.promptTokens,
+            outputTokens: result.usage.completionTokens,
+          });
+        }
+
         // Log success
         console.log(
           `[AIRouter] SUCCESS: ${provider.name}/${modelId} (${result.latencyMs}ms, ${result.usage.totalTokens} tokens)`
         );
 
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+
         // Record failure
         await ctx.runMutation(internal.ai.health.circuitBreaker.recordFailure, {
           providerId,
-          errorMessage: error.message,
+          errorMessage: message,
         });
 
-        fallbackChain.push(`${provider.name}:${error.message.substring(0, 50)}`);
-        console.warn(`[AIRouter] ${provider.name} failed, trying next...`, error.message);
+        fallbackChain.push(`${provider.name}:${message.substring(0, 50)}`);
+        console.warn(`[AIRouter] ${provider.name} failed, trying next...`, message);
       }
     }
 

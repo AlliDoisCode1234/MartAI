@@ -1301,6 +1301,38 @@ export default defineSchema({
     .index('by_status', ['status'])
     .index('by_date', ['createdAt']),
 
+  // AI Usage Aggregation (INFRA-003) - For cost dashboard
+  aiUsage: defineTable({
+    // Aggregation key
+    userId: v.id('users'),
+    projectId: v.optional(v.id('projects')),
+    provider: v.string(), // 'openai', 'anthropic', 'google'
+    model: v.string(), // 'gpt-4o', 'claude-sonnet-4'
+    dateKey: v.string(), // 'YYYY-MM-DD' for daily aggregation
+    // Usage totals
+    requestCount: v.number(),
+    inputTokens: v.number(),
+    outputTokens: v.number(),
+    totalTokens: v.number(),
+    costUsd: v.number(), // Accumulated cost in USD
+    // Task breakdown
+    taskBreakdown: v.optional(
+      v.object({
+        chat: v.optional(v.number()),
+        brief: v.optional(v.number()),
+        draft: v.optional(v.number()),
+        embeddings: v.optional(v.number()),
+        other: v.optional(v.number()),
+      })
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user_date', ['userId', 'dateKey'])
+    .index('by_project', ['projectId', 'dateKey'])
+    .index('by_provider', ['provider', 'dateKey'])
+    .index('by_model', ['model', 'dateKey']),
+
   // ============================================================================
   // Content Studio (Phase 1) - Unified content management
   // ============================================================================
