@@ -15,24 +15,34 @@ import type {
 export class GoogleProvider implements AIProvider {
   name = 'google';
 
+  // Updated January 2026 - Gemini 2.5 series (2.0 still available)
   private static MODELS: ProviderModel[] = [
+    {
+      modelId: 'gemini-2.5-flash',
+      displayName: 'Gemini 2.5 Flash',
+      capabilities: ['chat', 'vision', 'function_calling'],
+      contextWindow: 1000000,
+      costPer1kInputTokens: 0.015, // $0.15/1M
+      costPer1kOutputTokens: 0.06, // $0.60/1M
+      priority: 1, // Cheap tier (fast + affordable)
+    },
     {
       modelId: 'gemini-2.0-flash',
       displayName: 'Gemini 2.0 Flash',
       capabilities: ['chat', 'vision', 'function_calling'],
       contextWindow: 1000000,
-      costPer1kInputTokens: 0.0075,
-      costPer1kOutputTokens: 0.03,
-      priority: 1,
+      costPer1kInputTokens: 0.0075, // $0.075/1M
+      costPer1kOutputTokens: 0.03, // $0.30/1M
+      priority: 2, // Legacy cheap tier
     },
     {
-      modelId: 'gemini-pro',
-      displayName: 'Gemini Pro',
-      capabilities: ['chat', 'function_calling', 'structured_output'],
-      contextWindow: 32000,
-      costPer1kInputTokens: 0.125,
-      costPer1kOutputTokens: 0.5,
-      priority: 2,
+      modelId: 'gemini-2.5-pro',
+      displayName: 'Gemini 2.5 Pro',
+      capabilities: ['chat', 'vision', 'function_calling', 'structured_output'],
+      contextWindow: 2000000,
+      costPer1kInputTokens: 0.125, // $1.25/1M (<200K), $2.50/1M (>200K)
+      costPer1kOutputTokens: 0.5, // $5/1M (<200K), $10/1M (>200K)
+      priority: 3, // Premium reasoning tier
     },
   ];
 
@@ -82,8 +92,9 @@ export class GoogleProvider implements AIProvider {
         model: modelId,
         provider: this.name,
       };
-    } catch (error: any) {
-      throw new Error(`[Google] ${modelId} failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`[Google] ${modelId} failed: ${message}`);
     }
   }
 
@@ -109,11 +120,12 @@ export class GoogleProvider implements AIProvider {
         'gemini-2.0-flash'
       );
       return { healthy: true, latencyMs: Date.now() - startTime };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       return {
         healthy: false,
         latencyMs: Date.now() - startTime,
-        error: error.message,
+        error: message,
       };
     }
   }

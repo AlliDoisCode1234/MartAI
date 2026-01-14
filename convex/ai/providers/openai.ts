@@ -17,33 +17,34 @@ import type {
 export class OpenAIProvider implements AIProvider {
   name = 'openai';
 
+  // Updated January 2026 - Latest OpenAI models
   private static MODELS: ProviderModel[] = [
     {
       modelId: 'gpt-4o',
       displayName: 'GPT-4o',
       capabilities: ['chat', 'vision', 'function_calling', 'structured_output'],
       contextWindow: 128000,
-      costPer1kInputTokens: 0.25, // $0.0025 per 1K
-      costPer1kOutputTokens: 1.0, // $0.01 per 1K
-      priority: 1,
+      costPer1kInputTokens: 0.25, // $2.50/1M
+      costPer1kOutputTokens: 1.0, // $10/1M
+      priority: 1, // Standard tier
     },
     {
       modelId: 'gpt-4o-mini',
       displayName: 'GPT-4o Mini',
       capabilities: ['chat', 'vision', 'function_calling', 'structured_output'],
       contextWindow: 128000,
-      costPer1kInputTokens: 0.015, // $0.00015 per 1K
-      costPer1kOutputTokens: 0.06, // $0.0006 per 1K
-      priority: 2,
+      costPer1kInputTokens: 0.015, // $0.15/1M
+      costPer1kOutputTokens: 0.06, // $0.60/1M
+      priority: 2, // Cheap tier
     },
     {
-      modelId: 'gpt-3.5-turbo',
-      displayName: 'GPT-3.5 Turbo',
-      capabilities: ['chat', 'function_calling'],
-      contextWindow: 16385,
-      costPer1kInputTokens: 0.05, // $0.0005 per 1K
-      costPer1kOutputTokens: 0.15, // $0.0015 per 1K
-      priority: 3,
+      modelId: 'o3-mini',
+      displayName: 'O3 Mini (Reasoning)',
+      capabilities: ['chat', 'structured_output'],
+      contextWindow: 200000,
+      costPer1kInputTokens: 1.1, // $1.10/1M
+      costPer1kOutputTokens: 4.4, // $4.40/1M
+      priority: 3, // Premium reasoning tier
     },
   ];
 
@@ -69,7 +70,16 @@ export class OpenAIProvider implements AIProvider {
         // maxTokens is controlled by model defaults
       });
 
-      const usage = result.usage as any;
+      // AI SDK usage type is loosely typed, safely access properties
+      const usage = result.usage as
+        | {
+            promptTokens?: number;
+            completionTokens?: number;
+            totalTokens?: number;
+            inputTokens?: number;
+            outputTokens?: number;
+          }
+        | undefined;
 
       return {
         content: result.text,
@@ -84,8 +94,9 @@ export class OpenAIProvider implements AIProvider {
         model: modelId,
         provider: this.name,
       };
-    } catch (error: any) {
-      throw new Error(`[OpenAI] ${modelId} failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`[OpenAI] ${modelId} failed: ${message}`);
     }
   }
 
@@ -108,14 +119,15 @@ export class OpenAIProvider implements AIProvider {
   async healthCheck(): Promise<HealthCheckResult> {
     const startTime = Date.now();
     try {
-      // Use cheapest model for health check
-      await this.generateText({ prompt: 'Say OK', maxTokens: 5, temperature: 0 }, 'gpt-3.5-turbo');
+      // Use cheapest model for health check (gpt-4o-mini)
+      await this.generateText({ prompt: 'Say OK', maxTokens: 5, temperature: 0 }, 'gpt-4o-mini');
       return { healthy: true, latencyMs: Date.now() - startTime };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       return {
         healthy: false,
         latencyMs: Date.now() - startTime,
-        error: error.message,
+        error: message,
       };
     }
   }

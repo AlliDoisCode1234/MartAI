@@ -15,24 +15,34 @@ import type {
 export class AnthropicProvider implements AIProvider {
   name = 'anthropic';
 
+  // Updated January 2026 - Claude 4 series (Claude 3.5 deprecated Aug 2025)
   private static MODELS: ProviderModel[] = [
     {
-      modelId: 'claude-3-5-sonnet-20241022',
-      displayName: 'Claude 3.5 Sonnet',
+      modelId: 'claude-sonnet-4-20250514',
+      displayName: 'Claude Sonnet 4',
       capabilities: ['chat', 'vision', 'function_calling'],
       contextWindow: 200000,
-      costPer1kInputTokens: 0.3, // $0.003 per 1K
-      costPer1kOutputTokens: 1.5, // $0.015 per 1K
-      priority: 1,
+      costPer1kInputTokens: 0.3, // $3/1M
+      costPer1kOutputTokens: 1.5, // $15/1M
+      priority: 1, // Standard tier
     },
     {
-      modelId: 'claude-3-haiku-20240307',
-      displayName: 'Claude 3 Haiku',
+      modelId: 'claude-haiku-4-20251015',
+      displayName: 'Claude Haiku 4.5',
       capabilities: ['chat', 'vision'],
       contextWindow: 200000,
-      costPer1kInputTokens: 0.025, // $0.00025 per 1K
-      costPer1kOutputTokens: 0.125, // $0.00125 per 1K
-      priority: 2,
+      costPer1kInputTokens: 0.025, // $0.25/1M
+      costPer1kOutputTokens: 0.125, // $1.25/1M
+      priority: 2, // Cheap tier
+    },
+    {
+      modelId: 'claude-opus-4-20250522',
+      displayName: 'Claude Opus 4',
+      capabilities: ['chat', 'vision', 'function_calling'],
+      contextWindow: 200000,
+      costPer1kInputTokens: 1.5, // $15/1M
+      costPer1kOutputTokens: 7.5, // $75/1M
+      priority: 3, // Premium tier
     },
   ];
 
@@ -46,7 +56,7 @@ export class AnthropicProvider implements AIProvider {
 
   async generateText(
     request: AITextRequest,
-    modelId: string = 'claude-3-5-sonnet-20241022'
+    modelId: string = 'claude-sonnet-4-20250514'
   ): Promise<AITextResponse> {
     const startTime = Date.now();
 
@@ -76,8 +86,9 @@ export class AnthropicProvider implements AIProvider {
         model: modelId,
         provider: this.name,
       };
-    } catch (error: any) {
-      throw new Error(`[Anthropic] ${modelId} failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`[Anthropic] ${modelId} failed: ${message}`);
     }
   }
 
@@ -95,14 +106,15 @@ export class AnthropicProvider implements AIProvider {
     try {
       await this.generateText(
         { prompt: 'Say OK', maxTokens: 5, temperature: 0 },
-        'claude-3-haiku-20240307'
+        'claude-haiku-4-20251015'
       );
       return { healthy: true, latencyMs: Date.now() - startTime };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       return {
         healthy: false,
         latencyMs: Date.now() - startTime,
-        error: error.message,
+        error: message,
       };
     }
   }
