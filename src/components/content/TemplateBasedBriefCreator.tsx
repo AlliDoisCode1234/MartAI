@@ -25,13 +25,17 @@ import {
   FormLabel,
   Input,
   Button,
+  Collapse,
+  IconButton,
 } from '@chakra-ui/react';
+import { FiSettings } from 'react-icons/fi';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useProject } from '@/lib/hooks';
 import { trackEvent, ANALYTICS_EVENTS } from '@/src/lib/analyticsEvents';
 import type { ContentTemplate } from '@/lib/constants/contentTemplates';
 import type { Id } from '@/convex/_generated/dataModel';
+import { AIQualityTier, type TaskTier } from '@/src/components/shared/AIQualityTier';
 
 interface Props {
   template: ContentTemplate;
@@ -42,6 +46,8 @@ export function TemplateBasedBriefCreator({ template }: Props) {
   const { projectId } = useProject(null, { autoSelect: true });
   const [title, setTitle] = useState('');
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
+  const [qualityTier, setQualityTier] = useState<TaskTier>('standard');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const clusters = useQuery(
@@ -140,6 +146,28 @@ export function TemplateBasedBriefCreator({ template }: Props) {
                   <Text fontSize="sm" color="gray.500" mt={2}>
                     You can edit this structure after creating the brief
                   </Text>
+                </Box>
+
+                {/* Advanced Options (INFRA-002) */}
+                <Box>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leftIcon={<FiSettings />}
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    color="gray.600"
+                  >
+                    {showAdvanced ? 'Hide' : 'Show'} Advanced Options
+                  </Button>
+                  <Collapse in={showAdvanced}>
+                    <Box mt={4} p={4} bg="gray.50" borderRadius="lg">
+                      <AIQualityTier
+                        value={qualityTier}
+                        onChange={setQualityTier}
+                        showAdvanced={showAdvanced}
+                      />
+                    </Box>
+                  </Collapse>
                 </Box>
               </VStack>
             </CardBody>
