@@ -204,24 +204,7 @@ export const createCalendarContentPieces = internalMutation({
       // Schema now supports all 17 content types directly
       const id = await ctx.db.insert('contentPieces', {
         projectId: args.projectId,
-        contentType: item.contentType as
-          | 'homepage'
-          | 'about'
-          | 'service'
-          | 'landing'
-          | 'blog'
-          | 'blogVersus'
-          | 'blogVideo'
-          | 'contentRefresh'
-          | 'leadMagnet'
-          | 'paidProduct'
-          | 'areasWeServe'
-          | 'employment'
-          | 'mentorship'
-          | 'donate'
-          | 'events'
-          | 'partner'
-          | 'program',
+        contentType: item.contentType as ContentTypeId,
         title: item.title,
         keywords: item.keywords,
         status: 'draft',

@@ -22,6 +22,7 @@ if (typeof window === 'undefined') {
 export async function POST(request: NextRequest) {
   try {
     // Verify authorization
+    const authHeader = request.headers.get('authorization') ?? '';
     const expectedAuth = process.env.CRON_SECRET;
     if (!expectedAuth) {
       console.error('CRON_SECRET is not defined in environment variables');

@@ -12,7 +12,12 @@ import { auth } from './auth';
 import { internal, api } from './_generated/api';
 import { Id } from './_generated/dataModel';
 import type { ActionCtx } from './_generated/server';
-import { CONTENT_TYPES, ContentTypeId, DEFAULT_SEO_CHECKLIST } from './phoo/contentTypes';
+import {
+  CONTENT_TYPES,
+  ContentTypeId,
+  DEFAULT_SEO_CHECKLIST,
+  contentTypeValidator,
+} from './phoo/contentTypes';
 
 // Quality threshold for A+ grade
 const QUALITY_THRESHOLD = 90;
@@ -25,30 +30,7 @@ const MAX_GENERATION_ATTEMPTS = 3;
 export const generateContent = action({
   args: {
     projectId: v.id('projects'),
-    contentType: v.union(
-      // Core Pages
-      v.literal('homepage'),
-      v.literal('about'),
-      v.literal('service'),
-      v.literal('landing'),
-      // Blog Content
-      v.literal('blog'),
-      v.literal('blogVersus'),
-      v.literal('blogVideo'),
-      v.literal('contentRefresh'),
-      // Conversion
-      v.literal('leadMagnet'),
-      v.literal('paidProduct'),
-      // Local/Geo
-      v.literal('areasWeServe'),
-      // Specialty
-      v.literal('employment'),
-      v.literal('mentorship'),
-      v.literal('donate'),
-      v.literal('events'),
-      v.literal('partner'),
-      v.literal('program')
-    ),
+    contentType: contentTypeValidator,
     title: v.string(),
     keywords: v.array(v.string()),
     clusterId: v.optional(v.id('keywordClusters')),
