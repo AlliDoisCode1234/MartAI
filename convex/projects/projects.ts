@@ -43,19 +43,19 @@ export const createProject = mutation({
     // Strict enforcement: No config means no paid plan = 0 limit
     const limit: number = config?.features.maxUrls ?? 0;
 
-    // TODO: Uncomment this before launch - temporarily disabled for testing/dogfooding
-    // if (projects.length >= limit) {
-    //   if (limit === 0) {
-    //     throw new Error(
-    //       'LIMIT_REACHED: Payment required. Please subscribe to a plan to start MartAI.'
-    //     );
-    //   }
-    //   throw new Error(
-    //     `LIMIT_REACHED: Upgrade your plan to manage more websites. Current limit: ${limit}`
-    //   );
-    // }
+    if (projects.length >= limit) {
+      if (limit === 0) {
+        throw new Error(
+          'LIMIT_REACHED: Payment required. Please subscribe to a plan to start MartAI.'
+        );
+      }
+      throw new Error(
+        `LIMIT_REACHED: Upgrade your plan to manage more websites. Current limit: ${limit}`
+      );
+    }
 
-    // NOTE: Project limit check temporarily disabled for testing - uncomment before launch
+    // NOTE: Project limit check enabled
+
     const projectId = await ctx.db.insert('projects', {
       userId,
       organizationId: args.organizationId,

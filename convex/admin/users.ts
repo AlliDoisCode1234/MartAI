@@ -128,7 +128,8 @@ export const listUsers = query({
     let usersQuery = ctx.db.query('users').order('desc');
     const users = await usersQuery.take(limit);
 
-    // Get subscriptions for each user
+    // Efficiently fetch subscriptions for all users in parallel
+    // Convex optimizes parallel indexed queries
     const result = await Promise.all(
       users.map(async (user) => {
         // Filter by account status if specified

@@ -43,7 +43,16 @@ import {
   FiActivity,
   FiClock,
   FiZap,
+  FiCopy,
+  FiChevronDown,
+  FiChevronUp,
 } from 'react-icons/fi';
+import {
+  parseProviderError,
+  getSeverityColor,
+  getCategoryColor,
+  type ParsedError,
+} from '@/lib/errors/parseProviderError';
 
 interface Props {}
 
@@ -81,7 +90,7 @@ const DEFAULT_MODELS: Record<string, string> = {
 export default function AIProvidersPage({}: Props) {
   const providers = useQuery(api.ai.health.circuitBreaker.getAllProviderHealth, {});
   const resetHealth = useMutation(api.ai.health.circuitBreaker.resetHealth);
-  const runHealthCheck = useAction(api.ai.health.healthActions.runHealthChecks);
+  const runHealthCheck = useAction(api.ai.health.healthActions.runHealthChecksAdmin);
   const toast = useToast();
   const [isChecking, setIsChecking] = useState(false);
 
@@ -300,20 +309,22 @@ function ProviderCard({ provider, onResetCircuit }: ProviderCardProps) {
           />
         </Box>
 
-        {/* Last Error */}
+        {/* Last Error - Structured Display */}
         {health?.lastErrorMessage && (
-          <Box p={2} bg="red.900" borderRadius="md" mt="auto">
-            <Text fontSize="xs" color="red.300" noOfLines={2}>
-              {health.lastErrorMessage}
-            </Text>
-          </Box>
+          <ErrorCard error={parseProviderError(health.lastErrorMessage)} />
         )}
+
+        {/* Spacer to push actions to bottom */}
+        <Box flex="1" />
 
         {/* Actions */}
         <Flex justify="space-between" pt={2}>
-          <Tooltip label={provider.isEnabled ? 'Enabled' : 'Disabled'}>
-            <Switch isChecked={provider.isEnabled} colorScheme="green" isReadOnly />
-          </Tooltip>
+          <HStack spacing={2}>
+            <Switch isChecked={provider.isEnabled} colorScheme="green" isReadOnly size="sm" />
+            <Text fontSize="xs" color="gray.500">
+              {provider.isEnabled ? 'On' : 'Off'}
+            </Text>
+          </HStack>
           <Button
             size="sm"
             leftIcon={<FiRefreshCw />}
@@ -326,5 +337,117 @@ function ProviderCard({ provider, onResetCircuit }: ProviderCardProps) {
         </Flex>
       </VStack>
     </Card>
+  );
+}
+
+/**
+ * Structured Error Card Component
+ */
+interface ErrorCardProps {
+  error: ParsedError;
+}
+
+function ErrorCard({ error }: ErrorCardProps) {
+  const [showRaw, setShowRaw] = useState(false);
+  const toast = useToast();
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(`${error.code}: ${error.rawError}`);
+    toast({
+      title: 'Copied',
+      description: 'Error details copied to clipboard',
+      status: 'success',
+      duration: 2000,
+    });
+  };
+
+  // Consistent color scheme - red for errors, no brown/orange
+  const isHighSeverity = error.severity === 'critical' || error.severity === 'high';
+
+  return (
+    <Box
+      p={3}
+      bg={isHighSeverity ? 'red.900' : 'gray.800'}
+      borderRadius="md"
+      borderLeft="4px solid"
+      borderLeftColor={isHighSeverity ? 'red.400' : 'gray.500'}
+    >
+      {/* Header: Category + Severity */}
+      <Flex justify="space-between" align="center" mb={2}>
+        <Badge colorScheme="purple" fontSize="xs" variant="outline">
+          {error.category.replace('_', ' ').toUpperCase()}
+        </Badge>
+        <Badge
+          colorScheme={isHighSeverity ? 'red' : 'gray'}
+          fontSize="2xs"
+          textTransform="uppercase"
+        >
+          {error.severity}
+        </Badge>
+      </Flex>
+
+      {/* Friendly Message */}
+      <Text
+        fontSize="sm"
+        color={isHighSeverity ? 'red.200' : 'gray.300'}
+        fontWeight="medium"
+        mb={1}
+      >
+        {error.friendlyMessage}
+      </Text>
+
+      {/* Suggested Action */}
+      <HStack spacing={1} mb={2}>
+        <Text fontSize="xs" color="gray.400">
+          Fix:
+        </Text>
+        <Text fontSize="xs" color="gray.300">
+          {error.suggestedAction}
+        </Text>
+      </HStack>
+
+      {/* Actions: Copy + Toggle Raw */}
+      <Flex justify="space-between" align="center">
+        <Button
+          size="xs"
+          variant="ghost"
+          leftIcon={<FiCopy />}
+          onClick={handleCopy}
+          color="gray.400"
+          _hover={{ color: 'white' }}
+        >
+          Copy
+        </Button>
+        <Button
+          size="xs"
+          variant="ghost"
+          rightIcon={showRaw ? <FiChevronUp /> : <FiChevronDown />}
+          onClick={() => setShowRaw(!showRaw)}
+          color="gray.400"
+          _hover={{ color: 'white' }}
+        >
+          {showRaw ? 'Hide' : 'Raw'}
+        </Button>
+      </Flex>
+
+      {/* Collapsible Raw Error - Fixed max height */}
+      {showRaw && (
+        <Box
+          mt={2}
+          p={2}
+          bg="blackAlpha.400"
+          borderRadius="sm"
+          fontFamily="mono"
+          fontSize="2xs"
+          color="gray.500"
+          maxH="80px"
+          overflowY="auto"
+          whiteSpace="pre-wrap"
+          wordBreak="break-all"
+        >
+          {error.rawError}
+        </Box>
+      )}
+    </Box>
   );
 }

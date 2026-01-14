@@ -22,8 +22,11 @@ if (typeof window === 'undefined') {
 export async function POST(request: NextRequest) {
   try {
     // Verify authorization
-    const authHeader = request.headers.get('authorization');
-    const expectedAuth = process.env.CRON_SECRET || 'your-cron-secret';
+    const expectedAuth = process.env.CRON_SECRET;
+    if (!expectedAuth) {
+      console.error('CRON_SECRET is not defined in environment variables');
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 503 });
+    }
 
     if (authHeader !== `Bearer ${expectedAuth}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -483,7 +483,8 @@ export default defineSchema({
   })
     .index('by_user', ['userId'])
     .index('by_status', ['status'])
-    .index('by_stripe_subscription', ['stripeSubscriptionId']),
+    .index('by_stripe_subscription', ['stripeSubscriptionId'])
+    .index('by_status_grace_start', ['status', 'graceStartedAt']),
 
   usageLimits: defineTable({
     userId: v.id('users'),
@@ -1262,7 +1263,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index('by_provider', ['providerId'])
-    .index('by_status', ['status']),
+    .index('by_status', ['status'])
+    .index('by_last_checked', ['lastHealthCheckAt']),
 
   // AI routing decision logs
   aiRoutingLogs: defineTable({

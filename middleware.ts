@@ -9,7 +9,11 @@ import type { NextRequest } from 'next/server';
  */
 
 // Password protection credentials (set in Vercel environment variables)
-const PHOO_PASSWORD = process.env.PHOO_BETA_PASSWORD || 'phoo2026';
+const PHOO_PASSWORD = process.env.PHOO_BETA_PASSWORD;
+
+if (!PHOO_PASSWORD && process.env.NODE_ENV === 'production') {
+  console.error('PHOO_BETA_PASSWORD not set in production');
+}
 
 /**
  * Check if request is from phoo.ai domain
@@ -151,7 +155,7 @@ export function middleware(request: NextRequest) {
     // Cross-Origin policies
     'Cross-Origin-Embedder-Policy': 'require-corp',
     'Cross-Origin-Opener-Policy': 'same-origin',
-    'Cross-Origin-Resource-Policy': 'same-origin',
+    'Cross-Origin-Resource-Policy': 'cross-origin',
   };
 
   // Apply security headers

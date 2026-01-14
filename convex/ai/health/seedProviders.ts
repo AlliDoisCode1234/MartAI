@@ -13,7 +13,11 @@ export const seedProviders = internalMutation({
     const providers = [
       { name: 'openai', displayName: 'OpenAI', apiKeyEnvVar: 'OPENAI_API_KEY' },
       { name: 'anthropic', displayName: 'Anthropic', apiKeyEnvVar: 'ANTHROPIC_API_KEY' },
-      { name: 'google', displayName: 'Google Gemini', apiKeyEnvVar: 'GOOGLE_AI_API_KEY' },
+      {
+        name: 'google',
+        displayName: 'Google Gemini',
+        apiKeyEnvVar: 'GOOGLE_GENERATIVE_AI_API_KEY',
+      },
     ];
 
     let added = 0;

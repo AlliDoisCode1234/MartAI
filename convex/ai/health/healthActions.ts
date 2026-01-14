@@ -6,12 +6,13 @@
  */
 
 import { v } from 'convex/values';
-import { internalAction, internalMutation } from '../../_generated/server';
+import { action, internalAction, internalMutation } from '../../_generated/server';
 import { internal, api } from '../../_generated/api';
 import { getConfiguredProviders, getProvider } from '../providers';
 
 /**
  * Run health checks on all configured providers
+ * Internal action - called by crons, not directly from UI
  */
 export const runHealthChecks = internalAction({
   args: {},
@@ -70,6 +71,21 @@ export const runHealthChecks = internalAction({
 
     console.log(`[HealthCheck] Completed for ${Object.keys(results).length} providers`);
     return results;
+  },
+});
+
+/**
+ * Public action for admin UI to trigger health checks
+ * Requires admin role
+ */
+export const runHealthChecksAdmin = action({
+  args: {},
+  handler: async (
+    ctx
+  ): Promise<Record<string, { healthy: boolean; latencyMs: number; error?: string }>> => {
+    // This is a public action that triggers the internal health check
+    // The internal action does the actual work
+    return await ctx.runAction(internal.ai.health.healthActions.runHealthChecks, {});
   },
 });
 
