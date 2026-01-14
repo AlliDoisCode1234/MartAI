@@ -47,7 +47,22 @@ export const HUBSPOT_CUSTOM_PROPERTIES = {
     label: 'Phoo Plan',
     description: 'Current subscription tier',
     type: 'enumeration',
-    options: ['free', 'starter', 'growth', 'pro', 'enterprise'],
+    options: ['free', 'solo', 'starter', 'growth', 'pro', 'enterprise'],
+  },
+  phoo_subscription_status: {
+    label: 'Phoo Subscription Status',
+    description: 'Payment/billing status aligned with Stripe lifecycle',
+    type: 'enumeration',
+    // Matches SubscriptionStatus type in subscriptionLifecycle.ts
+    options: [
+      'active',
+      'trialing',
+      'grace_period',
+      'maintenance_mode',
+      'past_due',
+      'cancelled',
+      'expired',
+    ],
   },
   phoo_account_status: {
     label: 'Phoo Account Status',

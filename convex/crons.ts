@@ -31,4 +31,12 @@ crons.interval(
   internal.ai.health.healthActions.checkCircuitTimeouts
 );
 
+// Check grace period expiration daily at 4 AM UTC
+// Transitions expired grace_period subscriptions to maintenance_mode
+crons.daily(
+  'subscription-grace-period-check',
+  { hourUTC: 4, minuteUTC: 0 },
+  internal.subscriptions.subscriptionLifecycle.checkGracePeriodExpiration
+);
+
 export default crons;

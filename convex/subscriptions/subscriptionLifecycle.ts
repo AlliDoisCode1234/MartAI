@@ -12,10 +12,17 @@
  * Security: All admin mutations require requireAdmin/requireSuperAdmin
  */
 
-import { mutation, query, internalMutation } from '../_generated/server';
+import {
+  mutation,
+  query,
+  internalMutation,
+  internalAction,
+  internalQuery,
+} from '../_generated/server';
 import { v } from 'convex/values';
 import { requireAdmin, requireSuperAdmin } from '../lib/rbac';
 import type { Id } from '../_generated/dataModel';
+import { internal } from '../_generated/api';
 
 // ============================================
 // CONSTANTS
@@ -468,6 +475,70 @@ export const listGracePeriodSubscriptions = query({
       graceStartedAt: sub.graceStartedAt,
       graceEndsAt: sub.graceStartedAt ? sub.graceStartedAt + GRACE_PERIOD_MS : null,
       failedPaymentCount: sub.failedPaymentCount,
+    }));
+  },
+});
+
+// ============================================
+// SCHEDULED JOBS (Called by crons)
+// ============================================
+
+/**
+ * Check all subscriptions in grace period and transition expired ones
+ * Called by daily cron job
+ */
+export const checkGracePeriodExpiration = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ checked: number; transitioned: number }> => {
+    // Use runQuery to get subscriptions in grace period
+    // Note: We can't use ctx.db directly in an action, so we call internal queries
+    const subscriptions: Array<{
+      _id: Id<'subscriptions'>;
+      userId: Id<'users'>;
+      graceStartedAt: number | undefined;
+    }> = await ctx.runQuery(
+      internal.subscriptions.subscriptionLifecycle.getGracePeriodSubscriptionsInternal,
+      {}
+    );
+
+    const now = Date.now();
+    let transitioned = 0;
+
+    for (const sub of subscriptions) {
+      // Check if grace period has expired (7 days)
+      if (sub.graceStartedAt && now > sub.graceStartedAt + GRACE_PERIOD_MS) {
+        await ctx.runMutation(
+          internal.subscriptions.subscriptionLifecycle.transitionToMaintenanceMode,
+          { subscriptionId: sub._id }
+        );
+        transitioned++;
+        console.log(`[GracePeriodCheck] Transitioned ${sub._id} to maintenance_mode`);
+      }
+    }
+
+    console.log(
+      `[GracePeriodCheck] Checked ${subscriptions.length} subscriptions, transitioned ${transitioned} to maintenance`
+    );
+
+    return { checked: subscriptions.length, transitioned };
+  },
+});
+
+/**
+ * Internal query to get grace period subscriptions (for action use)
+ */
+export const getGracePeriodSubscriptionsInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const subscriptions = await ctx.db
+      .query('subscriptions')
+      .withIndex('by_status', (q) => q.eq('status', 'grace_period'))
+      .collect();
+
+    return subscriptions.map((sub) => ({
+      _id: sub._id,
+      userId: sub.userId,
+      graceStartedAt: sub.graceStartedAt,
     }));
   },
 });
