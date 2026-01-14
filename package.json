@@ -73,7 +73,7 @@
     "build": "next build",
     "build:clean": "npm run clean && next build",
     "build:vercel": "npm run convex:codegen && npm run build",
-    "prebuild": "npm run convex:codegen || echo 'Warning: Convex codegen skipped'",
+    "prebuild": "if [ -z \"$VERCEL\" ]; then npm run convex:codegen || echo 'Warning: Convex codegen skipped'; fi",
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest --watch",

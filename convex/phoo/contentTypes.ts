@@ -59,6 +59,57 @@ export const DEFAULT_SEO_CHECKLIST = {
 };
 
 // ============================================================================
+// Content Type IDs Array (for iteration and validation)
+// ============================================================================
+
+/**
+ * Array of all content type IDs - derive union from this to keep DRY
+ */
+export const CONTENT_TYPE_IDS = [
+  'homepage',
+  'about',
+  'service',
+  'blog',
+  'blogVersus',
+  'leadMagnet',
+  'paidProduct',
+  'landing',
+  'areasWeServe',
+  'employment',
+  'mentorship',
+  'donate',
+  'events',
+  'partner',
+  'program',
+  'contentRefresh',
+  'blogVideo',
+] as const;
+
+/**
+ * Shared Convex validator for content type args
+ * Use this instead of inline v.union() for DRY code
+ */
+export const contentTypeValidator = v.union(
+  v.literal('homepage'),
+  v.literal('about'),
+  v.literal('service'),
+  v.literal('blog'),
+  v.literal('blogVersus'),
+  v.literal('leadMagnet'),
+  v.literal('paidProduct'),
+  v.literal('landing'),
+  v.literal('areasWeServe'),
+  v.literal('employment'),
+  v.literal('mentorship'),
+  v.literal('donate'),
+  v.literal('events'),
+  v.literal('partner'),
+  v.literal('program'),
+  v.literal('contentRefresh'),
+  v.literal('blogVideo')
+);
+
+// ============================================================================
 // Content Type Registry
 // ============================================================================
 
