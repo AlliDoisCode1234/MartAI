@@ -53,6 +53,7 @@ import {
   getCategoryColor,
   type ParsedError,
 } from '@/lib/errors/parseProviderError';
+import { AICostDashboard } from '@/src/components/admin/AICostDashboard';
 
 interface Props {}
 
@@ -173,6 +174,9 @@ export default function AIProvidersPage({}: Props) {
           </HStack>
         </HStack>
       </Flex>
+
+      {/* AI Cost Dashboard (INFRA-003) */}
+      <AICostDashboard budget={200} />
 
       <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
         {providers.map((provider: ProviderData) => (
