@@ -3,8 +3,9 @@ import Google from '@auth/core/providers/google';
 import Resend from '@auth/core/providers/resend';
 import { Password } from '@convex-dev/auth/providers/Password';
 
-// TODO: Change to 'MartAI <noreply@martai.io>' after verifying domain at https://resend.com/domains
-const RESEND_FROM = 'Phoo <onboarding@resend.dev>';
+// Production: Set RESEND_FROM_EMAIL env var to 'Phoo <noreply@phoo.ai>' after domain verification
+// Development: Falls back to resend.dev test domain
+const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Phoo <onboarding@resend.dev>';
 
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [

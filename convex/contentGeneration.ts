@@ -99,8 +99,10 @@ export const generateContent = action({
         attempt > 1 // Add quality hints on retries
       );
 
-      // Score content
-      const { score, metrics } = scoreContent(content, outline, args.keywords);
+      // Score content using content type's target word count
+      const contentTypeConfig = CONTENT_TYPES[args.contentType as ContentTypeId];
+      const targetWordCount = contentTypeConfig?.wordCount || 1200;
+      const { score, metrics } = scoreContent(content, outline, args.keywords, targetWordCount);
       console.log(`[ContentGeneration] Score: ${score}`);
 
       // Track best result
@@ -477,7 +479,8 @@ function countWords(content: string): number {
 function scoreContent(
   content: string,
   outline: string[],
-  keywords: string[]
+  keywords: string[],
+  targetWordCount: number = 1200
 ): { score: number; metrics: Record<string, number> } {
   const wordCount = countWords(content);
   const h2Count = (content.match(/^## /gm) || []).length;
@@ -486,8 +489,8 @@ function scoreContent(
     ? (content.toLowerCase().match(new RegExp(primaryKeyword, 'g')) || []).length
     : 0;
 
-  // Score components (0-100 each)
-  const wordCountScore = Math.min(100, (wordCount / 1200) * 100);
+  // Score components (0-100 each) - use dynamic word count target
+  const wordCountScore = Math.min(100, (wordCount / targetWordCount) * 100);
   const h2Score = Math.min(100, (h2Count / 7) * 100);
   const keywordScore = Math.min(100, (keywordMentions / 10) * 100);
   const readabilityScore = 75; // Placeholder - would use real readability lib
