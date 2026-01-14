@@ -6,10 +6,11 @@
  */
 
 import { v } from 'convex/values';
-import { action } from '../../_generated/server';
+import { action, ActionCtx } from '../../_generated/server';
 import { internal, api } from '../../_generated/api';
 import {
   getConfiguredProviders,
+  type AIProvider,
   type AITextRequest,
   type AITextResponse,
   type RoutingStrategy,
@@ -108,26 +109,82 @@ export const generateWithFallback = action({
 });
 
 /**
+ * Task tier classification
+ * Maps task types to tier for model selection
+ */
+const TASK_TIER_MAP: Record<string, 'cheap' | 'standard' | 'premium'> = {
+  chat: 'cheap',
+  embeddings: 'cheap',
+  brief: 'standard',
+  draft: 'standard',
+  structured: 'standard',
+  vision: 'premium',
+};
+
+interface ProviderHealth {
+  _id: string;
+  name: string;
+  health?: {
+    circuitState: 'closed' | 'open' | 'half_open';
+    errorRate: number;
+    avgLatencyMs: number;
+  };
+  provider?: {
+    defaultModel?: string;
+    taskTierModels?: {
+      cheap: string;
+      standard: string;
+      premium?: string;
+    };
+  };
+}
+
+/**
  * Get providers ordered by routing strategy
+ * Now reads model config from database for multi-model selection
  */
 async function getOrderedProviders(
-  ctx: any,
+  ctx: ActionCtx,
   options: RouteOptions
-): Promise<Array<{ provider: any; modelId: string; providerId: any }>> {
+): Promise<Array<{ provider: AIProvider; modelId: string; providerId: string }>> {
   const configured = getConfiguredProviders();
 
   if (configured.length === 0) {
     return [];
   }
 
-  // Get health data from database
-  const healthData = await ctx.runQuery(api.ai.health.circuitBreaker.getAllProviderHealth, {});
+  // Get health data from database (includes provider config)
+  const healthData = (await ctx.runQuery(
+    api.ai.health.circuitBreaker.getAllProviderHealth,
+    {}
+  )) as ProviderHealth[];
+
+  // Determine task tier for model selection
+  const taskTier = TASK_TIER_MAP[options.taskType || 'chat'] || 'standard';
 
   // Build scored list
   const scored = configured.map((provider) => {
-    const dbProvider = healthData.find((h: any) => h.name === provider.name);
+    const dbProvider = healthData.find((h) => h.name === provider.name);
     const models = provider.getModels();
-    const bestModel = models[0]; // First model is highest priority
+
+    // Model selection priority:
+    // 1. Task tier model (if configured)
+    // 2. Default model (if configured)
+    // 3. First model from provider (fallback)
+    let selectedModelId = models[0]?.modelId;
+
+    if (dbProvider?.provider) {
+      // Check task tier model
+      if (dbProvider.provider.taskTierModels?.[taskTier]) {
+        selectedModelId = dbProvider.provider.taskTierModels[taskTier] as string;
+      } else if (dbProvider.provider.defaultModel) {
+        // Fallback to default model
+        selectedModelId = dbProvider.provider.defaultModel;
+      }
+    }
+
+    // Find the model config (for cost calculations)
+    const selectedModel = models.find((m) => m.modelId === selectedModelId) || models[0];
 
     let score = 100;
 
@@ -140,12 +197,12 @@ async function getOrderedProviders(
     }
 
     // Strategy-specific scoring
-    if (options.strategy === 'cheapest') {
-      score -= (bestModel.costPer1kInputTokens + bestModel.costPer1kOutputTokens) * 10;
+    if (options.strategy === 'cheapest' && selectedModel) {
+      score -= (selectedModel.costPer1kInputTokens + selectedModel.costPer1kOutputTokens) * 10;
     } else if (options.strategy === 'fastest') {
       score += 20 - Math.min((dbProvider?.health?.avgLatencyMs || 0) / 50, 20);
-    } else if (options.strategy === 'best_quality') {
-      score += (10 - bestModel.priority) * 5;
+    } else if (options.strategy === 'best_quality' && selectedModel) {
+      score += (10 - selectedModel.priority) * 5;
     }
 
     // Preferred provider bonus
@@ -155,8 +212,8 @@ async function getOrderedProviders(
 
     return {
       provider,
-      modelId: bestModel.modelId,
-      providerId: dbProvider?._id,
+      modelId: selectedModelId,
+      providerId: dbProvider?._id as string,
       score,
     };
   });

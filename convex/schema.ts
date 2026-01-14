@@ -1215,6 +1215,15 @@ export default defineSchema({
     apiKeyEnvVar: v.string(), // 'OPENAI_API_KEY'
     isEnabled: v.boolean(),
     priority: v.number(), // Lower = preferred (1-100)
+    // Multi-model selection (INFRA-001)
+    defaultModel: v.optional(v.string()), // e.g., 'gpt-4o'
+    taskTierModels: v.optional(
+      v.object({
+        cheap: v.string(), // Model for cheap tasks (summaries, translations)
+        standard: v.string(), // Model for standard tasks (content generation)
+        premium: v.optional(v.string()), // Model for premium tasks (complex reasoning)
+      })
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

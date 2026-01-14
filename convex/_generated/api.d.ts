@@ -15,6 +15,7 @@ import type * as admin_costs from "../admin/costs.js";
 import type * as admin_dashboard from "../admin/dashboard.js";
 import type * as admin_users from "../admin/users.js";
 import type * as aiStorage from "../aiStorage.js";
+import type * as ai_admin_modelConfig from "../ai/admin/modelConfig.js";
 import type * as ai_analysis from "../ai/analysis.js";
 import type * as ai_health_circuitBreaker from "../ai/health/circuitBreaker.js";
 import type * as ai_health_healthActions from "../ai/health/healthActions.js";
@@ -152,6 +153,7 @@ declare const fullApi: ApiFromModules<{
   "admin/dashboard": typeof admin_dashboard;
   "admin/users": typeof admin_users;
   aiStorage: typeof aiStorage;
+  "ai/admin/modelConfig": typeof ai_admin_modelConfig;
   "ai/analysis": typeof ai_analysis;
   "ai/health/circuitBreaker": typeof ai_health_circuitBreaker;
   "ai/health/healthActions": typeof ai_health_healthActions;
