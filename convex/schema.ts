@@ -54,10 +54,11 @@ export default defineSchema({
     membershipTier: v.optional(
       v.union(
         v.literal('free'),
-        v.literal('starter'),
-        v.literal('growth'),
-        v.literal('pro'),
-        v.literal('enterprise')
+        v.literal('solo'), // Canonical entry tier
+        v.literal('starter'), // Legacy alias for solo
+        v.literal('growth'), // Canonical mid tier
+        v.literal('pro'), // Legacy alias for growth
+        v.literal('enterprise') // Canonical top tier
       )
     ),
     bio: v.optional(v.string()),
@@ -918,10 +919,11 @@ export default defineSchema({
     plan: v.optional(
       v.union(
         v.literal('free'),
-        v.literal('starter'),
-        v.literal('growth'),
-        v.literal('pro'),
-        v.literal('enterprise')
+        v.literal('solo'), // Canonical entry tier
+        v.literal('starter'), // Legacy alias for solo
+        v.literal('growth'), // Canonical mid tier
+        v.literal('pro'), // Legacy alias for growth
+        v.literal('enterprise') // Canonical top tier
       )
     ),
     // Limits

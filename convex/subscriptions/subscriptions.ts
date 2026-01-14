@@ -5,24 +5,37 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 /**
  * Pricing Tiers with Cost Analysis
  *
+ * CANONICAL TIER NAMES (as of Jan 2026):
+ *   - free: No subscription (default for new users)
+ *   - solo: Entry tier ($49/mo)
+ *   - growth: Mid tier ($149/mo)
+ *   - enterprise: Custom pricing (contact sales)
+ *
+ * Legacy aliases for backward compatibility:
+ *   - starter → solo
+ *   - pro → growth
+ *
  * AI Token Costs (GPT-4o-mini, Dec 2024):
  *   Input:  $0.15 per 1M tokens
  *   Output: $0.60 per 1M tokens
- *
- * Estimated AI Cost Per Feature:
- *   - Keyword Research (250): ~$0.006
- *   - AI Report (1 URL):      ~$0.010
- *   - Content Brief:          ~$0.007
- *   - Draft Generation:       ~$0.016
  *
  * Pricing Philosophy (BILL-approved):
  *   - AI costs are <1% of price
  *   - Value is in intelligence layer + time savings (~10hrs/mo @ $50/hr)
  *   - No free tier (value requires investment)
  *   - Enterprise = relationship, not sticker price
- *   - Billing via Polar (not Stripe)
  */
 export const PLAN_LIMITS = {
+  // Free: No subscription - used for feature gating only
+  free: {
+    priceMonthly: 0,
+    features: {
+      maxUrls: 0,
+      maxKeywordIdeas: 0,
+      maxAiReports: 0,
+      maxContentPieces: 0,
+    },
+  },
   // Solo: $49/mo - AI cost ~$0.13/mo (10x markup + intelligence value)
   // Target: Solopreneurs, 1 website, getting started with SEO
   solo: {
@@ -66,13 +79,13 @@ export const PLAN_LIMITS = {
       maxContentPieces: 4,
     },
   },
-  scale: {
-    priceMonthly: 399,
+  pro: {
+    priceMonthly: 149,
     features: {
-      maxUrls: 10,
-      maxKeywordIdeas: 2000,
-      maxAiReports: 20,
-      maxContentPieces: 20,
+      maxUrls: 3,
+      maxKeywordIdeas: 1000,
+      maxAiReports: 12,
+      maxContentPieces: 12,
     },
   },
 } as const;
