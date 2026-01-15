@@ -111,6 +111,53 @@ export const getOrCreatePersona = mutation({
 });
 
 /**
+ * Internal: Get or create persona for internal/background flows
+ */
+export const getOrCreatePersonaInternal = internalMutation({
+  args: {
+    projectId: v.id('projects'),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    // Check for existing active persona
+    const existing = await ctx.db
+      .query('aiWriterPersonas')
+      .withIndex('by_project_status', (q) =>
+        q.eq('projectId', args.projectId).eq('status', 'active')
+      )
+      .first();
+
+    if (existing) {
+      return existing;
+    }
+
+    // Get project for industry context
+    const project = await ctx.db.get(args.projectId);
+    if (!project) throw new Error('Project not found');
+
+    // Create new persona
+    const now = Date.now();
+    const personaId = await ctx.db.insert('aiWriterPersonas', {
+      projectId: args.projectId,
+      createdBy: args.userId,
+      name: DEFAULT_PERSONA.name,
+      description: DEFAULT_PERSONA.description,
+      brandVoice: DEFAULT_PERSONA.brandVoice,
+      seoPreferences: DEFAULT_PERSONA.seoPreferences,
+      metrics: DEFAULT_PERSONA.metrics,
+      industry: project.industry,
+      targetAudience: project.targetAudience,
+      status: 'training',
+      trainingProgress: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return await ctx.db.get(personaId);
+  },
+});
+
+/**
  * Get active persona for a project (read-only).
  */
 export const getActivePersona = query({

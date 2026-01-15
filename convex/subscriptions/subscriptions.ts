@@ -1,4 +1,4 @@
-import { mutation, query } from '../_generated/server';
+import { mutation, query, internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
@@ -51,8 +51,8 @@ export const PLAN_LIMITS = {
       maxTeamMembers: 1,
     },
   },
-  // Growth: $149/mo - AI cost ~$0.40/mo (375x markup - justifies intelligence layer)
-  // Target: SMBs <$500k/yr, 3 websites, serious about content marketing
+  // Growth: $149/mo - AI cost ~$0.85/mo
+  // Target: Growing businesses, 3 websites, content scaling
   growth: {
     priceMonthly: 149,
     features: {
@@ -63,8 +63,8 @@ export const PLAN_LIMITS = {
       maxTeamMembers: 3,
     },
   },
-  // Team: $299/mo - For marketing teams and small agencies
-  // Target: In-house marketing teams, small agencies, need 10 seats
+  // Team: $299/mo
+  // Target: Marketing Teams
   team: {
     priceMonthly: 299,
     features: {
@@ -85,27 +85,6 @@ export const PLAN_LIMITS = {
       maxAiReports: 100,
       maxContentPieces: 100,
       maxTeamMembers: 999999, // Unlimited
-    },
-  },
-  // Legacy aliases for backward compatibility
-  starter: {
-    priceMonthly: 59,
-    features: {
-      maxUrls: 1,
-      maxKeywordIdeas: 250,
-      maxAiReports: 4,
-      maxContentPieces: 4,
-      maxTeamMembers: 1,
-    },
-  },
-  pro: {
-    priceMonthly: 149,
-    features: {
-      maxUrls: 3,
-      maxKeywordIdeas: 1000,
-      maxAiReports: 12,
-      maxContentPieces: 12,
-      maxTeamMembers: 3,
     },
   },
 } as const;
@@ -166,14 +145,14 @@ const metricToField: Record<'urls' | 'keywordIdeas' | 'aiReports' | 'contentPiec
   contentPieces: 'contentPiecesPlanned',
 };
 
-const fieldToLimit: Record<UsageField, keyof typeof PLAN_LIMITS.starter.features> = {
+const fieldToLimit: Record<UsageField, keyof typeof PLAN_LIMITS.solo.features> = {
   urlsAnalyzed: 'maxUrls',
   keywordIdeasGenerated: 'maxKeywordIdeas',
   aiReportsGenerated: 'maxAiReports',
   contentPiecesPlanned: 'maxContentPieces',
 };
 
-export const upsertSubscription = mutation({
+export const upsertSubscription = internalMutation({
   args: {
     userId: v.id('users'),
     planTier: v.string(),

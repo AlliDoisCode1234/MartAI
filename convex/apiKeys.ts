@@ -92,8 +92,8 @@ export const createApiKey = mutation({
       .withIndex('by_user', (q) => q.eq('userId', user._id))
       .first();
 
-    if (!subscription || subscription.planTier !== 'enterprise') {
-      throw new Error('API keys require Enterprise plan');
+    if (!subscription || !['enterprise', 'team'].includes(subscription.planTier)) {
+      throw new Error('API keys require Team or Enterprise plan');
     }
 
     // Generate the API key

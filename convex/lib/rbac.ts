@@ -16,7 +16,7 @@ type AuthContext = { auth: { getUserIdentity(): Promise<unknown> } };
 type GenericCtx = (QueryCtx | MutationCtx | ActionCtx) & AuthContext;
 
 // Admin portal roles (global)
-export type AdminRole = 'super_admin' | 'admin' | 'user' | 'viewer';
+export type AdminRole = 'super_admin' | 'admin' | 'sales' | 'user' | 'viewer';
 
 // Organization roles
 export type OrgRole = 'owner' | 'admin' | 'editor' | 'viewer';
@@ -25,6 +25,7 @@ export type OrgRole = 'owner' | 'admin' | 'editor' | 'viewer';
 const ADMIN_ROLE_LEVEL: Record<AdminRole, number> = {
   super_admin: 100,
   admin: 80,
+  sales: 60, // Can provision/view but not change system config
   user: 50,
   viewer: 10,
 };

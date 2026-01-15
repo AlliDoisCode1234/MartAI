@@ -6,7 +6,7 @@
  * Includes retry loop to ensure 90+ SEO score guarantee.
  */
 
-import { action, internalMutation } from './_generated/server';
+import { action, internalMutation, internalAction } from './_generated/server';
 import { v } from 'convex/values';
 import { auth } from './auth';
 import { internal, api } from './_generated/api';
@@ -40,10 +40,33 @@ export const generateContent = action({
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error('Unauthorized');
 
-    // Get or create Writer Persona for this project
-    const persona = await ctx.runMutation(api.ai.writerPersonas.index.getOrCreatePersona, {
-      projectId: args.projectId,
+    return await ctx.runAction(internal.contentGeneration.generateContentInternal, {
+      ...args,
+      userId,
     });
+  },
+});
+
+export const generateContentInternal = internalAction({
+  args: {
+    projectId: v.id('projects'),
+    contentType: contentTypeValidator,
+    title: v.string(),
+    keywords: v.array(v.string()),
+    clusterId: v.optional(v.id('keywordClusters')),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = args;
+
+    // Get or create Writer Persona for this project
+    const persona = await ctx.runMutation(
+      internal.ai.writerPersonas.index.getOrCreatePersonaInternal,
+      {
+        projectId: args.projectId,
+        userId,
+      }
+    );
 
     // Build persona context for prompt injection
     const personaContext = persona ? buildPersonaContext(persona) : '';
@@ -464,7 +487,7 @@ function generateFallbackContent(title: string, outline: string[], keywords: str
 }
 
 function countWords(content: string): number {
-  return content.split(/\s+/).filter((word) => word.length > 0).length;
+  return (content || '').split(/\s+/).filter((word) => word.length > 0).length;
 }
 
 function scoreContent(
@@ -473,11 +496,12 @@ function scoreContent(
   keywords: string[],
   targetWordCount: number = 1200
 ): { score: number; metrics: Record<string, number> } {
-  const wordCount = countWords(content);
-  const h2Count = (content.match(/^## /gm) || []).length;
+  const safeContent = content || '';
+  const wordCount = countWords(safeContent);
+  const h2Count = (safeContent.match(/^## /gm) || []).length;
   const primaryKeyword = keywords[0]?.toLowerCase() || '';
   const keywordMentions = primaryKeyword
-    ? (content.toLowerCase().match(new RegExp(primaryKeyword, 'g')) || []).length
+    ? (safeContent.toLowerCase().match(new RegExp(primaryKeyword, 'g')) || []).length
     : 0;
 
   // Score components (0-100 each) - use dynamic word count target

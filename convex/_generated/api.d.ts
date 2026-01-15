@@ -14,6 +14,7 @@ import type * as admin_clearAllUserData from "../admin/clearAllUserData.js";
 import type * as admin_costs from "../admin/costs.js";
 import type * as admin_dashboard from "../admin/dashboard.js";
 import type * as admin_impersonation from "../admin/impersonation.js";
+import type * as admin_provisioning from "../admin/provisioning.js";
 import type * as admin_users from "../admin/users.js";
 import type * as aiStorage from "../aiStorage.js";
 import type * as ai_admin_modelConfig from "../ai/admin/modelConfig.js";
@@ -131,6 +132,7 @@ import type * as subscriptions_subscriptions from "../subscriptions/subscription
 import type * as subscriptions_userHealth from "../subscriptions/userHealth.js";
 import type * as teams_invitations from "../teams/invitations.js";
 import type * as teams_teams from "../teams/teams.js";
+import type * as testing_e2e from "../testing/e2e.js";
 import type * as users from "../users.js";
 import type * as waitlist from "../waitlist.js";
 import type * as webhooks_webhookActions from "../webhooks/webhookActions.js";
@@ -156,6 +158,7 @@ declare const fullApi: ApiFromModules<{
   "admin/costs": typeof admin_costs;
   "admin/dashboard": typeof admin_dashboard;
   "admin/impersonation": typeof admin_impersonation;
+  "admin/provisioning": typeof admin_provisioning;
   "admin/users": typeof admin_users;
   aiStorage: typeof aiStorage;
   "ai/admin/modelConfig": typeof ai_admin_modelConfig;
@@ -273,6 +276,7 @@ declare const fullApi: ApiFromModules<{
   "subscriptions/userHealth": typeof subscriptions_userHealth;
   "teams/invitations": typeof teams_invitations;
   "teams/teams": typeof teams_teams;
+  "testing/e2e": typeof testing_e2e;
   users: typeof users;
   waitlist: typeof waitlist;
   "webhooks/webhookActions": typeof webhooks_webhookActions;
