@@ -499,11 +499,16 @@ export function selectWriterPersona(
       if (toneMatches.length > 0) {
         return toneMatches[Math.floor(Math.random() * toneMatches.length)];
       }
+      // No industry+tone match, but tone was explicitly requested
+      // Fall through to global tone search below
+    } else {
+      // No tone preference, return industry match
+      return industryMatches[Math.floor(Math.random() * industryMatches.length)];
     }
-    return industryMatches[Math.floor(Math.random() * industryMatches.length)];
   }
 
-  // If no industry match but tone requested, find any writer with that tone
+  // If tone was requested (either no industry match, or industry match had no tone match),
+  // find any writer with that tone - TONE TAKES PRIORITY
   if (tone) {
     const toneMatches = WRITER_POOL.filter((w) => w.tone === tone);
     if (toneMatches.length > 0) {
