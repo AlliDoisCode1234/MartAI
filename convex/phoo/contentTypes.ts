@@ -1,8 +1,12 @@
 /**
- * PhooIntelligence Content Types
+ * PhooIntelligence Content Types - BACKEND AUTHORITATIVE SOURCE
  *
  * Defines 17 content types derived from real client datasets.
  * Each type has prompts, word counts, and SEO guidelines.
+ *
+ * ⚠️ SYNC REQUIRED: Type IDs must match `lib/constants/contentTypes.ts`
+ * - This file: Prompts, validators, queries
+ * - Frontend file: UI metadata (icons, labels)
  */
 
 import { v } from 'convex/values';

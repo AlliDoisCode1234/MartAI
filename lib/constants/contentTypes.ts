@@ -1,10 +1,14 @@
 /**
- * Content Type Configuration
+ * Content Type Configuration - FRONTEND UI SOURCE
  *
  * Centralized registry for all 17 content types from the Content Intelligence framework.
  * Used across schema, mutations, and UI components.
  *
  * Source: CONTENT_CALENDAR_INTELLIGENCE.md (16 real client datasets, 15 industries)
+ *
+ * ⚠️ SYNC REQUIRED: Type IDs must match `convex/phoo/contentTypes.ts`
+ * - This file: UI metadata (icons, labels, categories)
+ * - Backend file: Prompts, validators, queries
  */
 
 import { IconType } from 'react-icons';

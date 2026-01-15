@@ -102,7 +102,9 @@ export default function AdminDashboardPage() {
   }
 
   // Calculate AI system health
-  const healthyProviders = aiHealth?.filter((p) => p.health?.status === 'healthy').length ?? 0;
+  const healthyProviders =
+    aiHealth?.filter((p: { health?: { status?: string } }) => p.health?.status === 'healthy')
+      .length ?? 0;
   const totalProviders = aiHealth?.length ?? 0;
   const systemHealthPercent =
     totalProviders > 0 ? Math.round((healthyProviders / totalProviders) * 100) : 100;

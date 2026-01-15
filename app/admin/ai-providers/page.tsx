@@ -159,8 +159,8 @@ export default function AIProvidersPage({}: Props) {
     setIsChecking(true);
     try {
       const results = await runHealthCheck({});
-      const successCount = Object.values(results).filter(
-        (r: { healthy?: boolean }) => r.healthy
+      const successCount = (Object.values(results) as Array<{ healthy?: boolean }>).filter(
+        (r) => r.healthy
       ).length;
       toast({
         title: 'Health Check Complete',
