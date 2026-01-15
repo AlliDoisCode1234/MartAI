@@ -463,6 +463,7 @@ export default defineSchema({
       maxKeywordIdeas: v.number(),
       maxAiReports: v.number(),
       maxContentPieces: v.number(),
+      maxTeamMembers: v.optional(v.number()), // Added Jan 2026 for team tier
     }),
     priceMonthly: v.number(),
     oneTimeFeePaid: v.optional(v.boolean()),

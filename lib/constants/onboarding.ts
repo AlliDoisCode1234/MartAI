@@ -6,11 +6,11 @@
 
 export const PLANS = [
   {
-    id: 'starter',
-    name: 'Starter',
-    price: '$49/mo',
-    description: '1 website, basic analytics',
-    features: ['1 Website', 'Basic SEO Audit', 'Weekly Reports'],
+    id: 'solo',
+    name: 'Solo',
+    price: '$59/mo',
+    description: '1 website, for solopreneurs',
+    features: ['1 Website', 'Basic SEO Audit', 'Weekly Reports', 'WordPress Integration'],
     color: 'blue',
   },
   {
@@ -18,9 +18,17 @@ export const PLANS = [
     name: 'Growth',
     price: '$149/mo',
     description: '3 websites, full features',
-    features: ['3 Websites', 'Full SEO Suite', 'Daily Sync', 'AI Briefs'],
+    features: ['3 Websites', 'Full SEO Suite', 'Daily Sync', 'AI Briefs', '3 Team Members'],
     color: 'purple',
     popular: true,
+  },
+  {
+    id: 'team',
+    name: 'Team',
+    price: '$299/mo',
+    description: 'For marketing teams',
+    features: ['10 Websites', 'Full SEO Suite', 'White-label Reports', '10 Team Members'],
+    color: 'green',
   },
   {
     id: 'enterprise',

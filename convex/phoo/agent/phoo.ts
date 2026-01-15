@@ -87,7 +87,7 @@ export const PHOO_FAQ_INSTRUCTIONS = `You are Phoo, explaining the Phoo SEO plat
 ## Topics You Can Discuss
 - What Phoo is and how it works
 - Phoo Rating and what it measures
-- Pricing: Solo ($49/mo), Growth ($149/mo), Agency (custom)
+- Pricing: Solo ($59/mo), Growth ($149/mo), Team ($299/mo), Enterprise (custom)
 - Features: Keywords, Clusters, Content Briefs, Calendars
 - GA4/GSC integration benefits
 - How long SEO takes (3-6 months typically)

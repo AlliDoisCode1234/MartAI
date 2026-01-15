@@ -7,8 +7,9 @@ import { startOfMonth, endOfMonth } from 'date-fns';
  *
  * CANONICAL TIER NAMES (as of Jan 2026):
  *   - free: No subscription (default for new users)
- *   - solo: Entry tier ($49/mo)
- *   - growth: Mid tier ($149/mo)
+ *   - solo: Entry tier ($59/mo) - Solopreneurs, freelancers
+ *   - growth: Mid tier ($149/mo) - SMBs, small agencies
+ *   - team: Team tier ($299/mo, 10 seats) - Marketing teams, agencies
  *   - enterprise: Custom pricing (contact sales)
  *
  * Legacy aliases for backward compatibility:
@@ -19,10 +20,11 @@ import { startOfMonth, endOfMonth } from 'date-fns';
  *   Input:  $0.15 per 1M tokens
  *   Output: $0.60 per 1M tokens
  *
- * Pricing Philosophy (BILL-approved):
+ * Pricing Philosophy (BILL-approved, Updated Jan 2026):
  *   - AI costs are <1% of price
  *   - Value is in intelligence layer + time savings (~10hrs/mo @ $50/hr)
  *   - No free tier (value requires investment)
+ *   - Team tier @ $299/mo for collaboration needs (10 seats)
  *   - Enterprise = relationship, not sticker price
  */
 export const PLAN_LIMITS = {
@@ -34,17 +36,19 @@ export const PLAN_LIMITS = {
       maxKeywordIdeas: 0,
       maxAiReports: 0,
       maxContentPieces: 0,
+      maxTeamMembers: 0,
     },
   },
-  // Solo: $49/mo - AI cost ~$0.13/mo (10x markup + intelligence value)
-  // Target: Solopreneurs, 1 website, getting started with SEO
+  // Solo: $59/mo - AI cost ~$0.13/mo (10x markup + intelligence value)
+  // Target: Solopreneurs, freelancers, 1 website, getting started with SEO
   solo: {
-    priceMonthly: 49,
+    priceMonthly: 59,
     features: {
       maxUrls: 1,
       maxKeywordIdeas: 250,
       maxAiReports: 4,
       maxContentPieces: 4,
+      maxTeamMembers: 1,
     },
   },
   // Growth: $149/mo - AI cost ~$0.40/mo (375x markup - justifies intelligence layer)
@@ -56,10 +60,23 @@ export const PLAN_LIMITS = {
       maxKeywordIdeas: 1000,
       maxAiReports: 12,
       maxContentPieces: 12,
+      maxTeamMembers: 3,
+    },
+  },
+  // Team: $299/mo - For marketing teams and small agencies
+  // Target: In-house marketing teams, small agencies, need 10 seats
+  team: {
+    priceMonthly: 299,
+    features: {
+      maxUrls: 10,
+      maxKeywordIdeas: 2500,
+      maxAiReports: 30,
+      maxContentPieces: 30,
+      maxTeamMembers: 10,
     },
   },
   // Enterprise: Custom - AI cost ~$4/mo (contact sales)
-  // Target: Agencies, large companies, need API access, SLA, custom integrations
+  // Target: Large companies, need API access, SLA, custom integrations, unlimited seats
   enterprise: {
     priceMonthly: 0, // Contact Sales
     features: {
@@ -67,16 +84,18 @@ export const PLAN_LIMITS = {
       maxKeywordIdeas: 10000,
       maxAiReports: 100,
       maxContentPieces: 100,
+      maxTeamMembers: 999999, // Unlimited
     },
   },
   // Legacy aliases for backward compatibility
   starter: {
-    priceMonthly: 49,
+    priceMonthly: 59,
     features: {
       maxUrls: 1,
       maxKeywordIdeas: 250,
       maxAiReports: 4,
       maxContentPieces: 4,
+      maxTeamMembers: 1,
     },
   },
   pro: {
@@ -86,6 +105,7 @@ export const PLAN_LIMITS = {
       maxKeywordIdeas: 1000,
       maxAiReports: 12,
       maxContentPieces: 12,
+      maxTeamMembers: 3,
     },
   },
 } as const;

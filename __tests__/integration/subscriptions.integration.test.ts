@@ -23,17 +23,30 @@ import type { Id } from '../../convex/_generated/dataModel';
 
 const FIXTURES = {
   planLimits: {
-    solo: { maxUrls: 1, maxKeywordIdeas: 250, maxAiReports: 4, maxContentPieces: 4 },
-    growth: { maxUrls: 3, maxKeywordIdeas: 1000, maxAiReports: 12, maxContentPieces: 12 },
+    solo: {
+      maxUrls: 1,
+      maxKeywordIdeas: 250,
+      maxAiReports: 4,
+      maxContentPieces: 4,
+      maxTeamMembers: 1,
+    },
+    growth: {
+      maxUrls: 3,
+      maxKeywordIdeas: 1000,
+      maxAiReports: 12,
+      maxContentPieces: 12,
+      maxTeamMembers: 3,
+    },
     enterprise: {
       maxUrls: 999999,
       maxKeywordIdeas: 10000,
       maxAiReports: 100,
       maxContentPieces: 100,
+      maxTeamMembers: 999999,
     },
   },
   prices: {
-    solo: 49,
+    solo: 59,
     growth: 149,
     enterprise: 0, // Contact sales
   },
@@ -55,7 +68,7 @@ describe('Plan Configuration', () => {
   test('solo plan has correct limits', async () => {
     const { PLAN_LIMITS } = await import('../../convex/subscriptions/subscriptions');
 
-    expect(PLAN_LIMITS.solo.priceMonthly).toBe(49);
+    expect(PLAN_LIMITS.solo.priceMonthly).toBe(59);
     expect(PLAN_LIMITS.solo.features.maxUrls).toBe(1);
     expect(PLAN_LIMITS.solo.features.maxKeywordIdeas).toBe(250);
   });
@@ -79,7 +92,7 @@ describe('Plan Configuration', () => {
 
     const soloConfig = planConfig('solo');
     expect(soloConfig).toBeDefined();
-    expect(soloConfig?.priceMonthly).toBe(49);
+    expect(soloConfig?.priceMonthly).toBe(59);
   });
 
   test('planConfig handles case insensitivity', async () => {
@@ -116,7 +129,7 @@ describe('Subscription Data Layer', () => {
         userId,
         planTier: 'solo',
         status: 'active',
-        priceMonthly: 49,
+        priceMonthly: 59,
         features: FIXTURES.planLimits.solo,
         billingCycle: 'monthly',
         startsAt: Date.now(),
@@ -162,7 +175,7 @@ describe('Subscription Data Layer', () => {
         userId,
         planTier: 'solo',
         status: 'active',
-        priceMonthly: 49,
+        priceMonthly: 59,
         features: FIXTURES.planLimits.solo,
         startsAt: Date.now(),
         createdAt: Date.now(),
@@ -205,7 +218,7 @@ describe('Subscription Status Transitions', () => {
         userId,
         planTier: 'solo',
         status: 'active',
-        priceMonthly: 49,
+        priceMonthly: 59,
         features: FIXTURES.planLimits.solo,
         startsAt: Date.now(),
         createdAt: Date.now(),
@@ -223,7 +236,7 @@ describe('Subscription Status Transitions', () => {
         userId,
         planTier: 'solo',
         status: 'active',
-        priceMonthly: 49,
+        priceMonthly: 59,
         features: FIXTURES.planLimits.solo,
         startsAt: Date.now(),
         createdAt: Date.now(),
@@ -249,7 +262,7 @@ describe('Subscription Status Transitions', () => {
         userId,
         planTier: 'solo',
         status: 'grace_period',
-        priceMonthly: 49,
+        priceMonthly: 59,
         features: FIXTURES.planLimits.solo,
         startsAt: Date.now(),
         createdAt: Date.now(),
@@ -275,7 +288,7 @@ describe('Subscription Status Transitions', () => {
         userId,
         planTier: 'solo',
         status: 'grace_period',
-        priceMonthly: 49,
+        priceMonthly: 59,
         features: FIXTURES.planLimits.solo,
         startsAt: Date.now(),
         createdAt: Date.now(),
@@ -432,7 +445,7 @@ describe('Subscription Edge Cases', () => {
         userId,
         planTier: 'solo',
         status: 'active',
-        priceMonthly: 49,
+        priceMonthly: 59,
         features: FIXTURES.planLimits.solo,
         startsAt: Date.now(),
         createdAt: Date.now(),
