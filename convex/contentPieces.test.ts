@@ -219,7 +219,7 @@ describe('ContentPieces CRUD', () => {
         mockContentPieceId,
         expect.objectContaining({
           status: 'scheduled',
-          publishDate,
+          scheduledDate: publishDate,
         })
       );
     });
@@ -242,7 +242,7 @@ describe('ContentPieces CRUD', () => {
         mockContentPieceId,
         expect.objectContaining({
           status: 'draft',
-          publishDate: undefined,
+          scheduledDate: undefined,
         })
       );
     });
@@ -272,13 +272,13 @@ describe('ContentPieces Calendar Integration', () => {
       _id: 'piece-1',
       title: 'Blog Post 1',
       status: 'scheduled',
-      publishDate: Date.now() + 86400000,
+      scheduledDate: Date.now() + 86400000,
     },
     {
       _id: 'piece-2',
       title: 'Blog Post 2',
       status: 'scheduled',
-      publishDate: Date.now() + 172800000,
+      scheduledDate: Date.now() + 172800000,
     },
   ];
 

@@ -261,12 +261,12 @@ describe('ContentPieces CRUD Integration', () => {
         publishDate: futureDate,
       });
 
-      const scheduled = await authT.query(api.contentPieces.getById, {
+      const piece = await authT.query(api.contentPieces.getById, {
         contentPieceId: id,
       });
 
-      expect(scheduled?.status).toBe('scheduled');
-      expect(scheduled?.publishDate).toBe(futureDate);
+      expect(piece?.status).toBe('scheduled');
+      expect(piece?.scheduledDate).toBe(futureDate);
     });
 
     test('should list scheduled content by date range', async () => {
@@ -397,7 +397,7 @@ describe('Content Pieces Edge Cases', () => {
     const pastDate = Date.now() - 60 * 60 * 1000;
 
     await expect(
-      t.mutation(api.contentPieces.schedule, {
+      authT.mutation(api.contentPieces.schedule, {
         contentPieceId: id,
         publishDate: pastDate,
       })

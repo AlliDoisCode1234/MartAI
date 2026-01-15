@@ -20,6 +20,7 @@ import { api } from '@/convex/_generated/api';
 import { Navigation } from '../Navigation';
 import { PhooFab, PhooChatDrawer } from '@/src/components/phoo';
 import { SkipLink, MainContent } from '@/src/lib/accessibility';
+import { ImpersonationBanner } from '@/src/components/admin/ImpersonationBanner';
 
 type Props = {
   children: ReactNode;
@@ -123,6 +124,7 @@ export const Layout: FC<Props> = ({ children }) => {
 
   return (
     <Box minH="100vh" w="100%" bg="brand.light">
+      <ImpersonationBanner />
       <SkipLink />
       <Navigation />
       <MainContent>{children}</MainContent>

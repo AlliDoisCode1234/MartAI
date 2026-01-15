@@ -41,13 +41,12 @@ const userNavItems: NavItem[] = [
   { label: 'Integrations', path: '/integrations' },
 ];
 
-// Admin navigation (includes Admin portal link)
+// Admin navigation (same as user - Admin portal accessible only via UserDropdown)
 const adminNavItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Keywords', path: '/keywords' },
   { label: 'Content Studio', path: '/studio' },
   { label: 'Integrations', path: '/integrations' },
-  { label: 'Admin', path: '/admin' },
 ];
 
 export const Navigation: FC = () => {
@@ -62,6 +61,9 @@ export const Navigation: FC = () => {
 
   // Detect if we're in Studio context
   const isStudioContext = pathname?.startsWith('/studio');
+
+  // Detect if we're in Admin context
+  const isAdminContext = pathname?.startsWith('/admin');
 
   // Determine which nav items to show
   let navItems: NavItem[] = publicNavItems;
@@ -104,6 +106,48 @@ export const Navigation: FC = () => {
               <Box h={4} w="1px" bg="rgba(255, 255, 255, 0.1)" />
               <Text fontSize="lg" fontWeight="bold" color="brand.orange">
                 Content Studio
+              </Text>
+            </HStack>
+
+            {/* User menu */}
+            <UserDropdown />
+          </HStack>
+        </Box>
+      </Box>
+    );
+  }
+
+  // ADMIN CONTEXT: Minimal dark top bar matching Studio pattern
+  if (isAdminContext && isAuthenticated) {
+    return (
+      <Box
+        bg="rgba(13, 13, 13, 0.98)"
+        borderBottom="1px solid rgba(255, 255, 255, 0.08)"
+        position="sticky"
+        top={0}
+        zIndex={1000}
+        backdropFilter="blur(10px)"
+      >
+        <Box maxW="container.xl" mx="auto" px={{ base: 4, md: 8 }}>
+          <HStack justify="space-between" h={14}>
+            {/* Exit + Context indicator */}
+            <HStack spacing={4}>
+              <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                <HStack
+                  spacing={2}
+                  color="gray.400"
+                  _hover={{ color: 'white' }}
+                  transition="color 0.2s"
+                >
+                  <Icon as={FiArrowLeft} boxSize={4} />
+                  <Text fontSize="sm" fontWeight="medium">
+                    Exit
+                  </Text>
+                </HStack>
+              </Link>
+              <Box h={4} w="1px" bg="rgba(255, 255, 255, 0.1)" />
+              <Text fontSize="lg" fontWeight="bold" color="purple.400">
+                Admin Portal
               </Text>
             </HStack>
 

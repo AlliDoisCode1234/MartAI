@@ -4,6 +4,7 @@
  * Component Hierarchy:
  * app/admin/layout.tsx
  * └── app/admin/ai-providers/page.tsx (this file)
+ *     └── HowItWorksCarousel
  *     └── ProviderCard
  *     └── HealthMetrics
  */
@@ -33,6 +34,14 @@ import {
   VStack,
   HStack,
   Tooltip,
+  IconButton,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  useDisclosure,
 } from '@chakra-ui/react';
 import {
   FiCheckCircle,
@@ -46,6 +55,12 @@ import {
   FiCopy,
   FiChevronDown,
   FiChevronUp,
+  FiChevronLeft,
+  FiChevronRight,
+  FiHelpCircle,
+  FiShield,
+  FiStar,
+  FiX,
 } from 'react-icons/fi';
 import {
   parseProviderError,
@@ -88,28 +103,76 @@ const DEFAULT_MODELS: Record<string, string> = {
   google: 'gemini-1.5-flash',
 };
 
+// Carousel explainer slides
+interface ExplainerSlide {
+  title: string;
+  description: string;
+  icon: typeof FiZap;
+  color: string;
+  highlight: string;
+}
+
+const EXPLAINER_SLIDES: ExplainerSlide[] = [
+  {
+    title: 'Fast Tier',
+    description:
+      'Uses lightweight models for quick tasks like translations and summaries. Prioritizes speed and cost efficiency.',
+    icon: FiZap,
+    color: 'green',
+    highlight: 'Best for: Quick edits',
+  },
+  {
+    title: 'Balanced Tier',
+    description:
+      'Our smart default. Perfect balance of quality and speed for articles, blogs, and briefs.',
+    icon: FiCheckCircle,
+    color: 'blue',
+    highlight: 'Best for: Most content',
+  },
+  {
+    title: 'Premium Tier',
+    description:
+      'Uses advanced reasoning models for complex analysis and long-form content that needs depth.',
+    icon: FiStar,
+    color: 'purple',
+    highlight: 'Best for: Deep analysis',
+  },
+  {
+    title: 'Auto Fail-over',
+    description:
+      'If any AI provider is down, we automatically switch to a backup—your content generation never stops.',
+    icon: FiShield,
+    color: 'cyan',
+    highlight: '99.9% uptime',
+  },
+];
+
 export default function AIProvidersPage({}: Props) {
   const providers = useQuery(api.ai.health.circuitBreaker.getAllProviderHealth, {});
   const resetHealth = useMutation(api.ai.health.circuitBreaker.resetHealth);
   const runHealthCheck = useAction(api.ai.health.healthActions.runHealthChecksAdmin);
   const toast = useToast();
   const [isChecking, setIsChecking] = useState(false);
+  const carouselModal = useDisclosure();
 
   const handleRunHealthCheck = async () => {
     setIsChecking(true);
     try {
       const results = await runHealthCheck({});
-      const successCount = Object.values(results).filter((r: any) => r.healthy).length;
+      const successCount = Object.values(results).filter(
+        (r: { healthy?: boolean }) => r.healthy
+      ).length;
       toast({
         title: 'Health Check Complete',
         description: `Tested ${Object.keys(results).length} providers. ${successCount} healthy.`,
         status: successCount > 0 ? 'success' : 'warning',
         duration: 3000,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       toast({
         title: 'Health Check Failed',
-        description: err.message,
+        description: errorMessage,
         status: 'error',
         duration: 5000,
       });
@@ -127,10 +190,11 @@ export default function AIProvidersPage({}: Props) {
         status: 'success',
         duration: 3000,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       toast({
         title: 'Reset Failed',
-        description: err.message,
+        description: errorMessage,
         status: 'error',
         duration: 5000,
       });
@@ -145,13 +209,32 @@ export default function AIProvidersPage({}: Props) {
     );
   }
 
+  const healthyCount = providers.filter((p: ProviderData) => p.health?.status === 'healthy').length;
+  const circuitOpenCount = providers.filter(
+    (p: ProviderData) => p.health?.circuitState === 'open'
+  ).length;
+
   return (
     <Box p={6}>
+      {/* Page Header */}
       <Flex justify="space-between" align="center" mb={6}>
-        <Box>
-          <Heading size="lg">AI Providers</Heading>
-          <Text color="gray.500">Multi-agent failover infrastructure</Text>
-        </Box>
+        <HStack spacing={3}>
+          <Box>
+            <Heading size="lg">AI Providers</Heading>
+            <Text color="gray.500">Multi-agent failover infrastructure</Text>
+          </Box>
+          <Tooltip label="How it works">
+            <IconButton
+              aria-label="How it works"
+              icon={<Icon as={FiHelpCircle} />}
+              size="sm"
+              variant="ghost"
+              color="gray.400"
+              _hover={{ color: 'blue.400', bg: 'whiteAlpha.100' }}
+              onClick={carouselModal.onOpen}
+            />
+          </Tooltip>
+        </HStack>
         <HStack spacing={4}>
           <Button
             leftIcon={<FiActivity />}
@@ -166,27 +249,129 @@ export default function AIProvidersPage({}: Props) {
           </Button>
           <HStack>
             <Badge colorScheme="green" fontSize="sm" px={3} py={1}>
-              {providers.filter((p: any) => p.health?.status === 'healthy').length} Healthy
+              {healthyCount} Healthy
             </Badge>
             <Badge colorScheme="yellow" fontSize="sm" px={3} py={1}>
-              {providers.filter((p: any) => p.health?.circuitState === 'open').length} Circuit Open
+              {circuitOpenCount} Circuit Open
             </Badge>
           </HStack>
         </HStack>
       </Flex>
 
-      {/* AI Cost Dashboard (INFRA-003) */}
-      <AICostDashboard budget={200} />
+      {/* How It Works Modal */}
+      <Modal isOpen={carouselModal.isOpen} onClose={carouselModal.onClose} size="xl" isCentered>
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent bg="gray.800" borderRadius="xl">
+          <ModalHeader color="white">How AI Tiers Work</ModalHeader>
+          <ModalCloseButton color="white" />
+          <ModalBody pb={6}>
+            <HowItWorksCarousel onClose={carouselModal.onClose} />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-        {providers.map((provider: ProviderData) => (
-          <ProviderCard
-            key={provider._id}
-            provider={provider}
-            onResetCircuit={() => handleResetCircuit(provider._id, provider.displayName)}
-          />
-        ))}
-      </SimpleGrid>
+      {/* Unified AI Infrastructure Section */}
+      <VStack spacing={6} align="stretch">
+        {/* AI Cost Dashboard (INFRA-003) */}
+        <AICostDashboard budget={200} />
+
+        {/* Section connector text */}
+        <Text fontSize="sm" color="gray.500" fontWeight="medium">
+          Provider Health & Status
+        </Text>
+
+        {/* Provider Cards */}
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+          {providers.map((provider: ProviderData) => (
+            <ProviderCard
+              key={provider._id}
+              provider={provider}
+              onResetCircuit={() => handleResetCircuit(provider._id, provider.displayName)}
+            />
+          ))}
+        </SimpleGrid>
+      </VStack>
+    </Box>
+  );
+}
+
+/**
+ * How It Works Carousel Component
+ */
+interface CarouselProps {
+  onClose: () => void;
+}
+
+function HowItWorksCarousel({ onClose }: CarouselProps) {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % EXPLAINER_SLIDES.length);
+  const prevSlide = () =>
+    setCurrentSlide((prev) => (prev - 1 + EXPLAINER_SLIDES.length) % EXPLAINER_SLIDES.length);
+
+  const slide = EXPLAINER_SLIDES[currentSlide];
+
+  return (
+    <Box p={2} position="relative">
+      <Flex direction={{ base: 'column', md: 'row' }} align="center" gap={6}>
+        {/* Slide content */}
+        <Flex direction="column" align="center" textAlign="center" flex={1} py={4}>
+          <Icon as={slide.icon} boxSize={10} color={`${slide.color}.400`} mb={3} />
+          <Text fontWeight="bold" color="white" fontSize="lg" mb={2}>
+            {slide.title}
+          </Text>
+          <Text fontSize="sm" color="gray.400" mb={3} maxW="320px">
+            {slide.description}
+          </Text>
+          <Badge colorScheme={slide.color} fontSize="xs" px={3} py={1}>
+            {slide.highlight}
+          </Badge>
+        </Flex>
+
+        {/* Navigation */}
+        <VStack spacing={3}>
+          <HStack spacing={2}>
+            <IconButton
+              aria-label="Previous"
+              icon={<Icon as={FiChevronLeft} />}
+              size="sm"
+              variant="ghost"
+              color="gray.400"
+              _hover={{ color: 'white', bg: 'whiteAlpha.100' }}
+              onClick={prevSlide}
+            />
+
+            {/* Dots */}
+            <HStack spacing={1}>
+              {EXPLAINER_SLIDES.map((s, idx) => (
+                <Box
+                  key={idx}
+                  w={idx === currentSlide ? '18px' : '8px'}
+                  h="8px"
+                  borderRadius="full"
+                  bg={idx === currentSlide ? `${s.color}.400` : 'whiteAlpha.300'}
+                  transition="all 0.2s"
+                  cursor="pointer"
+                  onClick={() => setCurrentSlide(idx)}
+                />
+              ))}
+            </HStack>
+
+            <IconButton
+              aria-label="Next"
+              icon={<Icon as={FiChevronRight} />}
+              size="sm"
+              variant="ghost"
+              color="gray.400"
+              _hover={{ color: 'white', bg: 'whiteAlpha.100' }}
+              onClick={nextSlide}
+            />
+          </HStack>
+          <Text fontSize="xs" color="gray.500">
+            {currentSlide + 1} of {EXPLAINER_SLIDES.length}
+          </Text>
+        </VStack>
+      </Flex>
     </Box>
   );
 }

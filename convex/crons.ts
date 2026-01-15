@@ -39,4 +39,12 @@ crons.daily(
   internal.subscriptions.subscriptionLifecycle.checkGracePeriodExpiration
 );
 
+// Clean up expired impersonation sessions hourly
+// Marks active sessions past their expiry as expired
+crons.hourly(
+  'impersonation-session-cleanup',
+  { minuteUTC: 15 }, // Run at 15 minutes past each hour
+  internal.admin.impersonation.cleanupExpiredSessions
+);
+
 export default crons;

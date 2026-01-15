@@ -7,7 +7,7 @@ import { FiHome, FiUsers, FiActivity, FiSettings, FiBarChart2, FiCpu } from 'rea
 import { useAuth } from '@/lib/useAuth';
 
 const NAV_ITEMS = [
-  { name: 'Dashboard', icon: FiHome, path: '/admin', roles: ['admin', 'super_admin', 'viewer'] },
+  { name: 'Overview', icon: FiHome, path: '/admin', roles: ['admin', 'super_admin', 'viewer'] },
   {
     name: 'Prospects',
     icon: FiUsers,
@@ -43,10 +43,10 @@ export function AdminSidebar() {
   return (
     <Box
       w="250px"
-      h="calc(100vh - 64px)"
+      h="calc(100vh - 56px)"
       pos="fixed"
       left="0"
-      top="64px"
+      top="56px"
       bg={bg}
       borderRight="1px"
       borderColor={borderColor}

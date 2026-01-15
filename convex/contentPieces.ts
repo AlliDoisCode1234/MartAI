@@ -396,7 +396,7 @@ export const schedule = mutation({
 
     await ctx.db.patch(args.contentPieceId, {
       status: 'scheduled',
-      scheduledDate: args.publishDate, // Use scheduledDate (indexed field for calendar)
+      scheduledDate: args.publishDate, // Keep arg name if needed but map to schema field
       updatedAt: Date.now(),
     });
 
@@ -423,18 +423,18 @@ export const listScheduled = query({
       .collect();
 
     // Filter for scheduled status
-    let scheduled = pieces.filter((p) => p.status === 'scheduled' && p.publishDate);
+    let scheduled = pieces.filter((p) => p.status === 'scheduled' && p.scheduledDate);
 
     // Filter by date range if provided
     if (args.startDate) {
-      scheduled = scheduled.filter((p) => (p.publishDate ?? 0) >= (args.startDate ?? 0));
+      scheduled = scheduled.filter((p) => (p.scheduledDate ?? 0) >= (args.startDate ?? 0));
     }
     if (args.endDate) {
-      scheduled = scheduled.filter((p) => (p.publishDate ?? 0) <= (args.endDate ?? 0));
+      scheduled = scheduled.filter((p) => (p.scheduledDate ?? 0) <= (args.endDate ?? 0));
     }
 
-    // Sort by publish date ascending
-    scheduled.sort((a, b) => (a.publishDate ?? 0) - (b.publishDate ?? 0));
+    // Sort by scheduled date ascending
+    scheduled.sort((a, b) => (a.scheduledDate ?? 0) - (b.scheduledDate ?? 0));
 
     return scheduled;
   },
@@ -462,7 +462,7 @@ export const unschedule = mutation({
 
     await ctx.db.patch(args.contentPieceId, {
       status: 'draft',
-      publishDate: undefined,
+      scheduledDate: undefined,
       updatedAt: Date.now(),
     });
 

@@ -1457,4 +1457,156 @@ export default defineSchema({
     .index('by_email', ['email'])
     .index('by_status', ['status'])
     .index('by_created', ['createdAt']),
+
+  // ============================================================================
+  // SECTION 13: IMPERSONATION SESSIONS (Admin User Debugging)
+  // ============================================================================
+
+  /**
+   * Impersonation sessions for super_admins to debug as specific users.
+   * Full audit trail with immutable logging for security compliance.
+   *
+   * Security Requirements:
+   * - super_admin role only
+   * - 1 hour max session duration
+   * - All actions during session tagged in audit log
+   * - Visual banner required in UI
+   */
+  impersonationSessions: defineTable({
+    // Who is doing the impersonating (must be super_admin)
+    adminUserId: v.id('users'),
+    adminEmail: v.string(), // Denormalized for audit readability
+
+    // Who is being impersonated
+    targetUserId: v.id('users'),
+    targetEmail: v.string(), // Denormalized for audit readability
+
+    // Session control
+    status: v.union(v.literal('active'), v.literal('ended'), v.literal('expired')),
+    permissions: v.union(v.literal('read_only'), v.literal('full_access')),
+
+    // Timestamps
+    startedAt: v.number(),
+    expiresAt: v.number(), // 1 hour from start by default
+    endedAt: v.optional(v.number()),
+
+    // Audit metadata
+    reason: v.optional(v.string()), // Optional reason for impersonation
+    actionsCount: v.optional(v.number()), // Count of actions taken during session
+    endReason: v.optional(
+      v.union(v.literal('manual'), v.literal('expired'), v.literal('admin_logout'))
+    ),
+
+    // Device/session info for audit
+    userAgent: v.optional(v.string()),
+    ipAddress: v.optional(v.string()), // If available
+  })
+    .index('by_admin', ['adminUserId'])
+    .index('by_target', ['targetUserId'])
+    .index('by_status', ['status'])
+    .index('by_admin_active', ['adminUserId', 'status']),
+
+  // ============================================================================
+  // SECTION 14: AI WRITER PERSONAS (Per-Project Content Intelligence)
+  // ============================================================================
+
+  /**
+   * Per-project AI Writer Personas that learn and evolve over time.
+   * Each project can have personalized AI writers that understand
+   * brand voice, industry context, and audience preferences.
+   *
+   * Learning Loop:
+   * 1. Generate content with persona context
+   * 2. User edits/approves/rejects
+   * 3. Extract patterns from feedback
+   * 4. Evolve persona rules
+   *
+   * Tier Limits:
+   * - Solo: 1 persona per project
+   * - Growth: 3 personas per project
+   * - Enterprise: Unlimited
+   */
+  aiWriterPersonas: defineTable({
+    // Ownership
+    projectId: v.id('projects'),
+    createdBy: v.optional(v.id('users')),
+
+    // Identity
+    name: v.string(), // e.g., "Brand Voice Expert", "Technical Writer"
+    avatar: v.optional(v.string()), // Optional custom avatar URL
+    description: v.optional(v.string()), // Brief description of this persona
+
+    // Brand Voice Preferences (learned from feedback)
+    brandVoice: v.optional(
+      v.object({
+        tone: v.optional(v.string()), // "professional", "casual", "authoritative", "friendly"
+        style: v.optional(v.string()), // "educational", "persuasive", "storytelling", "technical"
+        vocabulary: v.optional(v.array(v.string())), // Preferred terms to use
+        avoidWords: v.optional(v.array(v.string())), // Words/phrases to avoid
+        sentenceStyle: v.optional(v.string()), // "short", "varied", "complex"
+      })
+    ),
+
+    // Industry & Audience Context
+    industry: v.optional(v.string()), // e.g., "Medical Aesthetics", "SaaS", "E-commerce"
+    targetAudience: v.optional(v.string()), // e.g., "B2B decision makers", "Consumers 25-45"
+    competitorContext: v.optional(v.string()), // Key competitors to differentiate from
+    uniqueSellingPoints: v.optional(v.array(v.string())), // USPs to emphasize
+
+    // SEO & Content Preferences
+    seoPreferences: v.optional(
+      v.object({
+        keywordDensity: v.optional(v.string()), // "light", "moderate", "dense"
+        internalLinkingStyle: v.optional(v.string()), // "minimal", "moderate", "extensive"
+        ctaStyle: v.optional(v.string()), // "soft", "direct", "urgent"
+        preferredContentLength: v.optional(v.string()), // "concise", "standard", "comprehensive"
+      })
+    ),
+
+    // Learned Rules (accumulated from user feedback)
+    learnedRules: v.optional(
+      v.array(
+        v.object({
+          rule: v.string(), // e.g., "Always use Oxford comma", "Avoid passive voice"
+          source: v.union(
+            v.literal('user_edit'), // Extracted from user edits
+            v.literal('rejection'), // Learned from content rejection
+            v.literal('explicit'), // Explicitly set by user
+            v.literal('inferred') // Inferred from approval patterns
+          ),
+          confidence: v.optional(v.number()), // 0-1 confidence in this rule
+          learnedAt: v.number(),
+          appliedCount: v.optional(v.number()), // Times this rule was applied
+        })
+      )
+    ),
+
+    // Performance Metrics (updated after each generation)
+    metrics: v.optional(
+      v.object({
+        totalGenerated: v.number(), // Total content pieces generated
+        approvedCount: v.number(), // Approved without major edits
+        editedCount: v.number(), // Approved with edits
+        rejectedCount: v.number(), // Rejected entirely
+        avgEditDistance: v.optional(v.number()), // Average Levenshtein distance of edits
+        avgSeoScore: v.optional(v.number()), // Average SEO score achieved
+        topPerformingTypes: v.optional(v.array(v.string())), // Content types with best performance
+        weakAreas: v.optional(v.array(v.string())), // Areas needing improvement
+      })
+    ),
+
+    // Status & Lifecycle
+    status: v.union(
+      v.literal('active'), // Ready for use
+      v.literal('training'), // Still learning (< 5 content pieces)
+      v.literal('archived') // No longer in use
+    ),
+    trainingProgress: v.optional(v.number()), // 0-100 percentage
+    lastUsedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_project', ['projectId'])
+    .index('by_status', ['status'])
+    .index('by_project_status', ['projectId', 'status']),
 });

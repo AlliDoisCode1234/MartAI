@@ -107,13 +107,9 @@ describe('HubSpot Mapper: mapWaitlistToHubSpot', () => {
     expect(result.hs_analytics_campaign).toBe('spring_2026');
   });
 
-  test('should set acquisition date to current time', () => {
-    const before = Date.now();
+  test('should NOT set acquisition date (HubSpot handles natively)', () => {
     const result = mapWaitlistToHubSpot({ email: 'lead@example.com' });
-    const after = Date.now();
-
-    expect(result.phoo_acquisition_date).toBeGreaterThanOrEqual(before);
-    expect(result.phoo_acquisition_date).toBeLessThanOrEqual(after);
+    expect(result.phoo_acquisition_date).toBeUndefined();
   });
 });
 

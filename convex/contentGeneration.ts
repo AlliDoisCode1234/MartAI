@@ -18,6 +18,7 @@ import {
   DEFAULT_SEO_CHECKLIST,
   contentTypeValidator,
 } from './phoo/contentTypes';
+import { buildPersonaContext } from './ai/writerPersonas/index';
 
 // Quality threshold for A+ grade
 const QUALITY_THRESHOLD = 90;
@@ -38,6 +39,14 @@ export const generateContent = action({
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error('Unauthorized');
+
+    // Get or create Writer Persona for this project
+    const persona = await ctx.runMutation(api.ai.writerPersonas.index.getOrCreatePersona, {
+      projectId: args.projectId,
+    });
+
+    // Build persona context for prompt injection
+    const personaContext = persona ? buildPersonaContext(persona) : '';
 
     // 1. Create content piece with "generating" status
     const contentPieceId: Id<'contentPieces'> = await ctx.runMutation(

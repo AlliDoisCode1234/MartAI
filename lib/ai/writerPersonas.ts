@@ -503,6 +503,14 @@ export function selectWriterPersona(
     return industryMatches[Math.floor(Math.random() * industryMatches.length)];
   }
 
+  // If no industry match but tone requested, find any writer with that tone
+  if (tone) {
+    const toneMatches = WRITER_POOL.filter((w) => w.tone === tone);
+    if (toneMatches.length > 0) {
+      return toneMatches[Math.floor(Math.random() * toneMatches.length)];
+    }
+  }
+
   // Fallback to random writer
   return WRITER_POOL[Math.floor(Math.random() * WRITER_POOL.length)];
 }

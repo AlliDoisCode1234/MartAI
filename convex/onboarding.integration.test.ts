@@ -61,6 +61,7 @@ describe('Onboarding: Step Tracking', () => {
       const userId = await ctx.db.insert('users', {
         email: 'onboard-test@example.com',
         role: 'user',
+        membershipTier: 'growth', // Add tier to pass project creation limits
         onboardingStatus: 'not_started',
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -195,6 +196,7 @@ describe('Onboarding: Project Creation', () => {
       const userId = await ctx.db.insert('users', {
         email: 'project-test@example.com',
         role: 'user',
+        membershipTier: 'growth', // Add tier to pass project creation limits
         onboardingStatus: 'in_progress',
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -263,6 +265,7 @@ describe('Onboarding: Keyword Generation Paths', () => {
       const userId = await ctx.db.insert('users', {
         email: 'keyword-test@example.com',
         role: 'user',
+        membershipTier: 'growth', // Add tier to pass project creation limits
         onboardingStatus: 'in_progress',
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -482,6 +485,7 @@ describe('Onboarding: Edge Cases', () => {
       const userId = await ctx.db.insert('users', {
         email: 'edge-onboarding@example.com',
         role: 'user',
+        membershipTier: 'growth', // Add tier to pass project creation limits
         onboardingStatus: 'not_started',
         createdAt: Date.now(),
         updatedAt: Date.now(),

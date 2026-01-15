@@ -239,6 +239,18 @@ export const rateLimits = new RateLimiter(components.rateLimiter as any, {
     period: MINUTE,
     capacity: 10,
   },
+
+  // ============================================
+  // ADMIN OPERATIONS RATE LIMITS
+  // ============================================
+
+  // Impersonation - prevent brute-force session creation
+  // 5 impersonations per hour per admin
+  admin_impersonation: {
+    kind: 'fixed window',
+    rate: 5,
+    period: HOUR,
+  },
 });
 
 // Helper type for rate limit names

@@ -20,12 +20,19 @@ import {
   Select,
   useDisclosure,
   useToast,
+  Button,
+  HStack,
+  Icon,
 } from '@chakra-ui/react';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { ChevronRightIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { Id } from '@/convex/_generated/dataModel';
+import { FiUserCheck } from 'react-icons/fi';
+import { useImpersonation } from '@/lib/hooks/useImpersonation';
+import { useMe } from '@/lib/useMe';
 
 // Admin components
 import {
@@ -69,9 +76,17 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
   const resetModal = useDisclosure();
   const passwordModal = useDisclosure();
   const statusModal = useDisclosure();
+  const impersonateModal = useDisclosure();
   const [isLoading, setIsLoading] = useState(false);
   const [newStatus, setNewStatus] = useState('active');
   const toast = useToast();
+  const router = useRouter();
+
+  // Impersonation
+  const { me } = useMe();
+  const { startImpersonation, isImpersonating } = useImpersonation();
+  const isSuperAdmin = me?.role === 'super_admin';
+  const canImpersonate = isSuperAdmin && userId !== me?._id;
 
   // Handlers
   const handleReset = async () => {
@@ -126,6 +141,25 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     }
   };
 
+  const handleImpersonate = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      await startImpersonation(userId, `Admin debugging: ${user.name || user.email}`);
+      toast({
+        title: 'Impersonation Started',
+        description: `Now viewing as ${user.name || user.email}`,
+        status: 'info',
+      });
+      impersonateModal.onClose();
+      router.push('/dashboard');
+    } catch {
+      toast({ title: 'Failed to start impersonation', status: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Loading skeleton
   if (!user) {
     return (
@@ -169,6 +203,20 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
       </Breadcrumb>
 
       <VStack spacing={6} align="stretch">
+        {/* Impersonate Action Bar - super_admin only */}
+        {canImpersonate && !isImpersonating && (
+          <HStack justify="flex-end">
+            <Button
+              leftIcon={<Icon as={FiUserCheck} />}
+              colorScheme="purple"
+              size="sm"
+              onClick={impersonateModal.onOpen}
+            >
+              Impersonate User
+            </Button>
+          </HStack>
+        )}
+
         <UserHeaderCard user={user} />
 
         <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
@@ -263,6 +311,15 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           <option value="suspended">Suspended</option>
         </Select>
       </ConfirmModal>
+      <ConfirmModal
+        isOpen={impersonateModal.isOpen}
+        onClose={impersonateModal.onClose}
+        onConfirm={handleImpersonate}
+        title="Impersonate User?"
+        message={`You are about to impersonate <strong>${user?.name || user?.email}</strong>. All actions will be logged for audit. You can exit at any time using the banner at the top of the screen.`}
+        confirmLabel="Start Impersonation"
+        isLoading={isLoading}
+      />
     </Container>
   );
 }

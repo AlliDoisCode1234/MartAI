@@ -225,10 +225,10 @@ export function mapWaitlistToHubSpot(data: {
   const props: Record<string, string | number | boolean> = {
     lifecyclestage: 'lead',
     hs_lead_status: 'NEW',
-    // HubSpot has this as dropdown with signed_up/not_signed_up options
-    phoo_waitlist_signup: 'signed_up',
-    // Always use waitlist_beta (phoo.ai is not in allowed options)
-    phoo_lead_source: 'waitlist_beta',
+    // HubSpot has this as boolean checkbox (true/false)
+    phoo_waitlist_signup: true,
+    // Use custom source or default to waitlist_beta
+    phoo_lead_source: data.source || 'waitlist_beta',
     phoo_onboarding_status: 'not_started',
     phoo_account_status: 'inactive',
   };

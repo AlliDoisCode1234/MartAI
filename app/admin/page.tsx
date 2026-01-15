@@ -9,6 +9,8 @@
  * Overview with:
  * - Revenue metrics (MRR, Subscribers)
  * - User metrics (Total, Active, New)
+ * - System health indicators
+ * - Quick actions
  * - Event trends chart
  * - Recent activity feed
  */
@@ -24,7 +26,6 @@ import {
   StatLabel,
   StatNumber,
   StatHelpText,
-  StatArrow,
   Card,
   CardBody,
   CardHeader,
@@ -34,14 +35,32 @@ import {
   Icon,
   Skeleton,
   Select,
+  Button,
+  Badge,
+  Flex,
+  Progress,
+  Tooltip,
 } from '@chakra-ui/react';
 import { useQuery } from 'convex/react';
 import { useState } from 'react';
 import { api } from '@/convex/_generated/api';
-import { FiUsers, FiActivity, FiTrendingUp, FiUserPlus } from 'react-icons/fi';
+import {
+  FiUsers,
+  FiActivity,
+  FiTrendingUp,
+  FiUserPlus,
+  FiExternalLink,
+  FiCpu,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiDollarSign,
+  FiFileText,
+  FiZap,
+  FiEye,
+} from 'react-icons/fi';
 import { TrendChart } from '@/src/components/admin/TrendChart';
 import { formatDistanceToNow } from 'date-fns';
-import { useAuth } from '@/lib/useAuth';
+import Link from 'next/link';
 
 type RecentUser = {
   _id: string;
@@ -58,12 +77,12 @@ type RecentEvent = {
 };
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
   const [trendDays, setTrendDays] = useState(7);
 
   // Dashboard metrics - all admins can see user/operational data
   // Revenue metrics (MRR, Churn, LTV) are on /admin/analytics (super_admin only)
   const dashboardMetrics = useQuery(api.admin.dashboard.getAdminDashboardMetrics);
+  const aiHealth = useQuery(api.ai.health.circuitBreaker.getAllProviderHealth, {});
 
   if (!dashboardMetrics) {
     return (
@@ -82,72 +101,169 @@ export default function AdminDashboardPage() {
     );
   }
 
+  // Calculate AI system health
+  const healthyProviders = aiHealth?.filter((p) => p.health?.status === 'healthy').length ?? 0;
+  const totalProviders = aiHealth?.length ?? 0;
+  const systemHealthPercent =
+    totalProviders > 0 ? Math.round((healthyProviders / totalProviders) * 100) : 100;
+
   return (
     <Container maxW="container.xl">
-      <Box mb={8}>
-        <Heading size="lg">Admin Dashboard</Heading>
-        <Text color="gray.600">MartAI CRM & Intelligence Portal</Text>
-      </Box>
+      {/* Header with Quick Actions */}
+      <Flex justify="space-between" align="flex-start" mb={8}>
+        <Box>
+          <HStack spacing={3} mb={1}>
+            <Heading size="lg">Admin Dashboard</Heading>
+            <Badge colorScheme="purple" fontSize="xs">
+              Live
+            </Badge>
+          </HStack>
+          <Text color="gray.600">Phoo CRM & Intelligence Portal</Text>
+        </Box>
 
-      {/* User Metrics - visible to all admins */}
-      <SimpleGrid columns={{ base: 1, md: 4 }} gap={6} mb={8}>
-        <Card>
+        {/* Quick Actions */}
+        <HStack spacing={3}>
+          <Tooltip label="View AI Providers">
+            <Button
+              as={Link}
+              href="/admin/ai-providers"
+              size="sm"
+              leftIcon={<Icon as={FiCpu} />}
+              variant="outline"
+              colorScheme="purple"
+            >
+              AI Health
+            </Button>
+          </Tooltip>
+          <Tooltip label="View Analytics">
+            <Button
+              as={Link}
+              href="/admin/analytics"
+              size="sm"
+              leftIcon={<Icon as={FiTrendingUp} />}
+              variant="outline"
+              colorScheme="blue"
+            >
+              Revenue
+            </Button>
+          </Tooltip>
+        </HStack>
+      </Flex>
+
+      {/* System Health Banner */}
+      <Card mb={6} bg="gray.50" borderColor="gray.200">
+        <CardBody py={4}>
+          <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
+            <HStack spacing={6}>
+              <HStack>
+                <Icon
+                  as={systemHealthPercent === 100 ? FiCheckCircle : FiAlertCircle}
+                  color={systemHealthPercent === 100 ? 'green.500' : 'yellow.500'}
+                  boxSize={5}
+                />
+                <VStack spacing={0} align="start">
+                  <Text fontSize="sm" fontWeight="medium">
+                    System Health
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    {healthyProviders}/{totalProviders} AI providers online
+                  </Text>
+                </VStack>
+              </HStack>
+              <Box w="200px">
+                <Progress
+                  value={systemHealthPercent}
+                  size="sm"
+                  colorScheme={systemHealthPercent === 100 ? 'green' : 'yellow'}
+                  borderRadius="full"
+                />
+              </Box>
+            </HStack>
+
+            <HStack spacing={4} fontSize="sm" color="gray.600">
+              <HStack>
+                <Icon as={FiZap} color="orange.400" />
+                <Text>API: Active</Text>
+              </HStack>
+              <HStack>
+                <Icon as={FiFileText} color="blue.400" />
+                <Text>Content: Ready</Text>
+              </HStack>
+            </HStack>
+          </Flex>
+        </CardBody>
+      </Card>
+
+      {/* Primary Metrics - 4 Cards */}
+      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap={6} mb={8}>
+        <Card bg="purple.50" borderColor="purple.200" borderWidth="1px">
           <CardBody>
             <Stat>
               <StatLabel>
                 <HStack>
                   <Icon as={FiUsers} color="purple.500" />
-                  <Text>Total Users</Text>
+                  <Text color="purple.700">Total Users</Text>
                 </HStack>
               </StatLabel>
-              <StatNumber>{dashboardMetrics.totalUsers}</StatNumber>
-              <StatHelpText>All registered accounts</StatHelpText>
+              <StatNumber fontSize="3xl" color="purple.700">
+                {dashboardMetrics.totalUsers}
+              </StatNumber>
+              <StatHelpText color="purple.600">All registered accounts</StatHelpText>
             </Stat>
           </CardBody>
         </Card>
-        <Card>
+
+        <Card bg="orange.50" borderColor="orange.200" borderWidth="1px">
           <CardBody>
             <Stat>
               <StatLabel>
                 <HStack>
                   <Icon as={FiUserPlus} color="orange.500" />
-                  <Text>New (7d)</Text>
+                  <Text color="orange.700">New This Week</Text>
                 </HStack>
               </StatLabel>
-              <StatNumber color="orange.500">+{dashboardMetrics.newUsersThisWeek}</StatNumber>
-              <StatHelpText>This week</StatHelpText>
+              <StatNumber fontSize="3xl" color="orange.700">
+                +{dashboardMetrics.newUsersThisWeek}
+              </StatNumber>
+              <StatHelpText color="orange.600">Last 7 days</StatHelpText>
             </Stat>
           </CardBody>
         </Card>
-        <Card>
+
+        <Card bg="green.50" borderColor="green.200" borderWidth="1px">
           <CardBody>
             <Stat>
               <StatLabel>
                 <HStack>
                   <Icon as={FiActivity} color="green.500" />
-                  <Text>Active (30d)</Text>
+                  <Text color="green.700">Active Users</Text>
                 </HStack>
               </StatLabel>
-              <StatNumber>{dashboardMetrics.activeUsers}</StatNumber>
-              <StatHelpText>
+              <StatNumber fontSize="3xl" color="green.700">
+                {dashboardMetrics.activeUsers}
+              </StatNumber>
+              <StatHelpText color="green.600">
                 {dashboardMetrics.totalUsers > 0
-                  ? `${Math.round((dashboardMetrics.activeUsers / dashboardMetrics.totalUsers) * 100)}% of total`
-                  : '0%'}
+                  ? `${Math.round((dashboardMetrics.activeUsers / dashboardMetrics.totalUsers) * 100)}% engagement`
+                  : '0% engagement'}
               </StatHelpText>
             </Stat>
           </CardBody>
         </Card>
-        <Card>
+
+        <Card bg="blue.50" borderColor="blue.200" borderWidth="1px">
           <CardBody>
             <Stat>
               <StatLabel>
                 <HStack>
-                  <Icon as={FiTrendingUp} color="blue.500" />
-                  <Text>Subscribed</Text>
+                  <Icon as={FiDollarSign} color="blue.500" />
+                  <Text color="blue.700">Subscribers</Text>
                 </HStack>
               </StatLabel>
-              <StatNumber>{dashboardMetrics.activeSubscriptions}</StatNumber>
-              <StatHelpText>Active subscriptions</StatHelpText>
+              <StatNumber fontSize="3xl" color="blue.700">
+                {dashboardMetrics.activeSubscriptions}
+              </StatNumber>
+              <StatHelpText color="blue.600">Active paid plans</StatHelpText>
             </Stat>
           </CardBody>
         </Card>
@@ -159,7 +275,7 @@ export default function AdminDashboardPage() {
           <CardHeader>
             <HStack justify="space-between" align="center">
               <Box>
-                <Heading size="md">New User Trend</Heading>
+                <Heading size="md">Growth Trend</Heading>
                 <Text fontSize="sm" color="gray.600">
                   Daily signups over the last {trendDays} days
                 </Text>
@@ -177,7 +293,7 @@ export default function AdminDashboardPage() {
             </HStack>
           </CardHeader>
           <CardBody>
-            <TrendChart data={dashboardMetrics.userTrend} height={120} barColor="orange.400" />
+            <TrendChart data={dashboardMetrics.userTrend} height={120} barColor="purple.400" />
           </CardBody>
         </Card>
       )}
@@ -187,7 +303,18 @@ export default function AdminDashboardPage() {
         {/* Recent Users */}
         <Card>
           <CardHeader>
-            <Heading size="md">Recent Signups</Heading>
+            <HStack justify="space-between">
+              <Heading size="md">Recent Signups</Heading>
+              <Button
+                as={Link}
+                href="/admin/users"
+                size="xs"
+                variant="ghost"
+                rightIcon={<Icon as={FiExternalLink} />}
+              >
+                View All
+              </Button>
+            </HStack>
           </CardHeader>
           <CardBody>
             {dashboardMetrics.recentUsers.length === 0 ? (
@@ -222,7 +349,15 @@ export default function AdminDashboardPage() {
         {/* Recent Activity Feed */}
         <Card>
           <CardHeader>
-            <Heading size="md">Recent Activity</Heading>
+            <HStack justify="space-between">
+              <Heading size="md">Recent Activity</Heading>
+              <Badge colorScheme="green" variant="subtle" fontSize="xs">
+                <HStack spacing={1}>
+                  <Icon as={FiEye} />
+                  <Text>Live</Text>
+                </HStack>
+              </Badge>
+            </HStack>
           </CardHeader>
           <CardBody>
             {dashboardMetrics.recentActivity.length === 0 ? (
@@ -241,11 +376,11 @@ export default function AdminDashboardPage() {
                       <Text fontSize="sm" fontWeight="medium">
                         {event.event.replace(/_/g, ' ')}
                       </Text>
-                      <Text fontSize="xs" color="gray.500">
+                      <Text fontSize="xs" color="gray.500" noOfLines={1}>
                         {event.url || 'No URL'}
                       </Text>
                     </VStack>
-                    <Text fontSize="xs" color="gray.400">
+                    <Text fontSize="xs" color="gray.400" whiteSpace="nowrap">
                       {formatDistanceToNow(event.timestamp, { addSuffix: true })}
                     </Text>
                   </HStack>
