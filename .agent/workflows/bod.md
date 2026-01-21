@@ -9,6 +9,14 @@ Read and consult these personas before major decisions.
 > **Note**: Board members are discovered dynamically from `docs/personas/*_PERSONA.md` files.
 > To add a new board member, create a new `docs/personas/NAME_PERSONA.md` file following the existing format.
 
+Make sure each person asks the following questions:
+Why was this change made?
+What part of the software does it touch?
+What could break in places I’m not looking at right now?
+Does this actually implement the changes according to the spec?
+What are the best practices and standards that need to be applied here?
+And what are our standards at all?
+
 ## The Board Members (15 Total)
 
 ### C-Suite Leadership

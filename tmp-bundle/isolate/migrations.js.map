@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../convex/migrations.ts"],
+  "sourcesContent": ["import { internalMutation } from './_generated/server';\r\nimport { v } from 'convex/values';\r\n\r\nexport const fixKeywordsSchema = internalMutation({\r\n  args: {},\r\n  handler: async (ctx) => {\r\n    const keywords = await ctx.db.query('keywords').collect();\r\n    let updatedCount = 0;\r\n\r\n    for (const keyword of keywords) {\r\n      // Check if it has the old field 'clientId' (it won't be on the type but it might be in the doc)\r\n      // We can inspect the object directly by casting to any\r\n      const k = keyword as any;\r\n      if (k.clientId && !k.projectId) {\r\n        // Delete invalid legacy record\r\n        await ctx.db.delete(keyword._id);\r\n        updatedCount++;\r\n      }\r\n    }\r\n    return { updatedCount };\r\n  },\r\n});\r\n"],
+  "mappings": ";;;;;;;;;AAGO,IAAMA,IAAoBC,EAAiB;AAAA,EAChD,MAAM,CAAC;AAAA,EACP,SAAS,gBAAAC,EAAA,OAAOC,MAAQ;AACtB,QAAMC,IAAW,MAAMD,EAAI,GAAG,MAAM,UAAU,EAAE,QAAQ,GACpDE,IAAe;AAEnB,aAAWC,KAAWF,GAAU;AAG9B,UAAMG,IAAID;AACV,MAAIC,EAAE,YAAY,CAACA,EAAE,cAEnB,MAAMJ,EAAI,GAAG,OAAOG,EAAQ,GAAG,GAC/BD;AAAA,IAEJ;AACA,WAAO,EAAE,cAAAA,EAAa;AAAA,EACxB,GAfS;AAgBX,CAAC;",
+  "names": ["fixKeywordsSchema", "internalMutation", "__name", "ctx", "keywords", "updatedCount", "keyword", "k"]
+}

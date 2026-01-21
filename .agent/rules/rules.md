@@ -20,3 +20,9 @@ Commit with conventional format: `type(scope): description`
 Types: feat, fix, refactor, docs, chore, test
 Use STYLES_GUIDE.md for new styles.
 /bod is our board of directors, always refer to them
+> Why was this change made?
+> What part of the software does it touch?
+> What could break in places I’m not looking at right now?
+> Does this actually implement the changes according to the spec?
+> What are the best practices and standards that need to be applied here?
+ > And what are our standards at all?

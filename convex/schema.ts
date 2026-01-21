@@ -1105,6 +1105,29 @@ export default defineSchema({
     .index('by_keyword', ['keyword'])
     .index('by_project_keyword', ['projectId', 'keyword']),
 
+  // Google SEO Updates - Algorithm changes and announcements from Google Search Central
+  seoUpdates: defineTable({
+    title: v.string(),
+    link: v.string(),
+    publishedAt: v.number(), // Original publish date from Google
+    summary: v.string(),
+    category: v.union(
+      v.literal('algorithm'),
+      v.literal('feature'),
+      v.literal('documentation'),
+      v.literal('announcement'),
+      v.literal('other')
+    ),
+    severity: v.union(v.literal('critical'), v.literal('important'), v.literal('informational')),
+    // Tracking
+    acknowledged: v.boolean(), // Has admin seen this?
+    acknowledgedAt: v.optional(v.number()),
+    createdAt: v.number(), // When we stored it
+  })
+    .index('by_severity', ['severity', 'acknowledged'])
+    .index('by_published', ['publishedAt'])
+    .index('by_link', ['link']),
+
   // ========================================
   // PUBLIC API
   // ========================================
@@ -1404,7 +1427,9 @@ export default defineSchema({
         wordCountScore: v.number(),
         h2Score: v.number(),
         keywordScore: v.number(),
-        linkScore: v.number(),
+        // Migration: linkScore is deprecated, structureScore is new
+        linkScore: v.optional(v.number()),
+        structureScore: v.optional(v.number()),
         readabilityScore: v.number(),
         uniquenessScore: v.optional(v.number()),
       })

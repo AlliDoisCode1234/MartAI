@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../convex/auth.config.ts"],
+  "sourcesContent": ["export default {\n  providers: [\n    {\n      domain: process.env.CONVEX_SITE_URL,\n      applicationID: \"convex\",\n    },\n  ],\n};\n"],
+  "mappings": ";AAAA,IAAOA,IAAQ;AAAA,EACb,WAAW;AAAA,IACT;AAAA,MACE,QAAQ,QAAQ,IAAI;AAAA,MACpB,eAAe;AAAA,IACjB;AAAA,EACF;AACF;",
+  "names": ["auth_config_default"]
+}

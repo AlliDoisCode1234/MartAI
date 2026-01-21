@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../convex/http.ts"],
+  "sourcesContent": ["import { httpRouter } from 'convex/server';\r\nimport { checkScheduledPosts } from './http/checkScheduledPosts';\r\nimport { publishScheduledPost } from './http/publishScheduledPost';\r\nimport { auth } from './auth';\r\nimport { components } from './_generated/api';\r\nimport { registerRoutes } from '@convex-dev/stripe';\r\n\r\nconst http = httpRouter();\r\n\r\nauth.addHttpRoutes(http);\r\n\r\nhttp.route({\r\n  path: '/check-scheduled-posts',\r\n  method: 'POST',\r\n  handler: checkScheduledPosts,\r\n});\r\n\r\nhttp.route({\r\n  path: '/publish-scheduled-post',\r\n  method: 'POST',\r\n  handler: publishScheduledPost,\r\n});\r\n\r\n// Stripe billing webhooks\r\nregisterRoutes(http, components.stripe, {\r\n  webhookPath: '/stripe/webhook',\r\n});\r\n\r\nexport default http;\r\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;AAAAA;AAIAC;AAGA,IAAMC,IAAOC,EAAW;AAExBC,EAAK,cAAcF,CAAI;AAEvBA,EAAK,MAAM;AAAA,EACT,MAAM;AAAA,EACN,QAAQ;AAAA,EACR,SAASG;AACX,CAAC;AAEDH,EAAK,MAAM;AAAA,EACT,MAAM;AAAA,EACN,QAAQ;AAAA,EACR,SAASI;AACX,CAAC;AAGDC,EAAeL,GAAMM,EAAW,QAAQ;AAAA,EACtC,aAAa;AACf,CAAC;AAED,IAAOC,IAAQP;",
+  "names": ["init_server", "init_api", "http", "httpRouter", "auth", "checkScheduledPosts", "publishScheduledPost", "registerRoutes", "components", "http_default"]
+}

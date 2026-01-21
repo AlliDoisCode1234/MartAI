@@ -113,6 +113,7 @@ import type * as scripts_seedStaging from "../scripts/seedStaging.js";
 import type * as scripts_seeds_testContentMedSpa from "../scripts/seeds/testContentMedSpa.js";
 import type * as seo_agentActions from "../seo/agentActions.js";
 import type * as seo_competitors from "../seo/competitors.js";
+import type * as seo_googleSeoFeed from "../seo/googleSeoFeed.js";
 import type * as seo_keywordActions from "../seo/keywordActions.js";
 import type * as seo_keywordClusters from "../seo/keywordClusters.js";
 import type * as seo_keywordIdeas from "../seo/keywordIdeas.js";
@@ -132,7 +133,9 @@ import type * as subscriptions_subscriptions from "../subscriptions/subscription
 import type * as subscriptions_userHealth from "../subscriptions/userHealth.js";
 import type * as teams_invitations from "../teams/invitations.js";
 import type * as teams_teams from "../teams/teams.js";
+import type * as testing_betaUserFlow from "../testing/betaUserFlow.js";
 import type * as testing_e2e from "../testing/e2e.js";
+import type * as testing_testPersonas from "../testing/testPersonas.js";
 import type * as users from "../users.js";
 import type * as waitlist from "../waitlist.js";
 import type * as webhooks_webhookActions from "../webhooks/webhookActions.js";
@@ -257,6 +260,7 @@ declare const fullApi: ApiFromModules<{
   "scripts/seeds/testContentMedSpa": typeof scripts_seeds_testContentMedSpa;
   "seo/agentActions": typeof seo_agentActions;
   "seo/competitors": typeof seo_competitors;
+  "seo/googleSeoFeed": typeof seo_googleSeoFeed;
   "seo/keywordActions": typeof seo_keywordActions;
   "seo/keywordClusters": typeof seo_keywordClusters;
   "seo/keywordIdeas": typeof seo_keywordIdeas;
@@ -276,7 +280,9 @@ declare const fullApi: ApiFromModules<{
   "subscriptions/userHealth": typeof subscriptions_userHealth;
   "teams/invitations": typeof teams_invitations;
   "teams/teams": typeof teams_teams;
+  "testing/betaUserFlow": typeof testing_betaUserFlow;
   "testing/e2e": typeof testing_e2e;
+  "testing/testPersonas": typeof testing_testPersonas;
   users: typeof users;
   waitlist: typeof waitlist;
   "webhooks/webhookActions": typeof webhooks_webhookActions;

@@ -47,4 +47,12 @@ crons.hourly(
   internal.admin.impersonation.cleanupExpiredSessions
 );
 
+// Fetch Google SEO updates weekly (Sundays at 6 AM UTC)
+// Monitors Search Central Blog for algorithm updates and announcements
+crons.weekly(
+  'google-seo-feed-sync',
+  { dayOfWeek: 'sunday', hourUTC: 6, minuteUTC: 0 },
+  internal.seo.googleSeoFeed.fetchGoogleSeoFeed
+);
+
 export default crons;
