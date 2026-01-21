@@ -31,7 +31,7 @@ export function IntegrationPromptBanner({ isConnected, projectId }: IntegrationP
   };
 
   const handleConnect = () => {
-    router.push('/integrations');
+    router.push('/settings?tab=integrations');
   };
 
   // Don't show if connected or dismissed

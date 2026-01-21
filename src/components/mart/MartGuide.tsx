@@ -57,7 +57,7 @@ const MART_MESSAGES: Record<string, { greeting: string; tip: string; action?: st
     tip: "I'll help generate outlines and drafts for you.",
     action: 'Start Writing',
   },
-  '/integrations': {
+  '/settings': {
     greeting: 'Connect your tools!',
     tip: 'GSC gives keyword data, WordPress enables one-click publish.',
     action: 'Connect GSC',

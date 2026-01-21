@@ -35,6 +35,7 @@ import {
 import { WordPressConnect } from '@/src/components/settings/WordPressConnect';
 import { ShopifyConnect } from '@/src/components/settings/ShopifyConnect';
 import { WixConnect } from '@/src/components/settings/WixConnect';
+import { GoogleConnect } from '@/src/components/settings/GoogleConnect';
 import { ChangePasswordForm } from '@/src/components/settings/ChangePasswordForm';
 import { useProject } from '@/lib/hooks';
 import { useMe } from '@/lib/useMe';
@@ -185,24 +186,40 @@ export default function SettingsPage() {
                         Integrations
                       </Heading>
                       <Text color="gray.600" fontSize="sm">
-                        Connect your CMS platforms to publish content directly
+                        Connect analytics and CMS platforms to power your SEO strategy
                       </Text>
                     </Box>
                     <Divider />
 
                     {activeProject ? (
-                      <VStack spacing={4} align="stretch">
-                        <WordPressConnect projectId={activeProject._id} />
-                        <ShopifyConnect projectId={activeProject._id} />
+                      <VStack spacing={6} align="stretch">
+                        {/* Analytics Section */}
+                        <Box>
+                          <Text fontWeight="semibold" color="gray.700" mb={3}>
+                            Analytics
+                          </Text>
+                          <GoogleConnect projectId={activeProject._id} />
+                        </Box>
+
+                        <Divider />
+
+                        {/* CMS / Publishing Section */}
+                        <Box>
+                          <Text fontWeight="semibold" color="gray.700" mb={3}>
+                            Publishing Platforms
+                          </Text>
+                          <VStack spacing={4} align="stretch">
+                            <WordPressConnect projectId={activeProject._id} />
+                            <ShopifyConnect projectId={activeProject._id} />
+                            <WixConnect projectId={activeProject._id} />
+                          </VStack>
+                        </Box>
                       </VStack>
                     ) : (
                       <Box p={4} bg="gray.50" borderRadius="md">
                         <Text color="gray.500">Create a project first to connect integrations</Text>
                       </Box>
                     )}
-
-                    {/* Wix Integration */}
-                    {activeProject && <WixConnect projectId={activeProject._id} />}
                   </VStack>
                 </TabPanel>
 

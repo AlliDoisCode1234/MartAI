@@ -28,8 +28,8 @@ function buildRedirectUrl(
   returnTo: string | undefined,
   params: Record<string, string>
 ): string {
-  // Default to /integrations if no returnTo specified
-  const targetPath = returnTo || '/integrations';
+  // Default to /settings?tab=integrations if no returnTo specified
+  const targetPath = returnTo || '/settings?tab=integrations';
   const url = new URL(targetPath, baseUrl);
 
   // Add new params (won't overwrite existing ones in returnTo)

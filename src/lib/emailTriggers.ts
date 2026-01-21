@@ -181,7 +181,7 @@ export const EMAIL_TEMPLATES: Record<EmailTrigger, EmailTemplate> = {
     martMessage:
       "Your integration token has expired. Let's reconnect so I can keep fetching fresh data!",
     ctaLabel: 'Reconnect Now',
-    ctaUrl: '/integrations',
+    ctaUrl: '/settings?tab=integrations',
   },
 };
 

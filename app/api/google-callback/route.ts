@@ -64,13 +64,15 @@ export async function GET(req: NextRequest) {
       })
     ).toString('base64');
 
-    // Redirect to integrations page (or returnTo if specified) with tokens in URL
-    const redirectPath = returnTo || '/integrations';
+    // Redirect to settings integrations tab (or returnTo if specified) with tokens in URL
+    const redirectPath = returnTo || '/settings?tab=integrations';
     return NextResponse.redirect(
       new URL(`${redirectPath}?setup=ga4&tokens=${encodeURIComponent(tokenData)}`, baseUrl)
     );
   } catch (e) {
     console.error('[GoogleCallback] Error:', e);
-    return NextResponse.redirect(new URL('/integrations?error=exchange_failed', baseUrl));
+    return NextResponse.redirect(
+      new URL('/settings?tab=integrations&error=exchange_failed', baseUrl)
+    );
   }
 }

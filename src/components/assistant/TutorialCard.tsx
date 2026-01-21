@@ -38,7 +38,7 @@ export const ONBOARDING_STEPS: TutorialStep[] = [
     title: 'Connect Google Analytics',
     description: 'Link your GA4 to track traffic and engagement metrics.',
     icon: FiBarChart2,
-    action: { label: 'Connect GA4', href: '/integrations' },
+    action: { label: 'Connect GA4', href: '/settings?tab=integrations' },
     gradient: 'linear(to-br, blue.400, blue.600)',
   },
   {
@@ -46,7 +46,7 @@ export const ONBOARDING_STEPS: TutorialStep[] = [
     title: 'Connect Search Console',
     description: 'Import your keyword rankings and search performance.',
     icon: FiLink,
-    action: { label: 'Connect GSC', href: '/integrations' },
+    action: { label: 'Connect GSC', href: '/settings?tab=integrations' },
     gradient: 'linear(to-br, green.400, green.600)',
   },
   {
