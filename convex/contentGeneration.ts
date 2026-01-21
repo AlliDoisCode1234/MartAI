@@ -36,7 +36,7 @@ export const generateContent = action({
     keywords: v.array(v.string()),
     clusterId: v.optional(v.id('keywordClusters')),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<Id<'contentPieces'>> => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error('Unauthorized');
 

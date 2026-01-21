@@ -214,8 +214,24 @@ export default function OnboardingPage() {
   // ==========================================================================
   // Step handlers (only reached if guards pass)
   // ==========================================================================
-  const nextStep = () => setStep((s) => Math.min(s + 1, 5));
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+
+  // Beta users skip pricing (step 2) and payment (step 3) - they get solo tier
+  const isBetaUser = user?.isBetaUser ?? false;
+
+  // For beta users: 1 -> 4 -> 5 (skip 2-3)
+  // For regular users: 1 -> 2 -> 3 -> 4 -> 5
+  const nextStep = () => {
+    setStep((s) => {
+      if (isBetaUser && s === 1) return 4; // Skip pricing/payment for beta
+      return Math.min(s + 1, 5);
+    });
+  };
+  const prevStep = () => {
+    setStep((s) => {
+      if (isBetaUser && s === 4) return 1; // Go back to step 1 for beta
+      return Math.max(s - 1, 1);
+    });
+  };
 
   // Step 1: Create prospect and advance
   const handleStep1Next = async () => {
@@ -427,7 +443,7 @@ export default function OnboardingPage() {
                 loading={loading}
               />
             )}
-            {step === 2 && (
+            {step === 2 && !isBetaUser && (
               <PlanSelectionStep
                 selectedPlan={selectedPlan}
                 onSelectPlan={setSelectedPlan}
@@ -435,7 +451,7 @@ export default function OnboardingPage() {
                 onBack={prevStep}
               />
             )}
-            {step === 3 && (
+            {step === 3 && !isBetaUser && (
               <PaymentStep
                 selectedPlan={selectedPlan}
                 onNext={handleStep3Next}

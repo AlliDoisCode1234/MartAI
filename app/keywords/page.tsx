@@ -156,7 +156,20 @@ export default function KeywordsPage() {
             </HStack>
           </HStack>
 
-          {!results || results.length === 0 ? (
+          {status === 'LoadingFirstPage' ? (
+            <Box
+              p={6}
+              bg="var(--phoo-bg-surface)"
+              borderRadius="var(--phoo-radius-md)"
+              border="1px solid var(--phoo-border)"
+            >
+              <VStack spacing={4} align="stretch">
+                <Skeleton height="32px" width="200px" startColor="gray.700" endColor="gray.600" />
+                <Skeleton height="200px" startColor="gray.700" endColor="gray.600" />
+                <Skeleton height="200px" startColor="gray.700" endColor="gray.600" />
+              </VStack>
+            </Box>
+          ) : !results || results.length === 0 ? (
             <EmptyState type="keywords" />
           ) : (
             <>

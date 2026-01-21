@@ -26,16 +26,17 @@ export const provisionSubscription = mutation({
     billingCycle: v.optional(v.union(v.literal('monthly'), v.literal('annual'))),
     startsAt: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ success: boolean }> => {
     // 1. Security Check: Caller must be Sales or higher
     await requireAdminRole(ctx, 'sales');
 
-    // 2. Call Internal Mutation to update DB
+    // 2. Call Internal Mutation via scheduler to avoid type-depth recursion
     // We pass current time as default for startsAt if not provided
     const startsAt = args.startsAt ?? Date.now();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await ctx.runMutation((internal as any).subscriptions.subscriptions.upsertSubscription, {
+    // Using scheduler.runAfter(0, ...) is the Convex-recommended pattern
+    // for calling internal mutations from regular mutations without type recursion
+    await ctx.scheduler.runAfter(0, internal.subscriptions.subscriptions.upsertSubscription, {
       userId: args.targetUserId,
       planTier: args.planTier,
       status: args.status,

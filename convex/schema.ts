@@ -135,6 +135,10 @@ export default defineSchema({
     churnedAt: v.optional(v.number()),
     churnReason: v.optional(v.string()),
     reactivatedAt: v.optional(v.number()),
+    // Beta user tracking (expires 6 months after onboarding completion)
+    isBetaUser: v.optional(v.boolean()),
+    betaExpiresAt: v.optional(v.number()), // Unix timestamp - calculated as onboardingCompletedAt + 6 months
+    betaNotes: v.optional(v.string()), // Admin notes about beta user
     // Payment tracking (synced from subscription)
     lastPaymentAt: v.optional(v.number()),
     // Stripe customer ID for billing
