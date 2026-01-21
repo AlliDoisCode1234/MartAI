@@ -84,7 +84,7 @@ export function PlanSelectionStep({ selectedPlan, onSelectPlan, onNext, onBack }
             </Text>
           </Box>
 
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={3}>
             {PLANS.map((plan) => (
               <Card
                 key={plan.id}

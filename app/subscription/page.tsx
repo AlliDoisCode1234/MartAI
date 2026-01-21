@@ -42,7 +42,7 @@ const PLANS = [
   {
     id: 'solo',
     name: 'Solo',
-    price: 49,
+    price: 59,
     urls: 1,
     reports: 4,
     content: 4,
@@ -55,26 +55,42 @@ const PLANS = [
     urls: 3,
     reports: 15,
     content: 20,
+    popular: true,
     features: [
       '3 Websites',
       '15 AI Reports/mo',
       '20 Content Pieces/mo',
       'Priority Support',
-      'API Access',
+      '3 Team Members',
+    ],
+  },
+  {
+    id: 'team',
+    name: 'Team',
+    price: 299,
+    urls: 10,
+    reports: 30,
+    content: 50,
+    features: [
+      '10 Websites',
+      '30 AI Reports/mo',
+      '50 Content Pieces/mo',
+      'White-label Reports',
+      '10 Team Members',
     ],
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: 499,
-    urls: 10,
-    reports: 50,
-    content: 100,
+    price: null, // Custom pricing
+    urls: -1, // Unlimited
+    reports: -1,
+    content: -1,
     features: [
-      '10 Websites',
-      '50 AI Reports/mo',
-      '100 Content Pieces/mo',
-      'Dedicated Account Manager',
+      'Unlimited Websites',
+      'Unlimited Reports',
+      'Unlimited Content',
+      'Dedicated Support',
       'Custom Integrations',
     ],
   },
@@ -241,57 +257,102 @@ export default function SubscriptionPage() {
             <Heading size="md" mb={6}>
               Available Plans
             </Heading>
-            <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={6}>
-              {PLANS.map((plan, i) => (
-                <MotionBox
-                  key={plan.id}
-                  bg={cardBg}
-                  p={6}
-                  borderRadius="xl"
-                  shadow="md"
-                  borderWidth="2px"
-                  borderColor={plan.id === tier ? 'brand.orange' : borderColor}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  h="full"
-                  display="flex"
-                  flexDirection="column"
-                >
-                  <VStack align="stretch" spacing={4} flex={1}>
-                    <VStack align="start" spacing={1}>
-                      <HStack justify="space-between" w="full">
-                        <Heading size="md">{plan.name}</Heading>
-                        {plan.id === tier && <Badge colorScheme="orange">Current</Badge>}
-                      </HStack>
-                      <HStack align="baseline">
-                        <Text fontSize="3xl" fontWeight="bold">
-                          ${plan.price}
-                        </Text>
-                        <Text color="gray.500">/mo</Text>
-                      </HStack>
-                    </VStack>
-                    <Divider />
-                    <VStack align="start" spacing={2} flex={1}>
-                      {plan.features.map((feat) => (
-                        <HStack key={feat}>
-                          <Icon as={FiCheck} color="green.500" />
-                          <Text fontSize="sm">{feat}</Text>
+            <Grid
+              templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }}
+              gap={4}
+            >
+              {PLANS.map((plan, i) => {
+                const currentTierIndex = PLANS.findIndex((p) => p.id === tier);
+                const planIndex = PLANS.findIndex((p) => p.id === plan.id);
+                const isCurrent = plan.id === tier;
+                const isUpgrade = planIndex > currentTierIndex;
+                const isDowngrade = planIndex < currentTierIndex;
+
+                return (
+                  <MotionBox
+                    key={plan.id}
+                    bg={cardBg}
+                    p={5}
+                    borderRadius="xl"
+                    shadow="md"
+                    borderWidth="2px"
+                    borderColor={
+                      isCurrent
+                        ? 'brand.orange'
+                        : 'popular' in plan && plan.popular
+                          ? 'purple.300'
+                          : borderColor
+                    }
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    h="full"
+                    display="flex"
+                    flexDirection="column"
+                    position="relative"
+                  >
+                    {'popular' in plan && plan.popular && !isCurrent && (
+                      <Badge
+                        position="absolute"
+                        top={-2}
+                        right={-2}
+                        colorScheme="purple"
+                        px={2}
+                        py={1}
+                        borderRadius="full"
+                        fontSize="xs"
+                      >
+                        Popular
+                      </Badge>
+                    )}
+                    <VStack align="stretch" spacing={3} flex={1}>
+                      <VStack align="start" spacing={1}>
+                        <HStack justify="space-between" w="full">
+                          <Heading size="sm">{plan.name}</Heading>
+                          {isCurrent && <Badge colorScheme="orange">Current</Badge>}
                         </HStack>
-                      ))}
+                        <HStack align="baseline">
+                          <Text fontSize="2xl" fontWeight="bold">
+                            {plan.price === null ? 'Custom' : `$${plan.price}`}
+                          </Text>
+                          {plan.price !== null && (
+                            <Text color="gray.500" fontSize="sm">
+                              /mo
+                            </Text>
+                          )}
+                        </HStack>
+                      </VStack>
+                      <Divider />
+                      <VStack align="start" spacing={1} flex={1}>
+                        {plan.features.map((feat) => (
+                          <HStack key={feat} spacing={2}>
+                            <Icon as={FiCheck} color="green.500" boxSize={3} />
+                            <Text fontSize="xs">{feat}</Text>
+                          </HStack>
+                        ))}
+                      </VStack>
+                      {isCurrent ? (
+                        <Button colorScheme="gray" variant="outline" w="full" mt="auto" isDisabled>
+                          Current Plan
+                        </Button>
+                      ) : isUpgrade ? (
+                        <Button
+                          colorScheme={plan.price === null ? 'purple' : 'orange'}
+                          w="full"
+                          mt="auto"
+                          leftIcon={plan.price === null ? undefined : <FiArrowUp />}
+                        >
+                          {plan.price === null ? 'Contact Sales' : 'Upgrade'}
+                        </Button>
+                      ) : isDowngrade ? (
+                        <Button variant="ghost" colorScheme="gray" w="full" mt="auto" size="sm">
+                          Contact Support
+                        </Button>
+                      ) : null}
                     </VStack>
-                    <Button
-                      colorScheme={plan.id === tier ? 'gray' : 'orange'}
-                      variant={plan.id === tier ? 'outline' : 'solid'}
-                      isDisabled={plan.id === tier}
-                      w="full"
-                      mt="auto"
-                    >
-                      {plan.id === tier ? 'Current Plan' : 'Upgrade'}
-                    </Button>
-                  </VStack>
-                </MotionBox>
-              ))}
+                  </MotionBox>
+                );
+              })}
             </Grid>
           </Box>
 
