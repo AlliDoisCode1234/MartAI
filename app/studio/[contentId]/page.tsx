@@ -36,7 +36,7 @@ import {
 } from '@chakra-ui/react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { StudioLayout, SEOScorePanel } from '@/src/components/studio';
+import { StudioLayout, SEOScorePanel, MarkdownPreview } from '@/src/components/studio';
 import { IntegrationsPanel } from '@/src/components/content';
 import {
   FiArrowLeft,
@@ -46,6 +46,8 @@ import {
   FiCheck,
   FiCalendar,
   FiClock,
+  FiEye,
+  FiEdit3,
 } from 'react-icons/fi';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -74,6 +76,7 @@ export default function ContentEditorPage() {
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('09:00');
   const [isScheduling, setIsScheduling] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Sync content from query
   useEffect(() => {
@@ -409,33 +412,68 @@ export default function ContentEditorPage() {
             borderRadius="16px"
             flex={1}
             minH="600px"
+            display="flex"
+            flexDirection="column"
           >
             <Box p={4} borderBottom="1px solid rgba(255, 255, 255, 0.08)">
-              <HStack spacing={2}>
-                <Badge bg="rgba(255, 255, 255, 0.1)" color="gray.400">
-                  Markdown
-                </Badge>
-                <Divider orientation="vertical" h={4} />
-                <Text color="gray.500" fontSize="sm">
-                  {h2Count} sections
-                </Text>
+              <HStack spacing={2} justify="space-between">
+                <HStack spacing={2}>
+                  <Badge bg="rgba(255, 255, 255, 0.1)" color="gray.400">
+                    Markdown
+                  </Badge>
+                  <Divider orientation="vertical" h={4} />
+                  <Text color="gray.500" fontSize="sm">
+                    {h2Count} sections
+                  </Text>
+                </HStack>
+                <HStack spacing={1}>
+                  <Button
+                    size="sm"
+                    variant={!showPreview ? 'solid' : 'ghost'}
+                    bg={!showPreview ? 'rgba(255, 157, 0, 0.2)' : 'transparent'}
+                    color={!showPreview ? '#FF9D00' : 'gray.500'}
+                    leftIcon={<Icon as={FiEdit3} />}
+                    onClick={() => setShowPreview(false)}
+                    _hover={{ bg: 'rgba(255, 157, 0, 0.15)' }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={showPreview ? 'solid' : 'ghost'}
+                    bg={showPreview ? 'rgba(139, 92, 246, 0.2)' : 'transparent'}
+                    color={showPreview ? '#8B5CF6' : 'gray.500'}
+                    leftIcon={<Icon as={FiEye} />}
+                    onClick={() => setShowPreview(true)}
+                    _hover={{ bg: 'rgba(139, 92, 246, 0.15)' }}
+                  >
+                    Preview
+                  </Button>
+                </HStack>
               </HStack>
             </Box>
-            <Textarea
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              placeholder="Start writing your content here..."
-              bg="transparent"
-              border="none"
-              _focus={{ boxShadow: 'none' }}
-              color="gray.200"
-              fontSize="md"
-              lineHeight="1.8"
-              minH="550px"
-              p={6}
-              resize="none"
-              _placeholder={{ color: 'gray.600' }}
-            />
+            {showPreview ? (
+              <Box flex={1} overflow="auto" minH="550px">
+                <MarkdownPreview content={content} />
+              </Box>
+            ) : (
+              <Textarea
+                value={content}
+                onChange={(e) => handleContentChange(e.target.value)}
+                placeholder="Start writing your content here..."
+                bg="transparent"
+                border="none"
+                _focus={{ boxShadow: 'none' }}
+                color="gray.200"
+                fontSize="md"
+                lineHeight="1.8"
+                minH="550px"
+                flex={1}
+                p={6}
+                resize="none"
+                _placeholder={{ color: 'gray.600' }}
+              />
+            )}
           </Box>
 
           {/* Sidebar */}
