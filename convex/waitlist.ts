@@ -79,6 +79,7 @@ export const joinWaitlist = mutation({
     if (!existingUser) {
       // Create user record with acquisition tracking
       // This makes waitlist signups "real users" from day one
+      // Beta users get solo tier - betaExpiresAt set when onboarding completes
       userId = await ctx.db.insert('users', {
         email: normalizedEmail,
         createdAt: now,
@@ -95,6 +96,10 @@ export const joinWaitlist = mutation({
           referrer: args.metadata?.referrer,
           waitlistId: waitlistId,
         },
+        // Beta user fields - skip pricing/payment in onboarding
+        // betaExpiresAt set when onboarding completes (6 months from then)
+        isBetaUser: true,
+        membershipTier: 'solo',
       });
     }
 

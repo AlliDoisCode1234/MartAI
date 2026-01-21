@@ -63,7 +63,25 @@ export const completeOnboarding = mutation({
     if (userId === null) {
       throw new Error('Not authenticated');
     }
-    await ctx.db.patch(userId, { onboardingStatus: 'completed' });
+
+    // Get user to check if beta user
+    const user = await ctx.db.get(userId);
+    const now = Date.now();
+
+    // For beta users, set betaExpiresAt to 6 months from now
+    const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
+    const updatePayload: {
+      onboardingStatus: 'completed';
+      betaExpiresAt?: number;
+    } = {
+      onboardingStatus: 'completed',
+    };
+
+    if (user?.isBetaUser && !user.betaExpiresAt) {
+      updatePayload.betaExpiresAt = now + SIX_MONTHS_MS;
+    }
+
+    await ctx.db.patch(userId, updatePayload);
   },
 });
 
