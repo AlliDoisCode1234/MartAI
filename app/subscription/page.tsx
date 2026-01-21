@@ -33,8 +33,11 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react';
 import { useSubscription } from '@/lib/hooks';
+import { useAuth } from '@/lib/useAuth';
 import { FiCheck, FiArrowUp, FiCreditCard, FiCalendar, FiPackage } from 'react-icons/fi';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 const MotionBox = motion(Box);
 
@@ -97,6 +100,8 @@ const PLANS = [
 ];
 
 export default function SubscriptionPage() {
+  const router = useRouter();
+  const { user } = useAuth();
   const {
     tier,
     isActive,
@@ -110,6 +115,21 @@ export default function SubscriptionPage() {
   } = useSubscription();
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  // Beta users can't access billing until their beta expires
+  const isActiveBetaUser =
+    user?.isBetaUser && user?.betaExpiresAt && user.betaExpiresAt > Date.now();
+
+  useEffect(() => {
+    if (isActiveBetaUser) {
+      router.replace('/dashboard');
+    }
+  }, [isActiveBetaUser, router]);
+
+  // Show loading while redirecting or loading subscription
+  if (isActiveBetaUser) {
+    return null;
+  }
 
   const currentPlan = PLANS.find((p) => p.id === tier) || PLANS[0];
 

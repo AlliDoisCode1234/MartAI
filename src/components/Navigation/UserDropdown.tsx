@@ -16,6 +16,9 @@ export const UserDropdown: FC = () => {
   const displayName = getUserDisplayName(user);
   const initials = getInitials(displayName);
 
+  // Beta users don't see billing until their beta period expires
+  const isActiveBetaUser = user.isBetaUser && user.betaExpiresAt && user.betaExpiresAt > Date.now();
+
   return (
     <Menu>
       <MenuButton>
@@ -38,9 +41,11 @@ export const UserDropdown: FC = () => {
         <MenuItem as={Link} href="/settings" icon={<Icon as={FiSettings} />}>
           Settings
         </MenuItem>
-        <MenuItem as={Link} href="/subscription" icon={<Icon as={FiCreditCard} />}>
-          Billing
-        </MenuItem>
+        {!isActiveBetaUser && (
+          <MenuItem as={Link} href="/subscription" icon={<Icon as={FiCreditCard} />}>
+            Billing
+          </MenuItem>
+        )}
         {isAdmin && (
           <>
             <MenuDivider />
