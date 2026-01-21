@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexMutation, api } from '@/lib/convexClient';
+import { callConvexMutation, unsafeApi } from '@/lib/convexClient';
 import { assertBriefId } from '@/lib/typeGuards';
 
-// Import api dynamically for routes that need it
-let apiLocal: typeof api = api;
-if (typeof window === 'undefined' && !apiLocal) {
-  try {
-    apiLocal = require('@/convex/_generated/api')?.api;
-  } catch {
-    apiLocal = null as any;
-  }
-}
+// Use unsafeApi to avoid TypeScript type instantiation issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const apiLocal: any = unsafeApi;
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -20,17 +14,11 @@ export async function PATCH(request: NextRequest) {
     const { briefId, newDate } = body;
 
     if (!briefId || !newDate) {
-      return NextResponse.json(
-        { error: 'briefId and newDate are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'briefId and newDate are required' }, { status: 400 });
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
     }
 
     const briefIdTyped = assertBriefId(briefId);
@@ -44,9 +32,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Reschedule brief error:', error);
-    return NextResponse.json(
-      { error: 'Failed to reschedule brief' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to reschedule brief' }, { status: 500 });
   }
 }

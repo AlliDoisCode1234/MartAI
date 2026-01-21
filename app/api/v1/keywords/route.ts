@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
-import { api } from '@/convex/_generated/api';
+import { unsafeApi as api } from '@/lib/convexClient';
 import {
   extractApiKey,
   hashApiKey,

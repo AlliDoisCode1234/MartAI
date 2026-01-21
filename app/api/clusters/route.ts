@@ -1,19 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, secureResponse } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, unsafeApi } from '@/lib/convexClient';
 import { assertProjectId, assertClusterId } from '@/lib/typeGuards';
 
-// Import api dynamically for routes that need it
-let apiLocal: typeof api = api;
-if (typeof window === 'undefined') {
-  if (!apiLocal) {
-    try {
-      apiLocal = require('@/convex/_generated/api')?.api;
-    } catch {
-      apiLocal = null as any;
-    }
-  }
-}
+// Use unsafeApi to avoid TypeScript type instantiation issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const apiLocal: any = unsafeApi;
 
 // GET - Get clusters for a project
 export async function GET(request: NextRequest) {
@@ -27,21 +19,11 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status'); // active, hidden, favorite, all
 
     if (!projectId) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'projectId is required' },
-          { status: 400 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'projectId is required' }, { status: 400 }));
     }
 
     if (!apiLocal) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Convex not configured' },
-          { status: 503 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Convex not configured' }, { status: 503 }));
     }
 
     // Validate required field - type guaranteed after assertion
@@ -59,24 +41,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Sort by impact score descending
-    clusters.sort((a: { impactScore?: number }, b: { impactScore?: number }) => 
-      (b.impactScore || 0) - (a.impactScore || 0)
+    clusters.sort(
+      (a: { impactScore?: number }, b: { impactScore?: number }) =>
+        (b.impactScore || 0) - (a.impactScore || 0)
     );
 
-    return secureResponse(
-      NextResponse.json({ clusters })
-    );
+    return secureResponse(NextResponse.json({ clusters }));
   } catch (error: any) {
     console.error('Get clusters error:', error);
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to get clusters' },
-        { status: 500 }
-      )
-    );
+    return secureResponse(NextResponse.json({ error: 'Failed to get clusters' }, { status: 500 }));
   }
 }
 
@@ -93,21 +69,11 @@ export async function PATCH(request: NextRequest) {
     const { clusterId, ...updates } = body;
 
     if (!clusterId) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'clusterId is required' },
-          { status: 400 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'clusterId is required' }, { status: 400 }));
     }
 
     if (!apiLocal) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Convex not configured' },
-          { status: 503 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Convex not configured' }, { status: 503 }));
     }
 
     const clusterIdTyped = assertClusterId(clusterId);
@@ -116,19 +82,14 @@ export async function PATCH(request: NextRequest) {
       ...updates,
     });
 
-    return secureResponse(
-      NextResponse.json({ success: true })
-    );
+    return secureResponse(NextResponse.json({ success: true }));
   } catch (error: any) {
     console.error('Update cluster error:', error);
     if (error.status === 401 && error.response) {
       return error.response;
     }
     return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to update cluster' },
-        { status: 500 }
-      )
+      NextResponse.json({ error: 'Failed to update cluster' }, { status: 500 })
     );
   }
 }
@@ -145,21 +106,11 @@ export async function DELETE(request: NextRequest) {
     const clusterId = searchParams.get('clusterId');
 
     if (!clusterId) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'clusterId is required' },
-          { status: 400 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'clusterId is required' }, { status: 400 }));
     }
 
     if (!apiLocal) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Convex not configured' },
-          { status: 503 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Convex not configured' }, { status: 503 }));
     }
 
     const clusterIdTyped = assertClusterId(clusterId);
@@ -167,20 +118,14 @@ export async function DELETE(request: NextRequest) {
       clusterId: clusterIdTyped,
     });
 
-    return secureResponse(
-      NextResponse.json({ success: true })
-    );
+    return secureResponse(NextResponse.json({ success: true }));
   } catch (error: any) {
     console.error('Delete cluster error:', error);
     if (error.status === 401 && error.response) {
       return error.response;
     }
     return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to delete cluster' },
-        { status: 500 }
-      )
+      NextResponse.json({ error: 'Failed to delete cluster' }, { status: 500 })
     );
   }
 }
-

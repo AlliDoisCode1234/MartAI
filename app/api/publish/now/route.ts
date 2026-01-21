@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, unsafeApi } from '@/lib/convexClient';
 import { WordPressClient } from '@/lib/integrations/wordpress';
 import { ShopifyClient } from '@/lib/integrations/shopify';
 import { assertDraftId, assertProjectId } from '@/lib/typeGuards';
 
-// Import api dynamically for routes that need it
-let apiLocal: typeof api = api;
-if (typeof window === 'undefined') {
-  if (!apiLocal) {
-    try {
-      apiLocal = require('@/convex/_generated/api')?.api;
-    } catch {
-      apiLocal = null as any;
-    }
-  }
-}
+// Use unsafeApi to avoid TypeScript type instantiation issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const apiLocal: any = unsafeApi;
 
 export const dynamic = 'force-dynamic';
 

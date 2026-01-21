@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, secureResponse } from '@/lib/authMiddleware';
-import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
+import { callConvexMutation, callConvexQuery, unsafeApi } from '@/lib/convexClient';
 import { assertProjectId, assertUserId } from '@/lib/typeGuards';
 
 export const dynamic = 'force-dynamic';
 
-// Import api dynamically
-let apiLocal: typeof api = api;
-if (typeof window === 'undefined') {
-  if (!apiLocal) {
-    try {
-      apiLocal = require('@/convex/_generated/api')?.api;
-    } catch {
-      apiLocal = null as any;
-    }
-  }
-}
+// Use unsafeApi to avoid TypeScript type instantiation issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const apiLocal: any = unsafeApi;
 
 // GET - Get projects for authenticated user
 export async function GET(request: NextRequest) {

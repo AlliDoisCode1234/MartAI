@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/authMiddleware';
 import { WordPressClient } from '@/lib/integrations/wordpress';
 import { ShopifyClient } from '@/lib/integrations/shopify';
 import { WebflowClient } from '@/lib/integrations/webflow';
-import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, unsafeApi as api } from '@/lib/convexClient';
 
 export async function POST(request: NextRequest) {
   try {

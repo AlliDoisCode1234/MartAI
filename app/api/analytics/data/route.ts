@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, api } from '@/lib/convexClient';
+import { callConvexQuery, unsafeApi } from '@/lib/convexClient';
 import { Id } from '@/convex/_generated/dataModel';
 
 export async function GET(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await callConvexQuery(api.analytics.analytics.getAnalyticsData, {
+    const data = await callConvexQuery(unsafeApi.analytics.analytics.getAnalyticsData, {
       projectId: projectId as Id<'projects'>,
       startDate: parseInt(startDate),
       endDate: parseInt(endDate),

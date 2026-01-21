@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, secureResponse } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, unsafeApi } from '@/lib/convexClient';
 import { validateDraftSEO } from '@/lib/generators/draftGenerator';
 import { assertDraftId, assertBriefId } from '@/lib/typeGuards';
 
-// Import api dynamically for routes that need it
-let apiLocal: typeof api = api;
-if (typeof window === 'undefined' && !apiLocal) {
-  try {
-    apiLocal = require('@/convex/_generated/api')?.api;
-  } catch {
-    apiLocal = null as any;
-  }
-}
+// Use unsafeApi to avoid TypeScript type instantiation issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const apiLocal: any = unsafeApi;
 
 // GET - Get draft
 export async function GET(request: NextRequest) {

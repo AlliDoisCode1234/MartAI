@@ -1,25 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateApiSecurity } from '@/lib/apiSecurity';
 import { secureResponse } from '@/lib/authMiddleware';
-import { callConvexMutation, callConvexQuery, api } from '@/lib/convexClient';
-import {
-  prospectIntakeSchema,
-} from '@/lib/validation/prospectSchemas';
+import { callConvexMutation, callConvexQuery, unsafeApi } from '@/lib/convexClient';
+import { prospectIntakeSchema } from '@/lib/validation/prospectSchemas';
 
 export const dynamic = 'force-dynamic';
 
 const draftSchema = prospectIntakeSchema.partial();
 
-let apiLocal: typeof api = api;
-if (typeof window === 'undefined') {
-  if (!apiLocal) {
-    try {
-      apiLocal = require('@/convex/_generated/api')?.api;
-    } catch {
-      apiLocal = null as any;
-    }
-  }
-}
+// Use unsafeApi to avoid TypeScript type instantiation issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const apiLocal: any = unsafeApi;
 
 function getProspectsModule() {
   if (!apiLocal) {
@@ -37,9 +28,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!security.valid) {
-      return secureResponse(
-        NextResponse.json({ error: security.error }, { status: 401 })
-      );
+      return secureResponse(NextResponse.json({ error: security.error }, { status: 401 }));
     }
 
     const body = await request.json();
@@ -47,13 +36,10 @@ export async function POST(request: NextRequest) {
 
     const payload = draftSchema.parse(body);
 
-    const prospectId = await callConvexMutation(
-      prospectsModule.createProspect,
-      {
-        ...payload,
-        status: body.status ?? 'draft',
-      }
-    );
+    const prospectId = await callConvexMutation(prospectsModule.createProspect, {
+      ...payload,
+      status: body.status ?? 'draft',
+    });
 
     return secureResponse(
       NextResponse.json({
@@ -63,11 +49,8 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error('Create prospect error:', error);
-    const message =
-      error?.issues?.[0]?.message || error?.message || 'Failed to create prospect';
-    return secureResponse(
-      NextResponse.json({ error: message }, { status: 400 })
-    );
+    const message = error?.issues?.[0]?.message || error?.message || 'Failed to create prospect';
+    return secureResponse(NextResponse.json({ error: message }, { status: 400 }));
   }
 }
 
@@ -80,9 +63,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     if (!security.valid) {
-      return secureResponse(
-        NextResponse.json({ error: security.error }, { status: 401 })
-      );
+      return secureResponse(NextResponse.json({ error: security.error }, { status: 401 }));
     }
 
     const body = await request.json();
@@ -103,16 +84,11 @@ export async function PATCH(request: NextRequest) {
       status: markSubmitted ? 'initial_submitted' : undefined,
     });
 
-    return secureResponse(
-      NextResponse.json({ success: true, prospectId })
-    );
+    return secureResponse(NextResponse.json({ success: true, prospectId }));
   } catch (error: any) {
     console.error('Update prospect error:', error);
-    const message =
-      error?.issues?.[0]?.message || error?.message || 'Failed to update prospect';
-    return secureResponse(
-      NextResponse.json({ error: message }, { status: 400 })
-    );
+    const message = error?.issues?.[0]?.message || error?.message || 'Failed to update prospect';
+    return secureResponse(NextResponse.json({ error: message }, { status: 400 }));
   }
 }
 
@@ -124,9 +100,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!security.valid) {
-      return secureResponse(
-        NextResponse.json({ error: security.error }, { status: 401 })
-      );
+      return secureResponse(NextResponse.json({ error: security.error }, { status: 401 }));
     }
 
     const id = request.nextUrl.searchParams.get('id');
@@ -142,20 +116,14 @@ export async function GET(request: NextRequest) {
     });
 
     if (!record) {
-      return secureResponse(
-        NextResponse.json({ error: 'Prospect not found' }, { status: 404 })
-      );
+      return secureResponse(NextResponse.json({ error: 'Prospect not found' }, { status: 404 }));
     }
 
     return secureResponse(NextResponse.json(record));
   } catch (error: any) {
     console.error('Fetch prospect error:', error);
     return secureResponse(
-      NextResponse.json(
-        { error: error?.message || 'Failed to load prospect' },
-        { status: 500 }
-      )
+      NextResponse.json({ error: error?.message || 'Failed to load prospect' }, { status: 500 })
     );
   }
 }
-

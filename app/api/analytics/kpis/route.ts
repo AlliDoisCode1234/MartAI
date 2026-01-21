@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, api } from '@/lib/convexClient';
+import { callConvexQuery, unsafeApi } from '@/lib/convexClient';
 import { Id } from '@/convex/_generated/dataModel';
 
 export const dynamic = 'force-dynamic';
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get current period KPIs
-    const currentKPIs = (await callConvexQuery(api.analytics.analytics.getKPIs, {
+    const currentKPIs = (await callConvexQuery(unsafeApi.analytics.analytics.getKPIs as any, {
       projectId: projectId as Id<'projects'>,
       startDate: parseInt(startDate),
       endDate: parseInt(endDate),
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     const prevStartDate = parseInt(startDate) - periodLength;
     const prevEndDate = parseInt(startDate) - 1;
 
-    const previousKPIs = (await callConvexQuery(api.analytics.analytics.getKPIs, {
+    const previousKPIs = (await callConvexQuery(unsafeApi.analytics.analytics.getKPIs as any, {
       projectId: projectId as Id<'projects'>,
       startDate: prevStartDate,
       endDate: prevEndDate,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, unsafeApi } from '@/lib/convexClient';
 import { Id } from '@/convex/_generated/dataModel';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'projectId is required' }, { status: 400 });
     }
 
-    const insights = await callConvexQuery(api.analytics.analytics.getInsights, {
+    const insights = await callConvexQuery(unsafeApi.analytics.analytics.getInsights as any, {
       projectId: projectId as Id<'projects'>,
       type: type || undefined,
     });
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'insightId is required' }, { status: 400 });
     }
 
-    await callConvexMutation(api.analytics.analytics.applyInsight, {
+    await callConvexMutation(unsafeApi.analytics.analytics.applyInsight as any, {
       insightId: insightId as string,
     });
 

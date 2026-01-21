@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, unsafeApi } from '@/lib/convexClient';
 import { getGA4Data, getGSCData } from '@/lib/googleAuth';
 import { formatDate } from '@/lib/dateUtils';
 import { assertProjectId } from '@/lib/typeGuards';
@@ -27,14 +27,20 @@ export async function POST(request: NextRequest) {
     const projectIdTyped = assertProjectId(projectId);
 
     // Get GA4 connection by project
-    const ga4Connection = await callConvexQuery(api.integrations.ga4Connections.getGA4Connection, {
-      projectId: projectIdTyped,
-    });
+    const ga4Connection = await callConvexQuery(
+      unsafeApi.integrations.ga4Connections.getGA4Connection,
+      {
+        projectId: projectIdTyped,
+      }
+    );
 
     // Get GSC connection by project
-    const gscConnection = await callConvexQuery(api.integrations.gscConnections.getGSCConnection, {
-      projectId: projectIdTyped,
-    });
+    const gscConnection = await callConvexQuery(
+      unsafeApi.integrations.gscConnections.getGSCConnection,
+      {
+        projectId: projectIdTyped,
+      }
+    );
 
     const endDate = Date.now();
     const startDate = endDate - days * 24 * 60 * 60 * 1000;
@@ -60,7 +66,7 @@ export async function POST(request: NextRequest) {
                 console.warn('No access token in refreshed credentials, skipping update');
                 return;
               }
-              await callConvexMutation(api.integrations.ga4Connections.upsertGA4Connection, {
+              await callConvexMutation(unsafeApi.integrations.ga4Connections.upsertGA4Connection, {
                 projectId: projectIdTyped,
                 propertyId: ga4Connection.propertyId,
                 propertyName: ga4Connection.propertyName ?? 'Unknown',
@@ -82,7 +88,7 @@ export async function POST(request: NextRequest) {
             ? new Date(dateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')).getTime()
             : Date.now();
 
-          await callConvexMutation(api.analytics.analytics.storeAnalyticsData, {
+          await callConvexMutation(unsafeApi.analytics.analytics.storeAnalyticsData as any, {
             projectId: projectIdTyped,
             date,
             source: 'ga4',
@@ -116,7 +122,7 @@ export async function POST(request: NextRequest) {
                 console.warn('No access token in refreshed credentials, skipping update');
                 return;
               }
-              await callConvexMutation(api.integrations.gscConnections.upsertGSCConnection, {
+              await callConvexMutation(unsafeApi.integrations.gscConnections.upsertGSCConnection, {
                 projectId: projectIdTyped,
                 siteUrl: gscConnection.siteUrl,
                 accessToken: newTokens.access_token,
@@ -142,7 +148,7 @@ export async function POST(request: NextRequest) {
           const avgPos =
             rows.reduce((sum: number, r: GSCRow) => sum + (r.position || 0), 0) / rows.length;
 
-          await callConvexMutation(api.analytics.analytics.storeAnalyticsData, {
+          await callConvexMutation(unsafeApi.analytics.analytics.storeAnalyticsData as any, {
             projectId: projectIdTyped,
             date: endDate,
             source: 'gsc',
@@ -176,7 +182,7 @@ export async function POST(request: NextRequest) {
 
 async function generateInsights(projectId: ProjectId, startDate: number, endDate: number) {
   try {
-    const data = await callConvexQuery(api.analytics.analytics.getAnalyticsData, {
+    const data = await callConvexQuery(unsafeApi.analytics.analytics.getAnalyticsData as any, {
       projectId,
       startDate,
       endDate,
@@ -191,7 +197,7 @@ async function generateInsights(projectId: ProjectId, startDate: number, endDate
     if (ga4Data.length > 0) {
       const avgSessions = ga4Data.reduce((sum, d) => sum + (d.sessions || 0), 0) / ga4Data.length;
       if (avgSessions > 1000) {
-        await callConvexMutation(api.analytics.analytics.storeInsight, {
+        await callConvexMutation(unsafeApi.analytics.analytics.storeInsight as any, {
           projectId,
           type: 'top_gainer',
           title: 'Strong Traffic Growth',
@@ -205,7 +211,7 @@ async function generateInsights(projectId: ProjectId, startDate: number, endDate
     if (gscData.length > 0) {
       const avgCTR = gscData.reduce((sum, d) => sum + (d.ctr || 0), 0) / gscData.length;
       if (avgCTR < 2) {
-        await callConvexMutation(api.analytics.analytics.storeInsight, {
+        await callConvexMutation(unsafeApi.analytics.analytics.storeInsight as any, {
           projectId,
           type: 'underperformer',
           title: 'Low Click-Through Rate',
@@ -220,7 +226,7 @@ async function generateInsights(projectId: ProjectId, startDate: number, endDate
       (d) => (d.impressions || 0) > 1000 && (d.clicks || 0) < 50
     );
     if (highImpressions.length > 0) {
-      await callConvexMutation(api.analytics.analytics.storeInsight, {
+      await callConvexMutation(unsafeApi.analytics.analytics.storeInsight, {
         projectId,
         type: 'quick_win',
         title: 'Quick Win Opportunity',

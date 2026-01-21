@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
-import { api } from '@/convex/_generated/api';
+import { unsafeApi } from '@/lib/convexClient';
 import {
   extractApiKey,
   hashApiKey,
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     }
 
     const keyHash = hashApiKey(apiKey);
-    const validation = await convex.query(api.apiKeys.validateApiKey, { keyHash });
+    const validation = await convex.query(unsafeApi.apiKeys.validateApiKey, { keyHash });
     if (!validation) {
       return unauthorizedResponse('Invalid or expired API key', requestId);
     }
@@ -61,14 +61,16 @@ export async function GET(request: NextRequest): Promise<Response> {
     const startDate = endDate - days * 24 * 60 * 60 * 1000;
 
     // Fetch analytics KPIs
-    const kpis = await convex.query(api.analytics.analytics.getKPIs, {
+    const kpis = await convex.query(unsafeApi.analytics.analytics.getKPIs as any, {
       projectId: validation.projectId,
       startDate,
       endDate,
     });
 
     // Record usage
-    convex.mutation(api.apiKeys.recordApiKeyUsage, { keyId: validation.keyId }).catch(() => {});
+    convex
+      .mutation(unsafeApi.apiKeys.recordApiKeyUsage, { keyId: validation.keyId })
+      .catch(() => {});
 
     return apiResponse(
       {

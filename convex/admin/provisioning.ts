@@ -34,7 +34,8 @@ export const provisionSubscription = mutation({
     // We pass current time as default for startsAt if not provided
     const startsAt = args.startsAt ?? Date.now();
 
-    await ctx.runMutation(internal.subscriptions.subscriptions.upsertSubscription, {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await ctx.runMutation((internal as any).subscriptions.subscriptions.upsertSubscription, {
       userId: args.targetUserId,
       planTier: args.planTier,
       status: args.status,

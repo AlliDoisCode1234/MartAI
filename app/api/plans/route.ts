@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, secureResponse } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, unsafeApi } from '@/lib/convexClient';
 
 export const dynamic = 'force-dynamic';
 import { assertProjectId, assertPlanId } from '@/lib/typeGuards';
 
-// Import api dynamically for routes that need it
-let apiLocal: typeof api = api;
-if (typeof window === 'undefined' && !apiLocal) {
-  try {
-    apiLocal = require('@/convex/_generated/api')?.api;
-  } catch {
-    apiLocal = null as any;
-  }
-}
+// Use unsafeApi to avoid TypeScript type instantiation issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const apiLocal: any = unsafeApi;
 
 // GET - Get plan for a project
 export async function GET(request: NextRequest) {
@@ -26,21 +20,11 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('projectId');
 
     if (!projectId) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'projectId is required' },
-          { status: 400 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'projectId is required' }, { status: 400 }));
     }
 
     if (!apiLocal) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Convex not configured' },
-          { status: 503 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Convex not configured' }, { status: 503 }));
     }
 
     const projectIdTyped = assertProjectId(projectId);
@@ -48,20 +32,13 @@ export async function GET(request: NextRequest) {
       projectId: projectIdTyped,
     });
 
-    return secureResponse(
-      NextResponse.json({ plan })
-    );
+    return secureResponse(NextResponse.json({ plan }));
   } catch (error: any) {
     console.error('Get plan error:', error);
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to get plan' },
-        { status: 500 }
-      )
-    );
+    return secureResponse(NextResponse.json({ error: 'Failed to get plan' }, { status: 500 }));
   }
 }
 
@@ -78,21 +55,11 @@ export async function PATCH(request: NextRequest) {
     const { planId, ...updates } = body;
 
     if (!planId) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'planId is required' },
-          { status: 400 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'planId is required' }, { status: 400 }));
     }
 
     if (!apiLocal) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Convex not configured' },
-          { status: 503 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Convex not configured' }, { status: 503 }));
     }
 
     const planIdTyped = assertPlanId(planId);
@@ -101,20 +68,13 @@ export async function PATCH(request: NextRequest) {
       ...updates,
     });
 
-    return secureResponse(
-      NextResponse.json({ success: true })
-    );
+    return secureResponse(NextResponse.json({ success: true }));
   } catch (error: any) {
     console.error('Update plan error:', error);
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to update plan' },
-        { status: 500 }
-      )
-    );
+    return secureResponse(NextResponse.json({ error: 'Failed to update plan' }, { status: 500 }));
   }
 }
 
@@ -130,21 +90,11 @@ export async function DELETE(request: NextRequest) {
     const planId = searchParams.get('planId');
 
     if (!planId) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'planId is required' },
-          { status: 400 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'planId is required' }, { status: 400 }));
     }
 
     if (!apiLocal) {
-      return secureResponse(
-        NextResponse.json(
-          { error: 'Convex not configured' },
-          { status: 503 }
-        )
-      );
+      return secureResponse(NextResponse.json({ error: 'Convex not configured' }, { status: 503 }));
     }
 
     const planIdTyped = assertPlanId(planId);
@@ -152,19 +102,12 @@ export async function DELETE(request: NextRequest) {
       planId: planIdTyped,
     });
 
-    return secureResponse(
-      NextResponse.json({ success: true })
-    );
+    return secureResponse(NextResponse.json({ success: true }));
   } catch (error: any) {
     console.error('Delete plan error:', error);
     if (error.status === 401 && error.response) {
       return error.response;
     }
-    return secureResponse(
-      NextResponse.json(
-        { error: 'Failed to delete plan' },
-        { status: 500 }
-      )
-    );
+    return secureResponse(NextResponse.json({ error: 'Failed to delete plan' }, { status: 500 }));
   }
 }

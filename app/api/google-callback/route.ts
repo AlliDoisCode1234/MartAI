@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
-import { api } from '../../../convex/_generated/api';
+import { unsafeApi } from '@/lib/convexClient';
 
 // Ensure we have the Convex URL
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -9,6 +9,8 @@ if (!convexUrl) {
 }
 
 const convex = new ConvexHttpClient(convexUrl as string);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const api: any = unsafeApi;
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');

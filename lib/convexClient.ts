@@ -75,3 +75,7 @@ export async function callConvexAction<T = any>(
 
 // Re-export api from generated module for type-safe access
 export { api } from '@/convex/_generated/api';
+
+// Untyped API accessor - use when TypeScript type instantiation causes build failures
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const unsafeApi: any = require('@/convex/_generated/api').api;

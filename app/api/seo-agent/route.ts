@@ -1,4 +1,4 @@
-import { api, callConvexAction } from '@/lib/convexClient';
+import { unsafeApi as api, callConvexAction } from '@/lib/convexClient';
 
 export const maxDuration = 60;
 

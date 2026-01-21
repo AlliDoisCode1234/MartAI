@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
-import { callConvexQuery, callConvexMutation, api } from '@/lib/convexClient';
+import { callConvexQuery, callConvexMutation, unsafeApi } from '@/lib/convexClient';
 import { assertBriefId, assertBriefVersionId } from '@/lib/typeGuards';
 
-// Import api dynamically for routes that need it
-let apiLocal: typeof api = api;
-if (typeof window === 'undefined' && !apiLocal) {
-  try {
-    apiLocal = require('@/convex/_generated/api')?.api;
-  } catch {
-    apiLocal = null as any;
-  }
-}
+// Use unsafeApi to avoid TypeScript type instantiation issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const apiLocal: any = unsafeApi;
 
 // GET - Get versions for a brief
 export async function GET(request: NextRequest) {
@@ -21,17 +15,11 @@ export async function GET(request: NextRequest) {
     const briefId = searchParams.get('briefId');
 
     if (!briefId) {
-      return NextResponse.json(
-        { error: 'briefId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'briefId is required' }, { status: 400 });
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
     }
 
     const briefIdTyped = assertBriefId(briefId);
@@ -42,10 +30,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ versions });
   } catch (error) {
     console.error('Get brief versions error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get brief versions' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get brief versions' }, { status: 500 });
   }
 }
 
@@ -57,17 +42,11 @@ export async function POST(request: NextRequest) {
     const { briefId, ...versionData } = body;
 
     if (!briefId) {
-      return NextResponse.json(
-        { error: 'briefId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'briefId is required' }, { status: 400 });
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
     }
 
     const briefIdTyped = assertBriefId(briefId);
@@ -79,10 +58,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, versionId });
   } catch (error) {
     console.error('Create brief version error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create brief version' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create brief version' }, { status: 500 });
   }
 }
 
@@ -94,17 +70,11 @@ export async function PUT(request: NextRequest) {
     const { versionId } = body;
 
     if (!versionId) {
-      return NextResponse.json(
-        { error: 'versionId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'versionId is required' }, { status: 400 });
     }
 
     if (!apiLocal) {
-      return NextResponse.json(
-        { error: 'Convex not configured' },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
     }
 
     const versionIdTyped = assertBriefVersionId(versionId);
@@ -115,9 +85,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, versionId: newVersionId });
   } catch (error) {
     console.error('Restore brief version error:', error);
-    return NextResponse.json(
-      { error: 'Failed to restore brief version' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to restore brief version' }, { status: 500 });
   }
 }
