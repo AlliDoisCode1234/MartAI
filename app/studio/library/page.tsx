@@ -43,7 +43,7 @@ import { useLoadingAnnounce } from '@/src/lib/accessibility';
 import type { Id } from '@/convex/_generated/dataModel';
 
 type ViewMode = 'grid' | 'list';
-type StatusFilter = 'all' | 'draft' | 'approved' | 'published' | 'scheduled';
+type StatusFilter = 'all' | 'published' | 'scheduled';
 
 export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -59,6 +59,7 @@ export default function LibraryPage() {
     projectId
       ? {
           projectId: projectId as Id<'projects'>,
+          // Content Library only shows finalized content (published or scheduled)
           status: statusFilter !== 'all' ? statusFilter : undefined,
         }
       : 'skip',
@@ -85,21 +86,26 @@ export default function LibraryPage() {
   );
 
   // Filter by search (client-side for now)
+  // Filter by search AND ensure only published/scheduled content appears
   const filteredContent = useMemo(() => {
-    if (!searchQuery) return results;
-    return results.filter((piece) => piece.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    // Library only shows published or scheduled content
+    const libraryContent = results.filter(
+      (piece) => piece.status === 'published' || piece.status === 'scheduled'
+    );
+    if (!searchQuery) return libraryContent;
+    return libraryContent.filter((piece) =>
+      piece.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   }, [results, searchQuery]);
 
-  // Count by status from loaded results (approximate)
+  // Count by status from filtered results (library content only)
   const counts = useMemo(
     () => ({
-      all: results.length,
-      draft: results.filter((p) => p.status === 'draft').length,
-      approved: results.filter((p) => p.status === 'approved').length,
-      published: results.filter((p) => p.status === 'published').length,
-      scheduled: results.filter((p) => p.status === 'scheduled').length,
+      all: filteredContent.length,
+      published: filteredContent.filter((p) => p.status === 'published').length,
+      scheduled: filteredContent.filter((p) => p.status === 'scheduled').length,
     }),
-    [results]
+    [filteredContent]
   );
 
   return (
@@ -173,13 +179,11 @@ export default function LibraryPage() {
         {/* Status Filter Tabs */}
         <Tabs
           variant="unstyled"
-          index={['all', 'draft', 'approved', 'published', 'scheduled'].indexOf(statusFilter)}
-          onChange={(i) =>
-            setStatusFilter((['all', 'draft', 'approved', 'published', 'scheduled'] as const)[i])
-          }
+          index={['all', 'published', 'scheduled'].indexOf(statusFilter)}
+          onChange={(i) => setStatusFilter((['all', 'published', 'scheduled'] as const)[i])}
         >
           <TabList gap={2}>
-            {(['all', 'draft', 'approved', 'published', 'scheduled'] as const).map((status) => (
+            {(['all', 'published', 'scheduled'] as const).map((status) => (
               <Tab
                 key={status}
                 px={4}
