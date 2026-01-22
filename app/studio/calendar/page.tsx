@@ -296,7 +296,6 @@ export default function CalendarPage() {
             </Button>
           </HStack>
 
-          {/* Filters */}
           <HStack spacing={3}>
             <Select
               size="sm"
@@ -305,19 +304,19 @@ export default function CalendarPage() {
               color="white"
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              w="120px"
+              w="140px"
             >
               <option value="all" style={{ background: '#1a1a2e' }}>
                 All Priority
               </option>
               <option value="P0" style={{ background: '#1a1a2e' }}>
-                P0 Only
+                Urgent
               </option>
               <option value="P1" style={{ background: '#1a1a2e' }}>
-                P1 Only
+                High
               </option>
               <option value="P2" style={{ background: '#1a1a2e' }}>
-                P2 Only
+                Normal
               </option>
             </Select>
           </HStack>

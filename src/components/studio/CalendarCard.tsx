@@ -15,6 +15,7 @@ import { Id } from '@/convex/_generated/dataModel';
 import { getContentTypeIcon, getContentTypeLabel } from '@/lib/constants/contentTypes';
 import { getSeoGrade } from '@/lib/utils/grading';
 import { getStatusStyle } from '@/lib/constants/statusColors';
+import { getPriorityDisplay } from '@/lib/utils/priorityDisplay';
 
 interface Props {
   contentPiece: {
@@ -33,6 +34,7 @@ export function CalendarCard({ contentPiece }: Props) {
   const IconComponent = getContentTypeIcon(contentType);
   const statusStyle = getStatusStyle(status);
   const { grade, color: gradeColor } = getSeoGrade(seoScore);
+  const priorityDisplay = getPriorityDisplay(priority);
 
   return (
     <Link href={`/studio/${_id}`} style={{ display: 'block', textDecoration: 'none' }}>
@@ -50,19 +52,19 @@ export function CalendarCard({ contentPiece }: Props) {
         position="relative"
         minH="60px"
       >
-        {/* Priority Badge */}
+        {/* Priority Badge - Industry standard labels (Urgent/High/Normal/Low) */}
         {priority && (
           <Badge
             position="absolute"
             top={1}
             right={1}
             fontSize="9px"
-            bg={priority === 'P0' ? '#EF4444' : priority === 'P1' ? '#FF9D00' : 'gray.600'}
+            bg={priorityDisplay.color}
             color="white"
             borderRadius="4px"
-            px={1}
+            px={1.5}
           >
-            {priority}
+            {priorityDisplay.label}
           </Badge>
         )}
 
