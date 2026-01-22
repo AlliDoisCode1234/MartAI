@@ -9,16 +9,18 @@
  *   ├── SkipLink (Accessibility)
  *   ├── MainContent
  *   ├── PhooFab (bottom-left chat FAB)
+ *   ├── PhooPopover (Intercom-style chat overlay - authenticated)
  *   └── PhooChatDrawer (guest marketing)
  */
 
-import { type FC, type ReactNode, useEffect } from 'react';
+import { type FC, type ReactNode, useEffect, useState } from 'react';
 import { Box, useDisclosure, Spinner, VStack, Text } from '@chakra-ui/react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Navigation } from '../Navigation';
 import { PhooFab, PhooChatDrawer } from '@/src/components/phoo';
+import PhooPopover from '@/src/components/phoo/PhooPopover';
 import { SkipLink, MainContent } from '@/src/lib/accessibility';
 import { ImpersonationBanner } from '@/src/components/admin/ImpersonationBanner';
 
@@ -52,8 +54,31 @@ export const Layout: FC<Props> = ({ children }) => {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery(api.users.me);
 
-  // PhooFab drawer state for guest users
+  // PhooPopover state for authenticated users (Intercom-style)
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [isPopoverMinimized, setIsPopoverMinimized] = useState(false);
+
+  // PhooChatDrawer state for guest users
   const { isOpen: isDrawerOpen, onOpen: onOpenDrawer, onClose: onCloseDrawer } = useDisclosure();
+
+  // Handle PhooFab click - open popover for auth, drawer for guests
+  const handlePhooFabClick = () => {
+    if (isAuthenticated) {
+      if (isPopoverOpen && isPopoverMinimized) {
+        // If minimized, maximize it
+        setIsPopoverMinimized(false);
+      } else if (isPopoverOpen) {
+        // If open and not minimized, minimize it
+        setIsPopoverMinimized(true);
+      } else {
+        // If closed, open it
+        setIsPopoverOpen(true);
+        setIsPopoverMinimized(false);
+      }
+    } else {
+      onOpenDrawer();
+    }
+  };
 
   // Check if current route is public (doesn't require onboarding)
   const isPublicRoute = PUBLIC_ROUTES.some((p) => pathname === p || pathname?.startsWith(p + '/'));
@@ -110,6 +135,9 @@ export const Layout: FC<Props> = ({ children }) => {
   const hidePhooPages = ['/onboarding', '/auth', '/admin', '/apply', '/thank-you'];
   const showPhoo = !hidePhooPages.some((p) => pathname === p || pathname?.startsWith(p + '/'));
 
+  // Hide FAB when popover is open and not minimized (to avoid visual clutter)
+  const showFab = showPhoo && !(isPopoverOpen && !isPopoverMinimized);
+
   // Show loading while checking onboarding status on protected routes
   if (!isPublicRoute && isAuthenticated && user === undefined) {
     return (
@@ -130,7 +158,18 @@ export const Layout: FC<Props> = ({ children }) => {
       <MainContent>{children}</MainContent>
 
       {/* PhooFab - floating chat button (bottom-left) */}
-      {showPhoo && <PhooFab onOpenDrawer={onOpenDrawer} />}
+      {showFab && <PhooFab onOpenDrawer={handlePhooFabClick} />}
+
+      {/* PhooPopover - Intercom-style chat for authenticated users */}
+      {isAuthenticated && (
+        <PhooPopover
+          isOpen={isPopoverOpen}
+          isMinimized={isPopoverMinimized}
+          onClose={() => setIsPopoverOpen(false)}
+          onMinimize={() => setIsPopoverMinimized(true)}
+          onMaximize={() => setIsPopoverMinimized(false)}
+        />
+      )}
 
       {/* PhooChatDrawer - for guest users only */}
       <PhooChatDrawer isOpen={isDrawerOpen} onClose={onCloseDrawer} />
