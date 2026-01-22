@@ -235,6 +235,17 @@ export default function SignupPage() {
                   />
                 </FormControl>
 
+                <Text fontSize="xs" color="gray.500" textAlign="center">
+                  By signing up, you agree to our{' '}
+                  <Link href="/terms" color="brand.orange" textDecoration="underline">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/privacy" color="brand.orange" textDecoration="underline">
+                    Privacy Policy
+                  </Link>
+                </Text>
+
                 <Button
                   type="submit"
                   bg="brand.orange"

@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { UserDropdown } from './UserDropdown';
-import { FiArrowLeft } from 'react-icons/fi';
+import { FiArrowLeft, FiMessageCircle } from 'react-icons/fi';
 import { Icon } from '@chakra-ui/react';
 
 interface NavItem {
@@ -109,8 +109,21 @@ export const Navigation: FC = () => {
               </Text>
             </HStack>
 
-            {/* User menu */}
-            <UserDropdown />
+            {/* Ask Phoo + User menu */}
+            <HStack spacing={4}>
+              <Link href="/assistant" style={{ textDecoration: 'none' }}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  color="gray.400"
+                  _hover={{ color: 'white', bg: 'whiteAlpha.100' }}
+                  leftIcon={<Icon as={FiMessageCircle} />}
+                >
+                  Ask Phoo
+                </Button>
+              </Link>
+              <UserDropdown />
+            </HStack>
           </HStack>
         </Box>
       </Box>
@@ -151,8 +164,21 @@ export const Navigation: FC = () => {
               </Text>
             </HStack>
 
-            {/* User menu */}
-            <UserDropdown />
+            {/* Ask Phoo + User menu */}
+            <HStack spacing={4}>
+              <Link href="/assistant" style={{ textDecoration: 'none' }}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  color="gray.400"
+                  _hover={{ color: 'white', bg: 'whiteAlpha.100' }}
+                  leftIcon={<Icon as={FiMessageCircle} />}
+                >
+                  Ask Phoo
+                </Button>
+              </Link>
+              <UserDropdown />
+            </HStack>
           </HStack>
         </Box>
       </Box>
@@ -214,7 +240,20 @@ export const Navigation: FC = () => {
               );
             })}
             {isAuthenticated ? (
-              <UserDropdown />
+              <HStack spacing={4}>
+                <Link href="/assistant" style={{ textDecoration: 'none' }}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    color="brand.orange"
+                    _hover={{ bg: 'orange.50' }}
+                    leftIcon={<Icon as={FiMessageCircle} />}
+                  >
+                    Ask Phoo
+                  </Button>
+                </Link>
+                <UserDropdown />
+              </HStack>
             ) : (
               <HStack spacing={4}>
                 <Link href="/auth/login">

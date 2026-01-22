@@ -193,6 +193,16 @@ export default function LoginPage() {
                         />
                       </FormControl>
 
+                      <Text textAlign="right" fontSize="sm">
+                        <Link
+                          href="/auth/forgot-password"
+                          color="gray.500"
+                          _hover={{ color: 'brand.orange' }}
+                        >
+                          Forgot password?
+                        </Link>
+                      </Text>
+
                       <Button
                         type="submit"
                         bg="brand.orange"

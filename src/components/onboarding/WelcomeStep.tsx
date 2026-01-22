@@ -20,16 +20,36 @@ import {
   FormLabel,
   Input,
   Button,
+  Select,
+  Link,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { FiArrowRight } from 'react-icons/fi';
+import { FiArrowRight, FiArrowLeft } from 'react-icons/fi';
 import { MartCharacter } from '@/src/components/assistant';
 
 const MotionBox = motion(Box);
 
+// Industry options for better SEO targeting
+const INDUSTRY_OPTIONS = [
+  { value: '', label: 'Select your industry (optional)' },
+  { value: 'ecommerce', label: 'E-commerce / Retail' },
+  { value: 'saas', label: 'SaaS / Software' },
+  { value: 'agency', label: 'Marketing Agency' },
+  { value: 'healthcare', label: 'Healthcare / Medical' },
+  { value: 'legal', label: 'Legal Services' },
+  { value: 'realestate', label: 'Real Estate' },
+  { value: 'construction', label: 'Construction / Home Services' },
+  { value: 'restaurant', label: 'Restaurant / Food Service' },
+  { value: 'fitness', label: 'Fitness / Wellness' },
+  { value: 'education', label: 'Education / Coaching' },
+  { value: 'nonprofit', label: 'Non-Profit' },
+  { value: 'local', label: 'Local Service Business' },
+  { value: 'other', label: 'Other' },
+];
+
 type Props = {
-  formData: { businessName: string; website: string };
-  onFormChange: (data: { businessName: string; website: string }) => void;
+  formData: { businessName: string; website: string; industry?: string };
+  onFormChange: (data: { businessName: string; website: string; industry?: string }) => void;
   onNext: () => void;
   loading: boolean;
 };
@@ -106,19 +126,52 @@ export function WelcomeStep({ formData, onFormChange, onNext, loading }: Props) 
                 size="lg"
               />
             </FormControl>
+
+            <FormControl>
+              <FormLabel>Industry</FormLabel>
+              <Select
+                placeholder="Select your industry (optional)"
+                value={formData.industry || ''}
+                onChange={(e) => onFormChange({ ...formData, industry: e.target.value })}
+                size="lg"
+              >
+                {INDUSTRY_OPTIONS.filter((opt) => opt.value).map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </Select>
+              <Text fontSize="xs" color="gray.500" mt={1}>
+                Helps us provide more relevant keyword and content recommendations
+              </Text>
+            </FormControl>
           </VStack>
 
-          <Button
-            colorScheme="orange"
-            size="lg"
-            rightIcon={<FiArrowRight />}
-            onClick={onNext}
-            isDisabled={!formData.website}
-            isLoading={loading}
-            px={8}
-          >
-            Analyze My Site
-          </Button>
+          <HStack justify="space-between" pt={2}>
+            <Link
+              href="/auth/login"
+              color="gray.500"
+              fontSize="sm"
+              display="flex"
+              alignItems="center"
+              _hover={{ color: 'gray.700' }}
+            >
+              <Box as={FiArrowLeft} mr={1} />
+              Back to Login
+            </Link>
+
+            <Button
+              colorScheme="orange"
+              size="lg"
+              rightIcon={<FiArrowRight />}
+              onClick={onNext}
+              isDisabled={!formData.website}
+              isLoading={loading}
+              px={8}
+            >
+              Analyze My Site
+            </Button>
+          </HStack>
         </VStack>
       </Box>
     </MotionBox>
