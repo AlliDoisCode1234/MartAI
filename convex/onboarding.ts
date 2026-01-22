@@ -242,6 +242,9 @@ export const markComplete = internalMutation({
       userId: args.userId,
     });
 
+    // NOTE: Content calendar generation happens in handleStep4Next via generateContentCalendar
+    // That function is called during onboarding step 4, not here in markComplete
+
     console.log(`[Onboarding] Marked complete for ${args.userId}. Active: ${shouldActivate}`);
 
     return { success: true, accountStatus: shouldActivate ? 'active' : user.accountStatus };

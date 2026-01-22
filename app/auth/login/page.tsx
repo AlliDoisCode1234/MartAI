@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -40,15 +40,64 @@ export default function LoginPage() {
   });
   const [magicLinkEmail, setMagicLinkEmail] = useState('');
 
+  // Refs to detect browser autofill
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync autofilled values from DOM to React state
+  const syncAutofillValues = useCallback(() => {
+    const emailValue = emailInputRef.current?.value || '';
+    const passwordValue = passwordInputRef.current?.value || '';
+
+    if (emailValue !== formData.email || passwordValue !== formData.password) {
+      setFormData({
+        email: emailValue,
+        password: passwordValue,
+      });
+    }
+  }, [formData.email, formData.password]);
+
+  // Check for autofill on mount and after short delay (browser timing)
+  useEffect(() => {
+    // Initial check
+    syncAutofillValues();
+
+    // Delayed check for browser autofill timing
+    const timer = setTimeout(syncAutofillValues, 100);
+
+    // Animation-based autofill detection (Chrome uses this)
+    const handleAnimationStart = (e: AnimationEvent) => {
+      if (e.animationName === 'onAutoFillStart') {
+        syncAutofillValues();
+      }
+    };
+
+    const emailInput = emailInputRef.current;
+    const passwordInput = passwordInputRef.current;
+
+    emailInput?.addEventListener('animationstart', handleAnimationStart);
+    passwordInput?.addEventListener('animationstart', handleAnimationStart);
+
+    return () => {
+      clearTimeout(timer);
+      emailInput?.removeEventListener('animationstart', handleAnimationStart);
+      passwordInput?.removeEventListener('animationstart', handleAnimationStart);
+    };
+  }, [syncAutofillValues]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
+    // Sync any autofilled values right before submit
+    const email = emailInputRef.current?.value || formData.email;
+    const password = passwordInputRef.current?.value || formData.password;
+
     try {
       await signIn('password', {
-        email: formData.email,
-        password: formData.password,
+        email,
+        password,
         flow: 'signIn',
       });
       router.replace('/dashboard');
@@ -174,6 +223,7 @@ export default function LoginPage() {
                       <FormControl isRequired>
                         <FormLabel>Email</FormLabel>
                         <Input
+                          ref={emailInputRef}
                           type="email"
                           placeholder="Enter your email"
                           value={formData.email}
@@ -185,6 +235,7 @@ export default function LoginPage() {
                       <FormControl isRequired>
                         <FormLabel>Password</FormLabel>
                         <Input
+                          ref={passwordInputRef}
                           type="password"
                           placeholder="Enter your password"
                           value={formData.password}

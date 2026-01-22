@@ -48,6 +48,7 @@ const COMPONENT_ICONS: Record<string, React.ElementType> = {
   'Keyword Strategy': FiSearch,
   'Content Clusters': FiTarget,
   'Content Execution': FiFileText,
+  'GEO Readiness': FiTrendingUp, // Using TrendingUp to represent AI optimization
 };
 
 const STATUS_COLORS: Record<string, string> = {

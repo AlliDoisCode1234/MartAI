@@ -55,25 +55,28 @@ export function TemplateBasedBriefCreator({ template }: Props) {
     projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
 
-  const createBrief = useMutation(api.content.briefs.createBrief);
+  // NOTE: briefs system replaced by contentPieces (2026-01-22)
+  const createContentPiece = useMutation(api.contentPieces.create);
 
   const handleCreate = async () => {
     if (!projectId || !title.trim()) return;
     setCreating(true);
     try {
-      const briefId = await createBrief({
+      const contentPieceId = await createContentPiece({
         projectId: projectId as Id<'projects'>,
         clusterId: selectedClusterId ? (selectedClusterId as Id<'keywordClusters'>) : undefined,
         title: title.trim(),
+        contentType: template.id as any, // template.id should map to contentType
+        status: 'draft',
+        keywords: [], // Can be populated from cluster
         scheduledDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
-        status: 'in_progress',
         h2Outline: template.structure,
       });
-      trackEvent(ANALYTICS_EVENTS.BRIEF_CREATED, { briefId, templateId: template.id });
-      router.push(`/content?briefId=${briefId}`);
+      trackEvent(ANALYTICS_EVENTS.BRIEF_CREATED, { contentPieceId, templateId: template.id });
+      router.push(`/studio/${contentPieceId}`);
     } catch (error) {
-      console.error('Failed to create brief:', error);
-      alert('Failed to create brief. Please try again.');
+      console.error('Failed to create content:', error);
+      alert('Failed to create content. Please try again.');
     } finally {
       setCreating(false);
     }

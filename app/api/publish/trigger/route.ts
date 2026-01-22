@@ -18,6 +18,8 @@ if (typeof window === 'undefined') {
 /**
  * This endpoint can be called by a cron job or webhook
  * to check for and publish scheduled posts
+ *
+ * NOTE (2026-01-22): Updated to use contentPieces instead of briefs/drafts
  */
 export async function POST(request: NextRequest) {
   try {
@@ -93,19 +95,14 @@ async function processPosts(duePosts: any[], api: any) {
 
   for (const post of duePosts) {
     try {
-      // Get draft
-      const draft = await callConvexQuery(api.content.drafts.getDraftById, {
-        draftId: post.draftId,
+      // Get content piece (replaces draft + brief)
+      const contentPiece = await callConvexQuery(api.contentPieces.getById, {
+        contentPieceId: post.contentPieceId,
       });
 
-      if (!draft) {
-        throw new Error('Draft not found');
+      if (!contentPiece) {
+        throw new Error('Content piece not found');
       }
-
-      // Get brief
-      const brief = await callConvexQuery(api.content.briefs.getBriefById, {
-        briefId: post.briefId,
-      });
 
       // Get connection
       const connection = await callConvexQuery(api.integrations.oauth.getOAuthToken, {
@@ -118,7 +115,7 @@ async function processPosts(duePosts: any[], api: any) {
       }
 
       // Publish to platform
-      const title = brief?.titleOptions?.[0] || brief?.title || 'Untitled';
+      const title = contentPiece.title || 'Untitled';
       let publishedUrl = '';
 
       const { publishWithRetry } = await import('@/lib/publishingRetry');
@@ -134,7 +131,7 @@ async function processPosts(duePosts: any[], api: any) {
           async () => {
             const publishResult = await wpClient.createPage({
               title,
-              content: draft.content,
+              content: contentPiece.content || '',
               slug: post.slug || undefined,
               status: 'publish',
             });
@@ -171,7 +168,7 @@ async function processPosts(duePosts: any[], api: any) {
           async () => {
             const publishResult = await shopifyClient.createPage({
               title,
-              body_html: draft.content,
+              body_html: contentPiece.content || '',
               handle: post.slug || undefined,
               published: true,
             });
@@ -201,18 +198,11 @@ async function processPosts(duePosts: any[], api: any) {
         publishedUrl,
       });
 
-      // Update draft and brief
-      await callConvexMutation(api.content.drafts.updateDraft, {
-        draftId: post.draftId,
+      // Update content piece status
+      await callConvexMutation(api.contentPieces.update, {
+        contentPieceId: post.contentPieceId,
         status: 'published',
       });
-
-      if (brief) {
-        await callConvexMutation(api.content.briefs.updateBrief, {
-          briefId: post.briefId,
-          status: 'published',
-        });
-      }
 
       results.push({ postId: post._id, success: true, url: publishedUrl });
     } catch (error) {

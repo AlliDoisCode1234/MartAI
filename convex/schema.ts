@@ -1421,7 +1421,8 @@ export default defineSchema({
     wordCount: v.optional(v.number()),
 
     // Quality Metrics - 90+ score guarantee
-    seoScore: v.optional(v.number()), // 0-100
+    seoScore: v.optional(v.number()), // 0-100 SEO optimization score
+    geoScore: v.optional(v.number()), // 0-100 GEO (Generative Engine Optimization) score
     qualityMetrics: v.optional(
       v.object({
         wordCountScore: v.number(),

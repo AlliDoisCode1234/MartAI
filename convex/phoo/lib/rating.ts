@@ -17,13 +17,14 @@ import { query } from '../../_generated/server';
 import { v } from 'convex/values';
 
 /**
- * Rating component weights
+ * Rating component weights (must sum to 1.0)
  */
 export const RATING_WEIGHTS = {
-  SEO_AUDIT: 0.35, // 35% - Technical SEO health
-  KEYWORDS: 0.25, // 25% - Keyword strategy quality
-  CLUSTERS: 0.25, // 25% - Content organization
+  SEO_AUDIT: 0.25, // 25% - Technical SEO health
+  KEYWORDS: 0.2, // 20% - Keyword strategy quality
+  CLUSTERS: 0.2, // 20% - Content organization
   CONTENT: 0.15, // 15% - Content execution
+  GEO: 0.2, // 20% - Generative Engine Optimization
 } as const;
 
 /**
@@ -240,6 +241,48 @@ export const getPhooRating = query({
       insights.push('Create a content calendar to drive consistent publishing');
     }
 
+    // 5. GEO (Generative Engine Optimization) Score (20%)
+    // Measures readiness for AI-generated search results (ChatGPT, Perplexity, Google AI)
+    let geoScore = 0;
+    if (contentPieces.length > 0) {
+      const piecesWithGeo = contentPieces.filter((p) => p.geoScore !== undefined);
+      if (piecesWithGeo.length > 0) {
+        // Average GEO score across content pieces
+        const avgGeoScore =
+          piecesWithGeo.reduce((sum, p) => sum + (p.geoScore ?? 0), 0) / piecesWithGeo.length;
+        // Coverage bonus: having GEO scores on most content
+        const coverageBonus = (piecesWithGeo.length / contentPieces.length) * 20;
+        geoScore = Math.round(Math.min(avgGeoScore + coverageBonus, 100));
+      } else {
+        // No GEO scores yet - give partial credit for having content
+        geoScore = Math.min(contentPieces.length * 5, 25);
+      }
+
+      breakdown.push({
+        component: 'GEO Readiness',
+        score: geoScore,
+        weight: RATING_WEIGHTS.GEO,
+        weighted: geoScore * RATING_WEIGHTS.GEO,
+        details:
+          piecesWithGeo.length > 0
+            ? `${piecesWithGeo.length}/${contentPieces.length} pieces optimized for AI search`
+            : `${contentPieces.length} pieces, none GEO-optimized yet`,
+      });
+
+      if (piecesWithGeo.length < contentPieces.length * 0.5) {
+        insights.push('Optimize content for AI search engines (GEO) to improve discoverability');
+      }
+    } else {
+      breakdown.push({
+        component: 'GEO Readiness',
+        score: 0,
+        weight: RATING_WEIGHTS.GEO,
+        weighted: 0,
+        details: 'No content available for GEO optimization',
+      });
+      insights.push('Create content optimized for AI search to build GEO presence');
+    }
+
     // Calculate overall rating
     const rating = Math.round(breakdown.reduce((sum, b) => sum + b.weighted, 0));
 
@@ -297,6 +340,8 @@ function determineTopOpportunity(breakdown: PhooRatingBreakdown[], insights: str
       return 'Create topic clusters to organize your content strategy.';
     case 'Content Execution':
       return 'Generate content briefs and build your publishing calendar.';
+    case 'GEO Readiness':
+      return 'Optimize your content for AI search engines like ChatGPT and Perplexity.';
     default:
       return insights[0] || 'Continue building out your SEO foundation.';
   }
@@ -311,10 +356,41 @@ function createDefaultRating(reason: string): PhooRatingResult {
     status: 'Needs Work',
     color: 'red',
     breakdown: [
-      { component: 'SEO Health', score: 0, weight: 0.35, weighted: 0, details: 'No data' },
-      { component: 'Keyword Strategy', score: 0, weight: 0.25, weighted: 0, details: 'No data' },
-      { component: 'Content Clusters', score: 0, weight: 0.25, weighted: 0, details: 'No data' },
-      { component: 'Content Execution', score: 0, weight: 0.15, weighted: 0, details: 'No data' },
+      {
+        component: 'SEO Health',
+        score: 0,
+        weight: RATING_WEIGHTS.SEO_AUDIT,
+        weighted: 0,
+        details: 'No data',
+      },
+      {
+        component: 'Keyword Strategy',
+        score: 0,
+        weight: RATING_WEIGHTS.KEYWORDS,
+        weighted: 0,
+        details: 'No data',
+      },
+      {
+        component: 'Content Clusters',
+        score: 0,
+        weight: RATING_WEIGHTS.CLUSTERS,
+        weighted: 0,
+        details: 'No data',
+      },
+      {
+        component: 'Content Execution',
+        score: 0,
+        weight: RATING_WEIGHTS.CONTENT,
+        weighted: 0,
+        details: 'No data',
+      },
+      {
+        component: 'GEO Readiness',
+        score: 0,
+        weight: RATING_WEIGHTS.GEO,
+        weighted: 0,
+        details: 'No data',
+      },
     ],
     insights: [reason],
     topOpportunity: 'Start by running an SEO audit on your website.',

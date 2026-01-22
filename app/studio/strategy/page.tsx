@@ -86,7 +86,10 @@ function StrategyContent() {
   const createKeywordsMutation = useMutation(api.seo.keywords.createKeywords);
   const generateClustersAction = useAction(api.seo.keywordActions.generateClusters);
   const generateKeywordsFromUrlAction = useAction(api.seo.keywordActions.generateKeywordsFromUrl);
-  const generatePlanAction = useAction((api as any).content.quarterlyPlanActions.generatePlan);
+  // NOTE: quarterlyPlanActions was removed - use generateContentCalendar for plan generation
+  const generateContentCalendarAction = useAction(
+    api.contentCalendar.generateCalendar.generateFullCalendar
+  );
 
   // Derived data
   const clusters = strategyData?.clusters ?? [];
@@ -146,14 +149,11 @@ function StrategyContent() {
     if (!typedProjectId || clusters.length === 0) return;
     setGenerating(true);
     try {
-      const goalPayload: { traffic?: number; leads?: number } = {};
-      if (formData.trafficGoal) goalPayload.traffic = parseInt(formData.trafficGoal, 10);
-      if (formData.leadsGoal) goalPayload.leads = parseInt(formData.leadsGoal, 10);
-      await generatePlanAction({
+      // Use the working generateContentCalendar instead of the removed quarterlyPlanActions
+      await generateContentCalendarAction({
         projectId: typedProjectId,
-        contentVelocity: formData.contentVelocity,
-        startDate: new Date(formData.startDate).getTime(),
-        goals: Object.keys(goalPayload).length ? goalPayload : undefined,
+        monthsAhead: 6, // 6-month plan
+        useGa4Gsc: !!gscConnection, // Use GSC data if connected
       });
       setIsPlanModalOpen(false);
     } catch (e) {

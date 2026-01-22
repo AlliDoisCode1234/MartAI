@@ -1,5 +1,15 @@
 'use client';
 
+/**
+ * Pricing Page
+ *
+ * Component Hierarchy:
+ * App → PricingPage (this file)
+ *
+ * GEO-optimized pricing page with FAQ schema for Google AI Overviews.
+ * Highlights the SEO + GEO value proposition.
+ */
+
 import {
   Box,
   Button,
@@ -10,7 +20,6 @@ import {
   List,
   ListItem,
   ListIcon,
-  Stack,
   Text,
   useColorModeValue,
   Switch,
@@ -19,9 +28,11 @@ import {
   VStack,
   HStack,
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Script from 'next/script';
 import { FaCheck, FaTimes } from 'react-icons/fa';
-import { FiZap, FiTarget, FiTrendingUp } from 'react-icons/fi';
+import { FiZap, FiTarget, FiTrendingUp, FiCpu } from 'react-icons/fi';
+import { getFaqSchema, PRICING_FAQ_ITEMS, schemaToJsonLd } from '@/src/lib/schemas';
 
 const PricingCard = ({
   title,
@@ -135,6 +146,9 @@ const PricingCard = ({
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(true);
 
+  // Generate FAQ schema for Google AI Overviews
+  const faqSchema = getFaqSchema(PRICING_FAQ_ITEMS);
+
   const plans = [
     {
       title: 'Solo',
@@ -182,111 +196,138 @@ export default function PricingPage() {
   ];
 
   return (
-    <Box py={20}>
-      <Container maxW="container.xl">
-        <VStack spacing={4} textAlign="center" mb={16}>
-          <Heading size="2xl" fontWeight="bold">
-            SEO + AI Content for $149/mo
-          </Heading>
-          <Text fontSize="xl" color="gray.500" maxW="2xl">
-            Competitors charge $600+/mo for SEO tools alone. We give you keyword research, AI
-            content generation, and WordPress publishing—all in one platform.
-          </Text>
-          <Text fontSize="md" color="blue.600" fontWeight="semibold">
-            Join 1,200+ businesses growing their organic traffic with Phoo
-          </Text>
+    <>
+      {/* FAQ Schema for Google AI Overviews */}
+      <Script
+        id="faq-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: schemaToJsonLd(faqSchema) }}
+      />
 
-          <Flex align="center" mt={8}>
-            <Text
-              fontWeight={!isAnnual ? 'bold' : 'medium'}
-              color={!isAnnual ? 'gray.900' : 'gray.500'}
-              mr={3}
-            >
-              Monthly
+      <Box bg="#0A0A0A" py={20}>
+        <Container maxW="container.xl">
+          <VStack spacing={4} textAlign="center" mb={16}>
+            <HStack justify="center" mb={2}>
+              <Badge
+                bg="rgba(255, 157, 0, 0.1)"
+                color="brand.orange"
+                px={3}
+                py={1}
+                borderRadius="full"
+                fontSize="xs"
+              >
+                <HStack spacing={1}>
+                  <Icon as={FiCpu} boxSize={3} />
+                  <Text>SEO + GEO Included</Text>
+                </HStack>
+              </Badge>
+            </HStack>
+            <Heading size="2xl" fontWeight="bold" color="white">
+              SEO + AI Content for $149/mo
+            </Heading>
+            <Text fontSize="xl" color="gray.400" maxW="2xl">
+              Competitors charge $600+/mo for SEO tools alone. Phoo gives you keyword research, AI
+              content generation, AND GEO optimization—so you rank in search results AND get cited
+              by Google&apos;s AI.
             </Text>
-            <Switch
-              size="lg"
-              isChecked={isAnnual}
-              onChange={() => setIsAnnual(!isAnnual)}
-              colorScheme="blue"
-            />
-            <Text
-              fontWeight={isAnnual ? 'bold' : 'medium'}
-              color={isAnnual ? 'gray.900' : 'gray.500'}
-              ml={3}
-            >
-              Annual
+            <Text fontSize="md" color="brand.orange" fontWeight="semibold">
+              Join 1,200+ businesses growing their organic traffic with Phoo
             </Text>
-            <Badge ml={2} colorScheme="green" variant="solid" rounded="full">
-              Save 20%
-            </Badge>
-          </Flex>
-        </VStack>
 
-        <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={10} alignItems="center">
-          {plans.map((plan, index) => (
-            <PricingCard key={index} {...plan} />
-          ))}
-        </SimpleGrid>
+            <Flex align="center" mt={8}>
+              <Text
+                fontWeight={!isAnnual ? 'bold' : 'medium'}
+                color={!isAnnual ? 'gray.900' : 'gray.500'}
+                mr={3}
+              >
+                Monthly
+              </Text>
+              <Switch
+                size="lg"
+                isChecked={isAnnual}
+                onChange={() => setIsAnnual(!isAnnual)}
+                colorScheme="blue"
+              />
+              <Text
+                fontWeight={isAnnual ? 'bold' : 'medium'}
+                color={isAnnual ? 'gray.900' : 'gray.500'}
+                ml={3}
+              >
+                Annual
+              </Text>
+              <Badge ml={2} colorScheme="green" variant="solid" rounded="full">
+                Save 20%
+              </Badge>
+            </Flex>
+          </VStack>
 
-        <Box mt={20} bg={useColorModeValue('gray.50', 'gray.900')} p={10} borderRadius="xl">
-          <Heading size="lg" mb={8} textAlign="center">
-            Frequently Asked Questions
-          </Heading>
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
-            <Box>
-              <Heading size="sm" mb={2}>
-                How do keyword limits work?
-              </Heading>
-              <Text color="gray.600" fontSize="sm">
-                Each plan includes monthly keyword analysis credits. For example, Growth gives you
-                500 keyword analyses per month—enough to research 5-10 content clusters. Unused
-                credits don't roll over.
-              </Text>
-            </Box>
-            <Box>
-              <Heading size="sm" mb={2}>
-                What counts as an "AI Article"?
-              </Heading>
-              <Text color="gray.600" fontSize="sm">
-                Each AI article is a 1,500-2,500 word SEO-optimized blog post, complete with meta
-                tags, headings, and internal linking suggestions. You can regenerate or edit before
-                publishing.
-              </Text>
-            </Box>
-            <Box>
-              <Heading size="sm" mb={2}>
-                Can I upgrade or downgrade anytime?
-              </Heading>
-              <Text color="gray.600" fontSize="sm">
-                Yes! Upgrade instantly to unlock more features. Downgrades take effect at the end of
-                your billing cycle. Annual plans can be upgraded mid-term with prorated pricing.
-              </Text>
-            </Box>
-            <Box>
-              <Heading size="sm" mb={2}>
-                Do you offer refunds?
-              </Heading>
-              <Text color="gray.600" fontSize="sm">
-                We offer a 14-day money-back guarantee on all plans. If you're not satisfied, email
-                us within 14 days of your first payment for a full refund—no questions asked.
-              </Text>
-            </Box>
+          <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={10} alignItems="center">
+            {plans.map((plan, index) => (
+              <PricingCard key={index} {...plan} />
+            ))}
           </SimpleGrid>
-        </Box>
 
-        <Box mt={20} textAlign="center">
-          <Heading size="lg" mb={4}>
-            Need a custom solution?
-          </Heading>
-          <Text color="gray.500" mb={8}>
-            We offer custom plans for large agencies and enterprise teams with high-volume needs.
-          </Text>
-          <Button variant="outline" size="lg">
-            Contact Sales
-          </Button>
-        </Box>
-      </Container>
-    </Box>
+          <Box mt={20} bg={useColorModeValue('gray.50', 'gray.900')} p={10} borderRadius="xl">
+            <Heading size="lg" mb={8} textAlign="center">
+              Frequently Asked Questions
+            </Heading>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
+              <Box>
+                <Heading size="sm" mb={2}>
+                  How do keyword limits work?
+                </Heading>
+                <Text color="gray.600" fontSize="sm">
+                  Each plan includes monthly keyword analysis credits. For example, Growth gives you
+                  500 keyword analyses per month—enough to research 5-10 content clusters. Unused
+                  credits don't roll over.
+                </Text>
+              </Box>
+              <Box>
+                <Heading size="sm" mb={2}>
+                  What counts as an "AI Article"?
+                </Heading>
+                <Text color="gray.600" fontSize="sm">
+                  Each AI article is a 1,500-2,500 word SEO-optimized blog post, complete with meta
+                  tags, headings, and internal linking suggestions. You can regenerate or edit
+                  before publishing.
+                </Text>
+              </Box>
+              <Box>
+                <Heading size="sm" mb={2}>
+                  Can I upgrade or downgrade anytime?
+                </Heading>
+                <Text color="gray.600" fontSize="sm">
+                  Yes! Upgrade instantly to unlock more features. Downgrades take effect at the end
+                  of your billing cycle. Annual plans can be upgraded mid-term with prorated
+                  pricing.
+                </Text>
+              </Box>
+              <Box>
+                <Heading size="sm" mb={2}>
+                  Do you offer refunds?
+                </Heading>
+                <Text color="gray.600" fontSize="sm">
+                  We offer a 14-day money-back guarantee on all plans. If you're not satisfied,
+                  email us within 14 days of your first payment for a full refund—no questions
+                  asked.
+                </Text>
+              </Box>
+            </SimpleGrid>
+          </Box>
+
+          <Box mt={20} textAlign="center">
+            <Heading size="lg" mb={4}>
+              Need a custom solution?
+            </Heading>
+            <Text color="gray.500" mb={8}>
+              We offer custom plans for large agencies and enterprise teams with high-volume needs.
+            </Text>
+            <Button variant="outline" size="lg">
+              Contact Sales
+            </Button>
+          </Box>
+        </Container>
+      </Box>
+    </>
   );
 }

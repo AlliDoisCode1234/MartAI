@@ -226,6 +226,7 @@ export const update = mutation({
       )
     ),
     seoScore: v.optional(v.number()),
+    geoScore: v.optional(v.number()), // GEO (Generative Engine Optimization) score
     wordCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {

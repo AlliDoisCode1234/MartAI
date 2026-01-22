@@ -5,11 +5,9 @@
  */
 
 // Content Workflows
-export {
-  contentCreationWorkflow,
-  draftGenerationWorkflow,
-  publishingWorkflow,
-} from './contentWorkflows';
+// NOTE: contentCreationWorkflow, draftGenerationWorkflow, publishingWorkflow removed (2026-01-22)
+// They referenced non-existent briefs/drafts tables. Use contentPieces instead.
+export { articleGenerationWorkflow } from './contentWorkflows';
 
 // Keyword Workflows
 export {
@@ -41,9 +39,9 @@ export {
  */
 export const WORKFLOW_REGISTRY = {
   // Content Workflows
-  'content:create': 'workflows/contentWorkflows:contentCreationWorkflow',
-  'content:generateDraft': 'workflows/contentWorkflows:draftGenerationWorkflow',
-  'content:publish': 'workflows/contentWorkflows:publishingWorkflow',
+  // NOTE: 'content:create', 'content:generateDraft', 'content:publish' removed
+  // Use generateCalendar.ts or articleGenerationWorkflow instead
+  'article:generate': 'workflows/contentWorkflows:articleGenerationWorkflow',
 
   // Keyword Workflows
   'keywords:research': 'workflows/keywordWorkflows:keywordResearchWorkflow',

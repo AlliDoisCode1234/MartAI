@@ -56,9 +56,7 @@ export default function OnboardingPage() {
   const createOnboardingProspect = useMutation(api.prospects.prospects.createOnboardingProspect);
   const generateKeywordsFromUrl = useAction(api.seo.keywordActions.generateKeywordsFromUrl);
   const generateClusters = useAction(api.seo.keywordActions.generateClusters);
-  const generatePlan = useAction(api.content.quarterlyPlanActions.generatePlan);
-  const generateBrief = useAction(api.content.briefActions.generateBrief);
-  const generateDraft = useAction(api.content.draftActions.generateDraft);
+  // NOTE: Old briefActions and quarterlyPlanActions removed - use generateContentCalendar instead
   const generateAuthUrl = useAction(api.integrations.google.generateAuthUrl);
   const generatePreliminaryScore = useMutation(
     api.analytics.martaiRatingQueries.generatePreliminaryScore
@@ -179,7 +177,25 @@ export default function OnboardingPage() {
   // We don't need to persist the current step number to the database.
 
   // ==========================================================================
-  // LOADING STATE GUARDS (fixes flash of wrong content)
+  // REDIRECT HANDLING (via useEffect, not during render)
+  // ==========================================================================
+
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || !user)) {
+      router.replace('/auth/login');
+    }
+  }, [authLoading, isAuthenticated, user, router]);
+
+  // Redirect completed users to dashboard
+  useEffect(() => {
+    if (!authLoading && user?.onboardingStatus === 'completed') {
+      router.replace('/dashboard');
+    }
+  }, [authLoading, user?.onboardingStatus, router]);
+
+  // ==========================================================================
+  // LOADING STATE GUARDS (render loading UI while redirecting)
   // ==========================================================================
 
   // Guard 1: Still loading auth
@@ -191,9 +207,8 @@ export default function OnboardingPage() {
     );
   }
 
-  // Guard 2: Not authenticated - redirect to login
+  // Guard 2: Not authenticated - show loading while useEffect redirects
   if (!isAuthenticated || !user) {
-    router.replace('/auth/login');
     return (
       <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
         <MartLoader message="Redirecting to login..." />
@@ -201,9 +216,8 @@ export default function OnboardingPage() {
     );
   }
 
-  // Guard 3: Already completed onboarding - redirect to dashboard
+  // Guard 3: Already completed onboarding - show loading while useEffect redirects
   if (user.onboardingStatus === 'completed') {
-    router.replace('/dashboard');
     return (
       <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
         <MartLoader message="Welcome back! Redirecting..." />
@@ -306,31 +320,15 @@ export default function OnboardingPage() {
               await generateClusters({ projectId: newProjectId as any });
               console.log('[ONBOARDING DEBUG] generateClusters completed');
 
-              console.log('[ONBOARDING DEBUG] Calling generatePlan...');
-              await generatePlan({
+              // Generate content calendar using the working system
+              console.log('[ONBOARDING DEBUG] Calling generateContentCalendar...');
+              const calendarResult = await generateContentCalendar({
                 projectId: newProjectId as any,
-                contentVelocity: 2,
-                startDate: Date.now(),
+                useGa4Gsc: false, // GA4/GSC not connected yet at this step
               });
-              console.log('[ONBOARDING DEBUG] generatePlan completed - calendar ready!');
-
-              // Auto-generate first brief content and draft
-              console.log('[ONBOARDING DEBUG] Fetching first brief for auto-generation...');
-              const briefs = await convex.query(api.content.briefs.getBriefsByProject, {
-                projectId: newProjectId as any,
-              });
-              const firstBrief = briefs?.[0];
-              if (firstBrief) {
-                console.log('[ONBOARDING DEBUG] Generating brief content for:', firstBrief._id);
-                await generateBrief({
-                  briefId: firstBrief._id as any,
-                  projectId: newProjectId as any,
-                  clusterId: firstBrief.clusterId || undefined,
-                });
-                console.log('[ONBOARDING DEBUG] Brief content generated! Now generating draft...');
-                await generateDraft({ briefId: firstBrief._id as any });
-                console.log('[ONBOARDING DEBUG] Draft generated! Demo content ready.');
-              }
+              console.log(
+                `[ONBOARDING DEBUG] Calendar generated: ${calendarResult.itemsGenerated} items for ${calendarResult.industry} industry`
+              );
 
               // Generate MR score
               console.log('[ONBOARDING DEBUG] Calling generatePreliminaryScore...');
