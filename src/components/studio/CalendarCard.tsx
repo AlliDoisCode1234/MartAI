@@ -26,15 +26,18 @@ interface Props {
     status: string;
     seoScore?: number;
     priority?: 'P0' | 'P1' | 'P2';
+    wordCount?: number;
   };
 }
 
 export function CalendarCard({ contentPiece }: Props) {
-  const { _id, title, contentType, phooContentType, status, seoScore, priority } = contentPiece;
+  const { _id, title, contentType, phooContentType, status, seoScore, priority, wordCount } =
+    contentPiece;
   const IconComponent = getContentTypeIcon(contentType);
   const statusStyle = getStatusStyle(status);
   const { grade, color: gradeColor } = getSeoGrade(seoScore);
   const priorityDisplay = getPriorityDisplay(priority);
+  const needsContent = wordCount === 0 || wordCount === undefined;
 
   return (
     <Link href={`/studio/${_id}`} style={{ display: 'block', textDecoration: 'none' }}>
@@ -65,6 +68,22 @@ export function CalendarCard({ contentPiece }: Props) {
             px={1.5}
           >
             {priorityDisplay.label}
+          </Badge>
+        )}
+
+        {/* Needs Content Badge */}
+        {needsContent && (
+          <Badge
+            position="absolute"
+            bottom={1}
+            left={1}
+            fontSize="7px"
+            bg="yellow.500"
+            color="black"
+            borderRadius="3px"
+            px={1}
+          >
+            Needs Content
           </Badge>
         )}
 

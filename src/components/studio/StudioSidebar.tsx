@@ -14,7 +14,6 @@ import { Box, VStack, Icon, Text, Tooltip, Spacer, Divider } from '@chakra-ui/re
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  FiHome,
   FiFolder,
   FiPlusCircle,
   FiBarChart2,
@@ -31,14 +30,13 @@ interface Props {
 interface NavItem {
   href: string;
   label: string;
-  icon: typeof FiHome;
+  icon: typeof FiFolder;
 }
 
 const navItems: NavItem[] = [
-  { href: '/studio', label: 'Home', icon: FiHome },
-  { href: '/studio/strategy', label: 'Strategy', icon: FiTarget }, // Planning tab
+  { href: '/studio/library', label: 'Library', icon: FiFolder }, // Default landing
+  { href: '/studio/strategy', label: 'Strategy', icon: FiTarget },
   { href: '/studio/calendar', label: 'Calendar', icon: FiCalendar },
-  { href: '/studio/library', label: 'Library', icon: FiFolder },
   { href: '/studio/create', label: 'Create', icon: FiPlusCircle },
   { href: '/studio/insights', label: 'Insights', icon: FiBarChart2 },
   { href: '/studio/settings', label: 'Settings', icon: FiSettings },

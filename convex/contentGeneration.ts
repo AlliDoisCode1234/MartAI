@@ -167,6 +167,116 @@ export const generateContentInternal = internalAction({
   },
 });
 
+/**
+ * Generate content for an EXISTING content piece.
+ * Used by calendar generation to fill in skeleton pieces with AI content.
+ */
+export const generateContentForPiece = internalAction({
+  args: {
+    contentPieceId: v.id('contentPieces'),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const { contentPieceId, userId } = args;
+
+    // 1. Get existing piece
+    const piece = await ctx.runQuery(api.contentPieces.getById, { contentPieceId });
+    if (!piece) {
+      console.error(`[generateContentForPiece] Piece not found: ${contentPieceId}`);
+      return null;
+    }
+
+    // Skip if already has content
+    if ((piece.wordCount ?? 0) > 0) {
+      console.log(`[generateContentForPiece] Piece already has content: ${contentPieceId}`);
+      return contentPieceId;
+    }
+
+    console.log(`[generateContentForPiece] Generating content for: ${piece.title}`);
+
+    // 2. Get or create Writer Persona for this project
+    const persona = await ctx.runMutation(
+      internal.ai.writerPersonas.index.getOrCreatePersonaInternal,
+      {
+        projectId: piece.projectId,
+        userId,
+      }
+    );
+    const personaContext = persona ? buildPersonaContext(persona) : '';
+
+    // 3. Generate outline using AI
+    const outline = await generateOutlineWithAI(
+      ctx,
+      piece.contentType,
+      piece.title,
+      piece.keywords || [],
+      personaContext
+    );
+
+    // 4. Update with outline
+    await ctx.runMutation(internal.contentGeneration.updateContentPiece, {
+      contentPieceId,
+      h2Outline: outline,
+      status: 'generating',
+    });
+
+    // 5. Quality Guarantee Loop
+    let attempt = 0;
+    let bestContent = '';
+    let bestScore = 0;
+    let bestMetrics: Record<string, number> = {};
+
+    while (attempt < MAX_GENERATION_ATTEMPTS) {
+      attempt++;
+      console.log(`[generateContentForPiece] Attempt ${attempt}/${MAX_GENERATION_ATTEMPTS}`);
+
+      const content = await generateFullContentWithAI(
+        ctx,
+        piece.contentType,
+        piece.title,
+        outline,
+        piece.keywords || [],
+        personaContext,
+        attempt > 1
+      );
+
+      const contentTypeConfig = CONTENT_TYPES[piece.contentType as ContentTypeId];
+      const targetWordCount = contentTypeConfig?.wordCount || 1200;
+      const { score, metrics } = scoreContent(
+        content,
+        outline,
+        piece.keywords || [],
+        targetWordCount
+      );
+
+      if (score > bestScore) {
+        bestContent = content;
+        bestScore = score;
+        bestMetrics = metrics;
+      }
+
+      if (score >= QUALITY_THRESHOLD) {
+        console.log(`[generateContentForPiece] Quality threshold met (${score})`);
+        break;
+      }
+    }
+
+    // 6. Update piece with generated content and set status to 'scheduled'
+    await ctx.runMutation(internal.contentGeneration.updateContentPiece, {
+      contentPieceId,
+      content: bestContent,
+      wordCount: countWords(bestContent),
+      seoScore: bestScore,
+      qualityMetrics: bestMetrics,
+      generationAttempts: attempt,
+      status: 'scheduled', // Ready for calendar display
+    });
+
+    console.log(`[generateContentForPiece] Complete: ${piece.title} (Score: ${bestScore})`);
+    return contentPieceId;
+  },
+});
+
 // ============================================================================
 // Internal Mutations
 // ============================================================================

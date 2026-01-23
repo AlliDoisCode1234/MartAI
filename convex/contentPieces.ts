@@ -111,6 +111,7 @@ export const getById = query({
 
 /**
  * List content pieces by scheduled date for calendar view
+ * Only returns pieces with actual content (wordCount > 0)
  */
 export const listByScheduledDate = query({
   args: {
@@ -128,8 +129,11 @@ export const listByScheduledDate = query({
       .withIndex('by_project_scheduled', (q) => q.eq('projectId', args.projectId))
       .collect();
 
-    // Filter by date range if provided
-    let filtered = pieces.filter((p) => p.scheduledDate != null);
+    // ONLY show published/scheduled content with actual content (excludes drafts)
+    const validStatuses = ['published', 'scheduled'];
+    let filtered = pieces.filter(
+      (p) => p.scheduledDate != null && validStatuses.includes(p.status) && (p.wordCount ?? 0) > 0
+    );
 
     if (args.startDate) {
       filtered = filtered.filter((p) => (p.scheduledDate ?? 0) >= args.startDate!);

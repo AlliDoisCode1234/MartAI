@@ -43,7 +43,7 @@ import { useLoadingAnnounce } from '@/src/lib/accessibility';
 import type { Id } from '@/convex/_generated/dataModel';
 
 type ViewMode = 'grid' | 'list';
-type StatusFilter = 'all' | 'published' | 'scheduled';
+type StatusFilter = 'all' | 'draft' | 'published' | 'scheduled';
 
 export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -53,17 +53,17 @@ export default function LibraryPage() {
   // Get current project
   const { projectId, isLoading: projectLoading } = useProject(null, { autoSelect: true });
 
-  // Paginated query for content pieces
+  // Paginated query for content pieces - fetch ALL, filter client-side
+  // This ensures counts stay accurate across all tabs
   const { results, status, loadMore } = usePaginatedQuery(
     api.contentPieces.listByProjectPaginated,
     projectId
       ? {
           projectId: projectId as Id<'projects'>,
-          // Content Library only shows finalized content (published or scheduled)
-          status: statusFilter !== 'all' ? statusFilter : undefined,
+          // No status filter - fetch all, filter client-side for accurate counts
         }
       : 'skip',
-    { initialNumItems: 12 }
+    { initialNumItems: 50 } // Higher initial load since we're filtering client-side
   );
 
   const isLoadingFirst = status === 'LoadingFirstPage' || projectLoading;
@@ -86,26 +86,26 @@ export default function LibraryPage() {
   );
 
   // Filter by search (client-side for now)
-  // Filter by search AND ensure only published/scheduled content appears
   const filteredContent = useMemo(() => {
-    // Library only shows published or scheduled content
-    const libraryContent = results.filter(
-      (piece) => piece.status === 'published' || piece.status === 'scheduled'
-    );
-    if (!searchQuery) return libraryContent;
-    return libraryContent.filter((piece) =>
-      piece.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [results, searchQuery]);
+    // Apply status filter
+    let content = results;
+    if (statusFilter !== 'all') {
+      content = results.filter((piece) => piece.status === statusFilter);
+    }
+    // Apply search filter
+    if (!searchQuery) return content;
+    return content.filter((piece) => piece.title.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [results, searchQuery, statusFilter]);
 
-  // Count by status from filtered results (library content only)
+  // Count by status
   const counts = useMemo(
     () => ({
-      all: filteredContent.length,
-      published: filteredContent.filter((p) => p.status === 'published').length,
-      scheduled: filteredContent.filter((p) => p.status === 'scheduled').length,
+      all: results.length,
+      draft: results.filter((p) => p.status === 'draft').length,
+      published: results.filter((p) => p.status === 'published').length,
+      scheduled: results.filter((p) => p.status === 'scheduled').length,
     }),
-    [filteredContent]
+    [results]
   );
 
   return (
@@ -120,7 +120,7 @@ export default function LibraryPage() {
               Content Library
             </Heading>
             <Text color="gray.500" mt={1}>
-              {results.length} pieces{hasMore ? '+' : ''}
+              {filteredContent.length} {statusFilter === 'all' ? 'total' : statusFilter} pieces
             </Text>
           </Box>
           <Link href="/studio/create">
@@ -179,11 +179,13 @@ export default function LibraryPage() {
         {/* Status Filter Tabs */}
         <Tabs
           variant="unstyled"
-          index={['all', 'published', 'scheduled'].indexOf(statusFilter)}
-          onChange={(i) => setStatusFilter((['all', 'published', 'scheduled'] as const)[i])}
+          index={['all', 'draft', 'published', 'scheduled'].indexOf(statusFilter)}
+          onChange={(i) =>
+            setStatusFilter((['all', 'draft', 'published', 'scheduled'] as const)[i])
+          }
         >
           <TabList gap={2}>
-            {(['all', 'published', 'scheduled'] as const).map((status) => (
+            {(['all', 'draft', 'published', 'scheduled'] as const).map((status) => (
               <Tab
                 key={status}
                 px={4}

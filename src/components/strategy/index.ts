@@ -31,3 +31,8 @@ export { StrategySkeleton } from './StrategySkeleton';
 // New simplified UX components
 export { PrimaryCTA } from './PrimaryCTA';
 export { ProgressBadge } from './ProgressBadge';
+
+// New narrative-first components (2026 redesign)
+export { StrategyNarrative } from './StrategyNarrative';
+export { ContentJourney, mapContentToJourneyStages } from './ContentJourney';
+export { TrainRoadmap, calculatePhaseData, countCompletedPhases } from './TrainRoadmap';

@@ -161,6 +161,36 @@ export const generateFullCalendar = action({
         `[generateFullCalendar] Generated ${contentPieceIds.length} content pieces for ${industryId}`
       );
 
+      // 7. Generate content for first pieces (synchronous for first, async for rest)
+      // This is THE WHOLE POINT - users get REAL content, not just metadata!
+      const piecesToGenerate = contentPieceIds.slice(0, 3);
+      if (piecesToGenerate.length > 0 && project.userId) {
+        console.log(
+          `[generateFullCalendar] Generating content for ${piecesToGenerate.length} pieces...`
+        );
+
+        // Generate first piece SYNCHRONOUSLY so user has immediate content
+        const firstPieceId = piecesToGenerate[0];
+        console.log(`[generateFullCalendar] Generating content for first piece synchronously...`);
+        try {
+          await ctx.runAction(internal.contentGeneration.generateContentForPiece, {
+            contentPieceId: firstPieceId,
+            userId: project.userId,
+          });
+          console.log(`[generateFullCalendar] First piece content generated!`);
+        } catch (error) {
+          console.error(`[generateFullCalendar] Failed to generate first piece:`, error);
+        }
+
+        // Schedule remaining pieces asynchronously (non-blocking)
+        for (const pieceId of piecesToGenerate.slice(1)) {
+          await ctx.scheduler.runAfter(0, internal.contentGeneration.generateContentForPiece, {
+            contentPieceId: pieceId,
+            userId: project.userId,
+          });
+        }
+      }
+
       return {
         success: true,
         industry: industryId,

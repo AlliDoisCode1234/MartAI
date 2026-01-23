@@ -38,7 +38,6 @@ const userNavItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Keywords', path: '/keywords' },
   { label: 'Content Studio', path: '/studio' },
-  { label: 'Integrations', path: '/settings?tab=integrations' },
 ];
 
 // Admin navigation (same as user - Admin portal accessible only via UserDropdown)
@@ -46,7 +45,6 @@ const adminNavItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Keywords', path: '/keywords' },
   { label: 'Content Studio', path: '/studio' },
-  { label: 'Integrations', path: '/settings?tab=integrations' },
 ];
 
 export const Navigation: FC = () => {

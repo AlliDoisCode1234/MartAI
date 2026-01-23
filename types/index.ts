@@ -577,6 +577,10 @@ export interface StrategyData {
     keywordCount?: number;
     clusterCount?: number;
   };
+  // Project info for narrative components
+  projectName?: string;
+  industry?: string;
+  websiteUrl?: string;
 }
 
 /** Generic connection shape for GA4/GSC */

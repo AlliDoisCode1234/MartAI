@@ -14,7 +14,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Container, VStack, Box, useToast } from '@chakra-ui/react';
 import { AnimatePresence } from 'framer-motion';
-import { useMutation, useAction, useConvex } from 'convex/react';
+import { useMutation, useAction, useConvex, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/lib/useAuth';
 import { MartLoader } from '@/src/components/assistant';
@@ -64,6 +64,28 @@ export default function OnboardingPage() {
   const generateContentCalendar = useAction(
     api.contentCalendar.generateCalendar.generateFullCalendar
   );
+
+  // Query for existing projects - if user has one, use it instead of creating new
+  // Using projects.list which gets userId from auth context (no args needed)
+  const existingProjects = useQuery(api.projects.projects.list);
+
+  // Restore existing project if user has one (prevents LIMIT_REACHED on retry)
+  useEffect(() => {
+    if (existingProjects && existingProjects.length > 0 && !projectId) {
+      const existingProject = existingProjects[0];
+      console.log('[ONBOARDING] Restoring existing project:', existingProject._id);
+      setProjectId(existingProject._id);
+      localStorage.setItem('currentProjectId', existingProject._id);
+
+      // Also restore form data from the existing project
+      if (existingProject.name) {
+        setFormData((prev) => ({ ...prev, businessName: existingProject.name }));
+      }
+      if (existingProject.websiteUrl) {
+        setFormData((prev) => ({ ...prev, website: existingProject.websiteUrl }));
+      }
+    }
+  }, [existingProjects, projectId]);
 
   // Cache email when user loads
   useEffect(() => {

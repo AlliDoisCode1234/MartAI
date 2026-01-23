@@ -43,12 +43,14 @@ import {
   StrategyStatCards,
   PlanSummaryCard,
   ContentCalendarCard,
-  ClusterGrid,
-  GeneratePlanModal,
-  GenerateClustersModal,
   StrategySkeleton,
-  PrimaryCTA,
-  ProgressBadge,
+  // New narrative components (2026 redesign)
+  StrategyNarrative,
+  ContentJourney,
+  mapContentToJourneyStages,
+  TrainRoadmap,
+  calculatePhaseData,
+  countCompletedPhases,
 } from '@/src/components/strategy';
 
 // Constants
@@ -233,100 +235,69 @@ function StrategyContent() {
     <Box minH="100%" bg="transparent">
       <Container maxW="container.xl" py={{ base: 6, md: 8 }} px={{ base: 4, sm: 6, md: 8 }}>
         <VStack spacing={8} align="stretch">
-          {/* Header */}
-          <MotionBox
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <HStack justify="space-between" flexWrap="wrap" gap={4}>
-              <VStack align="start" spacing={1}>
-                <Heading size="xl" fontWeight="bold" color="white">
-                  Strategy
-                </Heading>
-                <Text color="gray.400">AI-powered content planning and keyword insights</Text>
-              </VStack>
-              <ProgressBadge currentStage={currentStage} />
-            </HStack>
-          </MotionBox>
+          {/* Narrative Header - tells the story of what was created */}
+          <StrategyNarrative
+            projectName={strategyData?.projectName || 'Your Project'}
+            industry={strategyData?.industry || 'General'}
+            totalContent={contentStats?.total ?? 0}
+            contentByCategory={{
+              'Core Pages':
+                contentStats?.byType?.homepage ??
+                0 + (contentStats?.byType?.about ?? 0) + (contentStats?.byType?.service ?? 0),
+              'Blog Content': contentStats?.byType?.blog ?? 0,
+              Conversion:
+                contentStats?.byType?.leadMagnet ?? 0 + (contentStats?.byType?.landing ?? 0),
+              'Local/Geo': contentStats?.byType?.areasWeServe ?? 0,
+              Specialty: 0,
+            }}
+            websiteUrl={strategyData?.websiteUrl}
+          />
 
-          {/* Primary Action Card */}
-          <PrimaryCTA
-            stage={currentStage as 1 | 2 | 3 | 4}
-            keywordCount={keywordCount}
-            clusterCount={clusterCount}
-            briefCount={briefCount}
-            isLoading={generating}
-            onAction={() => {
-              if (currentStage === 1) setIsKeywordModalOpen(true);
-              else if (currentStage === 2) setIsClusterModalOpen(true);
-              else if (currentStage === 3) setIsPlanModalOpen(true);
-              else if (currentStage === 4) router.push('/studio/library');
+          {/* 6-Month Train Roadmap - PRIMARY VISUAL (5-second rule) */}
+          <TrainRoadmap
+            completedPhases={
+              contentStats?.published && contentStats?.total
+                ? Math.min(Math.floor((contentStats.published / contentStats.total) * 3), 3)
+                : 0
+            }
+            contentByPhase={{
+              foundation: {
+                total:
+                  (contentStats?.byType?.homepage ?? 0) +
+                  (contentStats?.byType?.about ?? 0) +
+                  (contentStats?.byType?.service ?? 0),
+                completed: contentStats?.published ?? 0,
+              },
+              authority: {
+                total: contentStats?.byType?.blog ?? 0,
+                completed: 0,
+              },
+              conversion: {
+                total:
+                  (contentStats?.byType?.leadMagnet ?? 0) + (contentStats?.byType?.landing ?? 0),
+                completed: 0,
+              },
             }}
           />
 
-          {/* Keywords Preview */}
-          {typedProjectId && keywordCount > 0 && (
-            <KeywordsPreview projectId={typedProjectId} maxPreview={15} />
-          )}
-
-          {/* Stats */}
-          <StrategyStatCards
+          {/* Content Journey - awareness levels (detail section) */}
+          <ContentJourney
+            contentByStage={{
+              ready_to_buy:
+                (contentStats?.byType?.landing ?? 0) + (contentStats?.byType?.paidProduct ?? 0),
+              comparing_options:
+                (contentStats?.byType?.blogVersus ?? 0) + (contentStats?.byType?.service ?? 0),
+              learning_solutions: contentStats?.byType?.blog ?? 0,
+              discovering_needs:
+                (contentStats?.byType?.about ?? 0) + (contentStats?.byType?.homepage ?? 0),
+              building_awareness: contentStats?.byType?.areasWeServe ?? 0,
+            }}
             totalContent={contentStats?.total ?? 0}
-            draftsCount={contentStats?.drafts ?? 0}
-            scheduledCount={contentStats?.scheduled ?? 0}
-            publishedCount={contentStats?.published ?? 0}
           />
 
-          {/* Insights + Phoo Rating */}
-          {typedProjectId && (
-            <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={6}>
-              <VStack spacing={6}>
-                <InsightList
-                  projectId={typedProjectId}
-                  type="cluster_suggestion"
-                  title="Cluster Suggestions"
-                  maxItems={4}
-                  columns={1}
-                />
-                <InsightList
-                  projectId={typedProjectId}
-                  type="brief_suggestion"
-                  title="Brief Ideas"
-                  maxItems={4}
-                  columns={1}
-                />
-              </VStack>
-              <PhooRatingCard projectId={typedProjectId} />
-            </Grid>
-          )}
+          {/* Content Journey - awareness levels progress */}
 
-          <Divider borderColor="whiteAlpha.200" />
-
-          {/* Plan Summary */}
-          {plan && <PlanSummaryCard plan={plan} />}
-
-          {/* Calendar */}
-          {plan?.briefs && (
-            <ContentCalendarCard briefs={plan.briefs} contentVelocity={plan.contentVelocity} />
-          )}
-
-          {/* Clusters Grid */}
-          <ClusterGrid clusters={clusters} maxDisplay={6} />
-
-          {/* Modals */}
-          <GeneratePlanModal
-            isOpen={isPlanModalOpen}
-            onClose={() => setIsPlanModalOpen(false)}
-            onGenerate={handleGeneratePlan}
-            isLoading={generating}
-          />
-          <GenerateClustersModal
-            isOpen={isClusterModalOpen}
-            onClose={() => setIsClusterModalOpen(false)}
-            onGenerate={handleGenerateClusters}
-            isLoading={generating}
-          />
+          {/* Keywords Modal - still useful for adding keywords */}
           <KeywordSourceModal
             isOpen={isKeywordModalOpen}
             onClose={() => setIsKeywordModalOpen(false)}

@@ -123,3 +123,120 @@ export const validateLaunch = internalAction({
     };
   },
 });
+
+/**
+ * CRITICAL ONBOARDING CONTENT TEST
+ *
+ * Validates THE core product promise:
+ * User passes URL → Onboarding generates calendar → Calendar triggers content generation → Content has REAL WORDS
+ *
+ * This is the WHOLE POINT of the product.
+ *
+ * Run with: npx convex run testing/e2e:validateOnboardingContentGeneration '{"targetUrl": "https://example.com"}'
+ */
+export const validateOnboardingContentGeneration = internalAction({
+  args: { targetUrl: v.string() },
+  handler: async (ctx, args) => {
+    console.log('='.repeat(60));
+    console.log('CRITICAL ONBOARDING CONTENT TEST');
+    console.log('Validating: URL → Calendar → Content with REAL WORDS');
+    console.log('='.repeat(60));
+
+    const startTime = Date.now();
+
+    // 1. Create User
+    const email = `onboarding_test_${Date.now()}@test.phoo.ai`;
+    const userId = await ctx.runMutation(internal.testing.e2e.createUser, {
+      name: 'Onboarding Content Tester',
+      email,
+    });
+    console.log(`[1/5] User created: ${userId}`);
+
+    // 2. Provision Solo Tier
+    await ctx.runMutation(internal.subscriptions.subscriptions.upsertSubscription, {
+      userId,
+      planTier: 'solo',
+      status: 'active',
+      oneTimeFeePaid: false,
+      startsAt: Date.now(),
+    });
+    console.log('[2/5] Solo subscription provisioned');
+
+    // 3. Create Project with URL
+    const projectId = await ctx.runMutation(internal.testing.e2e.createProject, {
+      userId,
+      name: 'Onboarding Test Project',
+      url: args.targetUrl,
+    });
+    console.log(`[3/5] Project created: ${projectId}`);
+
+    // 4. Trigger Calendar Generation (THIS SHOULD NOW GENERATE CONTENT!)
+    console.log('[4/5] Generating calendar with content...');
+    const calendarResult = await ctx.runAction(
+      internal.contentCalendar.generateCalendar.triggerOnboardingCalendarGeneration,
+      {
+        projectId,
+        hasGa4: false,
+        hasGsc: false,
+      }
+    );
+    console.log(`[4/5] Calendar generated: ${calendarResult.itemsGenerated} pieces`);
+
+    // 5. Wait for async content generation (scheduler runs after 0ms but still async)
+    console.log('[5/5] Waiting 30s for async content generation...');
+    await new Promise((resolve) => setTimeout(resolve, 30000));
+
+    // 6. Verify content pieces have REAL WORDS (not just metadata)
+    const contentPieces = await ctx.runQuery(
+      internal.testing.betaUserFlow.getProjectContentPieces,
+      {
+        projectId,
+      }
+    );
+
+    const piecesWithContent = contentPieces.filter(
+      (p: { wordCount?: number }) => (p.wordCount ?? 0) > 0
+    );
+    const piecesWithScheduled = contentPieces.filter(
+      (p: { status: string }) => p.status === 'scheduled'
+    );
+
+    const result = {
+      passed: piecesWithContent.length >= 3, // At least 3 pieces should have content
+      totalPieces: contentPieces.length,
+      piecesWithContent: piecesWithContent.length,
+      piecesScheduled: piecesWithScheduled.length,
+      pieces: piecesWithContent.map(
+        (p: {
+          title: string;
+          contentType: string;
+          wordCount?: number;
+          seoScore?: number;
+          status: string;
+        }) => ({
+          title: p.title,
+          contentType: p.contentType,
+          wordCount: p.wordCount,
+          seoScore: p.seoScore,
+          status: p.status,
+        })
+      ),
+      durationMs: Date.now() - startTime,
+    };
+
+    console.log('='.repeat(60));
+    console.log(`RESULT: ${result.passed ? 'PASSED' : 'FAILED'}`);
+    console.log(`Total pieces: ${result.totalPieces}`);
+    console.log(`Pieces with content (wordCount > 0): ${result.piecesWithContent}`);
+    console.log(`Pieces scheduled: ${result.piecesScheduled}`);
+    console.log(`Duration: ${(result.durationMs / 1000).toFixed(1)}s`);
+    console.log('='.repeat(60));
+
+    if (!result.passed) {
+      console.error('CRITICAL FAILURE: Onboarding did not generate content with real words!');
+      console.error('This is THE WHOLE POINT OF THE PRODUCT!');
+    }
+
+    return result;
+  },
+});
