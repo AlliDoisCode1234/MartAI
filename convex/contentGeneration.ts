@@ -179,8 +179,10 @@ export const generateContentForPiece = internalAction({
   handler: async (ctx, args) => {
     const { contentPieceId, userId } = args;
 
-    // 1. Get existing piece
-    const piece = await ctx.runQuery(api.contentPieces.getById, { contentPieceId });
+    // 1. Get existing piece (use internal query - no auth required)
+    const piece = await ctx.runQuery(internal.testing.betaUserFlow.getContentPiece, {
+      contentPieceId,
+    });
     if (!piece) {
       console.error(`[generateContentForPiece] Piece not found: ${contentPieceId}`);
       return null;

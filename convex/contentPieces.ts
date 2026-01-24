@@ -129,11 +129,16 @@ export const listByScheduledDate = query({
       .withIndex('by_project_scheduled', (q) => q.eq('projectId', args.projectId))
       .collect();
 
-    // ONLY show published/scheduled content with actual content (excludes drafts)
-    const validStatuses = ['published', 'scheduled'];
-    let filtered = pieces.filter(
-      (p) => p.scheduledDate != null && validStatuses.includes(p.status) && (p.wordCount ?? 0) > 0
-    );
+    // Show published/scheduled with content, OR generating (for progress UI)
+    const validStatuses = ['published', 'scheduled', 'generating'];
+    let filtered = pieces.filter((p) => {
+      // Must have scheduled date and valid status
+      if (p.scheduledDate == null || !validStatuses.includes(p.status)) return false;
+      // Generating pieces shown even without wordCount (for skeleton UI)
+      if (p.status === 'generating') return true;
+      // Published/scheduled pieces need actual content
+      return (p.wordCount ?? 0) > 0;
+    });
 
     if (args.startDate) {
       filtered = filtered.filter((p) => (p.scheduledDate ?? 0) >= args.startDate!);

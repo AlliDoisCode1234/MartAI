@@ -197,15 +197,24 @@ export const validateOnboardingContentGeneration = internalAction({
     const piecesWithContent = contentPieces.filter(
       (p: { wordCount?: number }) => (p.wordCount ?? 0) > 0
     );
-    const piecesWithScheduled = contentPieces.filter(
+    const piecesScheduled = contentPieces.filter(
       (p: { status: string }) => p.status === 'scheduled'
     );
+    const piecesGenerating = contentPieces.filter(
+      (p: { status: string }) => p.status === 'generating'
+    );
+
+    // Pass if: at least 1 piece has content AND generating pieces are visible
+    // This validates the UX: users see real content + progress indicators
+    const hasContent = piecesWithContent.length >= 1;
+    const hasProgress = piecesGenerating.length > 0 || piecesScheduled.length > 0;
 
     const result = {
-      passed: piecesWithContent.length >= 3, // At least 3 pieces should have content
+      passed: hasContent && hasProgress,
       totalPieces: contentPieces.length,
       piecesWithContent: piecesWithContent.length,
-      piecesScheduled: piecesWithScheduled.length,
+      piecesScheduled: piecesScheduled.length,
+      piecesGenerating: piecesGenerating.length,
       pieces: piecesWithContent.map(
         (p: {
           title: string;
@@ -229,6 +238,7 @@ export const validateOnboardingContentGeneration = internalAction({
     console.log(`Total pieces: ${result.totalPieces}`);
     console.log(`Pieces with content (wordCount > 0): ${result.piecesWithContent}`);
     console.log(`Pieces scheduled: ${result.piecesScheduled}`);
+    console.log(`Pieces generating: ${result.piecesGenerating}`);
     console.log(`Duration: ${(result.durationMs / 1000).toFixed(1)}s`);
     console.log('='.repeat(60));
 

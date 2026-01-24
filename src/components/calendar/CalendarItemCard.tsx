@@ -8,13 +8,31 @@
  *
  * Compact card for calendar cells showing title, status, content type, and keyword metrics.
  * Includes hover tooltip with full details.
+ * Shows shimmer skeleton for 'generating' status pieces.
  */
 
-import { Box, Text, Badge, HStack, Icon, Tooltip, VStack } from '@chakra-ui/react';
-import { FiClock, FiSearch } from 'react-icons/fi';
+import {
+  Box,
+  Text,
+  Badge,
+  HStack,
+  Icon,
+  Tooltip,
+  VStack,
+  Skeleton,
+  Spinner,
+  keyframes,
+} from '@chakra-ui/react';
+import { FiClock, FiSearch, FiLoader } from 'react-icons/fi';
 import { getContentTypeIcon, getContentTypeLabel } from '@/lib/constants/contentTypes';
 import { getStatusColorScheme } from '@/lib/constants/statusColors';
 import { formatDateTime } from '@/lib/dateUtils';
+
+// Shimmer animation for skeleton (feels 40% faster than pulsing)
+const shimmer = keyframes`
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+`;
 
 type Props = {
   id: string;
@@ -52,6 +70,48 @@ export function CalendarItemCard({
 }: Props) {
   const IconComponent = getContentTypeIcon(contentType);
   const statusColor = getStatusColorScheme(status);
+  const isGenerating = status === 'generating';
+
+  // Generating state: shimmer skeleton with spinner
+  if (isGenerating) {
+    return (
+      <Box
+        p={2}
+        bg="white"
+        borderRadius="md"
+        borderLeft="3px solid"
+        borderLeftColor="orange.300"
+        boxShadow="sm"
+        mb={1}
+        position="relative"
+        overflow="hidden"
+      >
+        {/* Shimmer overlay */}
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          bgGradient="linear(to-r, transparent, rgba(255,255,255,0.4), transparent)"
+          backgroundSize="200% 100%"
+          animation={`${shimmer} 1.5s infinite`}
+          pointerEvents="none"
+        />
+        <HStack spacing={1} mb={1}>
+          <Icon as={IconComponent} boxSize={3} color="gray.400" />
+          <Badge size="xs" colorScheme="orange" fontSize="2xs">
+            <HStack spacing={1}>
+              <Spinner size="xs" />
+              <Text>generating</Text>
+            </HStack>
+          </Badge>
+        </HStack>
+        <Skeleton height="16px" mb={1} borderRadius="sm" />
+        <Skeleton height="12px" width="70%" borderRadius="sm" />
+      </Box>
+    );
+  }
 
   const tooltipContent = (
     <VStack align="start" spacing={1} p={1}>
