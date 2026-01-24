@@ -117,12 +117,28 @@ export const resetPassword = mutation({
       updatedAt: Date.now(),
     });
 
+    // OWASP: Invalidate ALL existing sessions for this user
+    // Prevents "ghost session" attack where attacker maintains access after password change
+    const existingSessions = await ctx.db
+      .query('authSessions')
+      .filter((q) => q.eq(q.field('userId'), tokenRecord.userId))
+      .collect();
+
+    let sessionsInvalidated = 0;
+    for (const session of existingSessions) {
+      await ctx.db.delete(session._id);
+      sessionsInvalidated++;
+    }
+
     // Log for audit (no PII)
-    console.log(`[PasswordReset] Password reset completed for user ${tokenRecord.userId}`);
+    console.log(
+      `[PasswordReset] Password reset completed for user ${tokenRecord.userId}, invalidated ${sessionsInvalidated} sessions`
+    );
 
     return {
       success: true,
       email: user.email,
+      sessionsInvalidated,
     };
   },
 });
