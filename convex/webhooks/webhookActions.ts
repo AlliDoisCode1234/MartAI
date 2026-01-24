@@ -2,12 +2,15 @@
  * Webhook Delivery Actions
  *
  * Phase 3: Send webhooks to registered endpoints
+ *
+ * Security: Webhook secrets are encrypted at rest and decrypted only when needed for HMAC signing.
  */
 'use node';
 
 import { internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
+import { decryptCredential } from '../lib/encryption';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [60000, 300000, 900000]; // 1min, 5min, 15min
@@ -90,9 +93,10 @@ export const sendWebhook = internalAction({
       payload: delivery.payload,
     });
 
-    // Create HMAC signature
+    // Decrypt secret and create HMAC signature
+    const decryptedSecret = await decryptCredential(webhook.secret);
     const crypto = await import('node:crypto');
-    const signature = crypto.createHmac('sha256', webhook.secret).update(body).digest('hex');
+    const signature = crypto.createHmac('sha256', decryptedSecret).update(body).digest('hex');
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

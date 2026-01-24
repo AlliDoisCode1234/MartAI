@@ -8,6 +8,7 @@ import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { auth } from '../auth';
 import { requireProjectAccess, requireOrgRole } from '../lib/rbac';
+import { encryptCredential, decryptCredential } from '../lib/encryption';
 
 // Available webhook events
 export const WEBHOOK_EVENTS = [
@@ -59,6 +60,9 @@ export const createWebhook = mutation({
     // Generate secret for HMAC signing
     const secret = crypto.randomUUID() + '-' + crypto.randomUUID();
 
+    // Encrypt secret before storage
+    const encryptedSecret = await encryptCredential(secret);
+
     const now = Date.now();
     const webhookId = await ctx.db.insert('webhooks', {
       projectId: args.projectId,
@@ -66,7 +70,7 @@ export const createWebhook = mutation({
       userId,
       name: args.name,
       url: args.url,
-      secret,
+      secret: encryptedSecret,
       events: args.events,
       isActive: true,
       description: args.description,
@@ -244,8 +248,11 @@ export const regenerateWebhookSecret = mutation({
 
     const newSecret = crypto.randomUUID() + '-' + crypto.randomUUID();
 
+    // Encrypt new secret before storage
+    const encryptedSecret = await encryptCredential(newSecret);
+
     await ctx.db.patch(args.webhookId, {
-      secret: newSecret,
+      secret: encryptedSecret,
       updatedAt: Date.now(),
     });
 

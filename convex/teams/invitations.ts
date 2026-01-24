@@ -2,31 +2,15 @@ import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import { api } from '../_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
+import { hashToken, generateSecureToken } from '../lib/hashing';
 
 /**
  * Team Invitation Mutations
  *
  * Security: All mutations check auth and RBAC permissions
- * Tokens: UUID v4 format with 7-day expiry
+ * Tokens: Secure random tokens, SHA-256 hashed before storage
  * Audit: All changes are logged to teamAuditLogs
  */
-
-// Generate UUID v4 token (cryptographically random)
-function generateInviteToken(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-
-  // Set version 4 bits
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  // Set variant bits
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-
-  const hex = Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
 
 // 7 days in milliseconds
 const INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
@@ -84,9 +68,12 @@ export const getPendingInvitations = query({
 export const validateInviteToken = query({
   args: { token: v.string() },
   handler: async (ctx, args) => {
+    // Hash the incoming token to match storage format
+    const tokenHash = await hashToken(args.token);
+
     const invitation = await ctx.db
       .query('organizationInvitations')
-      .withIndex('by_token', (q) => q.eq('token', args.token))
+      .withIndex('by_token', (q) => q.eq('token', tokenHash))
       .first();
 
     if (!invitation) {
@@ -211,8 +198,10 @@ export const createInvitation = mutation({
       }
     }
 
-    // Create invitation
-    const token = generateInviteToken();
+    // Create invitation with hashed token
+    // Generate secure token, hash for storage, send original to user
+    const token = generateSecureToken();
+    const tokenHash = await hashToken(token);
     const now = Date.now();
 
     const inviteId = await ctx.db.insert('organizationInvitations', {
@@ -220,7 +209,7 @@ export const createInvitation = mutation({
       email: args.email.toLowerCase(),
       role: args.role,
       invitedBy: userId,
-      token,
+      token: tokenHash, // Store hash, not plain token
       expiresAt: now + INVITE_EXPIRY_MS,
       status: 'pending',
       createdAt: now,
@@ -235,17 +224,17 @@ export const createInvitation = mutation({
       createdAt: now,
     });
 
-    // Send invitation email (fire-and-forget)
+    // Send invitation email with ORIGINAL token (not hash)
     const caller = await ctx.db.get(userId);
     ctx.scheduler.runAfter(0, api.email.emailActions.sendTeamInviteEmail, {
       email: args.email.toLowerCase(),
       inviterName: caller?.name,
       orgName: org.name,
       role: args.role,
-      token,
+      token, // Send original token to user
     });
 
-    return { inviteId, token };
+    return { inviteId, token }; // Return original token for UI/testing
   },
 });
 
@@ -262,9 +251,12 @@ export const acceptInvitation = mutation({
     const user = await ctx.db.get(userId);
     if (!user?.email) throw new Error('User email not found');
 
+    // Hash the incoming token to match storage format
+    const tokenHash = await hashToken(args.token);
+
     const invitation = await ctx.db
       .query('organizationInvitations')
-      .withIndex('by_token', (q) => q.eq('token', args.token))
+      .withIndex('by_token', (q) => q.eq('token', tokenHash))
       .first();
 
     if (!invitation) {
