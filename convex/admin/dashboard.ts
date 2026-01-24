@@ -66,6 +66,27 @@ export const getAdminDashboardMetrics = query({
       userTrend.push({ date, count });
     }
 
+    // BI Events - Content Lifecycle Metrics (Jan 2026)
+    const biEvents = await ctx.db.query('biEvents').collect();
+    const publishedEvents = biEvents.filter((e) => e.event === 'content:published');
+    const scheduledEvents = biEvents.filter((e) => e.event === 'content:scheduled');
+    const recentBiEvents = biEvents.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
+
+    // Content metrics by day (last 7 days)
+    const contentTrend: { date: string; published: number; scheduled: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = now - i * 24 * 60 * 60 * 1000;
+      const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+      const published = publishedEvents.filter(
+        (e) => e.timestamp >= dayStart && e.timestamp < dayEnd
+      ).length;
+      const scheduled = scheduledEvents.filter(
+        (e) => e.timestamp >= dayStart && e.timestamp < dayEnd
+      ).length;
+      const date = new Date(dayStart).toISOString().slice(0, 10);
+      contentTrend.push({ date, published, scheduled });
+    }
+
     return {
       totalUsers,
       newUsersThisWeek,
@@ -79,6 +100,20 @@ export const getAdminDashboardMetrics = query({
       })),
       recentUsers,
       userTrend,
+      // BI Content Lifecycle
+      contentMetrics: {
+        totalPublished: publishedEvents.length,
+        totalScheduled: scheduledEvents.length,
+        publishedThisWeek: publishedEvents.filter((e) => e.timestamp > sevenDaysAgo).length,
+        scheduledThisWeek: scheduledEvents.filter((e) => e.timestamp > sevenDaysAgo).length,
+        contentTrend,
+        recentContentEvents: recentBiEvents.map((e) => ({
+          _id: e._id,
+          event: e.event,
+          timestamp: e.timestamp,
+          properties: e.properties,
+        })),
+      },
     };
   },
 });
