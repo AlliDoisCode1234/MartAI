@@ -1,11 +1,19 @@
 import { v } from 'convex/values';
 import { mutation, query, internalMutation } from '../_generated/server';
+import {
+  encryptPlatformCredentials,
+  decryptPlatformCredentials,
+  type PlatformCredentials,
+  type EncryptedCredentials,
+} from '../lib/encryptedCredentials';
 
 /**
  * Platform Connections - Queries & Mutations
  *
  * Handles WordPress, Shopify, and other CMS connection storage.
  * Actions are in platformConnectionActions.ts
+ *
+ * Security: All credentials are encrypted at rest using AES-256-GCM.
  */
 
 // Platform type
@@ -18,7 +26,7 @@ export const platformValidator = v.union(
 );
 
 /**
- * Get connection for a project and platform
+ * Get connection for a project and platform (with decrypted credentials)
  */
 export const getConnection = query({
   args: {
@@ -26,32 +34,54 @@ export const getConnection = query({
     platform: platformValidator,
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const connection = await ctx.db
       .query('platformConnections')
       .withIndex('by_project_platform', (q) =>
         q.eq('projectId', args.projectId).eq('platform', args.platform)
       )
       .first();
+
+    if (!connection) return null;
+
+    // Decrypt credentials for use
+    const decryptedCredentials = await decryptPlatformCredentials(
+      connection.credentials as EncryptedCredentials | PlatformCredentials
+    );
+
+    return {
+      ...connection,
+      credentials: decryptedCredentials,
+    };
   },
 });
 
 /**
- * List all connections for a project
+ * List all connections for a project (with decrypted credentials)
  */
 export const listConnections = query({
   args: {
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const connections = await ctx.db
       .query('platformConnections')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .collect();
+
+    // Decrypt credentials for each connection
+    return Promise.all(
+      connections.map(async (conn) => ({
+        ...conn,
+        credentials: await decryptPlatformCredentials(
+          conn.credentials as EncryptedCredentials | PlatformCredentials
+        ),
+      }))
+    );
   },
 });
 
 /**
- * Save or update a platform connection
+ * Save or update a platform connection (encrypts credentials)
  */
 export const saveConnection = mutation({
   args: {
@@ -82,12 +112,15 @@ export const saveConnection = mutation({
 
     const now = Date.now();
 
+    // Encrypt credentials before storage
+    const encryptedCredentials = await encryptPlatformCredentials(args.credentials);
+
     if (existing) {
       // Update existing
       await ctx.db.patch(existing._id, {
         siteUrl: args.siteUrl,
         siteName: args.siteName,
-        credentials: args.credentials,
+        credentials: encryptedCredentials,
         defaultPostType: args.defaultPostType,
         defaultStatus: args.defaultStatus,
         isValid: false, // Reset validation
@@ -101,7 +134,7 @@ export const saveConnection = mutation({
         platform: args.platform,
         siteUrl: args.siteUrl,
         siteName: args.siteName,
-        credentials: args.credentials,
+        credentials: encryptedCredentials,
         isValid: false,
         defaultPostType: args.defaultPostType,
         defaultStatus: args.defaultStatus,
