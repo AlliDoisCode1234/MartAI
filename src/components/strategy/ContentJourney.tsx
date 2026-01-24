@@ -77,10 +77,10 @@ export function ContentJourney({ contentByStage, totalContent }: Props) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
-      bg="rgba(255, 255, 255, 0.03)"
-      borderRadius="16px"
-      border="1px solid rgba(255, 255, 255, 0.1)"
-      p={6}
+      bg="rgba(255, 255, 255, 0.02)"
+      borderRadius="12px"
+      border="1px solid rgba(255, 255, 255, 0.08)"
+      p={4}
     >
       <VStack align="stretch" spacing={5}>
         {/* Header */}

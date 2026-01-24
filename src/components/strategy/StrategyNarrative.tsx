@@ -52,10 +52,10 @@ export function StrategyNarrative({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      bg="linear-gradient(135deg, rgba(255, 157, 0, 0.1), rgba(255, 107, 0, 0.05))"
-      borderRadius="16px"
-      border="1px solid rgba(255, 157, 0, 0.2)"
-      p={6}
+      bg="rgba(255, 255, 255, 0.02)"
+      borderRadius="12px"
+      border="1px solid rgba(255, 255, 255, 0.08)"
+      p={4}
     >
       <VStack align="start" spacing={4}>
         {/* Main Narrative */}
@@ -73,12 +73,12 @@ export function StrategyNarrative({
               AI-Powered Strategy
             </Badge>
           </HStack>
-          <Heading size="lg" color="white" lineHeight="1.3">
+          <Heading size="md" color="white" lineHeight="1.3">
             We analyzed {websiteUrl || projectName} and created{' '}
             <Text as="span" color="#FF9D00">
               {totalContent} pieces
             </Text>{' '}
-            tailored for the{' '}
+            for{' '}
             <Text as="span" color="#FF9D00">
               {industry || 'your'} industry
             </Text>

@@ -517,3 +517,127 @@ describe('Impact Score Calculations', () => {
     expect(sorted[2].clusterName).toBe('Low Impact');
   });
 });
+
+// =============================================================================
+// SOURCE AND PHASE TESTS (NEW - Jan 2026)
+// =============================================================================
+
+describe('Keyword Source Tracking', () => {
+  let t: ReturnType<typeof createTestContext>;
+  let userId: Id<'users'>;
+  let projectId: Id<'projects'>;
+
+  beforeEach(async () => {
+    t = createTestContext();
+    userId = await seedUser(t);
+    projectId = await seedProject(t, userId);
+  });
+
+  test('creates keyword with source field', async () => {
+    const keywordId = await t.run(async (ctx) => {
+      return ctx.db.insert('keywords', {
+        projectId,
+        keyword: 'seo agency boston',
+        searchVolume: 2400,
+        difficulty: 45,
+        status: 'suggested',
+        source: 'intelligence',
+        createdAt: Date.now(),
+      });
+    });
+
+    const saved = await t.run(async (ctx) => ctx.db.get(keywordId));
+    expect(saved?.source).toBe('intelligence');
+  });
+
+  test('creates keyword with phase field', async () => {
+    const keywordId = await t.run(async (ctx) => {
+      return ctx.db.insert('keywords', {
+        projectId,
+        keyword: 'content marketing strategy',
+        searchVolume: 8100,
+        difficulty: 38,
+        status: 'suggested',
+        source: 'gsc',
+        phase: 'authority',
+        createdAt: Date.now(),
+      });
+    });
+
+    const saved = await t.run(async (ctx) => ctx.db.get(keywordId));
+    expect(saved?.phase).toBe('authority');
+    expect(saved?.source).toBe('gsc');
+  });
+
+  test('filters keywords by source', async () => {
+    await t.run(async (ctx) => {
+      await ctx.db.insert('keywords', {
+        projectId,
+        keyword: 'from intelligence',
+        status: 'suggested',
+        source: 'intelligence',
+        createdAt: Date.now(),
+      });
+      await ctx.db.insert('keywords', {
+        projectId,
+        keyword: 'from gsc',
+        status: 'suggested',
+        source: 'gsc',
+        createdAt: Date.now(),
+      });
+      await ctx.db.insert('keywords', {
+        projectId,
+        keyword: 'from import',
+        status: 'suggested',
+        source: 'import',
+        createdAt: Date.now(),
+      });
+    });
+
+    const gscKeywords = await t.run(async (ctx) => {
+      return ctx.db
+        .query('keywords')
+        .withIndex('by_project_source', (q) => q.eq('projectId', projectId).eq('source', 'gsc'))
+        .collect();
+    });
+
+    expect(gscKeywords).toHaveLength(1);
+    expect(gscKeywords[0].keyword).toBe('from gsc');
+  });
+
+  test('filters keywords by phase', async () => {
+    await t.run(async (ctx) => {
+      await ctx.db.insert('keywords', {
+        projectId,
+        keyword: 'foundation keyword',
+        status: 'suggested',
+        phase: 'foundation',
+        createdAt: Date.now(),
+      });
+      await ctx.db.insert('keywords', {
+        projectId,
+        keyword: 'authority keyword',
+        status: 'suggested',
+        phase: 'authority',
+        createdAt: Date.now(),
+      });
+      await ctx.db.insert('keywords', {
+        projectId,
+        keyword: 'conversion keyword',
+        status: 'suggested',
+        phase: 'conversion',
+        createdAt: Date.now(),
+      });
+    });
+
+    const authorityKeywords = await t.run(async (ctx) => {
+      return ctx.db
+        .query('keywords')
+        .withIndex('by_project_phase', (q) => q.eq('projectId', projectId).eq('phase', 'authority'))
+        .collect();
+    });
+
+    expect(authorityKeywords).toHaveLength(1);
+    expect(authorityKeywords[0].keyword).toBe('authority keyword');
+  });
+});

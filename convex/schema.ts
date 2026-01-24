@@ -235,11 +235,15 @@ export default defineSchema({
     intent: v.optional(v.string()), // informational, commercial, transactional
     priority: v.optional(v.string()), // high, medium, low
     status: v.string(), // suggested, approved, implemented
+    source: v.optional(v.string()), // 'intelligence', 'gsc', 'import', 'serp'
+    phase: v.optional(v.string()), // 'foundation', 'authority', 'conversion'
     createdAt: v.number(),
   })
     .index('by_project', ['projectId'])
     .index('by_status', ['status'])
-    .index('by_keyword', ['keyword']),
+    .index('by_keyword', ['keyword'])
+    .index('by_project_source', ['projectId', 'source'])
+    .index('by_project_phase', ['projectId', 'phase']),
 
   // OAuth tokens for WordPress/Shopify
   oauthTokens: defineTable({

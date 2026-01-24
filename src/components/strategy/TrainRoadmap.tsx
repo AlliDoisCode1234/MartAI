@@ -81,17 +81,18 @@ export function TrainRoadmap({ completedPhases, contentByPhase }: Props) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
-      bg="rgba(255, 255, 255, 0.03)"
-      borderRadius="16px"
-      border="1px solid rgba(255, 255, 255, 0.1)"
-      p={6}
+      bg="linear-gradient(135deg, rgba(255, 157, 0, 0.08), rgba(66, 153, 225, 0.05))"
+      borderRadius="20px"
+      border="2px solid"
+      borderColor="rgba(255, 157, 0, 0.3)"
+      p={8}
       overflow="visible"
     >
       <VStack align="stretch" spacing={6}>
         {/* Header */}
         <HStack justify="space-between">
           <VStack align="start" spacing={1}>
-            <Heading size="md" color="white">
+            <Heading size="lg" color="white">
               6-Month Content Roadmap
             </Heading>
             <Text color="gray.500" fontSize="sm">
@@ -185,8 +186,8 @@ export function TrainRoadmap({ completedPhases, contentByPhase }: Props) {
                 >
                   {/* Station Marker */}
                   <Box
-                    w="48px"
-                    h="48px"
+                    w="56px"
+                    h="56px"
                     borderRadius="full"
                     bg={isCompleted ? phase.color : isActive ? 'gray.700' : 'gray.800'}
                     border={isActive ? `2px solid ${phase.color}` : 'none'}
