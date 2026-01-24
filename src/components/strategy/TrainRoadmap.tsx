@@ -50,15 +50,31 @@ const ROADMAP_PHASES = [
 interface Props {
   completedPhases: number; // 0, 1, 2, or 3
   contentByPhase: {
-    foundation: { total: number; completed: number };
-    authority: { total: number; completed: number };
-    conversion: { total: number; completed: number };
+    foundation: { total: number; published: number; scheduled: number };
+    authority: { total: number; published: number; scheduled: number };
+    conversion: { total: number; published: number; scheduled: number };
   };
 }
 
 export function TrainRoadmap({ completedPhases, contentByPhase }: Props) {
-  // Calculate train position (0-100%)
-  const trainPosition = Math.min(completedPhases * 33 + 5, 95);
+  // Calculate total progress for the train position
+  // Weight: Published = 1.0, Scheduled = 0.5
+  const totalItems =
+    contentByPhase.foundation.total +
+    contentByPhase.authority.total +
+    contentByPhase.conversion.total;
+
+  const totalWeightedProgress =
+    contentByPhase.foundation.published +
+    contentByPhase.foundation.scheduled * 0.5 +
+    (contentByPhase.authority.published + contentByPhase.authority.scheduled * 0.5) +
+    (contentByPhase.conversion.published + contentByPhase.conversion.scheduled * 0.5);
+
+  // If we have items, calculate percentage, otherwise default to "start" (5%)
+  const percentage = totalItems > 0 ? (totalWeightedProgress / totalItems) * 100 : 0;
+
+  // Map 0-100% to track width (5% to 95%)
+  const trainPosition = Math.min(percentage * 0.9 + 5, 95);
 
   return (
     <MotionBox
@@ -151,8 +167,13 @@ export function TrainRoadmap({ completedPhases, contentByPhase }: Props) {
               const phaseData = contentByPhase[phase.id as keyof typeof contentByPhase];
               const isCompleted = index < completedPhases;
               const isActive = index === completedPhases;
-              const progressPercent =
-                phaseData.total > 0 ? (phaseData.completed / phaseData.total) * 100 : 0;
+
+              const publishedPercent =
+                phaseData.total > 0 ? (phaseData.published / phaseData.total) * 100 : 0;
+              const scheduledPercent =
+                phaseData.total > 0 ? (phaseData.scheduled / phaseData.total) * 100 : 0;
+              // Cap combined width at 100%
+              const totalPercent = Math.min(publishedPercent + scheduledPercent, 100);
 
               return (
                 <VStack
@@ -199,11 +220,50 @@ export function TrainRoadmap({ completedPhases, contentByPhase }: Props) {
                     </Text>
                   </VStack>
 
-                  {/* Progress */}
+                  {/* Progress Stats */}
                   {phaseData.total > 0 && (
-                    <Text color={phase.color} fontSize="xs" fontWeight="medium">
-                      {phaseData.completed}/{phaseData.total} done
-                    </Text>
+                    <VStack spacing={0} mt={1}>
+                      <Text color={phase.color} fontSize="xs" fontWeight="bold">
+                        {phaseData.published}/{phaseData.total} published
+                      </Text>
+                      {phaseData.scheduled > 0 && (
+                        <Text color="gray.500" fontSize="xs">
+                          ({phaseData.scheduled} scheduled)
+                        </Text>
+                      )}
+                    </VStack>
+                  )}
+
+                  {/* Dual Progress Bar */}
+                  {phaseData.total > 0 && (
+                    <Box
+                      w="100%"
+                      h="4px"
+                      bg="gray.700"
+                      borderRadius="full"
+                      mt={2}
+                      overflow="hidden"
+                      position="relative"
+                    >
+                      {/* Scheduled (Striped/Lighter) - placed behind or with opacity */}
+                      <Box
+                        position="absolute"
+                        left={`${publishedPercent}%`}
+                        width={`${scheduledPercent}%`}
+                        h="100%"
+                        bg={phase.color}
+                        opacity={0.3}
+                        backgroundImage="linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)"
+                        backgroundSize="8px 8px"
+                      />
+                      {/* Published (Solid) */}
+                      <Box
+                        width={`${publishedPercent}%`}
+                        h="100%"
+                        bg={phase.color}
+                        borderRadius="full"
+                      />
+                    </Box>
                   )}
                 </VStack>
               );
@@ -217,12 +277,12 @@ export function TrainRoadmap({ completedPhases, contentByPhase }: Props) {
 
 // Helper to calculate phase data from content pieces
 export function calculatePhaseData(
-  contentByType: Record<string, { total: number; published: number }>
+  contentByTypeStatus: Record<string, { total: number; published: number; scheduled: number }>
 ): Props['contentByPhase'] {
   const phases = {
-    foundation: { total: 0, completed: 0 },
-    authority: { total: 0, completed: 0 },
-    conversion: { total: 0, completed: 0 },
+    foundation: { total: 0, published: 0, scheduled: 0 },
+    authority: { total: 0, published: 0, scheduled: 0 },
+    conversion: { total: 0, published: 0, scheduled: 0 },
   };
 
   const typeToPhase: Record<string, keyof typeof phases> = {
@@ -245,10 +305,11 @@ export function calculatePhaseData(
     program: 'authority',
   };
 
-  Object.entries(contentByType).forEach(([type, data]) => {
+  Object.entries(contentByTypeStatus).forEach(([type, data]) => {
     const phase = typeToPhase[type] || 'authority';
     phases[phase].total += data.total;
-    phases[phase].completed += data.published;
+    phases[phase].published += data.published;
+    phases[phase].scheduled += data.scheduled;
   });
 
   return phases;
@@ -257,17 +318,24 @@ export function calculatePhaseData(
 // Calculate completed phases count
 export function countCompletedPhases(phaseData: Props['contentByPhase']): number {
   let completed = 0;
-  if (
-    phaseData.foundation.completed >= phaseData.foundation.total &&
-    phaseData.foundation.total > 0
-  )
-    completed++;
-  if (phaseData.authority.completed >= phaseData.authority.total && phaseData.authority.total > 0)
-    completed++;
-  if (
-    phaseData.conversion.completed >= phaseData.conversion.total &&
-    phaseData.conversion.total > 0
-  )
-    completed++;
+  // Consider a phase "complete" if 80% is published OR 100% is published+scheduled
+  // This is a softer "complete" for the visual checkmark
+
+  const isPhaseComplete = (data: PhaseData) => {
+    if (data.total === 0) return false;
+    const progress = (data.published + data.scheduled * 0.8) / data.total;
+    return progress >= 0.9;
+  };
+
+  if (isPhaseComplete(phaseData.foundation)) completed++;
+  if (isPhaseComplete(phaseData.authority)) completed++;
+  if (isPhaseComplete(phaseData.conversion)) completed++;
+
   return completed;
+}
+
+interface PhaseData {
+  total: number;
+  published: number;
+  scheduled: number;
 }

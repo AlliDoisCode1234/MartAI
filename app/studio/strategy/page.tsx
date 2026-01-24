@@ -254,31 +254,12 @@ function StrategyContent() {
           />
 
           {/* 6-Month Train Roadmap - PRIMARY VISUAL (5-second rule) */}
-          <TrainRoadmap
-            completedPhases={
-              contentStats?.published && contentStats?.total
-                ? Math.min(Math.floor((contentStats.published / contentStats.total) * 3), 3)
-                : 0
-            }
-            contentByPhase={{
-              foundation: {
-                total:
-                  (contentStats?.byType?.homepage ?? 0) +
-                  (contentStats?.byType?.about ?? 0) +
-                  (contentStats?.byType?.service ?? 0),
-                completed: contentStats?.published ?? 0,
-              },
-              authority: {
-                total: contentStats?.byType?.blog ?? 0,
-                completed: 0,
-              },
-              conversion: {
-                total:
-                  (contentStats?.byType?.leadMagnet ?? 0) + (contentStats?.byType?.landing ?? 0),
-                completed: 0,
-              },
-            }}
-          />
+          {(() => {
+            const phaseData = calculatePhaseData(contentStats?.byTypeStatus || {});
+            const completedPhases = countCompletedPhases(phaseData);
+
+            return <TrainRoadmap completedPhases={completedPhases} contentByPhase={phaseData} />;
+          })()}
 
           {/* Content Journey - awareness levels (detail section) */}
           <ContentJourney

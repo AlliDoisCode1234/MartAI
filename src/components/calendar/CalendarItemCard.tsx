@@ -21,18 +21,13 @@ import {
   VStack,
   Skeleton,
   Spinner,
-  keyframes,
 } from '@chakra-ui/react';
 import { FiClock, FiSearch, FiLoader } from 'react-icons/fi';
 import { getContentTypeIcon, getContentTypeLabel } from '@/lib/constants/contentTypes';
 import { getStatusColorScheme } from '@/lib/constants/statusColors';
 import { formatDateTime } from '@/lib/dateUtils';
 
-// Shimmer animation for skeleton (feels 40% faster than pulsing)
-const shimmer = keyframes`
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-`;
+// Shimmer animation as inline style (Chakra v3 doesn't export keyframes)
 
 type Props = {
   id: string;
@@ -95,7 +90,13 @@ export function CalendarItemCard({
           bottom={0}
           bgGradient="linear(to-r, transparent, rgba(255,255,255,0.4), transparent)"
           backgroundSize="200% 100%"
-          animation={`${shimmer} 1.5s infinite`}
+          animation="shimmer 1.5s infinite"
+          sx={{
+            '@keyframes shimmer': {
+              '0%': { backgroundPosition: '-200% 0' },
+              '100%': { backgroundPosition: '200% 0' },
+            },
+          }}
           pointerEvents="none"
         />
         <HStack spacing={1} mb={1}>

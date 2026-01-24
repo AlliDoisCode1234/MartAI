@@ -1640,4 +1640,15 @@ export default defineSchema({
     .index('by_project', ['projectId'])
     .index('by_status', ['status'])
     .index('by_project_status', ['projectId', 'status']),
+  // BI Events (Server-side analytics)
+  biEvents: defineTable({
+    projectId: v.id('projects'),
+    userId: v.optional(v.id('users')),
+    event: v.string(), // e.g., 'content:published', 'content:scheduled'
+    properties: v.optional(v.any()),
+    timestamp: v.number(),
+  })
+    .index('by_project', ['projectId'])
+    .index('by_event', ['event'])
+    .index('by_timestamp', ['timestamp']),
 });

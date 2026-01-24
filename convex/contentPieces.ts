@@ -261,6 +261,22 @@ export const update = mutation({
       updatedAt: Date.now(),
     });
 
+    // BI Event Tracking
+    if (updates.status === 'published' && piece.status !== 'published') {
+      await ctx.db.insert('biEvents', {
+        projectId: piece.projectId,
+        userId: userId,
+        event: 'content:published',
+        properties: {
+          contentPieceId,
+          contentType: piece.contentType,
+          wordCount: updates.wordCount ?? piece.wordCount,
+          geoScore: updates.geoScore ?? piece.geoScore,
+        },
+        timestamp: Date.now(),
+      });
+    }
+
     return contentPieceId;
   },
 });
@@ -363,6 +379,29 @@ export const getStats = query({
           )
         : null;
 
+    // Calculate stats by content type
+    const byType: Record<string, number> = {};
+    const byTypeStatus: Record<string, { total: number; published: number; scheduled: number }> =
+      {};
+
+    pieces.forEach((p) => {
+      // Legacy simple count
+      byType[p.contentType] = (byType[p.contentType] || 0) + 1;
+
+      // Detailed status count
+      if (!byTypeStatus[p.contentType]) {
+        byTypeStatus[p.contentType] = { total: 0, published: 0, scheduled: 0 };
+      }
+
+      byTypeStatus[p.contentType].total++;
+
+      if (p.status === 'published') {
+        byTypeStatus[p.contentType].published++;
+      } else if (p.status === 'scheduled') {
+        byTypeStatus[p.contentType].scheduled++;
+      }
+    });
+
     return {
       total,
       drafts,
@@ -370,6 +409,8 @@ export const getStats = query({
       published,
       scheduled,
       avgScore,
+      byType, // Keep for backward compatibility if needed
+      byTypeStatus, // New detailed stats
     };
   },
 });
@@ -408,6 +449,19 @@ export const schedule = mutation({
       status: 'scheduled',
       scheduledDate: args.publishDate, // Keep arg name if needed but map to schema field
       updatedAt: Date.now(),
+    });
+
+    // BI Event: Schedule
+    await ctx.db.insert('biEvents', {
+      projectId: piece.projectId,
+      userId,
+      event: 'content:scheduled',
+      properties: {
+        contentPieceId: args.contentPieceId,
+        contentType: piece.contentType,
+        scheduledDate: args.publishDate,
+      },
+      timestamp: Date.now(),
     });
 
     return { success: true, publishDate: args.publishDate };
