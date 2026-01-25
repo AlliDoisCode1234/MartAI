@@ -534,6 +534,17 @@ export default defineSchema({
     generationStatus: v.optional(
       v.union(v.literal('idle'), v.literal('generating'), v.literal('complete'), v.literal('error'))
     ),
+    // Connected CMS platforms for capability-aware publishing
+    connectedPlatforms: v.optional(
+      v.array(
+        v.union(
+          v.literal('wordpress'),
+          v.literal('shopify'),
+          v.literal('wix'),
+          v.literal('webflow')
+        )
+      )
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

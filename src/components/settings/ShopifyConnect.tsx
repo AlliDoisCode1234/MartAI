@@ -26,6 +26,7 @@ import {
 } from '@chakra-ui/react';
 import { FiExternalLink, FiTrash2, FiCheck } from 'react-icons/fi';
 import { SiShopify } from 'react-icons/si';
+import { CMSCapabilityAlert } from './CMSCapabilityAlert';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
@@ -198,6 +199,8 @@ export function ShopifyConnect({ projectId }: Props) {
 
       <Collapse in={showForm} animateOpacity>
         <VStack spacing={4} align="stretch">
+          <CMSCapabilityAlert platform="shopify" />
+
           <Text fontSize="sm" color="gray.600">
             Enter your Shopify store domain to connect via OAuth.
           </Text>

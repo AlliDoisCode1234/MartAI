@@ -1,0 +1,71 @@
+# Qodo AI / PR-Agent Configuration for MartAI/Phoo
+# Docs: https://qodo.ai/docs/pr-agent/configuration
+
+[config]
+# Enable debugging to see which configurations are being used
+output_relevant_configurations = false
+
+[pr_reviewer]
+# Review guidelines based on our code standards (see .agent/workflows/code-standards.md)
+extra_instructions = """
+CRITICAL RULES - Flag violations of these immediately:
+
+1. ONE COMPONENT PER FILE - If multiple React components are defined in a single file, flag this as a critical issue.
+
+2. PROPS TYPE NAMED 'Props' - Not ComponentNameProps, just 'Props'. Flag non-standard naming.
+
+3. COMPONENT HIERARCHY COMMENT - Every component file must have a hierarchy comment at the top:
+   /**
+    * ComponentName
+    * Component Hierarchy: App → Parent → ThisComponent
+    */
+
+4. MAX 150 LINES per file - Pages should be ~100 lines. Files >150 lines should be flagged for extraction.
+
+5. LOADING SKELETONS, NOT SPINNERS - Flag any use of <Spinner /> components. Must use Chakra <Skeleton> that matches content dimensions.
+
+6. PASS WHOLE OBJECTS DOWN - Props should pass the full object, destructuring happens in the child component.
+
+7. NO EMOJIS IN CODE - All visual elements must use icon components, never emoji characters.
+
+8. RETURN MINIMAL DATA - Backend queries should not return more data than the UI requires.
+
+9. SANITIZE INPUT/OUTPUT - Browser is a hostile environment. Flag any unsanitized user input or exposed sensitive data.
+
+10. AUTH CHECKS REQUIRED - All Convex mutations and queries must start with authentication verification.
+"""
+
+# Encourage thorough reviews, not just style nits
+require_tests_review = true
+require_security_review = true
+require_doc_review = false
+num_code_suggestions = 4
+
+[pr_description]
+# Auto-generate meaningful PR descriptions
+publish_description_as_comment = false
+extra_instructions = """
+Focus on:
+- What user-facing behavior changed
+- What security implications exist
+- What components were affected
+"""
+
+[pr_code_suggestions]
+# Make suggestions actionable
+extra_instructions = """
+Prioritize suggestions for:
+- Security vulnerabilities and auth bypasses
+- Type safety issues (avoid 'any', use proper generics)
+- DRY violations (code that could be extracted to shared utilities)
+- Component extraction opportunities (>150 line files)
+"""
+
+[pr_test]
+# Encourage test coverage
+extra_instructions = """
+We follow the Kent C. Dodds Testing Trophy:
+- Prioritize integration tests over unit tests
+- E2E tests for critical user flows
+- Test files should use vitest and @testing-library/react
+"""

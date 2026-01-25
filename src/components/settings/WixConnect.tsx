@@ -22,6 +22,7 @@ import {
 } from '@chakra-ui/react';
 import { FiExternalLink, FiTrash2, FiCheck } from 'react-icons/fi';
 import { SiWix } from 'react-icons/si';
+import { CMSCapabilityAlert } from './CMSCapabilityAlert';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
@@ -158,7 +159,9 @@ export function WixConnect({ projectId }: Props) {
   // Show connect button
   return (
     <Box p={4} borderWidth="1px" borderRadius="lg" borderColor="gray.200">
-      <HStack justify="space-between">
+      <CMSCapabilityAlert platform="wix" variant="compact" />
+
+      <HStack justify="space-between" mt={3}>
         <HStack>
           <SiWix size={24} color="#0C6EFC" />
           <Text fontWeight="bold">Wix</Text>
