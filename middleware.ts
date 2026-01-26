@@ -79,7 +79,7 @@ export function middleware(request: NextRequest) {
     }
 
     // Public routes - always accessible
-    const publicRoutes = ['/join', '/auth', '/privacy', '/terms'];
+    const publicRoutes = ['/join', '/auth', '/privacy', '/terms', '/resources'];
     const isPublicRoute = publicRoutes.some(
       (route) => pathname === route || pathname.startsWith(route + '/')
     );
@@ -133,11 +133,11 @@ export function middleware(request: NextRequest) {
     ...(process.env.NODE_ENV === 'production' && {
       'Content-Security-Policy': [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com", // Google OAuth
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://www.googletagmanager.com", // Google OAuth + GA4
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
         "font-src 'self' https://fonts.gstatic.com data:",
         "img-src 'self' data: https: blob:",
-        "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://api.openai.com https://accounts.google.com",
+        "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://api.openai.com https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com",
         'frame-src https://accounts.google.com', // Google OAuth popup
         "object-src 'none'",
         "base-uri 'self'",
