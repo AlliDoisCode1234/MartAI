@@ -11,7 +11,9 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import type { MRScoreData, StrategyData, ConnectionData } from '@/types';
+import type { ConnectionData, StrategyData } from '@/types';
+import type { CanonicalMetrics } from '@/convex/canonical/metrics';
+import type { CanonicalRating } from '@/convex/canonical/rating';
 
 interface UseProjectOptions {
   /** Skip fetching if true */
@@ -39,9 +41,14 @@ interface UseProjectResult {
   ga4Connection: ConnectionData | null | undefined;
   /** GSC connection status */
   gscConnection: ConnectionData | null | undefined;
-  /** Latest MR score */
-  mrScore: MRScoreData | null | undefined;
-  /** Strategy data (clusters + plan) */
+  /** Canonical rating (unified Phoo Rating) */
+  rating: CanonicalRating | null | undefined;
+  /** Canonical metrics (keywords, clusters, content counts) */
+  metrics: CanonicalMetrics | null | undefined;
+  /**
+   * @deprecated Use `metrics` for counts or query getFullStrategy directly.
+   * Strategy data with full clusters and plan (kept for backward compatibility)
+   */
   strategyData: StrategyData | null | undefined;
   /** Whether any data is still loading */
   isLoading: boolean;
@@ -151,15 +158,24 @@ export function useProject(
     shouldFetch && typedProjectId ? { projectId: typedProjectId } : 'skip'
   );
 
-  // Fetch MR score
-  const mrScore = useQuery(
-    api.analytics.martaiRatingQueries.getLatestScore,
+  // Fetch canonical rating (unified Phoo Rating - replaces mrScore)
+  const rating = useQuery(
+    api.canonical.rating.getCanonicalRating,
     shouldFetch && typedProjectId ? { projectId: typedProjectId } : 'skip'
   );
 
-  // Fetch strategy data
-  // TODO: Implement api.seo.strategy.getStrategyByProject when strategy feature is built
-  const strategyData: { clusters?: unknown[]; plan?: unknown } | null = null; // Placeholder - function doesn't exist yet
+  // Fetch canonical metrics (keywords, clusters, content counts)
+  const metrics = useQuery(
+    api.canonical.metrics.getCanonicalMetrics,
+    shouldFetch && typedProjectId ? { projectId: typedProjectId } : 'skip'
+  );
+
+  // Fetch full strategy data (clusters, plan) for pages that need it
+  // @deprecated Prefer metrics for counts, query getFullStrategy directly for full data
+  const strategyData = useQuery(
+    api.strategy.getFullStrategy,
+    shouldFetch && typedProjectId ? { projectId: typedProjectId } : 'skip'
+  );
 
   // Compute derived state
   const result = useMemo<UseProjectResult>(() => {
@@ -168,22 +184,23 @@ export function useProject(
       (project === undefined ||
         ga4Connection === undefined ||
         gscConnection === undefined ||
-        mrScore === undefined ||
-        strategyData === undefined);
+        rating === undefined ||
+        metrics === undefined);
 
     return {
       projectId: resolvedProjectId ?? null,
       project,
       ga4Connection,
       gscConnection,
-      mrScore,
+      rating,
+      metrics,
       strategyData,
       isLoading: dataLoading || isSelectingProject,
       isSelectingProject,
       hasGA4: !!ga4Connection,
       hasGSC: !!gscConnection,
-      hasClusters: ((strategyData as { clusters?: unknown[] } | null)?.clusters?.length ?? 0) > 0,
-      hasPlan: !!(strategyData as { plan?: unknown } | null)?.plan,
+      hasClusters: (metrics?.clusterCount ?? 0) > 0,
+      hasPlan: (metrics?.contentCount ?? 0) > 0,
       setCurrentProject,
       // PROJ-001 fields
       projectType: (project?.projectType as 'own' | 'competitor') ?? null,
@@ -194,7 +211,8 @@ export function useProject(
     project,
     ga4Connection,
     gscConnection,
-    mrScore,
+    rating,
+    metrics,
     strategyData,
     resolvedProjectId,
     isSelectingProject,

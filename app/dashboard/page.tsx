@@ -27,7 +27,7 @@ import {
   Circle,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { useConvexAuth, useQuery, useMutation } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import {
@@ -69,8 +69,8 @@ export default function DashboardPage() {
   const {
     projectId,
     project,
-    mrScore,
-    strategyData,
+    rating,
+    metrics,
     isLoading: projectLoading,
   } = useProject(null, { autoSelect: true });
 
@@ -83,17 +83,6 @@ export default function DashboardPage() {
     api.analytics.gscKeywords.getGSCDashboardStats,
     projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
-
-  // Auto-generate PR if missing
-  const generateScore = useMutation(api.analytics.martaiRatingQueries.generatePreliminaryScore);
-  const [hasGenerated, setHasGenerated] = useState(false);
-
-  useEffect(() => {
-    if (projectId && mrScore === null && !hasGenerated && !projectLoading) {
-      setHasGenerated(true);
-      generateScore({ projectId: projectId as Id<'projects'> }).catch(console.error);
-    }
-  }, [projectId, mrScore, hasGenerated, projectLoading, generateScore]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -109,15 +98,17 @@ export default function DashboardPage() {
 
   const loadingDashboard = authLoading || projectLoading;
   const userName = user?.name?.split(' ')[0] || 'there';
-  const stats = strategyData?.stats ?? null;
-  const clusterCount = strategyData?.clusters?.length ?? 0;
-  const briefCount = stats?.briefCount ?? 0;
-  const keywordCount = strategyData?.stats?.keywordCount ?? 0;
+
+  // Use canonical metrics for stats (fixes data inconsistency bug)
+  const clusterCount = metrics?.clusterCount ?? 0;
+  const contentCount = metrics?.contentCount ?? 0;
+  const keywordCount = metrics?.keywordCount ?? 0;
 
   if (loadingDashboard) return <DashboardSkeleton />;
   if (!project) return <WelcomeEmptyState />;
 
-  const healthScore = mrScore?.overall ?? 0;
+  // Use canonical rating (unified Phoo Rating)
+  const healthScore = rating?.rating ?? 0;
   const hasStrategy = clusterCount > 0;
 
   // Quick actions
@@ -133,7 +124,7 @@ export default function DashboardPage() {
       label: 'Calendar',
       href: '/studio/calendar',
       icon: FiCalendar,
-      stat: `${briefCount} pieces`,
+      stat: `${contentCount} pieces`,
       color: '#60a5fa',
     },
     {
@@ -149,8 +140,8 @@ export default function DashboardPage() {
   const statsData = [
     { label: 'Keywords', value: keywordCount, icon: FiLayers, color: '#a78bfa' },
     { label: 'Clusters', value: clusterCount, icon: FiTarget, color: '#60a5fa' },
-    { label: 'Content', value: briefCount, icon: FiEdit3, color: '#34d399' },
-    { label: 'PR Score', value: healthScore, icon: FiAward, color: '#f59e0b', isScore: true },
+    { label: 'Content', value: contentCount, icon: FiEdit3, color: '#34d399' },
+    { label: 'Phoo Rating', value: healthScore, icon: FiAward, color: '#f59e0b', isScore: true },
   ];
 
   return (

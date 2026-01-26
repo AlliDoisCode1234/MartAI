@@ -122,7 +122,7 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
           initialMessage: userMessage.content,
         });
         setThreadId(result.threadId);
-        response = result.response || 'I encountered an issue. Please try again.';
+        response = result.response || generateStaticFallback(isAuthenticated);
       } else {
         // Continue existing thread
         const result = await sendMessage({
@@ -133,9 +133,9 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
         response = result.response;
       }
 
-      // Don't add blank responses
+      // Static fallback for empty responses (fixes P0 AI failover bug)
       if (!response || response.trim() === '') {
-        response = "I'm still thinking... please try again in a moment.";
+        response = generateStaticFallback(isAuthenticated);
       }
 
       const assistantMessage: Message = {
@@ -148,10 +148,11 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Chat error:', error);
+      // Use static fallback instead of generic error (fixes P0 AI failover bug)
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: generateStaticFallback(isAuthenticated),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -159,6 +160,37 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
       setIsLoading(false);
     }
   };
+
+  // Generate a helpful static fallback response when AI fails
+  function generateStaticFallback(isAuth: boolean): string {
+    if (isAuth) {
+      return `I'm having a moment of connection trouble, but I can still help you get started!
+
+**Quick Actions You Can Take Now:**
+- Check your **Phoo Rating** on the Dashboard to see your SEO health
+- Visit the **Keywords Library** to explore your tracked keywords
+- Open **Strategy** to review your topic clusters
+- Head to **Calendar** to see your content schedule
+
+**Pro Tip:** Connect Google Search Console and GA4 in Settings to unlock deeper insights!
+
+I'll be back to my usual chatty self shortly. Try again in a moment!`;
+    }
+    return `Thanks for your interest in Phoo!
+
+**Here's what Phoo can do for you:**
+- **AI-Powered SEO:** Discover keywords your competitors are missing
+- **Topic Clustering:** Organize content into strategic pillars
+- **Content Calendar:** Plan and schedule your content strategy
+- **Phoo Rating:** Track your SEO health score from 0-100
+
+**Pricing:**
+- Solo: $59/mo (1 project)
+- Growth: $149/mo (5 projects)
+- Team: $299/mo (unlimited)
+
+Ready to improve your rankings? **Sign up to get started!**`;
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

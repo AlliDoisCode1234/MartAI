@@ -555,7 +555,11 @@ export interface KPIs {
   conversionRate: { value: number; change: number; previous: number };
 }
 
-/** MartAI Rating Score - computed from analytics data */
+/**
+ * @deprecated Use `CanonicalRating` from `@/convex/canonical/rating` instead.
+ * This type is kept for backward compatibility with existing code.
+ * MartAI Rating Score - computed from analytics data
+ */
 export interface MRScoreData {
   overall: number;
   tier: string;
@@ -568,7 +572,11 @@ export interface MRScoreData {
   previousScore?: number;
 }
 
-/** Strategy data aggregation for dashboard/strategy pages */
+/**
+ * @deprecated Use `CanonicalMetrics` from `@/convex/canonical/metrics` instead.
+ * This type is kept for backward compatibility with existing code.
+ * Strategy data aggregation for dashboard/strategy pages
+ */
 export interface StrategyData {
   clusters?: KeywordCluster[];
   plan?: QuarterlyPlan;

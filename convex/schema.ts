@@ -57,6 +57,7 @@ export default defineSchema({
         v.literal('solo'), // Canonical entry tier
         v.literal('starter'), // Legacy alias for solo
         v.literal('growth'), // Canonical mid tier
+        v.literal('team'), // Team tier ($299/mo)
         v.literal('pro'), // Legacy alias for growth
         v.literal('enterprise') // Canonical top tier
       )
@@ -945,6 +946,7 @@ export default defineSchema({
         v.literal('solo'), // Canonical entry tier
         v.literal('starter'), // Legacy alias for solo
         v.literal('growth'), // Canonical mid tier
+        v.literal('team'), // Team tier ($299/mo)
         v.literal('pro'), // Legacy alias for growth
         v.literal('enterprise') // Canonical top tier
       )
