@@ -4,7 +4,7 @@
   "private": true,
   "homepage": "https://AlliDoisCode1234.github.io/MartAI",
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.86",
+    "@ai-sdk/openai": "^3.0.8",
     "@anthropic-ai/sdk": "^0.71.2",
     "@auth/core": "^0.37.0",
     "@chakra-ui/icons": "^2.2.4",
