@@ -1,6 +1,10 @@
+const createMDX = require('@next/mdx');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Allow MDX files to be pages
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx'],
   eslint: {
     // Only ignore during builds in CI if needed, otherwise fix linting errors
     ignoreDuringBuilds: process.env.CI === 'true' ? false : false,
@@ -29,4 +33,14 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+// Wrap with MDX support
+const withMDX = createMDX({
+  extension: /\.mdx?$/,
+  options: {
+    // Add remark/rehype plugins here if needed
+    remarkPlugins: [],
+    rehypePlugins: [],
+  },
+});
+
+module.exports = withMDX(nextConfig);

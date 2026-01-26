@@ -32,6 +32,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { FiClock, FiEye, FiChevronRight, FiArrowLeft, FiShare2 } from 'react-icons/fi';
+import { MDXContent } from '@/src/components/resources/MDXContent';
 
 // Category config
 const CATEGORY_CONFIG = {
@@ -180,7 +181,7 @@ export default function ResourceDetailPage() {
 
         <Divider my={8} />
 
-        {/* Article Content Placeholder */}
+        {/* Article Content */}
         <Box
           bg="white"
           p={8}
@@ -189,14 +190,7 @@ export default function ResourceDetailPage() {
           borderColor="gray.200"
           minH="400px"
         >
-          <VStack spacing={4} py={12} textAlign="center">
-            <Text color="gray.400" fontSize="lg">
-              📝 Content will be rendered here from MDX
-            </Text>
-            <Text color="gray.400" fontSize="sm">
-              Create a file at: content/resources/{resource.slug}.mdx
-            </Text>
-          </VStack>
+          <MDXContent slug={slug} />
         </Box>
 
         {/* Actions */}
