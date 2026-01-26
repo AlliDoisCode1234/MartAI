@@ -1,0 +1,223 @@
+# The Ultimate Technical SEO Checklist for 2025
+
+**A comprehensive technical SEO checklist covering site speed, mobile-first indexing, Core Web Vitals, structured data, and crawlability.**
+
+## Why Technical SEO Matters
+
+Technical SEO ensures search engines can crawl, index, and understand your site. Without it, even great content won't rank.
+
+## Core Web Vitals
+
+Google's page experience signals are critical:
+
+| Metric | Target  | Description              |
+| ------ | ------- | ------------------------ |
+| LCP    | < 2.5s  | Largest Contentful Paint |
+| FID    | < 100ms | First Input Delay        |
+| CLS    | < 0.1   | Cumulative Layout Shift  |
+
+### How to Improve LCP
+
+- [ ] Optimize largest image on page
+- [ ] Use next-gen formats (WebP, AVIF)
+- [ ] Implement lazy loading
+- [ ] Use a CDN
+- [ ] Minimize server response time
+
+### How to Improve FID
+
+- [ ] Minimize JavaScript execution
+- [ ] Break up long tasks
+- [ ] Remove unused JavaScript
+- [ ] Defer non-critical JS
+
+### How to Improve CLS
+
+- [ ] Set image dimensions
+- [ ] Reserve space for ads
+- [ ] Use transform animations
+- [ ] Preload fonts
+
+## Crawlability
+
+### Robots.txt
+
+```
+# Example robots.txt
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://example.com/sitemap.xml
+```
+
+### XML Sitemap
+
+Must include:
+
+- [ ] All indexable URLs
+- [ ] Accurate lastmod dates
+- [ ] Proper priority (optional)
+- [ ] Submitted to GSC
+
+### Internal Linking
+
+- [ ] Important pages within 3 clicks of homepage
+- [ ] Descriptive anchor text
+- [ ] No orphan pages
+- [ ] Logical site structure
+
+## Index Management
+
+### Canonical Tags
+
+```html
+<link rel="canonical" href="https://example.com/page" />
+```
+
+Use when:
+
+- Duplicate content exists
+- Parameter variations
+- Print/mobile versions
+
+### Noindex Usage
+
+```html
+<meta name="robots" content="noindex, follow" />
+```
+
+Apply to:
+
+- Thank you pages
+- Admin pages
+- Thin/duplicate content
+- Search result pages
+
+## Mobile-First Indexing
+
+Google uses mobile version as primary:
+
+- [ ] Responsive design
+- [ ] Same content on mobile/desktop
+- [ ] Mobile-friendly navigation
+- [ ] Touch-friendly elements (48px minimum)
+- [ ] Readable without zooming
+
+### Mobile Testing
+
+```bash
+# Use Lighthouse
+npx lighthouse https://example.com --view
+```
+
+## HTTPS & Security
+
+### Security Headers
+
+```
+Strict-Transport-Security: max-age=31536000
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+```
+
+### SSL Certificate
+
+- [ ] Valid SSL certificate
+- [ ] All pages served over HTTPS
+- [ ] 301 redirects from HTTP
+- [ ] No mixed content
+
+## Structured Data
+
+### Common Schema Types
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Article Title",
+  "author": {
+    "@type": "Person",
+    "name": "Author Name"
+  },
+  "datePublished": "2025-01-26"
+}
+```
+
+### Types to Implement
+
+- [ ] Organization
+- [ ] Article/BlogPosting
+- [ ] FAQPage
+- [ ] Product (if applicable)
+- [ ] BreadcrumbList
+- [ ] LocalBusiness (if applicable)
+
+## Page Speed Optimization
+
+### Quick Wins
+
+1. **Compress images** - Use TinyPNG or Squoosh
+2. **Enable compression** - Gzip/Brotli
+3. **Minify assets** - CSS, JS, HTML
+4. **Leverage caching** - Browser cache headers
+5. **Use CDN** - Global distribution
+
+### Performance Budget
+
+| Resource   | Budget  |
+| ---------- | ------- |
+| HTML       | < 100KB |
+| CSS        | < 100KB |
+| JavaScript | < 300KB |
+| Images     | < 500KB |
+| Total page | < 1MB   |
+
+## URL Structure
+
+### Best Practices
+
+✅ **Good URLs:**
+
+- `/resources/seo-guide`
+- `/blog/keyword-research-tips`
+
+❌ **Bad URLs:**
+
+- `/page?id=123&cat=seo`
+- `/folder/subfolder/subfolder/page`
+
+### URL Guidelines
+
+- [ ] Lowercase only
+- [ ] Hyphens not underscores
+- [ ] Descriptive keywords
+- [ ] Short but meaningful
+- [ ] No special characters
+
+## Monitoring & Tools
+
+### Essential Tools
+
+| Tool                  | Purpose              |
+| --------------------- | -------------------- |
+| Google Search Console | Index status, errors |
+| Google Analytics      | Traffic analysis     |
+| PageSpeed Insights    | Core Web Vitals      |
+| Screaming Frog        | Site audits          |
+| Ahrefs/Semrush        | Comprehensive SEO    |
+
+### Monthly Audit
+
+- [ ] Check for crawl errors
+- [ ] Review Core Web Vitals
+- [ ] Identify 404s
+- [ ] Monitor index coverage
+- [ ] Check mobile usability
+
+---
+
+_Audit your technical SEO automatically with [Phoo's site scanner](/join)._

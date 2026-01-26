@@ -23,11 +23,45 @@ const MDX_CONTENT: Record<string, React.ComponentType> = {
     () => import('@/content/resources/what-is-geo-generative-engine-optimization.mdx'),
     { loading: () => <ContentLoading /> }
   ),
-  // Add more articles as they are created:
-  // 'seo-content-strategy-guide': dynamic(
-  //   () => import('@/content/resources/seo-content-strategy-guide.mdx'),
-  //   { loading: () => <ContentLoading /> }
-  // ),
+  'seo-content-strategy-guide': dynamic(
+    () => import('@/content/resources/seo-content-strategy-guide.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'how-to-write-content-briefs': dynamic(
+    () => import('@/content/resources/how-to-write-content-briefs.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'keyword-research-fundamentals': dynamic(
+    () => import('@/content/resources/keyword-research-fundamentals.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'ai-content-generation-best-practices': dynamic(
+    () => import('@/content/resources/ai-content-generation-best-practices.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'technical-seo-checklist': dynamic(
+    () => import('@/content/resources/technical-seo-checklist.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'eeat-guidelines-explained': dynamic(
+    () => import('@/content/resources/eeat-guidelines-explained.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'content-calendar-template': dynamic(
+    () => import('@/content/resources/content-calendar-template.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'internal-linking-strategy': dynamic(
+    () => import('@/content/resources/internal-linking-strategy.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'content-optimization-workflow': dynamic(
+    () => import('@/content/resources/content-optimization-workflow.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'measuring-content-roi': dynamic(() => import('@/content/resources/measuring-content-roi.mdx'), {
+    loading: () => <ContentLoading />,
+  }),
 };
 
 function ContentLoading() {

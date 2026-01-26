@@ -1,0 +1,212 @@
+# Measuring Content ROI: Metrics That Actually Matter
+
+**Stop tracking vanity metrics.** Learn how to measure the real return on your content investment with attribution, assisted conversions, and business impact.
+
+## The Content ROI Problem
+
+Most teams track the wrong metrics:
+
+| Vanity Metrics | Business Metrics          |
+| -------------- | ------------------------- |
+| Page views     | Revenue attributed        |
+| Social shares  | Leads generated           |
+| Time on page   | Pipeline influenced       |
+| Bounce rate    | Conversion rate           |
+| Rankings       | Customer acquisition cost |
+
+## Setting Up Content Attribution
+
+### Attribution Models
+
+| Model          | Description              | Best For                 |
+| -------------- | ------------------------ | ------------------------ |
+| Last Touch     | Credit to final page     | Simple tracking          |
+| First Touch    | Credit to discovery page | Awareness content        |
+| Linear         | Equal credit to all      | Full journey             |
+| Time Decay     | More credit to recent    | Long sales cycles        |
+| Position Based | 40/20/40 splits          | B2B with defined journey |
+
+### Implementing Attribution
+
+#### Google Analytics 4
+
+```
+1. Admin → Attribution Settings
+2. Select reporting attribution model
+3. Set lookback window (30-90 days)
+4. Enable data-driven attribution if eligible
+```
+
+#### UTM Parameters
+
+Tag all content distribution:
+
+```
+?utm_source=newsletter
+&utm_medium=email
+&utm_campaign=q1-content
+&utm_content=seo-guide
+```
+
+## Key Metrics to Track
+
+### Awareness Metrics
+
+| Metric          | Goal        | How to Track   |
+| --------------- | ----------- | -------------- |
+| Organic traffic | Growth      | GA4            |
+| New users       | Reach       | GA4            |
+| Impressions     | Visibility  | Search Console |
+| Branded search  | Recognition | Search Console |
+
+### Engagement Metrics
+
+| Metric                | Good Target       | Notes               |
+| --------------------- | ----------------- | ------------------- |
+| Avg. session duration | > 2 min           | For long-form       |
+| Scroll depth          | > 75%             | Add scroll tracking |
+| Return visitors       | > 20%             | Content loyalty     |
+| Comments/shares       | Context-dependent | Varies by industry  |
+
+### Conversion Metrics
+
+| Metric                  | How to Calculate                         |
+| ----------------------- | ---------------------------------------- |
+| Content conversion rate | Conversions / Content page visits        |
+| Assisted conversions    | GA4 → Advertising → Conversion paths     |
+| Lead quality score      | Sales acceptance rate from content leads |
+
+### Business Impact
+
+| Metric             | Formula                                       |
+| ------------------ | --------------------------------------------- |
+| Content ROI        | (Revenue - Content Cost) / Content Cost × 100 |
+| Cost per lead      | Content spending / Leads generated            |
+| Pipeline influence | Deals touched by content / Total deals        |
+| Content CAC        | Content cost / Customers from content         |
+
+## Building Your Measurement Framework
+
+### Step 1: Define Goals
+
+For each content piece, set:
+
+- **Primary goal**: What must it achieve?
+- **Secondary goals**: Nice-to-haves
+- **Timeframe**: When do we evaluate?
+
+### Step 2: Assign Values
+
+Estimate lead/conversion values:
+
+| Action            | Estimated Value |
+| ----------------- | --------------- |
+| Newsletter signup | $5              |
+| Demo request      | $50             |
+| Content download  | $10             |
+| Free trial        | $100            |
+| Purchase          | $X (your ARPU)  |
+
+### Step 3: Create Dashboards
+
+Track metrics centrally:
+
+```
+Content Performance Dashboard:
+├── Traffic metrics (weekly)
+├── Engagement metrics (weekly)
+├── Conversion metrics (monthly)
+└── ROI calculation (quarterly)
+```
+
+### Step 4: Reporting Cadence
+
+| Report      | Frequency | Focus           |
+| ----------- | --------- | --------------- |
+| Traffic     | Weekly    | Trends          |
+| Performance | Monthly   | Winners/losers  |
+| ROI         | Quarterly | Business impact |
+| Strategy    | Annually  | Direction       |
+
+## Calculating Content ROI
+
+### The ROI Formula
+
+```
+Content ROI = ((Revenue from Content - Content Cost) / Content Cost) × 100
+```
+
+### Content Costs
+
+Include all expenses:
+
+| Cost Category | Examples                 |
+| ------------- | ------------------------ |
+| Creation      | Writer fees, tools, time |
+| Optimization  | SEO tools, editing       |
+| Distribution  | Ads, email platform      |
+| Maintenance   | Updates, fixes           |
+
+### Revenue Attribution
+
+Methods to attribute revenue:
+
+1. **Direct**: Conversion on content page
+2. **Assisted**: Content in conversion path
+3. **Influenced**: Content touched during journey
+4. **Modeled**: Statistical attribution
+
+## Common Mistakes
+
+### 1. Measuring Too Soon
+
+Content takes time to rank:
+
+| Timeframe | What to Expect           |
+| --------- | ------------------------ |
+| 1 month   | Indexed, minimal traffic |
+| 3 months  | Starting to rank         |
+| 6 months  | Meaningful traffic       |
+| 12 months | Full potential           |
+
+### 2. Ignoring Assisted Conversions
+
+First-touch content doesn't always get credit:
+
+> A prospect reads your blog → leaves → returns via remarketing → converts on pricing page
+
+Without assisted conversion tracking, the blog gets zero credit.
+
+### 3. Not Segmenting
+
+Different content types have different goals:
+
+| Content Type  | Primary Metric       |
+| ------------- | -------------------- |
+| Awareness     | Traffic, impressions |
+| Consideration | Engagement, leads    |
+| Decision      | Conversions, revenue |
+
+## Optimizing Based on Data
+
+### High Traffic, Low Conversion
+
+- Add CTAs
+- Improve offer
+- Fix intent mismatch
+
+### Low Traffic, High Conversion
+
+- Promote more
+- Build links
+- Create supporting content
+
+### Low Traffic, Low Conversion
+
+- Evaluate: refresh or retire
+- Check intent match
+- Consider consolidation
+
+---
+
+_Measure content ROI automatically with [Phoo's analytics dashboard](/join)._
