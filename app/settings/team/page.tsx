@@ -40,6 +40,7 @@ import { Id } from '@/convex/_generated/dataModel';
 import { useState } from 'react';
 import { FiMoreVertical, FiUserPlus, FiTrash2, FiEdit2 } from 'react-icons/fi';
 import { InviteModal } from '@/src/components/settings/InviteModal';
+import { AppBreadcrumb } from '@/src/components/Navigation/AppBreadcrumb';
 
 export default function TeamSettingsPage() {
   const toast = useToast();
@@ -155,6 +156,9 @@ export default function TeamSettingsPage() {
   return (
     <Box minH="calc(100vh - 64px)" bg="brand.light">
       <Container maxW="container.md" py={{ base: 8, md: 12 }} px={{ base: 4, md: 8 }}>
+        {/* Breadcrumb */}
+        <AppBreadcrumb />
+
         <VStack spacing={6} align="stretch">
           {/* Header */}
           <HStack justify="space-between" align="center">

@@ -8,16 +8,18 @@
  *   ├── AuthProvider (guards auth)
  *   ├── ProjectProvider (guards project selection)
  *   ├── StudioSidebar
+ *   ├── AppBreadcrumb (navigation)
  *   └── Main Content
  *
  * Layout wrapper for Content Studio pages with sidebar navigation.
  * Handles authentication and project selection at the layout level.
  */
 
-import { Box, Flex } from '@chakra-ui/react';
+import { Box, Flex, VStack } from '@chakra-ui/react';
 import { StudioSidebar } from './StudioSidebar';
 import { AuthProvider } from '@/src/providers/AuthProvider';
 import { ProjectProvider } from '@/src/providers/ProjectProvider';
+import { AppBreadcrumb } from '@/src/components/Navigation/AppBreadcrumb';
 
 interface Props {
   children: React.ReactNode;
@@ -35,7 +37,19 @@ export function StudioLayout({ children }: Props) {
             p={8}
             overflowY="auto"
           >
-            {children}
+            <VStack align="stretch" spacing={4}>
+              {/* Breadcrumb with dark mode styling */}
+              <Box
+                sx={{
+                  '& nav': { color: 'gray.400' },
+                  '& a': { color: 'gray.400', _hover: { color: 'orange.400' } },
+                  '& span[aria-current]': { color: 'gray.200' },
+                }}
+              >
+                <AppBreadcrumb />
+              </Box>
+              {children}
+            </VStack>
           </Box>
         </Flex>
       </ProjectProvider>

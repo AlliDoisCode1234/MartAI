@@ -116,6 +116,7 @@ import type * as publishing_wordpressActions from "../publishing/wordpressAction
 import type * as rateLimits from "../rateLimits.js";
 import type * as resources from "../resources.js";
 import type * as resources_seed from "../resources/seed.js";
+import type * as resources_seedAdditional from "../resources/seedAdditional.js";
 import type * as resources_updateRatings from "../resources/updateRatings.js";
 import type * as scores from "../scores.js";
 import type * as scripts_seedKeywordLibrary from "../scripts/seedKeywordLibrary.js";
@@ -273,6 +274,7 @@ declare const fullApi: ApiFromModules<{
   rateLimits: typeof rateLimits;
   resources: typeof resources;
   "resources/seed": typeof resources_seed;
+  "resources/seedAdditional": typeof resources_seedAdditional;
   "resources/updateRatings": typeof resources_updateRatings;
   scores: typeof scores;
   "scripts/seedKeywordLibrary": typeof scripts_seedKeywordLibrary;
