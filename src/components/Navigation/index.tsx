@@ -209,12 +209,12 @@ export const Navigation: FC = () => {
                 <Link key={item.path} href={item.path} style={{ textDecoration: 'none' }}>
                   <Box
                     as="span"
-                    color="brand.orange"
+                    // Wave 3: Improved contrast - use explicit colors, not opacity
+                    color={isActive ? 'brand.orange' : 'gray.700'}
                     fontWeight={isActive ? 'bold' : 'medium'}
-                    _hover={{ opacity: 0.8 }}
+                    _hover={{ color: 'brand.orange' }}
                     cursor="pointer"
                     transition="all 0.2s"
-                    opacity={isActive ? 1 : 0.85}
                     display={{ base: 'none', md: 'inline' }}
                     position="relative"
                     _after={

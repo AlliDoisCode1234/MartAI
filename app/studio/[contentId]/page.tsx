@@ -66,6 +66,13 @@ export default function ContentEditorPage() {
     contentPieceId: contentId as Id<'contentPieces'>,
   });
 
+  // Check for CMS connections (Wave 3: CMS capability flags)
+  const connections = useQuery(
+    api.integrations.platformConnections.listConnections,
+    contentPiece?.projectId ? { projectId: contentPiece.projectId } : 'skip'
+  );
+  const hasCmsConnection = connections && connections.length > 0;
+
   const updateMutation = useMutation(api.contentPieces.update);
   const scheduleMutation = useMutation(api.contentPieces.schedule);
   const unscheduleMutation = useMutation(api.contentPieces.unschedule);
@@ -388,15 +395,29 @@ export default function ContentEditorPage() {
                   >
                     Schedule
                   </Button>
-                  <Button
-                    bg="linear-gradient(135deg, #FF9D00, #FF6B00)"
-                    color="white"
-                    leftIcon={<Icon as={FiSend} />}
-                    _hover={{ opacity: 0.9 }}
-                    onClick={handlePublish}
-                  >
-                    Publish
-                  </Button>
+                  {/* Wave 3: Only show Publish when CMS is connected, otherwise show Mark Complete */}
+                  {hasCmsConnection ? (
+                    <Button
+                      bg="linear-gradient(135deg, #FF9D00, #FF6B00)"
+                      color="white"
+                      leftIcon={<Icon as={FiSend} />}
+                      _hover={{ opacity: 0.9 }}
+                      onClick={handlePublish}
+                    >
+                      Publish
+                    </Button>
+                  ) : (
+                    <Button
+                      bg="linear-gradient(135deg, #22C55E, #16A34A)"
+                      color="white"
+                      leftIcon={<Icon as={FiCheck} />}
+                      _hover={{ opacity: 0.9 }}
+                      onClick={handlePublish}
+                      title="Mark as complete (no CMS connected)"
+                    >
+                      Mark Complete
+                    </Button>
+                  )}
                 </>
               )
             )}

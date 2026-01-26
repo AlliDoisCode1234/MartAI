@@ -82,10 +82,26 @@ const colors = {
     light: '#FFFFFF',
     dark: '#1A202C',
     subtle: '#F7FAFC',
+    muted: '#EDF2F7', // Slightly darker for contrast
     card: {
       light: '#FFFFFF',
       dark: '#2D3748',
     },
+  },
+  // Semantic border tokens (Wave 3: improved borders)
+  border: {
+    light: '#E2E8F0', // Light mode card borders
+    subtle: '#EDF2F7', // Very subtle borders
+    muted: '#CBD5E0', // More visible borders
+    dark: 'rgba(255, 255, 255, 0.1)', // Dark mode borders
+  },
+  // Semantic text tokens for contrast
+  text: {
+    primary: '#1A202C',
+    secondary: '#4A5568',
+    muted: '#718096',
+    subtle: '#A0AEC0',
+    inverse: '#FFFFFF',
   },
 };
 
@@ -251,17 +267,21 @@ const components = {
     },
   },
   Card: {
-    baseStyle: {
+    baseStyle: (props: StyleFunctionProps) => ({
       container: {
         borderRadius: 'lg', // 12px
         boxShadow: 'sm',
+        // Wave 3: Subtle borders for better visual hierarchy
+        borderWidth: '1px',
+        borderColor: mode('border.light', 'border.dark')(props),
+        bg: mode('white', 'gray.800')(props),
         transition: 'all 0.2s',
         _hover: {
           boxShadow: 'md',
           transform: 'translateY(-2px)',
         },
       },
-    },
+    }),
     variants: {
       glass: (props: StyleFunctionProps) => ({
         container: {
@@ -271,14 +291,28 @@ const components = {
           borderColor: mode('whiteAlpha.300', 'whiteAlpha.100')(props),
         },
       }),
-      elevated: {
+      elevated: (props: StyleFunctionProps) => ({
         container: {
           boxShadow: 'lg',
+          borderWidth: '1px',
+          borderColor: mode('border.subtle', 'border.dark')(props),
           _hover: {
             boxShadow: 'xl',
           },
         },
-      },
+      }),
+      // Wave 3: New "outlined" variant for clearer borders
+      outlined: (props: StyleFunctionProps) => ({
+        container: {
+          boxShadow: 'none',
+          borderWidth: '1px',
+          borderColor: mode('border.muted', 'border.dark')(props),
+          _hover: {
+            borderColor: mode('gray.300', 'whiteAlpha.300')(props),
+            boxShadow: 'sm',
+          },
+        },
+      }),
     },
   },
   Heading: {

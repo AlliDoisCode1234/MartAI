@@ -44,11 +44,11 @@ interface Props {
 }
 
 const COMPONENT_ICONS: Record<string, React.ElementType> = {
-  'SEO Health': FiActivity,
-  'Keyword Strategy': FiSearch,
-  'Content Clusters': FiTarget,
-  'Content Execution': FiFileText,
-  'GEO Readiness': FiTrendingUp, // Using TrendingUp to represent AI optimization
+  'SEO Audit': FiActivity,
+  Keywords: FiSearch,
+  'Topic Clusters': FiTarget,
+  Content: FiFileText,
+  'GEO Readiness': FiTrendingUp,
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -60,7 +60,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function PhooRatingCard({ projectId }: Props) {
-  const rating = useQuery(api.phoo.lib.rating.getPhooRating, { projectId });
+  // Use canonical rating for data consistency across App
+  const rating = useQuery(api.canonical.rating.getCanonicalRating, { projectId });
 
   if (!rating) {
     return (
