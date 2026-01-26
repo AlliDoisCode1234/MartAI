@@ -79,7 +79,7 @@ export default function ResourcesPage() {
   );
 
   return (
-    <Box minH="100vh" bg="gray.50" py={12}>
+    <Box minH="100vh" bg="gray.50" pt={24} pb={12}>
       <Container maxW="6xl">
         {/* Header */}
         <VStack spacing={4} textAlign="center" mb={12}>
