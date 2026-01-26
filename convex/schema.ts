@@ -1672,4 +1672,60 @@ export default defineSchema({
     .index('by_project', ['projectId'])
     .index('by_event', ['event'])
     .index('by_timestamp', ['timestamp']),
+
+  // ============================================================================
+  // SECTION 13: PUBLIC RESOURCES (Blog/Educational Content)
+  // ============================================================================
+
+  // Resources - Public SEO content for dogfooding and E-E-A-T
+  resources: defineTable({
+    // Content identification
+    slug: v.string(), // URL-friendly identifier
+    title: v.string(),
+    description: v.string(), // Meta description for SEO
+    excerpt: v.optional(v.string()), // Short preview for cards
+
+    // Categorization
+    category: v.union(
+      v.literal('guide'), // How-to guides
+      v.literal('tutorial'), // Step-by-step tutorials
+      v.literal('case-study'), // Customer success stories
+      v.literal('insight'), // Thought leadership
+      v.literal('news') // Product updates
+    ),
+    tags: v.optional(v.array(v.string())),
+
+    // Content metadata
+    readTimeMinutes: v.number(),
+    wordCount: v.optional(v.number()),
+
+    // Author info (for E-E-A-T)
+    authorName: v.string(),
+    authorTitle: v.optional(v.string()),
+    authorImage: v.optional(v.string()),
+
+    // Publishing
+    status: v.union(v.literal('draft'), v.literal('published'), v.literal('archived')),
+    publishedAt: v.optional(v.number()),
+    updatedAt: v.number(),
+    createdAt: v.number(),
+
+    // Engagement metrics
+    views: v.number(),
+    featured: v.boolean(),
+
+    // Our own Phoo Rating (dogfooding!)
+    phooRating: v.optional(v.number()), // 0-100
+    phooRatedAt: v.optional(v.number()),
+
+    // SEO
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+    canonicalUrl: v.optional(v.string()),
+  })
+    .index('by_slug', ['slug'])
+    .index('by_category', ['category'])
+    .index('by_status', ['status'])
+    .index('by_published', ['publishedAt'])
+    .index('by_featured', ['featured']),
 });

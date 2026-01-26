@@ -42,6 +42,7 @@ const PUBLIC_ROUTES = [
   '/join', // phoo.ai waitlist page
   '/privacy', // Google OAuth verification
   '/terms', // Google OAuth verification
+  '/resources', // Public educational content
 ];
 
 // Routes that bypass the entire app shell (no Navigation, no Phoo)
