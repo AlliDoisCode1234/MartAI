@@ -11,7 +11,6 @@
  *     ├── AudienceSection
  *     ├── BetaSection
  *     ├── WaitlistForm
- *     ├── AskPhooSection (FAQ replacement)
  *     └── Footer
  *
  * Public waitlist page for phoo.ai domain.
@@ -19,19 +18,8 @@
  * Uses Chakra UI with brand.orange/white palette.
  */
 
-import {
-  Box,
-  Container,
-  Text,
-  HStack,
-  VStack,
-  Button,
-  Heading,
-  Link as ChakraLink,
-  useDisclosure,
-} from '@chakra-ui/react';
+import { Box, Container, Text, HStack, Link as ChakraLink } from '@chakra-ui/react';
 import Link from 'next/link';
-import { FiMessageCircle } from 'react-icons/fi';
 import {
   HeroSection,
   ProblemSection,
@@ -40,12 +28,8 @@ import {
   BetaSection,
   WaitlistForm,
 } from '@/src/components/landing';
-import { PhooChatDrawer } from '@/src/components/phoo';
-import { MartCharacter } from '@/src/components/assistant';
 
 export default function JoinPage() {
-  const { isOpen, onOpen, onClose } = useDisclosure();
-
   return (
     <Box minH="100vh" bg="gray.900" color="white">
       <HeroSection />
@@ -54,35 +38,6 @@ export default function JoinPage() {
       <AudienceSection />
       <BetaSection />
       <WaitlistForm />
-
-      {/* Ask Phoo Section - FAQ Replacement */}
-      <Box py={20} bg="gray.800">
-        <Container maxW="4xl" textAlign="center">
-          <VStack spacing={6}>
-            <Box>
-              <MartCharacter size="md" showBubble={false} />
-            </Box>
-            <Heading size="lg" fontWeight="bold">
-              Questions? Ask Phoo
-            </Heading>
-            <Text color="gray.400" maxW="lg" mx="auto">
-              Skip the FAQ. Phoo is your AI marketing manager and can answer any question about SEO,
-              content strategy, or how Phoo works.
-            </Text>
-            <Button
-              size="lg"
-              bg="brand.orange"
-              color="white"
-              _hover={{ bg: '#E8851A' }}
-              leftIcon={<FiMessageCircle />}
-              onClick={onOpen}
-            >
-              Chat with Phoo
-            </Button>
-          </VStack>
-        </Container>
-      </Box>
-
       {/* Footer */}
       <Box as="footer" py={12} borderTop="1px solid" borderColor="whiteAlpha.100">
         <Container maxW="6xl" textAlign="center">
@@ -111,9 +66,6 @@ export default function JoinPage() {
           </Text>
         </Container>
       </Box>
-
-      {/* Phoo Chat Drawer for guests */}
-      <PhooChatDrawer isOpen={isOpen} onClose={onClose} />
     </Box>
   );
 }

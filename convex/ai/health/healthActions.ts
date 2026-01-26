@@ -118,15 +118,15 @@ export const checkCircuitTimeouts = internalMutation({
   handler: async (ctx) => {
     const now = Date.now();
 
-    // Find all open circuits
-    const healthRecords = await ctx.db.query('aiProviderHealth').collect();
+    // Only query circuits that are open (using index instead of full table scan)
+    const openCircuits = await ctx.db
+      .query('aiProviderHealth')
+      .withIndex('by_circuit_state', (q) => q.eq('circuitState', 'open'))
+      .collect();
 
-    for (const health of healthRecords) {
-      if (
-        health.circuitState === 'open' &&
-        health.circuitOpenUntil &&
-        now > health.circuitOpenUntil
-      ) {
+    for (const health of openCircuits) {
+      // Already filtered to open circuits, just check timeout
+      if (health.circuitOpenUntil && now > health.circuitOpenUntil) {
         await ctx.db.patch(health._id, {
           circuitState: 'half_open',
           consecutiveSuccesses: 0,

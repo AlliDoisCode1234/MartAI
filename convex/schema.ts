@@ -1323,6 +1323,7 @@ export default defineSchema({
   })
     .index('by_provider', ['providerId'])
     .index('by_status', ['status'])
+    .index('by_circuit_state', ['circuitState'])
     .index('by_last_checked', ['lastHealthCheckAt']),
 
   // AI routing decision logs

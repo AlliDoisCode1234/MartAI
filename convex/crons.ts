@@ -24,10 +24,10 @@ crons.interval(
   internal.ai.health.healthActions.runHealthChecks
 );
 
-// Check circuit breaker timeouts every minute
+// Check circuit breaker timeouts every 5 minutes (matches health check frequency)
 crons.interval(
   'ai-circuit-timeout-check',
-  { minutes: 1 },
+  { minutes: 5 },
   internal.ai.health.healthActions.checkCircuitTimeouts
 );
 
