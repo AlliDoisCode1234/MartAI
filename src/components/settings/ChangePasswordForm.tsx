@@ -28,6 +28,8 @@ import {
 } from '@chakra-ui/react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuthActions } from '@convex-dev/auth/react';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 type Props = {
   userEmail: string;
@@ -63,6 +65,10 @@ export function ChangePasswordForm({ userEmail, hasPassword }: Props) {
   const { signIn } = useAuthActions();
   const toast = useToast();
 
+  // Rate limiting mutations
+  const checkRateLimit = useMutation(api.auth.passwordRateLimit.checkPasswordRateLimit);
+  const recordSuccess = useMutation(api.auth.passwordRateLimit.recordPasswordSuccess);
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -90,12 +96,27 @@ export function ChangePasswordForm({ userEmail, hasPassword }: Props) {
     try {
       // If user has existing password, verify it first
       if (hasPassword) {
+        // Check rate limit before attempting verification
+        try {
+          await checkRateLimit();
+        } catch (rateLimitError: unknown) {
+          const err = rateLimitError as { data?: { code?: string; message?: string } };
+          if (err?.data?.code === 'RATE_LIMITED') {
+            setError(err.data.message || 'Too many attempts. Please try again later.');
+            setIsLoading(false);
+            return;
+          }
+          throw rateLimitError;
+        }
+
         try {
           await signIn('password', {
             email: userEmail,
             password: currentPassword,
             flow: 'signIn',
           });
+          // Reset rate limit on successful verification
+          await recordSuccess();
         } catch {
           setError('Current password is incorrect');
           setIsLoading(false);

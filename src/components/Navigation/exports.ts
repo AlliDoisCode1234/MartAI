@@ -6,3 +6,4 @@
 
 export { Navigation } from './index';
 export { UserDropdown } from './UserDropdown';
+export { AppBreadcrumb } from './AppBreadcrumb';

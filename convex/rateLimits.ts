@@ -244,6 +244,15 @@ export const rateLimits = new RateLimiter(components.rateLimiter as any, {
   // ADMIN OPERATIONS RATE LIMITS
   // ============================================
 
+  // Password verification - prevent brute force on authenticated sessions
+  // 5 attempts per 15 minutes per user (OWASP recommended)
+  passwordVerification: {
+    kind: 'token bucket',
+    rate: 5,
+    period: 15 * MINUTE,
+    capacity: 5,
+  },
+
   // Impersonation - prevent brute-force session creation
   // 5 impersonations per hour per admin
   admin_impersonation: {

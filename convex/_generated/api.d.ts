@@ -50,6 +50,7 @@ import type * as analytics_sync from "../analytics/sync.js";
 import type * as apiAccessRequests from "../apiAccessRequests.js";
 import type * as apiKeys from "../apiKeys.js";
 import type * as auth from "../auth.js";
+import type * as auth_passwordRateLimit from "../auth/passwordRateLimit.js";
 import type * as auth_passwordReset from "../auth/passwordReset.js";
 import type * as cache from "../cache.js";
 import type * as canonical_index from "../canonical/index.js";
@@ -113,6 +114,9 @@ import type * as publishing_shopifyActions from "../publishing/shopifyActions.js
 import type * as publishing_wixActions from "../publishing/wixActions.js";
 import type * as publishing_wordpressActions from "../publishing/wordpressActions.js";
 import type * as rateLimits from "../rateLimits.js";
+import type * as resources from "../resources.js";
+import type * as resources_seed from "../resources/seed.js";
+import type * as resources_updateRatings from "../resources/updateRatings.js";
 import type * as scores from "../scores.js";
 import type * as scripts_seedKeywordLibrary from "../scripts/seedKeywordLibrary.js";
 import type * as scripts_seedStaging from "../scripts/seedStaging.js";
@@ -203,6 +207,7 @@ declare const fullApi: ApiFromModules<{
   apiAccessRequests: typeof apiAccessRequests;
   apiKeys: typeof apiKeys;
   auth: typeof auth;
+  "auth/passwordRateLimit": typeof auth_passwordRateLimit;
   "auth/passwordReset": typeof auth_passwordReset;
   cache: typeof cache;
   "canonical/index": typeof canonical_index;
@@ -266,6 +271,9 @@ declare const fullApi: ApiFromModules<{
   "publishing/wixActions": typeof publishing_wixActions;
   "publishing/wordpressActions": typeof publishing_wordpressActions;
   rateLimits: typeof rateLimits;
+  resources: typeof resources;
+  "resources/seed": typeof resources_seed;
+  "resources/updateRatings": typeof resources_updateRatings;
   scores: typeof scores;
   "scripts/seedKeywordLibrary": typeof scripts_seedKeywordLibrary;
   "scripts/seedStaging": typeof scripts_seedStaging;
