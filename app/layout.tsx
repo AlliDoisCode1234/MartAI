@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import Script from 'next/script';
 import { ChakraProviderWrapper } from '@/src/providers/ChakraProvider';
 import { SecurityProvider } from '@/src/providers/SecurityProvider';
 import { ConvexProviderWrapper } from '@/src/providers/ConvexProvider';
@@ -8,6 +9,9 @@ import { ErrorBoundary } from '@/src/components/shared/ErrorBoundary';
 import { TrackingProvider } from '@/src/providers/TrackingProvider';
 import '@/src/index.css';
 import type { Metadata } from 'next';
+
+// GA4 Measurement ID
+const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || 'G-8LBCMYNZ6R';
 
 export const metadata: Metadata = {
   title: 'Phoo - AI-Powered SEO Automation',
@@ -34,6 +38,19 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Google Analytics 4 */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA4_ID}');
+          `}
+        </Script>
         <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
