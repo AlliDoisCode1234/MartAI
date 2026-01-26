@@ -49,10 +49,19 @@ export default function ResourceDetailPage() {
   const resource = useQuery(api.resources.getBySlug, slug ? { slug } : 'skip');
   const incrementViews = useMutation(api.resources.incrementViews);
 
-  // Track view on mount (only once)
+  // Track view on mount (once per session per article)
   useEffect(() => {
     if (slug && resource) {
-      incrementViews({ slug });
+      // Session-based deduplication: only count one view per session per article
+      const viewedKey = `resource-viewed-${slug}`;
+      const hasViewed = typeof window !== 'undefined' && sessionStorage.getItem(viewedKey);
+
+      if (!hasViewed) {
+        incrementViews({ slug });
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(viewedKey, 'true');
+        }
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, resource?._id]);
