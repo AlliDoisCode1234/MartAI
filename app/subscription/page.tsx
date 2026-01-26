@@ -31,13 +31,17 @@ import {
   Skeleton,
   Icon,
   useColorModeValue,
+  useToast,
 } from '@chakra-ui/react';
 import { useSubscription } from '@/lib/hooks';
 import { useAuth } from '@/lib/useAuth';
+import { useAction } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { FiCheck, FiArrowUp, FiCreditCard, FiCalendar, FiPackage } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { BRAND } from '@/lib/constants/brand';
 
 const MotionBox = motion(Box);
 
@@ -99,8 +103,18 @@ const PLANS = [
   },
 ];
 
+// Stripe Price IDs for each plan (set in Stripe Dashboard)
+// TODO: Move to environment variables for production
+const STRIPE_PRICE_IDS: Record<string, string> = {
+  solo: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO || 'price_solo_placeholder',
+  growth: process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH || 'price_growth_placeholder',
+  team: process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM || 'price_team_placeholder',
+  enterprise: '', // Enterprise is custom pricing
+};
+
 export default function SubscriptionPage() {
   const router = useRouter();
+  const toast = useToast();
   const { user } = useAuth();
   const {
     tier,
@@ -115,6 +129,66 @@ export default function SubscriptionPage() {
   } = useSubscription();
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  // Stripe actions
+  const createCheckout = useAction(api.stripe.checkout.createSubscriptionCheckout);
+  const createPortal = useAction(api.stripe.checkout.createPortalSession);
+  const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  // Handle upgrade to a specific plan
+  const handleUpgrade = async (planId: string) => {
+    const priceId = STRIPE_PRICE_IDS[planId];
+    if (!priceId || planId === 'enterprise') {
+      // Enterprise plan - contact sales
+      window.location.href = `mailto:${BRAND.supportEmail}?subject=Enterprise Plan Inquiry`;
+      return;
+    }
+
+    setUpgradeLoading(planId);
+    try {
+      const result = await createCheckout({ priceId });
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        toast({
+          title: 'Checkout session created',
+          description: 'Redirecting to payment...',
+          status: 'info',
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Upgrade failed',
+        description: error instanceof Error ? error.message : 'Please try again',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setUpgradeLoading(null);
+    }
+  };
+
+  // Handle opening billing portal
+  const handleManageBilling = async () => {
+    setPortalLoading(true);
+    try {
+      const result = await createPortal({ returnUrl: window.location.href });
+      if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (error) {
+      toast({
+        title: 'Could not open billing portal',
+        description: error instanceof Error ? error.message : 'Please try again',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   // Beta users can't access billing until their beta expires
   const isActiveBetaUser =
@@ -190,10 +264,22 @@ export default function SubscriptionPage() {
                 <Text color="gray.500">${currentPlan.price}/month</Text>
               </VStack>
               <VStack align="end" spacing={2}>
-                <Button colorScheme="orange" leftIcon={<FiArrowUp />}>
+                <Button
+                  colorScheme="orange"
+                  leftIcon={<FiArrowUp />}
+                  onClick={handleManageBilling}
+                  isLoading={portalLoading}
+                  loadingText="Opening..."
+                >
                   Upgrade Plan
                 </Button>
-                <Button variant="ghost" size="sm" leftIcon={<FiCreditCard />}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<FiCreditCard />}
+                  onClick={handleManageBilling}
+                  isLoading={portalLoading}
+                >
                   Manage Billing
                 </Button>
               </VStack>
@@ -361,11 +447,22 @@ export default function SubscriptionPage() {
                           w="full"
                           mt="auto"
                           leftIcon={plan.price === null ? undefined : <FiArrowUp />}
+                          onClick={() => handleUpgrade(plan.id)}
+                          isLoading={upgradeLoading === plan.id}
+                          loadingText="Redirecting..."
                         >
                           {plan.price === null ? 'Contact Sales' : 'Upgrade'}
                         </Button>
                       ) : isDowngrade ? (
-                        <Button variant="ghost" colorScheme="gray" w="full" mt="auto" size="sm">
+                        <Button
+                          variant="ghost"
+                          colorScheme="gray"
+                          w="full"
+                          mt="auto"
+                          size="sm"
+                          as="a"
+                          href={`mailto:${BRAND.supportEmail}?subject=Downgrade Request`}
+                        >
                           Contact Support
                         </Button>
                       ) : null}
