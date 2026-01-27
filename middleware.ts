@@ -152,9 +152,11 @@ export function middleware(request: NextRequest) {
       'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
     }),
 
-    // Cross-Origin policies
-    'Cross-Origin-Embedder-Policy': 'require-corp',
-    'Cross-Origin-Opener-Policy': 'same-origin',
+    // Cross-Origin policies (skip for auth routes to allow OAuth popups/redirects)
+    ...(!pathname.startsWith('/auth') && {
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+    }),
     'Cross-Origin-Resource-Policy': 'cross-origin',
   };
 

@@ -12,7 +12,7 @@
  * - Returning users → /dashboard
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, VStack, Text } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
@@ -43,11 +43,16 @@ export default function AuthCallbackPage() {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery(api.users.me);
 
+  // Track how long we've waited for auth state to settle
+  const [waitAttempts, setWaitAttempts] = useState(0);
+  const MAX_WAIT_ATTEMPTS = 5; // 5 seconds max wait
+
   useEffect(() => {
     // Debug logging
     console.log('[AuthCallback] State:', {
       authLoading,
       isAuthenticated,
+      waitAttempts,
       user: user === undefined ? 'loading' : user === null ? 'null' : 'exists',
       hostname: typeof window !== 'undefined' ? window.location.hostname : 'ssr',
     });
@@ -55,11 +60,28 @@ export default function AuthCallbackPage() {
     // Wait for auth to load
     if (authLoading) return;
 
-    // Not authenticated - redirect to login
+    // If not authenticated yet, wait with timeout before redirecting
+    // This prevents race condition where OAuth redirect arrives before session cookie is set
     if (!isAuthenticated) {
-      console.log('[AuthCallback] Not authenticated, redirecting to login');
-      router.replace('/auth/login');
+      if (waitAttempts < MAX_WAIT_ATTEMPTS) {
+        console.log(
+          `[AuthCallback] Waiting for auth state (attempt ${waitAttempts + 1}/${MAX_WAIT_ATTEMPTS})...`
+        );
+        const timer = setTimeout(() => {
+          setWaitAttempts((prev) => prev + 1);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+
+      // After max attempts, redirect to login with error indicator
+      console.log('[AuthCallback] Auth timeout, redirecting to login');
+      router.replace('/auth/login?error=auth_timeout');
       return;
+    }
+
+    // Authenticated - reset wait counter and continue
+    if (waitAttempts > 0) {
+      console.log(`[AuthCallback] Auth confirmed after ${waitAttempts} attempts`);
     }
 
     // Wait for user data to load
@@ -80,7 +102,7 @@ export default function AuthCallbackPage() {
 
     console.log('[AuthCallback] User found, redirecting to:', destination);
     router.replace(destination);
-  }, [authLoading, isAuthenticated, user, router]);
+  }, [authLoading, isAuthenticated, user, router, waitAttempts]);
 
   return (
     <Box
