@@ -106,7 +106,8 @@ export const Layout: FC<Props> = ({ children }) => {
         window.location.hostname.includes('phoo-ai'));
 
     if (isPhooAi) {
-      router.replace('/join');
+      // BETA LAUNCH: Redirect to home page, not waitlist
+      router.replace('/');
     } else {
       router.replace('/auth/login');
     }

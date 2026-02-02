@@ -14,7 +14,7 @@ import { Box, Container, Heading, Text, VStack } from '@chakra-ui/react';
 
 export function ProblemSection() {
   return (
-    <Box as="section" py={20} borderTop="1px solid" borderColor="whiteAlpha.100" bg="gray.900">
+    <Box as="section" py={20} borderTop="1px solid" borderColor="gray.200" bg="white">
       <Container maxW="4xl">
         <Heading
           as="h2"

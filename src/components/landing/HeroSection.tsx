@@ -28,7 +28,7 @@ export function HeroSection({ onCtaClick }: Props) {
       as="header"
       position="relative"
       overflow="hidden"
-      bg="gray.900"
+      bg="white"
       minH={{ base: '90vh', lg: '100vh' }}
       display="flex"
       alignItems="center"
@@ -96,7 +96,7 @@ export function HeroSection({ onCtaClick }: Props) {
             </HStack>
           </MotionBox>
 
-          {/* Headline - Antigravity-style bold typography */}
+          {/* Headline - New GEO+SEO messaging */}
           <MotionBox
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -111,18 +111,14 @@ export function HeroSection({ onCtaClick }: Props) {
               letterSpacing="-0.02em"
               color="white"
             >
-              Turn Your Website Into a
+              Get Found by Google
               <br />
               <Text
                 as="span"
                 bgGradient="linear(to-r, brand.orange, brand.red, orange.300)"
                 bgClip="text"
               >
-                Steady Source of Leads
-              </Text>
-              <br />
-              <Text as="span" color="gray.400" fontWeight="medium">
-                — Automatically
+                AND ChatGPT
               </Text>
             </Heading>
           </MotionBox>
@@ -141,8 +137,8 @@ export function HeroSection({ onCtaClick }: Props) {
               mx="auto"
               lineHeight="1.7"
             >
-              Phoo helps purpose-driven local businesses grow traffic, leads, and revenue with an
-              automated SEO system that actually works.
+              Phoo is like having a marketing team that never sleeps. We create content that ranks
+              on search engines AND gets cited by AI assistants. All you do is approve.
             </Text>
           </MotionBox>
 

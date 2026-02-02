@@ -42,7 +42,7 @@ const FEATURES: Array<{ icon: LucideIcon; color: string; title: string; descript
 
 export function FeaturesSection() {
   return (
-    <Box as="section" py={20} borderTop="1px solid" borderColor="whiteAlpha.100" bg="gray.900">
+    <Box as="section" py={20} borderTop="1px solid" borderColor="gray.200" bg="white">
       <Container maxW="4xl">
         <VStack textAlign="center" mb={12}>
           <Heading as="h2" fontSize={{ base: '3xl', md: '4xl' }} fontWeight="bold" color="white">

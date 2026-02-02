@@ -158,7 +158,7 @@ export function WaitlistForm() {
       py={24}
       borderTop="1px solid"
       borderColor="whiteAlpha.100"
-      bg="gray.900"
+      bg="white"
     >
       <Container maxW="xl" textAlign="center">
         <Heading

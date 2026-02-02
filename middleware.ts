@@ -63,23 +63,20 @@ export function middleware(request: NextRequest) {
   // ==========================================================================
   // Phoo.ai Domain Routing
   //
-  // Architecture:
-  // - /join → Public waitlist page
+  // Architecture (Beta Launch - Feb 2026):
+  // - / → Public landing page (no redirect, renders directly)
+  // - /join → Public waitlist page (for marketing)
   // - /auth/* → Public auth routes (login, callback)
   // - /api/* → API routes (needed for app to function)
   // - Everything else → Let Layout handle auth gating
-  //   (Layout redirects unauthenticated users to /join)
+  //   (Layout redirects unauthenticated users to /)
   // ==========================================================================
   if (isPhooAiDomain(request)) {
-    // Root path on phoo.ai → /join (waitlist)
-    if (pathname === '/' || pathname === '') {
-      const url = request.nextUrl.clone();
-      url.pathname = '/join';
-      return NextResponse.redirect(url);
-    }
+    // BETA LAUNCH: Root path renders directly - no redirect to /join
+    // Users see landing page at phoo.ai/ for Google OAuth compliance
 
     // Public routes - always accessible
-    const publicRoutes = ['/join', '/auth', '/privacy', '/terms', '/resources'];
+    const publicRoutes = ['/', '/join', '/auth', '/privacy', '/terms', '/resources'];
     const isPublicRoute = publicRoutes.some(
       (route) => pathname === route || pathname.startsWith(route + '/')
     );
@@ -89,10 +86,10 @@ export function middleware(request: NextRequest) {
 
     // All other routes pass through - Layout handles auth gating
     // If user is authenticated (via OAuth), they can access the product
-    // If not authenticated, Layout redirects them to /join
+    // If not authenticated, Layout redirects them to /
     if (!isPublicRoute && !isApiRoute) {
       // Fall through to security headers
-      // Layout component will check auth and redirect to /join if needed
+      // Layout component will check auth and redirect to / if needed
     }
   }
 

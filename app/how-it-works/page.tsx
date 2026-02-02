@@ -29,6 +29,7 @@ import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import { FiGlobe, FiLink, FiZap, FiArrowRight, FiCheck, FiCpu } from 'react-icons/fi';
 import { getHowToSchema, HOW_IT_WORKS_STEPS, schemaToJsonLd } from '@/src/lib/schemas';
+import { LandingHeader } from '@/src/components/landing';
 
 const MotionBox = motion(Box);
 
@@ -165,7 +166,9 @@ export default function HowItWorksPage() {
         dangerouslySetInnerHTML={{ __html: schemaToJsonLd(howToSchema) }}
       />
 
-      <Box bg="#0A0A0A" minH="100vh">
+      <LandingHeader />
+
+      <Box bg="white" minH="100vh">
         <Container maxW="container.xl" py={{ base: 16, md: 24 }}>
           <VStack spacing={16}>
             {/* Header */}

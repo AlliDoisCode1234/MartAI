@@ -22,7 +22,7 @@ const AUDIENCE_TRAITS = [
 
 export function AudienceSection() {
   return (
-    <Box as="section" py={20} borderTop="1px solid" borderColor="whiteAlpha.100" bg="gray.900">
+    <Box as="section" py={20} borderTop="1px solid" borderColor="gray.200" bg="white">
       <Container maxW="4xl" textAlign="center">
         <Heading
           as="h2"
