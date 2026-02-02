@@ -22,27 +22,35 @@ const AUDIENCE_TRAITS = [
 
 export function AudienceSection() {
   return (
-    <Box as="section" py={20} borderTop="1px solid" borderColor="gray.200" bg="white">
+    <Box as="section" py={16} borderTop="1px solid" borderColor="gray.200" bg="white">
       <Container maxW="4xl" textAlign="center">
         <Heading
           as="h2"
           fontSize={{ base: '3xl', md: '4xl' }}
           fontWeight="bold"
           mb={12}
-          color="white"
+          color="gray.800"
         >
           Who It&apos;s For
         </Heading>
 
-        <Text fontSize="xl" color="gray.300" mb={8}>
+        <Text fontSize="xl" color="gray.600" mb={8}>
           Phoo is built for local businesses who:
         </Text>
 
         <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4} maxW="2xl" mx="auto" textAlign="left">
           {AUDIENCE_TRAITS.map((trait) => (
-            <HStack key={trait} gap={3} p={4} borderRadius="lg" bg="whiteAlpha.50">
-              <Icon as={Check} boxSize={5} color="green.400" flexShrink={0} />
-              <Text color="white">{trait}</Text>
+            <HStack
+              key={trait}
+              gap={3}
+              p={4}
+              borderRadius="lg"
+              bg="green.50"
+              border="1px solid"
+              borderColor="green.200"
+            >
+              <Icon as={Check} boxSize={5} color="green.500" flexShrink={0} />
+              <Text color="gray.700">{trait}</Text>
             </HStack>
           ))}
         </SimpleGrid>

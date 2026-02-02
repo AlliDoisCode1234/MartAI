@@ -15,9 +15,9 @@ import { MessageCircle, Search, Bot } from 'lucide-react';
 
 export function GEOExplainerSection() {
   return (
-    <Box as="section" py={20} borderTop="1px solid" borderColor="gray.200" bg="white">
+    <Box as="section" py={16} bgGradient="linear(to-br, purple.600, purple.800)">
       <Container maxW="4xl">
-        <VStack spacing={12}>
+        <VStack spacing={8}>
           {/* Section Header */}
           <VStack spacing={4} textAlign="center">
             <Heading as="h2" fontSize={{ base: '3xl', md: '4xl' }} fontWeight="bold" color="white">
@@ -27,58 +27,19 @@ export function GEOExplainerSection() {
               </Text>
               ?
             </Heading>
-            <Text fontSize="lg" color="gray.400" maxW="2xl">
+            <Text fontSize="lg" color="whiteAlpha.700" maxW="2xl">
               (And why should you care?)
             </Text>
           </VStack>
 
-          {/* The Story */}
-          <VStack
-            spacing={6}
-            p={8}
-            borderRadius="2xl"
-            bg="whiteAlpha.50"
-            border="1px solid"
-            borderColor="whiteAlpha.100"
-            maxW="3xl"
-            textAlign="left"
-          >
-            <Text fontSize="lg" color="gray.300" lineHeight="1.8">
-              <Text as="span" fontWeight="bold" color="white">
-                Remember when you used to ask your parents everything?
-              </Text>
-            </Text>
-
-            <Text fontSize="lg" color="gray.300" lineHeight="1.8">
-              &quot;Mom, what&apos;s the capital of France?&quot; &quot;Dad, how do you make
-              cookies?&quot;
-            </Text>
-
-            <Text fontSize="lg" color="gray.300" lineHeight="1.8">
-              Then you discovered{' '}
-              <Text as="span" fontWeight="bold" color="white">
-                Google
-              </Text>
-              . Type a question, get a list of websites. Click around. Find your answer.
-            </Text>
-
-            <Text fontSize="lg" color="gray.300" lineHeight="1.8">
-              But now there&apos;s something new:{' '}
-              <Text as="span" fontWeight="bold" color="brand.orange">
-                AI assistants
-              </Text>{' '}
-              like ChatGPT, Perplexity, and Claude.
-            </Text>
-
-            <Text fontSize="lg" color="gray.300" lineHeight="1.8">
-              You ask them a question, and they just...{' '}
-              <Text as="span" fontWeight="bold" color="white">
-                answer you
-              </Text>
-              . No clicking. No searching. They already read all the websites and give you the good
-              stuff.
-            </Text>
-          </VStack>
+          {/* Brief intro */}
+          <Text fontSize="lg" color="whiteAlpha.800" maxW="2xl" textAlign="center">
+            People are changing how they search. Instead of Googling, they&apos;re asking{' '}
+            <Text as="span" fontWeight="bold" color="orange.300">
+              AI assistants
+            </Text>{' '}
+            like ChatGPT and Perplexity for answers.
+          </Text>
 
           {/* SEO vs GEO */}
           <VStack spacing={6} w="100%" maxW="3xl">
@@ -86,17 +47,17 @@ export function GEOExplainerSection() {
               spacing={4}
               p={6}
               borderRadius="xl"
-              bg="whiteAlpha.50"
+              bg="blue.50"
               border="1px solid"
-              borderColor="whiteAlpha.100"
+              borderColor="blue.200"
               w="100%"
             >
-              <Icon as={Search} boxSize={8} color="blue.400" flexShrink={0} />
+              <Icon as={Search} boxSize={8} color="blue.500" flexShrink={0} />
               <Box>
-                <Text fontSize="lg" fontWeight="bold" color="white">
+                <Text fontSize="lg" fontWeight="bold" color="gray.800">
                   SEO
                 </Text>
-                <Text color="gray.400">Getting found by Google (search engines)</Text>
+                <Text color="gray.600">Getting found by Google (search engines)</Text>
               </Box>
             </HStack>
 
@@ -104,17 +65,17 @@ export function GEOExplainerSection() {
               spacing={4}
               p={6}
               borderRadius="xl"
-              bg="whiteAlpha.50"
+              bg="orange.50"
               border="1px solid"
               borderColor="brand.orange"
               w="100%"
             >
               <Icon as={Bot} boxSize={8} color="brand.orange" flexShrink={0} />
               <Box>
-                <Text fontSize="lg" fontWeight="bold" color="white">
+                <Text fontSize="lg" fontWeight="bold" color="gray.800">
                   GEO
                 </Text>
-                <Text color="gray.400">Getting found by AI assistants (ChatGPT, Perplexity)</Text>
+                <Text color="gray.600">Getting found by AI assistants (ChatGPT, Perplexity)</Text>
               </Box>
             </HStack>
           </VStack>
@@ -123,8 +84,8 @@ export function GEOExplainerSection() {
           <Box
             p={8}
             borderRadius="2xl"
-            bgGradient="linear(to-r, whiteAlpha.100, whiteAlpha.50)"
-            border="1px solid"
+            bg="orange.50"
+            border="2px solid"
             borderColor="brand.orange"
             textAlign="center"
             maxW="3xl"
@@ -132,7 +93,7 @@ export function GEOExplainerSection() {
             <HStack justify="center" mb={4}>
               <Icon as={MessageCircle} boxSize={6} color="brand.orange" />
             </HStack>
-            <Text fontSize="xl" color="white" fontWeight="bold">
+            <Text fontSize="xl" color="gray.800" fontWeight="bold">
               Phoo creates content that works for{' '}
               <Text as="span" color="brand.orange">
                 both

@@ -40,9 +40,7 @@ import {
   HeroSection,
   ProblemSection,
   GEOExplainerSection,
-  UrgencySection,
   FeaturesSection,
-  AudienceSection,
   BetaSection,
   WaitlistForm,
 } from '@/src/components/landing';
@@ -89,9 +87,7 @@ export default function Home() {
       <HeroSection />
       <ProblemSection />
       <GEOExplainerSection />
-      <UrgencySection />
       <FeaturesSection />
-      <AudienceSection />
       <BetaSection />
       <WaitlistForm />
       {/* Footer */}

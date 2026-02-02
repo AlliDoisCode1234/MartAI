@@ -60,6 +60,18 @@ export function LandingHeader() {
               </Text>
             </Link>
 
+            {/* Resources - Blog, guides, educational content */}
+            <Link href="/resources" style={{ textDecoration: 'none' }}>
+              <Text
+                color="gray.700"
+                fontWeight="medium"
+                _hover={{ color: 'brand.orange' }}
+                display={{ base: 'none', md: 'inline' }}
+              >
+                Resources
+              </Text>
+            </Link>
+
             {/* Ask Phoo - AI Assistant for guests */}
             <Link href="/assistant" style={{ textDecoration: 'none' }}>
               <Button
@@ -71,18 +83,6 @@ export function LandingHeader() {
               >
                 Ask Phoo
               </Button>
-            </Link>
-
-            {/* Resources - Blog, guides, educational content */}
-            <Link href="/resources" style={{ textDecoration: 'none' }}>
-              <Text
-                color="gray.700"
-                fontWeight="medium"
-                _hover={{ color: 'brand.orange' }}
-                display={{ base: 'none', md: 'inline' }}
-              >
-                Resources
-              </Text>
             </Link>
 
             {/* Auth Buttons - COMMENTED OUT FOR BETA LAUNCH

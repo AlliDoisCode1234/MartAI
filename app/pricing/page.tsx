@@ -240,10 +240,10 @@ export default function PricingPage() {
                 </HStack>
               </Badge>
             </HStack>
-            <Heading size="2xl" fontWeight="bold" color="white">
+            <Heading size="2xl" fontWeight="bold" color="gray.800">
               SEO + AI Content for $149/mo
             </Heading>
-            <Text fontSize="xl" color="gray.400" maxW="2xl">
+            <Text fontSize="xl" color="gray.600" maxW="2xl">
               Competitors charge $600+/mo for SEO tools alone. Phoo gives you keyword research, AI
               content generation, AND GEO optimization—so you rank in search results AND get cited
               by Google&apos;s AI.

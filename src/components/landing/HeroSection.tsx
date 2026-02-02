@@ -11,7 +11,17 @@
  * bold centered typography, minimalist layout.
  */
 
-import { Box, Container, Heading, Text, Button, HStack, Icon, VStack } from '@chakra-ui/react';
+import {
+  Box,
+  Container,
+  Heading,
+  Text,
+  Button,
+  HStack,
+  Icon,
+  VStack,
+  Image,
+} from '@chakra-ui/react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MartCharacter } from '@/src/components/assistant/MartCharacter';
@@ -29,7 +39,7 @@ export function HeroSection({ onCtaClick }: Props) {
       position="relative"
       overflow="hidden"
       bg="white"
-      minH={{ base: '90vh', lg: '100vh' }}
+      minH={{ base: '80vh', lg: '85vh' }}
       display="flex"
       alignItems="center"
       justifyContent="center"
@@ -83,14 +93,12 @@ export function HeroSection({ onCtaClick }: Props) {
               px={5}
               py={2.5}
               borderRadius="full"
-              bg="whiteAlpha.50"
+              bg="orange.50"
               border="1px solid"
-              borderColor="whiteAlpha.100"
-              backdropFilter="blur(12px)"
-              boxShadow="0 0 30px rgba(237, 137, 54, 0.1)"
+              borderColor="brand.orange"
             >
               <Icon as={Sparkles} boxSize={4} color="brand.orange" />
-              <Text fontSize="sm" color="gray.300" fontWeight="medium">
+              <Text fontSize="sm" color="gray.700" fontWeight="medium">
                 Built by the team behind Helps2
               </Text>
             </HStack>
@@ -109,7 +117,7 @@ export function HeroSection({ onCtaClick }: Props) {
               fontWeight="bold"
               lineHeight="1.1"
               letterSpacing="-0.02em"
-              color="white"
+              color="gray.800"
             >
               Get Found by Google
               <br />
@@ -132,7 +140,7 @@ export function HeroSection({ onCtaClick }: Props) {
           >
             <Text
               fontSize={{ base: 'lg', md: 'xl', lg: '2xl' }}
-              color="gray.400"
+              color="gray.600"
               maxW="3xl"
               mx="auto"
               lineHeight="1.7"
@@ -175,6 +183,26 @@ export function HeroSection({ onCtaClick }: Props) {
             </Button>
           </MotionBox>
         </VStack>
+
+        {/* Hero Illustration */}
+        <Box
+          display={{ base: 'none', xl: 'block' }}
+          position="absolute"
+          right="2%"
+          bottom="10%"
+          w="280px"
+          h="280px"
+          zIndex={2}
+          opacity={0.9}
+        >
+          <Image
+            src="/images/hero-illustration.png"
+            alt="AI-powered SEO illustration"
+            w="100%"
+            h="100%"
+            objectFit="contain"
+          />
+        </Box>
       </Container>
 
       {/* Bottom gradient fade */}
@@ -184,7 +212,7 @@ export function HeroSection({ onCtaClick }: Props) {
         left={0}
         right={0}
         h="30vh"
-        bgGradient="linear(to-t, gray.900, transparent)"
+        bgGradient="linear(to-t, white, transparent)"
         pointerEvents="none"
       />
     </Box>
