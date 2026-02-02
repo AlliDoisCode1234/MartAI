@@ -112,8 +112,8 @@
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.35",
-    "@typescript-eslint/eslint-plugin": "^8.51.0",
-    "@typescript-eslint/parser": "^8.51.0",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
     "convex-test": "^0.0.41",
     "dotenv": "^17.2.3",
     "eslint": "^9.39.2",
@@ -122,8 +122,8 @@
     "gh-pages": "^6.3.0",
     "husky": "^9.1.7",
     "msw": "^2.12.7",
-    "prettier": "^3.6.2",
+    "prettier": "^3.8.1",
     "tsx": "^4.20.6",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.18"
   }
 }
