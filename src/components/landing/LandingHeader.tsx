@@ -14,13 +14,25 @@
 import { Box, Container, HStack, Text, Button, Icon } from '@chakra-ui/react';
 import { useConvexAuth } from 'convex/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FiMessageCircle } from 'react-icons/fi';
 
 export function LandingHeader() {
   const { isAuthenticated } = useConvexAuth();
+  const router = useRouter();
 
   // Logo routes to dashboard for authenticated users, marketing page otherwise
   const logoHref = isAuthenticated ? '/dashboard' : '/';
+
+  const handleAskPhooClick = () => {
+    if (isAuthenticated) {
+      // Authenticated: Navigate to assistant
+      router.push('/assistant');
+    } else {
+      // Guest: Dispatch custom event to open PhooChatDrawer (handled by Layout)
+      window.dispatchEvent(new CustomEvent('openPhooDrawer'));
+    }
+  };
 
   return (
     <Box
@@ -78,18 +90,17 @@ export function LandingHeader() {
               </Text>
             </Link>
 
-            {/* Ask Phoo - AI Assistant for guests */}
-            <Link href="/assistant" style={{ textDecoration: 'none' }}>
-              <Button
-                size="sm"
-                variant="ghost"
-                color="brand.orange"
-                _hover={{ bg: 'orange.50' }}
-                leftIcon={<Icon as={FiMessageCircle} />}
-              >
-                Ask Phoo
-              </Button>
-            </Link>
+            {/* Ask Phoo - Opens drawer for guests, navigates for auth */}
+            <Button
+              size="sm"
+              variant="ghost"
+              color="brand.orange"
+              _hover={{ bg: 'orange.50' }}
+              leftIcon={<Icon as={FiMessageCircle} />}
+              onClick={handleAskPhooClick}
+            >
+              Ask Phoo
+            </Button>
 
             {/* Auth Buttons - COMMENTED OUT FOR BETA LAUNCH
              * Users can still access /auth/login directly if they know the URL

@@ -79,6 +79,7 @@ export default function Home() {
   }
 
   // Unauthenticated users see marketing page
+  // PhooFab is rendered by Layout for standalone routes
   return (
     <Box minH="100vh" bg="white" color="gray.800" position="relative">
       <LandingHeader />

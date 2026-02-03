@@ -50,7 +50,6 @@ const PUBLIC_ROUTES = [
 // These render raw children for full control over styling
 const STANDALONE_ROUTES = [
   '/',
-  '/join',
   '/auth/callback',
   '/auth/login',
   '/privacy',
@@ -72,6 +71,13 @@ export const Layout: FC<Props> = ({ children }) => {
 
   // PhooChatDrawer state for guest users
   const { isOpen: isDrawerOpen, onOpen: onOpenDrawer, onClose: onCloseDrawer } = useDisclosure();
+
+  // Listen for custom event from LandingHeader's Ask Phoo button
+  useEffect(() => {
+    const handleOpenDrawer = () => onOpenDrawer();
+    window.addEventListener('openPhooDrawer', handleOpenDrawer);
+    return () => window.removeEventListener('openPhooDrawer', handleOpenDrawer);
+  }, [onOpenDrawer]);
 
   // Handle PhooFab click - open popover for auth, drawer for guests
   const handlePhooFabClick = () => {
@@ -137,10 +143,17 @@ export const Layout: FC<Props> = ({ children }) => {
     }
   }, [authLoading, isAuthenticated, isPublicRoute, user, router]);
 
-  // Standalone routes render raw children (e.g., /landing)
-  // These pages have full control over their own styling
+  // Standalone routes render children with PhooFab but no Navigation
+  // These pages have full control over their own styling but still get the AI orb
   if (isStandaloneRoute) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        {/* PhooFab for all marketing pages */}
+        <PhooFab onOpenDrawer={onOpenDrawer} />
+        <PhooChatDrawer isOpen={isDrawerOpen} onClose={onCloseDrawer} />
+      </>
+    );
   }
 
   // Pages where we hide PhooFab (onboarding, auth, admin)
