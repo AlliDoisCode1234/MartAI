@@ -5,7 +5,7 @@
  * Uses templates from src/lib/emailTriggers.ts
  */
 
-import { action } from '../_generated/server';
+import { action, internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { Resend } from 'resend';
 
@@ -202,6 +202,56 @@ const EMAIL_TEMPLATES: Record<
       </div>
     `,
   },
+
+  beta_invitation: {
+    getSubject: () => 'Your Phoo Beta Access Code',
+    getHtml: (data) => {
+      const expiresDate = data.expiresAt
+        ? new Date(data.expiresAt as number).toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          })
+        : '7 days';
+      return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9fafb; padding: 32px;">
+        <div style="background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          <img src="https://phoo.ai/images/phoo-logo-orange.png" alt="Phoo" style="height: 40px; margin-bottom: 24px;" />
+          
+          <h1 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">You're In!</h1>
+          
+          <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
+            You've been selected for early access to Phoo, the AI-powered SEO platform that helps you rank higher and drive more traffic.
+          </p>
+          
+          <div style="background: linear-gradient(135deg, #F99F2A 0%, #e53e3e 100%); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
+            <p style="color: white; font-size: 14px; margin: 0 0 8px 0;">Your Beta Access Code:</p>
+            <p style="color: white; font-size: 32px; font-weight: bold; margin: 0; letter-spacing: 2px; font-family: monospace;">
+              ${data.code || 'PHOO-XXXXXX'}
+            </p>
+          </div>
+          
+          <a href="${APP_URL}/auth/login" style="display: block; background: #1a1a1a; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; margin: 24px 0; font-weight: 600; font-size: 16px; text-align: center;">
+            Get Started Now
+          </a>
+          
+          <p style="color: #888; font-size: 14px; margin-top: 24px;">
+            This code expires on <strong>${expiresDate}</strong>. Enter it on the login page to unlock your access.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+          
+          <p style="color: #999; font-size: 12px;">
+            Questions? Reply to this email or contact us at <a href="mailto:phoosupport@helps2.com" style="color: #F99F2A;">phoosupport@helps2.com</a>
+          </p>
+          <p style="color: #999; font-size: 12px;">
+            — The Phoo Team
+          </p>
+        </div>
+      </div>
+      `;
+    },
+  },
 };
 
 /**
@@ -353,6 +403,28 @@ export const sendTeamInviteEmail = action({
         orgName: args.orgName,
         role: args.role,
         token: args.token,
+      },
+    });
+  },
+});
+
+/**
+ * Send beta invitation email with access code (internal action)
+ * Called by betaCodes.sendInvitation
+ */
+export const sendBetaInvitation = internalAction({
+  args: {
+    to: v.string(),
+    code: v.string(),
+    expiresAt: v.number(),
+  },
+  handler: async (_ctx, args) => {
+    return await sendEmailInternal({
+      to: args.to,
+      template: 'beta_invitation',
+      data: {
+        code: args.code,
+        expiresAt: args.expiresAt,
       },
     });
   },

@@ -358,6 +358,12 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       read: async () => !!userId, // Any authenticated user can read personas
       modify: async () => isAdmin, // Only admins can modify personas
     },
+
+    // Beta codes: admin only (sensitive)
+    betaCodes: {
+      read: async () => isAdmin, // Only admins can view codes
+      modify: async () => isAdmin, // Only admins can create/revoke codes
+    },
   };
 }
 

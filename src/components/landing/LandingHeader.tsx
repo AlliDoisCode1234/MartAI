@@ -67,6 +67,11 @@ export function LandingHeader() {
                 How It Works
               </Text>
             </Link>
+            {/* PRICING - COMMENTED OUT FOR BETA
+             * Beta users get 6 months FREE, so showing pricing creates confusion.
+             * TODO: Uncomment for soft launch (April 2026)
+             */}
+            {/*
             <Link href="/pricing" style={{ textDecoration: 'none' }}>
               <Text
                 color="gray.700"
@@ -77,6 +82,7 @@ export function LandingHeader() {
                 Pricing
               </Text>
             </Link>
+            */}
 
             {/* Resources - Blog, guides, educational content */}
             <Link href="/resources" style={{ textDecoration: 'none' }}>

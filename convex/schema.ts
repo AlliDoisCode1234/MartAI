@@ -176,6 +176,32 @@ export default defineSchema({
     .index('by_account_status', ['accountStatus'])
     .index('by_acquisition_source', ['acquisitionSource']),
 
+  // Beta Access Codes - Gates login for closed beta
+  betaCodes: defineTable({
+    code: v.string(), // Unique access code (e.g., "PHOO-A1B2C3")
+    status: v.union(
+      v.literal('active'),
+      v.literal('sent'),
+      v.literal('used'),
+      v.literal('revoked')
+    ),
+    createdAt: v.number(),
+    expiresAt: v.number(), // Required - codes expire (default 7 days)
+    sentAt: v.optional(v.number()), // When email was sent
+    sentTo: v.optional(v.string()), // Email address
+    usedAt: v.optional(v.number()),
+    usedBy: v.optional(v.id('users')),
+    metadata: v.optional(
+      v.object({
+        batch: v.optional(v.string()), // e.g., "founding-101"
+        label: v.optional(v.string()), // Admin notes
+      })
+    ),
+  })
+    .index('by_code', ['code'])
+    .index('by_status', ['status'])
+    .index('by_sent_to', ['sentTo']),
+
   // Client/Business information
   clients: defineTable({
     companyName: v.string(),

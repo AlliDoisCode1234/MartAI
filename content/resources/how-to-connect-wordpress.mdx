@@ -1,0 +1,237 @@
+---
+title: 'How to Connect WordPress to Phoo'
+description: 'Master WordPress integration with Phoo in under 10 minutes. Complete guide covering Application Passwords, SSL requirements, and troubleshooting.'
+image: '/images/resources/wordpress-integration.png'
+category: 'integrations'
+---
+
+# How to Connect WordPress to Phoo: Complete Integration Guide
+
+![WordPress Integration](/images/resources/wordpress-integration.png)
+
+**Master WordPress integration with Phoo in under 10 minutes. This comprehensive guide covers secure setup, Application Passwords, troubleshooting common errors, and best practices for publishing AI-generated content to your WordPress site.**
+
+## Why Connect WordPress to Phoo?
+
+Connecting WordPress to Phoo unlocks seamless content publishing:
+
+- **One-Click Publishing** - Push AI-generated articles directly to WordPress
+- **Gutenberg Native** - Content renders perfectly with WordPress blocks
+- **SEO Optimized** - Meta descriptions, focus keywords, and schema markup
+- **Scheduled Posting** - Queue content for future publication dates
+- **Media Handling** - Featured images and inline media auto-uploaded
+
+## Prerequisites
+
+Before connecting WordPress to Phoo, verify these requirements:
+
+| Requirement        | Why It's Needed               | How to Check                        |
+| ------------------ | ----------------------------- | ----------------------------------- |
+| WordPress 5.6+     | Application Passwords support | Dashboard → Updates                 |
+| Administrator role | Required for API access       | Users → Your Profile                |
+| HTTPS enabled      | Security requirement          | Check if URL starts with `https://` |
+| REST API enabled   | Default on, rarely disabled   | Visit `yoursite.com/wp-json/`       |
+
+## Step 1: Enable HTTPS on Your WordPress Site
+
+WordPress requires HTTPS for Application Passwords. This is a **non-negotiable security requirement**.
+
+### Check If HTTPS Is Already Enabled
+
+1. Visit your WordPress site in a browser
+2. Look at the address bar:
+   - **Padlock icon + https://** = HTTPS enabled ✓
+   - **"Not Secure" + http://** = SSL needed
+
+### How to Enable SSL by Hosting Provider
+
+| Hosting Provider | Steps to Enable SSL                               |
+| ---------------- | ------------------------------------------------- |
+| GoDaddy          | cPanel → Security → SSL/TLS → Install Certificate |
+| Bluehost         | My Sites → Security → SSL Certificate → Free SSL  |
+| SiteGround       | Site Tools → Security → SSL Manager → Get SSL     |
+| Cloudflare       | SSL/TLS → Overview → Set to "Full"                |
+| WP Engine        | Dashboard → SSL → Add Certificate                 |
+| Hostinger        | Hosting → SSL → Install Free SSL                  |
+| DreamHost        | Panel → Certificates → Add                        |
+
+> **Tip:** Most hosts offer **free SSL via Let's Encrypt**. If you can't find the option, contact your hosting provider's support.
+
+### Verify HTTPS Is Working
+
+After enabling SSL:
+
+1. Visit `https://yoursite.com`
+2. Confirm the padlock icon appears
+3. Test the REST API: `https://yoursite.com/wp-json/`
+
+## Step 2: Create an Application Password
+
+Application Passwords are secure, revocable tokens for API access. They're safer than using your main password.
+
+### Generate Your Application Password
+
+1. Log in to WordPress admin: `yoursite.com/wp-admin`
+2. Navigate to **Users → Profile** (or click your username in the top bar)
+3. Scroll down to **Application Passwords** section
+4. Enter application name: `Phoo Integration`
+5. Click **Add New Application Password**
+6. **Immediately copy the password** — it won't be shown again!
+
+### Application Password Format
+
+WordPress generates passwords like:
+
+```
+XXXX XXXX XXXX XXXX XXXX XXXX
+```
+
+> **Important:** When entering this password in Phoo, you can include or remove the spaces — both formats work.
+
+## Step 3: Connect WordPress in Phoo
+
+Now you're ready to connect your WordPress site to Phoo.
+
+### Connection Steps
+
+1. Open your project in Phoo
+2. Navigate to **Project Settings → Integrations**
+3. Find **WordPress** and click **Connect**
+4. Enter your credentials:
+
+| Field                | Value                                     |
+| -------------------- | ----------------------------------------- |
+| Site URL             | `https://yoursite.com` (include https://) |
+| Username             | Your WordPress **username** (not email)   |
+| Application Password | The password from Step 2                  |
+
+5. Click **Test Connection**
+6. Upon success, you'll see a green checkmark ✓
+
+### Verify Publishing Permissions
+
+After connecting, Phoo will verify your user has:
+
+- Post creation rights
+- Media upload capabilities
+- Category and tag management access
+
+## Troubleshooting Common Errors
+
+### "Application Passwords requires HTTPS"
+
+**Cause:** Your WordPress site is running on HTTP, not HTTPS.
+
+**Solutions (in order of preference):**
+
+1. **Enable SSL** — Contact your hosting provider (see Step 1)
+2. **Use Cloudflare** — Free SSL via their CDN
+3. **For development only** — Add to `wp-config.php`:
+
+```php
+// ONLY for local development - never on production!
+define( 'WP_ENVIRONMENT_TYPE', 'local' );
+```
+
+### "Invalid credentials"
+
+**Checklist:**
+
+- [ ] Using **username** (not email address)
+- [ ] Removed extra spaces from application password
+- [ ] Site URL includes `https://`
+- [ ] Application password not revoked
+
+**Fix:** Generate a new Application Password and try again.
+
+### "User does not have publishing permissions"
+
+**Cause:** Your WordPress user role lacks publishing rights.
+
+**Solution:** Your account needs **Editor** or **Administrator** role:
+
+1. Log in as an Administrator
+2. Go to **Users → All Users**
+3. Edit your user → Change Role to **Administrator**
+
+### "Connection failed" / Network Error
+
+**Possible causes:**
+
+- Site URL typo (check trailing slash)
+- Maintenance mode enabled
+- Firewall blocking API requests
+- REST API disabled by plugin
+
+**Diagnostic steps:**
+
+1. Visit `https://yoursite.com/wp-json/` directly
+2. You should see JSON output, not an error
+3. If blocked, check security plugins (Wordfence, Sucuri, iThemes)
+
+### "REST API is disabled"
+
+Some security plugins disable the REST API. To enable:
+
+**Wordfence:**
+
+- Wordfence → All Options → Disable REST API → Uncheck
+
+**iThemes Security:**
+
+- Security → Settings → WordPress Tweaks → REST API → Enable
+
+## Security Best Practices
+
+Protect your WordPress integration with these recommendations:
+
+| Practice                          | Why It Matters                        |
+| --------------------------------- | ------------------------------------- |
+| Use a dedicated WordPress user    | Limits access scope if compromised    |
+| Never share application passwords | Each integration should have its own  |
+| Revoke unused passwords           | Regular cleanup prevents stale access |
+| Keep WordPress updated            | Security patches protect API access   |
+| Enable two-factor authentication  | Extra layer for admin access          |
+
+### Creating a Dedicated Publishing User
+
+For enhanced security, create a user specifically for Phoo:
+
+1. **Users → Add New**
+2. Username: `phoo-publisher`
+3. Email: Use a monitored address
+4. Role: **Author** (or Editor if you need category management)
+5. Generate Application Password for this user
+
+## Supported Content Features
+
+When publishing from Phoo to WordPress, the following features are supported:
+
+| Feature           | Supported | Notes                           |
+| ----------------- | --------- | ------------------------------- |
+| Posts             | ✓         | Default content type            |
+| Pages             | ✓         | Select in publish options       |
+| Featured images   | ✓         | Auto-uploaded to media library  |
+| Categories        | ✓         | Created automatically if needed |
+| Tags              | ✓         | Created automatically if needed |
+| Gutenberg blocks  | ✓         | Native block formatting         |
+| Scheduled posts   | ✓         | Set future publish date         |
+| Draft status      | ✓         | Review before publishing        |
+| Meta descriptions | ✓         | Via Yoast/RankMath if installed |
+
+## Need Help?
+
+**In-App Support:**
+Use the **Phoo Assistant** (the orb in the bottom-left corner) for real-time help with WordPress integration issues.
+
+**Common Questions:**
+
+- "Why won't my WordPress connection save?"
+- "How do I publish to a specific category?"
+- "Can I bulk publish multiple articles?"
+
+The Phoo Assistant can answer these and troubleshoot your specific setup.
+
+---
+
+_Ready to publish AI-generated content directly to WordPress? [Get started with Phoo](/join) today._

@@ -1,0 +1,273 @@
+---
+title: 'How to Connect Webflow to Phoo'
+description: 'Set up Webflow integration with Phoo in under 15 minutes. Complete guide covering API token generation, CMS collections, and troubleshooting.'
+image: '/images/resources/webflow-integration.png'
+category: 'integrations'
+---
+
+# How to Connect Webflow to Phoo: Complete Integration Guide
+
+![Webflow Integration](/images/resources/webflow-integration.png)
+
+**Set up Webflow integration with Phoo in under 15 minutes. This comprehensive guide covers API token generation, site configuration, CMS collection setup, troubleshooting common errors, and best practices for publishing AI-generated content to your Webflow site.**
+
+## Why Connect Webflow to Phoo?
+
+Connecting Webflow to Phoo enables seamless content publishing:
+
+- **CMS Publishing** - Push AI content directly to Webflow CMS collections
+- **SEO Optimized** - Title tags, meta descriptions, and Open Graph data
+- **Designer-Friendly** - Content flows into your custom templates
+- **One-Click Publish** - Trigger site deployment from Phoo
+- **Draft Support** - Review content before going live
+
+## Prerequisites
+
+Before connecting Webflow to Phoo, verify these requirements:
+
+| Requirement              | Why It's Needed          | How to Check          |
+| ------------------------ | ------------------------ | --------------------- |
+| Webflow account          | API access               | Log in at webflow.com |
+| CMS hosting plan         | Required for collections | Account → Plans       |
+| Site with CMS collection | Content destination      | Designer → CMS        |
+| Site published once      | Establishes site ID      | Publish to staging    |
+
+## Step 1: Get Your Site ID
+
+Every Webflow site has a unique ID needed for the API connection.
+
+### Find Your Site ID
+
+1. Log in to Webflow at [webflow.com](https://webflow.com)
+2. Open your site's **Dashboard**
+3. Go to **Site Settings** (gear icon)
+4. Navigate to **General** tab
+5. Find **Site ID** in the General section
+6. Copy this ID
+
+> **Tip:** The Site ID looks like: `64abc123def456789012`
+
+## Step 2: Create an API Token
+
+Webflow uses API tokens for authentication.
+
+### Generate Your Token
+
+1. Click your **account avatar** (top-right)
+2. Select **Account Settings**
+3. Navigate to **Integrations** tab
+4. Under **API access**, click **Generate API token**
+5. Name it: `Phoo Integration`
+6. Select these permissions:
+
+| Scope       | Permission Level | Purpose           |
+| ----------- | ---------------- | ----------------- |
+| Sites       | Read             | Verify connection |
+| CMS         | Read and write   | Manage content    |
+| Collections | Read and write   | Create items      |
+| Publish     | Read and write   | Deploy site       |
+
+7. Click **Generate token**
+8. **Immediately copy the token** — it won't be shown again!
+
+> **Security Note:** This token can modify your site. Store it securely.
+
+## Step 3: Identify Your CMS Collection
+
+Phoo publishes content to a specific CMS collection (like "Blog Posts" or "Articles").
+
+### Find Your Collection ID
+
+1. Open your site in the **Webflow Designer**
+2. Click the **CMS** panel (left sidebar)
+3. Click the collection where content should be published
+4. In the browser URL, find the collection ID:
+   ```
+   webflow.com/design/yoursite/collections/64xyz789...
+                                            ↑ Collection ID
+   ```
+5. Copy this collection ID
+
+### Collection Structure Requirements
+
+Your collection should have these fields:
+
+| Field Name      | Field Type | Purpose          |
+| --------------- | ---------- | ---------------- |
+| Name            | Plain Text | Page title       |
+| Slug            | Plain Text | URL handle       |
+| SEO Title       | Plain Text | Meta title       |
+| SEO Description | Plain Text | Meta description |
+
+> **Optional fields:** Open Graph Title, Open Graph Description, Featured Image
+
+## Step 4: Connect in Phoo
+
+Now you're ready to connect your Webflow site to Phoo.
+
+### Connection Steps
+
+1. Open your project in Phoo
+2. Navigate to **Project Settings → Integrations**
+3. Find **Webflow** and click **Connect**
+4. Enter your credentials:
+
+| Field         | Value       |
+| ------------- | ----------- |
+| Site ID       | From Step 1 |
+| API Token     | From Step 2 |
+| Collection ID | From Step 3 |
+
+5. Click **Test Connection**
+6. Upon success, you'll see a green checkmark ✓
+
+## How Webflow Publishing Works
+
+Understanding Webflow's content model:
+
+```
+Create CMS Item → Stage → Publish Site
+       ↓            ↓           ↓
+    Saved to     Viewable    Live on
+    collection   at staging   production
+```
+
+Content is created as **draft** by default. To publish:
+
+1. Content appears in your CMS collection
+2. Review in Webflow Designer or staging URL
+3. Publish site to make changes live
+
+## Troubleshooting Common Errors
+
+### "Invalid access token"
+
+**Checklist:**
+
+- [ ] Token copied correctly (no extra spaces)
+- [ ] Token hasn't been revoked
+- [ ] Token has required scopes (CMS, Collections, Publish)
+
+**Fix:** Generate a new token with all required permissions.
+
+### "Site not found"
+
+**Cause:** Incorrect Site ID or site deleted.
+
+**Checklist:**
+
+- [ ] Site ID copied correctly
+- [ ] Site exists and is published at least once
+- [ ] Site not in trash
+
+### "Collection not found"
+
+**Cause:** Collection ID incorrect or deleted.
+
+**Solution:**
+
+1. Open Webflow Designer
+2. Navigate to CMS panel
+3. Verify collection exists
+4. Copy the correct collection ID from URL
+
+### "Insufficient permissions"
+
+**Cause:** API token missing required scopes.
+
+**Solution:**
+
+1. Delete the old token
+2. Create a new token with **CMS Read/Write** and **Publish Read/Write**
+3. Reconnect in Phoo
+
+### "Field mapping error"
+
+**Cause:** Collection missing required fields.
+
+**Solution:**
+
+1. Open collection in Webflow Designer
+2. Add missing fields:
+   - `name` (Plain Text)
+   - `slug` (Plain Text)
+   - `seo-title` (Plain Text)
+   - `seo-description` (Plain Text)
+3. Save and retry
+
+### "Rate limit exceeded"
+
+Webflow limits API calls per minute.
+
+**If you see this:**
+
+- Wait 60 seconds before retrying
+- Reduce bulk publishing frequency
+- Contact Phoo support for enterprise needs
+
+## Security Best Practices
+
+Protect your Webflow integration with these recommendations:
+
+| Practice                | Why It Matters                                      |
+| ----------------------- | --------------------------------------------------- |
+| Use dedicated API token | Easy to revoke without affecting other integrations |
+| Never share tokens      | They provide full site access                       |
+| Minimum permissions     | Only grant scopes Phoo needs                        |
+| Rotate tokens annually  | Reduces exposure risk                               |
+| Monitor site activity   | Check for unauthorized changes                      |
+
+## Supported Content Features
+
+When publishing from Phoo to Webflow, the following features are supported:
+
+| Feature          | Supported | Notes                            |
+| ---------------- | --------- | -------------------------------- |
+| CMS items        | ✓         | Primary content type             |
+| Static pages     | ✗         | Use Webflow Designer             |
+| SEO title        | ✓         | Via collection field             |
+| Meta description | ✓         | Via collection field             |
+| Open Graph       | ✓         | Requires OG fields in collection |
+| Custom slugs     | ✓         | SEO-friendly URLs                |
+| Draft status     | ✓         | Review before publishing         |
+| Site publish     | ✓         | Deploy from Phoo                 |
+| Rich content     | ✓         | Via CMS rich text field          |
+| Images           | ✗         | Add via Webflow                  |
+
+## Webflow vs WordPress Comparison
+
+| Aspect          | Webflow                | WordPress             |
+| --------------- | ---------------------- | --------------------- |
+| Primary use     | Visual website builder | Content management    |
+| Auth method     | API tokens             | Application passwords |
+| Content storage | CMS collections        | Posts/pages           |
+| Publishing      | Requires site publish  | Immediate             |
+| Design control  | Full visual control    | Theme-based           |
+| Best for        | Custom-designed sites  | High-volume content   |
+
+## Advanced: Multi-Collection Setup
+
+For sites with multiple content types (Blog, Case Studies, etc.):
+
+1. Create separate CMS collections for each type
+2. Note each collection ID
+3. In Phoo, specify collection when publishing:
+   - Select "Blog" collection for blog posts
+   - Select "Case Studies" for case studies
+
+## Need Help?
+
+**In-App Support:**
+Use the **Phoo Assistant** (the orb in the bottom-left corner) for real-time help with Webflow integration issues.
+
+**Common Questions:**
+
+- "Why isn't my Webflow content appearing?"
+- "How do I publish to a specific collection?"
+- "Can I update existing Webflow items?"
+
+The Phoo Assistant can answer these and troubleshoot your specific setup.
+
+---
+
+_Ready to publish AI-generated content directly to Webflow? [Get started with Phoo](/join) today._

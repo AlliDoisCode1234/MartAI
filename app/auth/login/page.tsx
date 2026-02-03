@@ -23,10 +23,18 @@ import {
   TabPanels,
   TabPanel,
   Icon,
+  InputGroup,
+  InputRightElement,
+  Spinner,
 } from '@chakra-ui/react';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { FaGoogle } from 'react-icons/fa';
-import { FiMail, FiLock } from 'react-icons/fi';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { FaGoogle, FaCheck } from 'react-icons/fa';
+import { FiMail, FiLock, FiKey } from 'react-icons/fi';
+
+// Beta code localStorage key
+const BETA_CODE_KEY = 'phoo_beta_code';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,6 +47,52 @@ export default function LoginPage() {
     password: '',
   });
   const [magicLinkEmail, setMagicLinkEmail] = useState('');
+
+  // Beta code state
+  const [betaCode, setBetaCode] = useState('');
+  const [betaCodeVerified, setBetaCodeVerified] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [betaCodeError, setBetaCodeError] = useState<string | null>(null);
+
+  // Check localStorage for existing valid code on mount
+  useEffect(() => {
+    const storedCode = localStorage.getItem(BETA_CODE_KEY);
+    if (storedCode) {
+      setBetaCode(storedCode);
+      // Will be validated by the query below
+    }
+  }, []);
+
+  // Validate beta code reactively
+  const codeValidation = useQuery(
+    api.betaCodes.validate,
+    betaCode.length >= 6 ? { code: betaCode } : 'skip'
+  );
+
+  // Update verification state when validation result changes
+  useEffect(() => {
+    if (codeValidation && betaCode.length >= 6) {
+      if (codeValidation.valid) {
+        setBetaCodeVerified(true);
+        setBetaCodeError(null);
+        localStorage.setItem(BETA_CODE_KEY, betaCode.toUpperCase().trim());
+      } else {
+        setBetaCodeVerified(false);
+        setBetaCodeError(codeValidation.error || 'Invalid code');
+      }
+      setVerifyingCode(false);
+    }
+  }, [codeValidation, betaCode]);
+
+  const handleCodeChange = (value: string) => {
+    const formatted = value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    setBetaCode(formatted);
+    setBetaCodeError(null);
+    setBetaCodeVerified(false);
+    if (formatted.length >= 6) {
+      setVerifyingCode(true);
+    }
+  };
 
   // Refs to detect browser autofill
   const emailInputRef = useRef<HTMLInputElement>(null);
@@ -170,6 +224,53 @@ export default function LoginPage() {
               Sign in to your account to continue
             </Text>
 
+            {/* Beta Code Section */}
+            {!betaCodeVerified && (
+              <Box p={4} bg="gray.50" borderRadius="lg" border="1px" borderColor="gray.200">
+                <FormControl>
+                  <FormLabel fontWeight="semibold" display="flex" alignItems="center">
+                    <Icon as={FiKey} mr={2} color="brand.orange" />
+                    Beta Access Code
+                  </FormLabel>
+                  <InputGroup>
+                    <Input
+                      placeholder="PHOO-XXXXXX"
+                      value={betaCode}
+                      onChange={(e) => handleCodeChange(e.target.value)}
+                      fontFamily="mono"
+                      letterSpacing="wider"
+                      textTransform="uppercase"
+                      bg="white"
+                    />
+                    <InputRightElement>
+                      {verifyingCode && <Spinner size="sm" color="brand.orange" />}
+                      {betaCodeVerified && <Icon as={FaCheck} color="green.500" />}
+                    </InputRightElement>
+                  </InputGroup>
+                  {betaCodeError && (
+                    <Text color="red.500" fontSize="sm" mt={2}>
+                      {betaCodeError}
+                    </Text>
+                  )}
+                  <Text color="gray.500" fontSize="xs" mt={2}>
+                    Enter the access code from your beta invitation email
+                  </Text>
+                </FormControl>
+              </Box>
+            )}
+
+            {betaCodeVerified && (
+              <Alert status="success" borderRadius="md" variant="subtle">
+                <AlertIcon />
+                <Box>
+                  <Text fontWeight="semibold">Code Verified</Text>
+                  <Text fontSize="sm" color="gray.600">
+                    Welcome to the Phoo beta!
+                  </Text>
+                </Box>
+              </Alert>
+            )}
+
             {error && (
               <Alert status="error" borderRadius="md">
                 <AlertIcon />
@@ -184,136 +285,143 @@ export default function LoginPage() {
               </Alert>
             )}
 
-            <Button
-              leftIcon={<FaGoogle />}
-              onClick={handleGoogleLogin}
-              size="lg"
-              variant="outline"
-              width="full"
-              isLoading={loading}
-              isDisabled={loading}
-            >
-              Sign in with Google
-            </Button>
+            {/* Only show login options after code is verified */}
+            {betaCodeVerified && (
+              <>
+                <Button
+                  leftIcon={<FaGoogle />}
+                  onClick={handleGoogleLogin}
+                  size="lg"
+                  variant="outline"
+                  width="full"
+                  isLoading={loading}
+                  isDisabled={loading}
+                >
+                  Sign in with Google
+                </Button>
 
-            <HStack>
-              <Divider />
-              <Text fontSize="sm" color="gray.500" whiteSpace="nowrap">
-                OR CONTINUE WITH EMAIL
-              </Text>
-              <Divider />
-            </HStack>
+                <HStack>
+                  <Divider />
+                  <Text fontSize="sm" color="gray.500" whiteSpace="nowrap">
+                    OR CONTINUE WITH EMAIL
+                  </Text>
+                  <Divider />
+                </HStack>
 
-            <Tabs colorScheme="orange" variant="soft-rounded" isFitted>
-              <TabList mb={4}>
-                <Tab>
-                  <Icon as={FiLock} mr={2} />
-                  Password
-                </Tab>
-                <Tab>
-                  <Icon as={FiMail} mr={2} />
-                  Email Link
-                </Tab>
-              </TabList>
-              <TabPanels>
-                {/* Password Tab */}
-                <TabPanel p={0}>
-                  <form onSubmit={handleSubmit}>
-                    <VStack spacing={4} align="stretch">
-                      <FormControl isRequired>
-                        <FormLabel>Email</FormLabel>
-                        <Input
-                          ref={emailInputRef}
-                          type="email"
-                          placeholder="Enter your email"
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          disabled={loading}
-                        />
-                      </FormControl>
+                <Tabs colorScheme="orange" variant="soft-rounded" isFitted>
+                  <TabList mb={4}>
+                    <Tab>
+                      <Icon as={FiLock} mr={2} />
+                      Password
+                    </Tab>
+                    <Tab>
+                      <Icon as={FiMail} mr={2} />
+                      Email Link
+                    </Tab>
+                  </TabList>
+                  <TabPanels>
+                    {/* Password Tab */}
+                    <TabPanel p={0}>
+                      <form onSubmit={handleSubmit}>
+                        <VStack spacing={4} align="stretch">
+                          <FormControl isRequired>
+                            <FormLabel>Email</FormLabel>
+                            <Input
+                              ref={emailInputRef}
+                              type="email"
+                              placeholder="Enter your email"
+                              value={formData.email}
+                              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                              disabled={loading}
+                            />
+                          </FormControl>
 
-                      <FormControl isRequired>
-                        <FormLabel>Password</FormLabel>
-                        <Input
-                          ref={passwordInputRef}
-                          type="password"
-                          placeholder="Enter your password"
-                          value={formData.password}
-                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                          disabled={loading}
-                        />
-                      </FormControl>
+                          <FormControl isRequired>
+                            <FormLabel>Password</FormLabel>
+                            <Input
+                              ref={passwordInputRef}
+                              type="password"
+                              placeholder="Enter your password"
+                              value={formData.password}
+                              onChange={(e) =>
+                                setFormData({ ...formData, password: e.target.value })
+                              }
+                              disabled={loading}
+                            />
+                          </FormControl>
 
-                      <Text textAlign="right" fontSize="sm">
-                        <Link
-                          href="/auth/forgot-password"
-                          color="gray.500"
-                          _hover={{ color: 'brand.orange' }}
-                        >
-                          Forgot password?
-                        </Link>
-                      </Text>
+                          <Text textAlign="right" fontSize="sm">
+                            <Link
+                              href="/auth/forgot-password"
+                              color="gray.500"
+                              _hover={{ color: 'brand.orange' }}
+                            >
+                              Forgot password?
+                            </Link>
+                          </Text>
 
-                      <Button
-                        type="submit"
-                        bg="brand.orange"
-                        color="white"
-                        size="lg"
-                        _hover={{ bg: '#E8851A' }}
-                        disabled={loading}
-                        isLoading={loading}
-                        loadingText="Signing in..."
-                      >
-                        Sign In
-                      </Button>
-                    </VStack>
-                  </form>
-                </TabPanel>
+                          <Button
+                            type="submit"
+                            bg="brand.orange"
+                            color="white"
+                            size="lg"
+                            _hover={{ bg: '#E8851A' }}
+                            disabled={loading}
+                            isLoading={loading}
+                            loadingText="Signing in..."
+                          >
+                            Sign In
+                          </Button>
+                        </VStack>
+                      </form>
+                    </TabPanel>
 
-                {/* Magic Link Tab */}
-                <TabPanel p={0}>
-                  <form onSubmit={handleMagicLink}>
-                    <VStack spacing={4} align="stretch">
-                      <FormControl isRequired>
-                        <FormLabel>Email</FormLabel>
-                        <Input
-                          type="email"
-                          placeholder="Enter your email"
-                          value={magicLinkEmail}
-                          onChange={(e) => setMagicLinkEmail(e.target.value)}
-                          disabled={loading}
-                        />
-                      </FormControl>
+                    {/* Magic Link Tab */}
+                    <TabPanel p={0}>
+                      <form onSubmit={handleMagicLink}>
+                        <VStack spacing={4} align="stretch">
+                          <FormControl isRequired>
+                            <FormLabel>Email</FormLabel>
+                            <Input
+                              type="email"
+                              placeholder="Enter your email"
+                              value={magicLinkEmail}
+                              onChange={(e) => setMagicLinkEmail(e.target.value)}
+                              disabled={loading}
+                            />
+                          </FormControl>
 
-                      <Text fontSize="sm" color="gray.500">
-                        We'll send you a magic link to sign in instantly - no password required.
-                      </Text>
+                          <Text fontSize="sm" color="gray.500">
+                            We'll send you a magic link to sign in instantly - no password required.
+                          </Text>
 
-                      <Button
-                        type="submit"
-                        bg="brand.orange"
-                        color="white"
-                        size="lg"
-                        _hover={{ bg: '#E8851A' }}
-                        disabled={loading || !magicLinkEmail}
-                        isLoading={loading}
-                        loadingText="Sending..."
-                        leftIcon={<FiMail />}
-                      >
-                        Send Sign-in Link
-                      </Button>
-                    </VStack>
-                  </form>
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
+                          <Button
+                            type="submit"
+                            bg="brand.orange"
+                            color="white"
+                            size="lg"
+                            _hover={{ bg: '#E8851A' }}
+                            disabled={loading || !magicLinkEmail}
+                            isLoading={loading}
+                            loadingText="Sending..."
+                            leftIcon={<FiMail />}
+                          >
+                            Send Sign-in Link
+                          </Button>
+                        </VStack>
+                      </form>
+                    </TabPanel>
+                  </TabPanels>
+                </Tabs>
 
-            <Text textAlign="center" color="gray.600" fontSize="sm">
-              Don't have an account?{' '}
-              <Link href="/auth/signup" color="brand.orange" fontWeight="semibold">
-                Sign up
-              </Link>
-            </Text>
+                <Text textAlign="center" color="gray.600" fontSize="sm">
+                  Don't have an account?{' '}
+                  <Link href="/auth/signup" color="brand.orange" fontWeight="semibold">
+                    Sign up
+                  </Link>
+                </Text>
+              </>
+            )}
           </VStack>
         </Box>
       </Container>
