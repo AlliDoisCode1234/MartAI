@@ -76,7 +76,16 @@ export function middleware(request: NextRequest) {
     // Users see landing page at phoo.ai/ for Google OAuth compliance
 
     // Public routes - always accessible
-    const publicRoutes = ['/', '/join', '/auth', '/privacy', '/terms', '/resources'];
+    const publicRoutes = [
+      '/',
+      '/join',
+      '/auth',
+      '/privacy',
+      '/terms',
+      '/resources',
+      '/how-it-works',
+      '/pricing',
+    ];
     const isPublicRoute = publicRoutes.some(
       (route) => pathname === route || pathname.startsWith(route + '/')
     );

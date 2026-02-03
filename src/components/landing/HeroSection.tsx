@@ -39,7 +39,7 @@ export function HeroSection({ onCtaClick }: Props) {
       position="relative"
       overflow="hidden"
       bg="white"
-      minH={{ base: '80vh', lg: '85vh' }}
+      minH={{ base: '70vh', lg: '70vh' }}
       display="flex"
       alignItems="center"
       justifyContent="center"
@@ -183,26 +183,6 @@ export function HeroSection({ onCtaClick }: Props) {
             </Button>
           </MotionBox>
         </VStack>
-
-        {/* Hero Illustration */}
-        <Box
-          display={{ base: 'none', xl: 'block' }}
-          position="absolute"
-          right="2%"
-          bottom="10%"
-          w="280px"
-          h="280px"
-          zIndex={2}
-          opacity={0.9}
-        >
-          <Image
-            src="/images/hero-illustration.png"
-            alt="AI-powered SEO illustration"
-            w="100%"
-            h="100%"
-            objectFit="contain"
-          />
-        </Box>
       </Container>
 
       {/* Bottom gradient fade */}

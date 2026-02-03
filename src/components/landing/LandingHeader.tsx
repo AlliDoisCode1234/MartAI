@@ -12,10 +12,16 @@
  */
 
 import { Box, Container, HStack, Text, Button, Icon } from '@chakra-ui/react';
+import { useConvexAuth } from 'convex/react';
 import Link from 'next/link';
 import { FiMessageCircle } from 'react-icons/fi';
 
 export function LandingHeader() {
+  const { isAuthenticated } = useConvexAuth();
+
+  // Logo routes to dashboard for authenticated users, marketing page otherwise
+  const logoHref = isAuthenticated ? '/dashboard' : '/';
+
   return (
     <Box
       as="header"
@@ -30,7 +36,7 @@ export function LandingHeader() {
       <Container maxW="6xl">
         <HStack justify="space-between" h={16}>
           {/* Logo - Orange on white per brand standards */}
-          <Link href="/" style={{ textDecoration: 'none' }}>
+          <Link href={logoHref} style={{ textDecoration: 'none' }}>
             <Text fontSize="xl" fontWeight="bold" color="brand.orange">
               Phoo
             </Text>

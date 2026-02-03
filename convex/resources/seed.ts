@@ -33,7 +33,7 @@ export const seedInitialResources = internalMutation({
         authorTitle: 'SEO & Content Experts',
         status: 'published' as const,
         featured: true,
-        views: 127,
+        views: 0,
         phooRating: 100,
         phooRatedAt: now,
         publishedAt: now - 7 * 24 * 60 * 60 * 1000, // 7 days ago
@@ -54,7 +54,7 @@ export const seedInitialResources = internalMutation({
         authorTitle: 'SEO & Content Experts',
         status: 'published' as const,
         featured: true,
-        views: 89,
+        views: 0,
         phooRating: 100,
         phooRatedAt: now,
         publishedAt: now - 3 * 24 * 60 * 60 * 1000, // 3 days ago
@@ -75,7 +75,7 @@ export const seedInitialResources = internalMutation({
         authorTitle: 'SEO & Content Experts',
         status: 'published' as const,
         featured: false,
-        views: 64,
+        views: 0,
         phooRating: 100,
         phooRatedAt: now,
         publishedAt: now - 14 * 24 * 60 * 60 * 1000, // 14 days ago
@@ -96,7 +96,7 @@ export const seedInitialResources = internalMutation({
         authorTitle: 'SEO & Content Experts',
         status: 'published' as const,
         featured: true,
-        views: 156,
+        views: 0,
         phooRating: 100,
         phooRatedAt: now,
         publishedAt: now - 1 * 24 * 60 * 60 * 1000, // 1 day ago

@@ -158,25 +158,25 @@ export default function PricingPage() {
       description: 'Perfect for solopreneurs and freelancers.',
       features: [
         { text: '1 Website', included: true },
+        { text: '12 AI Content Pieces', included: true },
+        { text: 'CMS Publishing', included: true },
         { text: 'Basic SEO Audit', included: true },
-        { text: 'Weekly Reports', included: true },
         { text: 'WordPress Integration', included: true },
-        { text: 'AI Articles (4/mo)', included: true },
         { text: 'Team Members', included: false },
       ],
     },
     {
       title: 'Growth',
       icon: FiTrendingUp,
-      price: isAnnual ? '$119' : '$149',
+      price: isAnnual ? '$99' : '$125',
       description: 'For growing businesses scaling their content.',
       isPopular: true,
       features: [
         { text: '3 Websites', included: true },
+        { text: '50 AI Content Pieces', included: true },
+        { text: 'CMS Publishing', included: true },
         { text: 'Full SEO Suite', included: true },
-        { text: 'Daily Sync', included: true },
         { text: 'AI Briefs', included: true },
-        { text: 'AI Articles (12/mo)', included: true },
         { text: '3 Team Members', included: true },
       ],
     },
@@ -187,10 +187,10 @@ export default function PricingPage() {
       description: 'For marketing teams and small agencies.',
       features: [
         { text: '10 Websites', included: true },
+        { text: '100 AI Content Pieces', included: true },
+        { text: 'CMS Publishing', included: true },
         { text: 'Full SEO Suite', included: true },
         { text: 'White-label Reports', included: true },
-        { text: 'All Integrations', included: true },
-        { text: 'AI Articles (30/mo)', included: true },
         { text: '10 Team Members', included: true },
       ],
     },
@@ -202,10 +202,10 @@ export default function PricingPage() {
       buttonText: 'Contact Us',
       features: [
         { text: 'Unlimited Websites', included: true },
+        { text: 'Unlimited Content', included: true },
+        { text: 'Public API Access', included: true },
         { text: 'Dedicated Support', included: true },
         { text: 'Custom Integrations', included: true },
-        { text: 'SLA Guarantee', included: true },
-        { text: 'Unlimited AI Articles', included: true },
         { text: 'Unlimited Team Members', included: true },
       ],
     },
@@ -241,15 +241,15 @@ export default function PricingPage() {
               </Badge>
             </HStack>
             <Heading size="2xl" fontWeight="bold" color="gray.800">
-              SEO + AI Content for $149/mo
+              SEO + AI Content for $125/mo
             </Heading>
             <Text fontSize="xl" color="gray.600" maxW="2xl">
               Competitors charge $600+/mo for SEO tools alone. Phoo gives you keyword research, AI
-              content generation, AND GEO optimization—so you rank in search results AND get cited
-              by Google&apos;s AI.
+              content generation, AND publishes directly to your CMS—so you rank in search results
+              AND get cited by AI assistants like ChatGPT.
             </Text>
             <Text fontSize="md" color="brand.orange" fontWeight="semibold">
-              Join 1,200+ businesses growing their organic traffic with Phoo
+              AI-powered SEO that publishes directly to WordPress, Shopify & more
             </Text>
 
             <Flex align="center" mt={8}>

@@ -38,10 +38,8 @@ import Link from 'next/link';
 import {
   LandingHeader,
   HeroSection,
-  ProblemSection,
-  GEOExplainerSection,
-  FeaturesSection,
-  BetaSection,
+  HowItWorksSection,
+  AboutPhooSection,
   WaitlistForm,
 } from '@/src/components/landing';
 
@@ -85,10 +83,8 @@ export default function Home() {
     <Box minH="100vh" bg="white" color="gray.800" position="relative">
       <LandingHeader />
       <HeroSection />
-      <ProblemSection />
-      <GEOExplainerSection />
-      <FeaturesSection />
-      <BetaSection />
+      <HowItWorksSection />
+      <AboutPhooSection />
       <WaitlistForm />
       {/* Footer */}
       <Box as="footer" py={12} borderTop="1px solid" borderColor="gray.200">

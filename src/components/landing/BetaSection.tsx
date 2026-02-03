@@ -6,92 +6,44 @@
  * Component Hierarchy:
  * App → LandingPage → BetaSection
  *
- * Why Beta section for landing page.
- * Uses Chakra UI for styling (project standard).
+ * Founding member beta benefits - streamlined single column.
  */
 
-import {
-  Box,
-  Container,
-  Heading,
-  Text,
-  SimpleGrid,
-  VStack,
-  HStack,
-  Icon,
-  List,
-  ListItem,
-} from '@chakra-ui/react';
-import { Check } from 'lucide-react';
-
-const OUR_GOALS = [
-  'Shape Phoo around real-world needs',
-  'Gather feedback from business owners we trust',
-  'Build something genuinely helpful — not bloated',
-];
+import { Box, Container, Heading, Text, VStack, HStack, Icon } from '@chakra-ui/react';
+import { Check, Sparkles } from 'lucide-react';
 
 const BETA_BENEFITS = [
-  'Early access to Phoo',
-  'Founding beta access for 6 months',
-  'Direct input into product features',
-  'Priority onboarding and support',
+  '6 months free access',
+  'Direct input on features',
+  'Priority support',
+  'Lock in founding member pricing',
 ];
 
 export function BetaSection() {
   return (
-    <Box as="section" py={16} bgGradient="linear(to-br, orange.500, brand.red)">
-      <Container maxW="4xl">
-        <Heading
-          as="h2"
-          fontSize={{ base: '3xl', md: '4xl' }}
-          fontWeight="bold"
-          textAlign="center"
-          mb={6}
-          color="white"
-        >
-          Why Beta?
-        </Heading>
-        <Text fontSize="xl" color="whiteAlpha.800" textAlign="center" mb={12} maxW="2xl" mx="auto">
-          We&apos;re opening early beta access to a small group of businesses so we can:
-        </Text>
-
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
-          {/* What We Get */}
-          <Box p={8} borderRadius="2xl" bg="orange.50" border="1px solid" borderColor="orange.200">
-            <Heading as="h3" fontSize="xl" fontWeight="semibold" mb={6} color="gray.700">
-              We want to:
+    <Box as="section" py={16} bgGradient="linear(to-br, blue.500, blue.700)">
+      <Container maxW="xl">
+        <VStack spacing={8} textAlign="center">
+          <HStack>
+            <Icon as={Sparkles} color="yellow.300" boxSize={6} />
+            <Heading as="h2" fontSize={{ base: '2xl', md: '3xl' }} fontWeight="bold" color="white">
+              Join 101 Founding Beta Members
             </Heading>
-            <VStack align="start" spacing={4}>
-              {OUR_GOALS.map((goal) => (
-                <HStack key={goal} gap={3}>
-                  <Box w={1.5} h={1.5} borderRadius="full" bg="brand.orange" flexShrink={0} />
-                  <Text color="gray.600">{goal}</Text>
-                </HStack>
-              ))}
-            </VStack>
-          </Box>
+          </HStack>
 
-          {/* What You Get */}
-          <Box
-            p={8}
-            borderRadius="2xl"
-            bgGradient="linear(to-br, orange.900, red.900)"
-            border="1px solid"
-            borderColor="brand.orange"
-          >
-            <Heading as="h3" fontSize="xl" fontWeight="semibold" mb={6} color="white">
-              Beta users get:
-            </Heading>
-            <VStack align="start" spacing={4}>
+          <Box p={8} borderRadius="2xl" bg="white" w="100%" boxShadow="xl">
+            <VStack spacing={4} align="start">
               {BETA_BENEFITS.map((benefit) => (
                 <HStack key={benefit} gap={3}>
-                  <Icon as={Check} boxSize={5} color="green.400" flexShrink={0} />
-                  <Text color="white">{benefit}</Text>
+                  <Icon as={Check} boxSize={5} color="green.500" flexShrink={0} />
+                  <Text color="gray.800" fontWeight="medium">
+                    {benefit}
+                  </Text>
                 </HStack>
               ))}
             </VStack>
           </Box>
-        </SimpleGrid>
+        </VStack>
       </Container>
     </Box>
   );

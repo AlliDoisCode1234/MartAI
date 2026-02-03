@@ -35,10 +35,10 @@ const nextConfig = {
 };
 
 // Wrap with MDX support
+// Using remark-gfm@3 for CommonJS compatibility (v4 is ESM-only)
 const withMDX = createMDX({
   extension: /\.mdx?$/,
   options: {
-    // Add remark/rehype plugins here if needed
     remarkPlugins: [remarkGfm],
     rehypePlugins: [],
   },

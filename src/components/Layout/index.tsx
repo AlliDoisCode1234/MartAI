@@ -37,6 +37,7 @@ const PUBLIC_ROUTES = [
   '/apply',
   '/thank-you',
   '/pricing',
+  '/how-it-works',
   '/about',
   '/invite',
   '/join', // phoo.ai waitlist page
@@ -47,7 +48,17 @@ const PUBLIC_ROUTES = [
 
 // Routes that bypass the entire app shell (no Navigation, no Phoo)
 // These render raw children for full control over styling
-const STANDALONE_ROUTES = ['/', '/join', '/auth/callback', '/auth/login', '/privacy', '/terms'];
+const STANDALONE_ROUTES = [
+  '/',
+  '/join',
+  '/auth/callback',
+  '/auth/login',
+  '/privacy',
+  '/terms',
+  '/how-it-works',
+  '/pricing',
+  '/resources',
+];
 
 export const Layout: FC<Props> = ({ children }) => {
   const pathname = usePathname();

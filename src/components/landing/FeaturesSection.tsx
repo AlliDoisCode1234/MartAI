@@ -6,97 +6,104 @@
  * Component Hierarchy:
  * App → LandingPage → FeaturesSection
  *
- * What Phoo Does section for landing page.
- * Uses Chakra UI for styling (project standard).
+ * How Phoo Gets You More Customers - outcome-focused features.
  */
 
-import { Box, Container, Heading, Text, SimpleGrid, HStack, Icon, VStack } from '@chakra-ui/react';
-import { Target, Zap, TrendingUp, Users, LucideIcon, Search } from 'lucide-react';
+import {
+  Box,
+  Container,
+  Heading,
+  Text,
+  SimpleGrid,
+  HStack,
+  Icon,
+  VStack,
+  Image,
+} from '@chakra-ui/react';
+import { Search, Zap, Bot, Users, Check } from 'lucide-react';
 
-const FEATURES: Array<{
-  icon: LucideIcon;
-  color: string;
-  bgColor: string;
-  borderColor: string;
-  title: string;
-  description: string;
-}> = [
+const FEATURES = [
   {
     icon: Search,
-    color: 'brand.orange',
-    bgColor: 'orange.50',
-    borderColor: 'orange.200',
-    title: 'Finds keywords your customers search',
-    description: 'Not just vanity terms — real, revenue-driving keywords.',
+    title: 'Get found on Google',
+    description: 'Rank for keywords your customers actually search.',
+  },
+  {
+    icon: Bot,
+    title: 'Get cited by ChatGPT',
+    description: 'AI assistants recommend your business.',
   },
   {
     icon: Zap,
-    color: 'brand.red',
-    bgColor: 'red.50',
-    borderColor: 'red.200',
-    title: 'Builds a clear SEO content plan',
-    description: 'A roadmap tailored to your business, not generic advice.',
-  },
-  {
-    icon: TrendingUp,
-    color: 'blue.500',
-    bgColor: 'blue.50',
-    borderColor: 'blue.200',
-    title: 'Creates and improves content over time',
-    description: 'AI-powered content that gets better, not stale.',
+    title: 'AI writes your content',
+    description: 'SEO-optimized articles created automatically.',
   },
   {
     icon: Users,
-    color: 'green.500',
-    bgColor: 'green.50',
-    borderColor: 'green.200',
-    title: 'Turns visits into real leads',
-    description: 'Traffic that matters, not just vanity metrics.',
+    title: 'Turn visitors into leads',
+    description: 'Traffic that converts, not vanity metrics.',
   },
 ];
 
 export function FeaturesSection() {
   return (
-    <Box as="section" py={16} bg="gray.900">
+    <Box as="section" py={16} bgGradient="linear(to-br, brand.orange, orange.600)">
       <Container maxW="4xl">
-        <VStack textAlign="center" mb={12}>
-          <Heading as="h2" fontSize={{ base: '3xl', md: '4xl' }} fontWeight="bold" color="white">
-            What Phoo Does
+        <VStack spacing={8}>
+          {/* Headline */}
+          <Heading
+            as="h2"
+            fontSize={{ base: '3xl', md: '4xl' }}
+            fontWeight="bold"
+            color="white"
+            textAlign="center"
+          >
+            How Phoo Gets You More Customers
           </Heading>
-          <Text fontSize="xl" color="gray.300">
-            Phoo is your automated SEO growth system.
-          </Text>
+
+          {/* Illustration */}
+          <Image
+            src="/images/features-illustration.png"
+            alt="AI-powered content automation"
+            maxW="320px"
+            mx="auto"
+            borderRadius="xl"
+          />
+
+          {/* Feature grid */}
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="100%">
+            {FEATURES.map((feature) => (
+              <HStack
+                key={feature.title}
+                p={5}
+                borderRadius="xl"
+                bg="white"
+                align="flex-start"
+                gap={4}
+              >
+                <Icon as={feature.icon} boxSize={6} color="brand.orange" flexShrink={0} mt={1} />
+                <Box>
+                  <Text fontWeight="bold" color="gray.800">
+                    {feature.title}
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    {feature.description}
+                  </Text>
+                </Box>
+              </HStack>
+            ))}
+          </SimpleGrid>
+
+          {/* Tagline */}
+          <Box p={4} borderRadius="xl" bg="white" boxShadow="lg">
+            <HStack>
+              <Icon as={Check} color="green.500" />
+              <Text fontWeight="medium" color="gray.800">
+                Small business SEO automation that works 24/7
+              </Text>
+            </HStack>
+          </Box>
         </VStack>
-
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-          {FEATURES.map((feature) => (
-            <Box
-              key={feature.title}
-              p={6}
-              borderRadius="xl"
-              bg={feature.bgColor}
-              border="1px solid"
-              borderColor={feature.borderColor}
-              display="flex"
-              alignItems="flex-start"
-              gap={4}
-              _hover={{ transform: 'translateY(-2px)', boxShadow: 'md' }}
-              transition="all 0.2s"
-            >
-              <Icon as={feature.icon} boxSize={6} color={feature.color} flexShrink={0} mt={1} />
-              <Box>
-                <Heading as="h3" fontSize="lg" fontWeight="semibold" mb={2} color="gray.800">
-                  {feature.title}
-                </Heading>
-                <Text color="gray.600">{feature.description}</Text>
-              </Box>
-            </Box>
-          ))}
-        </SimpleGrid>
-
-        <Text textAlign="center" fontSize="lg" color="gray.600" mt={10}>
-          All without you needing to become a marketing expert.
-        </Text>
       </Container>
     </Box>
   );

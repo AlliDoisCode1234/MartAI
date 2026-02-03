@@ -9,6 +9,8 @@ export { HeroSection } from './HeroSection';
 export { ProblemSection } from './ProblemSection';
 export { GEOExplainerSection } from './GEOExplainerSection';
 export { UrgencySection } from './UrgencySection';
+export { HowItWorksSection } from './HowItWorksSection';
+export { AboutPhooSection } from './AboutPhooSection';
 export { FeaturesSection } from './FeaturesSection';
 export { AudienceSection } from './AudienceSection';
 export { BetaSection } from './BetaSection';
