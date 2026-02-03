@@ -56,10 +56,12 @@ export const getGA4Connection = query({
 
     if (!connection) return null;
 
-    // Decrypt tokens for use
+    // Decrypt tokens for use (handle both OAuth and service account connections)
     return {
       ...connection,
-      accessToken: await decryptCredential(connection.accessToken),
+      accessToken: connection.accessToken
+        ? await decryptCredential(connection.accessToken)
+        : undefined,
       refreshToken: connection.refreshToken
         ? await decryptCredential(connection.refreshToken)
         : undefined,
@@ -108,5 +110,46 @@ export const updateTokens = mutation({
       updates.refreshToken = await encryptCredential(args.refreshToken);
     }
     await ctx.db.patch(args.connectionId, updates);
+  },
+});
+
+// Save a service account connection (for enterprise users)
+export const saveServiceAccountConnection = mutation({
+  args: {
+    projectId: v.id('projects'),
+    propertyId: v.string(),
+    propertyName: v.string(),
+    serviceAccountEmail: v.string(),
+    encryptedServiceAccountKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Check if connection exists
+    const existing = await ctx.db
+      .query('ga4Connections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+
+    // Encrypt the service account key before storage
+    const encryptedKey = await encryptCredential(args.encryptedServiceAccountKey);
+
+    const connectionData = {
+      projectId: args.projectId,
+      propertyId: args.propertyId,
+      propertyName: args.propertyName,
+      connectionType: 'service_account' as const,
+      serviceAccountEmail: args.serviceAccountEmail,
+      encryptedServiceAccountKey: encryptedKey,
+      lastSync: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    if (existing) {
+      return await ctx.db.patch(existing._id, connectionData);
+    }
+
+    return await ctx.db.insert('ga4Connections', {
+      ...connectionData,
+      createdAt: Date.now(),
+    });
   },
 });

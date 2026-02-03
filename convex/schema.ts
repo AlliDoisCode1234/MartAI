@@ -584,8 +584,14 @@ export default defineSchema({
     projectId: v.id('projects'),
     propertyId: v.string(),
     propertyName: v.string(),
-    accessToken: v.string(),
+    // OAuth fields
+    accessToken: v.optional(v.string()),
     refreshToken: v.optional(v.string()),
+    // Service account fields
+    connectionType: v.optional(v.union(v.literal('oauth'), v.literal('service_account'))),
+    serviceAccountEmail: v.optional(v.string()),
+    encryptedServiceAccountKey: v.optional(v.string()),
+    // Metadata
     lastSync: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -715,6 +721,7 @@ export default defineSchema({
     siteUrl: v.string(),
     siteName: v.optional(v.string()),
     credentials: v.object({
+      _encrypted: v.optional(v.literal(true)), // Encryption marker
       username: v.optional(v.string()),
       applicationPassword: v.optional(v.string()), // WordPress App Password
       apiKey: v.optional(v.string()), // Shopify/other APIs
