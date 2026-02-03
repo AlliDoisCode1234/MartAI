@@ -364,6 +364,233 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       read: async () => isAdmin, // Only admins can view codes
       modify: async () => isAdmin, // Only admins can create/revoke codes
     },
+
+    // ========================================================================
+    // P0 CRITICAL - Sensitive Security Data
+    // ========================================================================
+
+    // Impersonation sessions: super_admin only (contains IP, session tokens)
+    impersonationSessions: {
+      read: async () => isSuperAdmin,
+      modify: async () => isSuperAdmin,
+    },
+
+    // Password reset tokens: system-only (no direct user/admin access)
+    passwordResetTokens: {
+      read: async () => false, // Never directly readable
+      modify: async () => false, // System mutations only
+    },
+
+    // Webhooks: admin-only (webhook secrets are sensitive)
+    webhooks: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Webhook deliveries: admin-only
+    webhookDeliveries: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Organization invitations: admin-only (contains tokens)
+    organizationInvitations: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Team audit logs: admin-only
+    teamAuditLogs: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // ========================================================================
+    // P1 HIGH - Project-Scoped Business Data
+    // ========================================================================
+
+    // Content pieces: project-scoped
+    contentPieces: {
+      read: async (ruleCtx, piece) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(piece.projectId);
+        return project?.userId === userId;
+      },
+      modify: async (ruleCtx, piece) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        const project = await ruleCtx.db.get(piece.projectId);
+        return project?.userId === userId;
+      },
+    },
+
+    // Brief versions: admin-only (needs cross-table lookup via briefs)
+    briefVersions: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Keyword library: global table (admin-only)
+    keywordLibrary: {
+      read: async () => !!userId, // Any authenticated user can search
+      modify: async () => isAdmin, // Only admins can modify global library
+    },
+
+    // Keyword ideas: admin-only (projectId optional)
+    keywordIdeas: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Rankings: admin-only (system-generated data)
+    rankings: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // SEO audits: admin-only
+    seoAudits: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // SEO statistics: admin-only (legacy table without projectId)
+    seoStatistics: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // SERP analyses: admin-only
+    serpAnalyses: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Generated pages: admin-only (legacy table with clientId instead of projectId)
+    generatedPages: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Submitted URLs: admin-only (prospect-scoped, not project-scoped)
+    submittedUrls: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Project scores: admin-only (system-generated)
+    projectScores: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Competitor analytics: user-scoped (has userId directly)
+    competitorAnalytics: {
+      read: async (_ruleCtx, analytics) => {
+        if (isAdmin) return true;
+        return analytics.userId === userId;
+      },
+      modify: async () => isAdmin, // System-generated
+    },
+
+    // Content checks: admin-only
+    contentChecks: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // GSC keyword snapshots: admin-only (system-generated)
+    gscKeywordSnapshots: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Analytics data: admin-only (system-generated)
+    analyticsData: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // ========================================================================
+    // P2 MEDIUM - System/Config Data
+    // ========================================================================
+
+    // AI models: admin read, super_admin modify
+    aiModels: {
+      read: async () => isAdmin,
+      modify: async () => isSuperAdmin,
+    },
+
+    // AI providers: admin read, super_admin modify
+    aiProviders: {
+      read: async () => isAdmin,
+      modify: async () => isSuperAdmin,
+    },
+
+    // AI provider health: admin only
+    aiProviderHealth: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // AI reports: admin only
+    aiReports: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // AI routing logs: super_admin only (debug data)
+    aiRoutingLogs: {
+      read: async () => isSuperAdmin,
+      modify: async () => isSuperAdmin,
+    },
+
+    // AI usage: admin only
+    aiUsage: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // AI writer personas: authenticated read, admin modify
+    aiWriterPersonas: {
+      read: async () => !!userId,
+      modify: async () => isAdmin,
+    },
+
+    // BI events: admin only
+    biEvents: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // SEO updates: admin only
+    seoUpdates: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Resources (CMS content): public read, admin write
+    resources: {
+      read: async () => true, // Public content
+      modify: async () => isAdmin,
+    },
+
+    // ========================================================================
+    // P3 LOW - Legacy/Deprecated
+    // ========================================================================
+
+    // Clients (deprecated): admin only
+    clients: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
+    // Waitlist: admin read, public write
+    waitlist: {
+      read: async () => isAdmin,
+      modify: async () => true, // Anyone can add themselves
+    },
   };
 }
 

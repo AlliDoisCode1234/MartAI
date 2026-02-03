@@ -17,6 +17,9 @@ Does this actually implement the changes according to the spec?
 What are the best practices and standards that need to be applied here?
 And what are our standards at all?
 
+> [!CAUTION]
+> **RLS Security Checkpoint**: If this feature adds a new schema table, RLS rules **MUST** be added to `convex/lib/rls.ts`. See `/security-rules` workflow for access control decisions.
+
 ## The Board Members (15 Total)
 
 ### C-Suite Leadership
@@ -99,9 +102,9 @@ And what are our standards at all?
 
 #### CONVEX - Platform Expert (docs/CONVEX_PERSONA.md)
 
-- Focus: Convex-native solutions, backend architecture, component ecosystem
-- Frameworks: Query/Mutation/Action decisions, Component tree, Index strategy
-- Ask: "Is there a Convex component for this? Should this be a query or action?"
+- Focus: Convex-native solutions, backend architecture, component ecosystem, **RLS enforcement**
+- Frameworks: Query/Mutation/Action decisions, Component tree, Index strategy, RLS rules
+- Ask: "Is there a Convex component for this? Should this be a query or action? **Does the new table have RLS rules in lib/rls.ts?**"
 
 ---
 
