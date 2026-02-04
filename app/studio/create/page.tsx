@@ -81,6 +81,12 @@ export default function CreateContentPage() {
   // Content generation action
   const generateContent = useAction(api.contentGeneration.generateContent);
 
+  // WordPress connection for capability badges
+  const wpConnection = useQuery(
+    api.integrations.platformConnections.getConnection,
+    activeProject ? { projectId: activeProject._id, platform: 'wordpress' as const } : 'skip'
+  );
+
   // Handle keyword selection from library
   const handleKeywordsFromLibrary = (selectedKeywords: string[]) => {
     setKeywords(selectedKeywords.join(', '));
@@ -206,7 +212,12 @@ export default function CreateContentPage() {
 
         {/* Step 1: Type Selection - 17 Content Types from Content Intelligence */}
         {step === 'type' && (
-          <ContentTypeSelector selectedType={selectedType} onSelect={handleTypeSelect} />
+          <ContentTypeSelector
+            selectedType={selectedType}
+            onSelect={handleTypeSelect}
+            wordpressConnected={!!wpConnection?.isValid}
+            wordpressCapabilities={wpConnection?.capabilities}
+          />
         )}
 
         {/* Step 2: Content Details */}

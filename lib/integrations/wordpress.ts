@@ -281,20 +281,39 @@ export class WordPressClient {
   }
 
   async getOrCreateTag(name: string): Promise<number> {
+    // First check if tag exists
     const tags = await this.getTags();
     const existing = tags.find((t) => t.name.toLowerCase() === name.toLowerCase());
 
     if (existing) return existing.id;
 
-    const newTag = await this.createTag(name);
-    return newTag.id;
+    // Try to create, but handle "already exists" race condition
+    try {
+      const newTag = await this.createTag(name);
+      return newTag.id;
+    } catch (error: unknown) {
+      // If tag already exists (race condition), fetch and return it
+      const message = error instanceof Error ? error.message : '';
+      if (message.includes('already exists')) {
+        console.log(`[WP Tags] Tag "${name}" already exists, fetching ID...`);
+        const refreshedTags = await this.getTags();
+        const found = refreshedTags.find((t) => t.name.toLowerCase() === name.toLowerCase());
+        if (found) return found.id;
+      }
+      throw error;
+    }
   }
 
   async getOrCreateTags(names: string[]): Promise<number[]> {
     const ids: number[] = [];
     for (const name of names) {
-      const id = await this.getOrCreateTag(name);
-      ids.push(id);
+      try {
+        const id = await this.getOrCreateTag(name);
+        ids.push(id);
+      } catch (error) {
+        // Log but continue - don't fail entire publish for one bad tag
+        console.error(`[WP Tags] Failed to get/create tag "${name}":`, error);
+      }
     }
     return ids;
   }
