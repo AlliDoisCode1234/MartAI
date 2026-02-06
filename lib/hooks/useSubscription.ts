@@ -14,8 +14,8 @@ import { useAuth } from '@/lib/useAuth';
 
 // Plan limits matching PLAN_LIMITS in convex/subscriptions/subscriptions.ts
 const PLAN_LIMITS = {
-  solo: { maxUrls: 1, maxKeywordIdeas: 250, maxAiReports: 4, maxContentPieces: 4 },
-  starter: { maxUrls: 1, maxKeywordIdeas: 250, maxAiReports: 4, maxContentPieces: 4 },
+  solo: { maxUrls: 1, maxKeywordIdeas: 250, maxAiReports: 4, maxContentPieces: 5 },
+  starter: { maxUrls: 1, maxKeywordIdeas: 250, maxAiReports: 4, maxContentPieces: 5 },
   growth: { maxUrls: 3, maxKeywordIdeas: 1000, maxAiReports: 12, maxContentPieces: 12 },
   enterprise: { maxUrls: 999999, maxKeywordIdeas: 10000, maxAiReports: 100, maxContentPieces: 100 },
   scale: { maxUrls: 10, maxKeywordIdeas: 2000, maxAiReports: 20, maxContentPieces: 20 },

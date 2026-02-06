@@ -261,8 +261,10 @@ export const publishContentPieceToWordPress = action({
       console.log('[WP PUBLISH] Step 3 done: Client initialized');
 
       // 4. Determine post type based on content type
-      const blogTypes = ['blog', 'blogVersus', 'blogVideo', 'contentRefresh'];
-      const defaultPostType = blogTypes.includes(contentPiece.contentType) ? 'post' : 'page';
+      // Authoritative mapping: These content types publish as WordPress 'post' (chronological, feeds)
+      // All others default to 'page' (static, hierarchical)
+      const BLOG_POST_TYPES = ['blog', 'blogVersus', 'blogVideo', 'contentRefresh', 'events'];
+      const defaultPostType = BLOG_POST_TYPES.includes(contentPiece.contentType) ? 'post' : 'page';
       const postType = args.options?.postType || defaultPostType;
       console.log('[WP PUBLISH] Step 4: Post type determined:', {
         contentType: contentPiece.contentType,

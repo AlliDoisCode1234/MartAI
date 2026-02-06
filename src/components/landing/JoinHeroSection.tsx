@@ -1,30 +1,18 @@
 'use client';
 
 /**
- * HeroSection
+ * JoinHeroSection
  *
  * Component Hierarchy:
- * App → LandingPage → HeroSection
+ * App → JoinPage → JoinHeroSection
  *
- * Hero section for phoo.ai landing page with headline and primary CTA.
- * Antigravity-inspired design: soft blurred color blobs, glassmorphism,
- * bold centered typography, minimalist layout.
+ * Hero section specifically for /join page with original waitlist messaging.
+ * Distinct from HeroSection which has GEO-focused messaging for home page.
  */
 
-import {
-  Box,
-  Container,
-  Heading,
-  Text,
-  Button,
-  HStack,
-  Icon,
-  VStack,
-  Image,
-} from '@chakra-ui/react';
+import { Box, Container, Heading, Text, Button, HStack, Icon, VStack } from '@chakra-ui/react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { MartCharacter } from '@/src/components/assistant/MartCharacter';
 
 interface Props {
   onCtaClick?: () => void;
@@ -32,19 +20,19 @@ interface Props {
 
 const MotionBox = motion(Box);
 
-export function HeroSection({ onCtaClick }: Props) {
+export function JoinHeroSection({ onCtaClick }: Props) {
   return (
     <Box
       as="header"
       position="relative"
       overflow="hidden"
-      bg="white"
+      bg="gray.900"
       minH={{ base: '70vh', lg: '70vh' }}
       display="flex"
       alignItems="center"
       justifyContent="center"
     >
-      {/* Antigravity-style blurred gradient orbs */}
+      {/* Dark theme gradient orbs */}
       <Box
         position="absolute"
         top="-10%"
@@ -52,7 +40,7 @@ export function HeroSection({ onCtaClick }: Props) {
         w={{ base: '20rem', lg: '40rem' }}
         h={{ base: '20rem', lg: '40rem' }}
         bg="brand.orange"
-        opacity={0.15}
+        opacity={0.1}
         borderRadius="full"
         filter={{ base: 'blur(80px)', lg: 'blur(120px)' }}
       />
@@ -63,25 +51,14 @@ export function HeroSection({ onCtaClick }: Props) {
         w={{ base: '25rem', lg: '50rem' }}
         h={{ base: '25rem', lg: '50rem' }}
         bg="brand.red"
-        opacity={0.15}
+        opacity={0.1}
         borderRadius="full"
         filter={{ base: 'blur(100px)', lg: 'blur(150px)' }}
-      />
-      <Box
-        position="absolute"
-        top="40%"
-        right="30%"
-        w={{ base: '15rem', lg: '30rem' }}
-        h={{ base: '15rem', lg: '30rem' }}
-        bg="orange.300"
-        opacity={0.08}
-        borderRadius="full"
-        filter={{ base: 'blur(60px)', lg: 'blur(100px)' }}
       />
 
       <Container maxW="5xl" textAlign="center" position="relative" zIndex={1}>
         <VStack spacing={{ base: 8, lg: 10 }}>
-          {/* Badge with glassmorphism */}
+          {/* Badge */}
           <MotionBox
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -93,18 +70,18 @@ export function HeroSection({ onCtaClick }: Props) {
               px={5}
               py={2.5}
               borderRadius="full"
-              bg="orange.50"
+              bg="whiteAlpha.100"
               border="1px solid"
               borderColor="brand.orange"
             >
               <Icon as={Sparkles} boxSize={4} color="brand.orange" />
-              <Text fontSize="sm" color="gray.700" fontWeight="medium">
+              <Text fontSize="sm" color="gray.300" fontWeight="medium">
                 Built by the team behind Helps2
               </Text>
             </HStack>
           </MotionBox>
 
-          {/* Headline - New GEO+SEO messaging */}
+          {/* Headline - Original waitlist messaging */}
           <MotionBox
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -117,21 +94,24 @@ export function HeroSection({ onCtaClick }: Props) {
               fontWeight="bold"
               lineHeight="1.1"
               letterSpacing="-0.02em"
-              color="gray.800"
+              color="white"
             >
-              Get Found by Google
+              Turn Your Website Into a
               <br />
               <Text
                 as="span"
                 bgGradient="linear(to-r, brand.orange, brand.red, orange.300)"
                 bgClip="text"
               >
-                AND ChatGPT
+                Steady Source of Leads
+              </Text>
+              <Text as="span" color="gray.400" fontWeight="medium">
+                — Automatically
               </Text>
             </Heading>
           </MotionBox>
 
-          {/* Subheadline - Powerful GEO messaging */}
+          {/* Subheadline */}
           <MotionBox
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -140,19 +120,17 @@ export function HeroSection({ onCtaClick }: Props) {
           >
             <Text
               fontSize={{ base: 'lg', md: 'xl', lg: '2xl' }}
-              color="gray.600"
+              color="gray.400"
               maxW="3xl"
               mx="auto"
               lineHeight="1.7"
             >
-              Google's AI now answers 40% of searches directly—without users clicking any links.{' '}
-              <Text as="span" fontWeight="semibold" color="gray.800">
-                Traditional SEO gets you ranked. Phoo's GEO gets you cited.
-              </Text>
+              Phoo helps purpose-driven local businesses grow traffic, leads, and revenue with an
+              automated SEO system that actually works.
             </Text>
           </MotionBox>
 
-          {/* Primary CTA with glow effect */}
+          {/* Primary CTA */}
           <MotionBox
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -186,17 +164,6 @@ export function HeroSection({ onCtaClick }: Props) {
           </MotionBox>
         </VStack>
       </Container>
-
-      {/* Bottom gradient fade */}
-      <Box
-        position="absolute"
-        bottom={0}
-        left={0}
-        right={0}
-        h="30vh"
-        bgGradient="linear(to-t, white, transparent)"
-        pointerEvents="none"
-      />
     </Box>
   );
 }
