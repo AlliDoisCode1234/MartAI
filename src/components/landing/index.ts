@@ -6,7 +6,6 @@
 
 export { LandingHeader } from './LandingHeader';
 export { HeroSection } from './HeroSection';
-export { JoinHeroSection } from './JoinHeroSection';
 export { ProblemSection } from './ProblemSection';
 export { GEOExplainerSection } from './GEOExplainerSection';
 export { UrgencySection } from './UrgencySection';
