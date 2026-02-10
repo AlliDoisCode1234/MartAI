@@ -41,7 +41,7 @@ import {
   HowItWorksSection,
   AboutPhooSection,
   WaitlistForm,
-} from '@/src/components/landing';
+} from '@/src/components/home';
 
 export default function Home() {
   const router = useRouter();

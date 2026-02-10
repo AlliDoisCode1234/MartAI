@@ -33,7 +33,7 @@ import Script from 'next/script';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import { FiZap, FiTarget, FiTrendingUp, FiCpu } from 'react-icons/fi';
 import { getFaqSchema, PRICING_FAQ_ITEMS, schemaToJsonLd } from '@/src/lib/schemas';
-import { LandingHeader } from '@/src/components/landing';
+import { LandingHeader } from '@/src/components/home';
 
 const PricingCard = ({
   title,

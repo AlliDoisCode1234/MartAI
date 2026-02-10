@@ -35,7 +35,7 @@ import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
 import { FiSearch, FiClock, FiEye, FiStar } from 'react-icons/fi';
 import { useState } from 'react';
-import { LandingHeader } from '@/src/components/landing';
+import { LandingHeader } from '@/src/components/home';
 
 // Category labels and colors
 const CATEGORY_CONFIG = {

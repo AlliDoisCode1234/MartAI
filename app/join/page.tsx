@@ -5,38 +5,38 @@
  *
  * Component Hierarchy:
  * └── app/join/page.tsx (this file)
- *     ├── JoinHeroSection
- *     ├── JoinProblemSection
- *     ├── JoinFeaturesSection
- *     ├── JoinAudienceSection
- *     ├── JoinBetaSection
+ *     ├── HeroSection
+ *     ├── ProblemSection
+ *     ├── FeaturesSection
+ *     ├── AudienceSection
+ *     ├── BetaSection
  *     ├── WaitlistForm
  *     └── Footer
  *
  * Public waitlist page for phoo.ai domain.
  * Accessible at phoo.ai/join.
- * Uses production copy (separate from GEO marketing on /)
+ * Imports from src/components/landing (production copy from main branch).
  */
 
 import { Box, Container, Text, HStack, Link as ChakraLink } from '@chakra-ui/react';
 import Link from 'next/link';
 import {
-  JoinHeroSection,
-  JoinProblemSection,
-  JoinFeaturesSection,
-  JoinAudienceSection,
-  JoinBetaSection,
-} from '@/src/components/join';
-import { WaitlistForm } from '@/src/components/landing';
+  HeroSection,
+  ProblemSection,
+  FeaturesSection,
+  AudienceSection,
+  BetaSection,
+  WaitlistForm,
+} from '@/src/components/landing';
 
 export default function JoinPage() {
   return (
     <Box minH="100vh" bg="gray.900" color="white">
-      <JoinHeroSection />
-      <JoinProblemSection />
-      <JoinFeaturesSection />
-      <JoinAudienceSection />
-      <JoinBetaSection />
+      <HeroSection />
+      <ProblemSection />
+      <FeaturesSection />
+      <AudienceSection />
+      <BetaSection />
       <WaitlistForm />
       {/* Footer */}
       <Box as="footer" py={12} borderTop="1px solid" borderColor="whiteAlpha.100">
