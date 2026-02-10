@@ -103,6 +103,23 @@ export function middleware(request: NextRequest) {
   }
 
   // ==========================================================================
+  // Login Gate: Password-protect /auth/login and /auth/signup
+  // Uses httpOnly cookie set by /api/auth/gate (server-side validation)
+  // ==========================================================================
+  const gatedRoutes = ['/auth/login', '/auth/signup'];
+  const isGatedRoute = gatedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + '/')
+  );
+
+  if (isGatedRoute && PHOO_PASSWORD) {
+    const gateCookie = request.cookies.get('phoo_login_gate');
+    if (!gateCookie || gateCookie.value !== 'authenticated') {
+      // No valid gate cookie — let the page handle showing the gate UI
+      // The page checks for the cookie absence and shows the password form
+    }
+  }
+
+  // ==========================================================================
   // Security Headers
   // ==========================================================================
   const response = NextResponse.next();
