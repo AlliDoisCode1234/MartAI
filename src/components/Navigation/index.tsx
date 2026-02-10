@@ -252,7 +252,13 @@ export const Navigation: FC = () => {
                 </Link>
                 <UserDropdown />
               </HStack>
-            ) : (
+            ) : /*
+             * BETA LAUNCH: Sign In/Sign Up hidden until public launch
+             * Users can still access /auth/login directly if they know the URL
+             * TODO: Uncomment when ready for public launch
+             */
+            null
+            /*
               <HStack spacing={4}>
                 <Link href="/auth/login">
                   <Button variant="ghost" size="sm">
@@ -265,7 +271,8 @@ export const Navigation: FC = () => {
                   </Button>
                 </Link>
               </HStack>
-            )}
+              */
+            }
           </HStack>
         </HStack>
       </Box>

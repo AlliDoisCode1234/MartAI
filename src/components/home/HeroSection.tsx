@@ -11,7 +11,17 @@
  * bold centered typography, minimalist layout.
  */
 
-import { Box, Container, Heading, Text, Button, HStack, Icon, VStack } from '@chakra-ui/react';
+import {
+  Box,
+  Container,
+  Heading,
+  Text,
+  Button,
+  HStack,
+  Icon,
+  VStack,
+  Image,
+} from '@chakra-ui/react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MartCharacter } from '@/src/components/assistant/MartCharacter';
@@ -28,8 +38,8 @@ export function HeroSection({ onCtaClick }: Props) {
       as="header"
       position="relative"
       overflow="hidden"
-      bg="gray.900"
-      minH={{ base: '90vh', lg: '100vh' }}
+      bg="white"
+      minH={{ base: '70vh', lg: '70vh' }}
       display="flex"
       alignItems="center"
       justifyContent="center"
@@ -83,20 +93,18 @@ export function HeroSection({ onCtaClick }: Props) {
               px={5}
               py={2.5}
               borderRadius="full"
-              bg="whiteAlpha.50"
+              bg="orange.50"
               border="1px solid"
-              borderColor="whiteAlpha.100"
-              backdropFilter="blur(12px)"
-              boxShadow="0 0 30px rgba(237, 137, 54, 0.1)"
+              borderColor="brand.orange"
             >
               <Icon as={Sparkles} boxSize={4} color="brand.orange" />
-              <Text fontSize="sm" color="gray.300" fontWeight="medium">
+              <Text fontSize="sm" color="gray.700" fontWeight="medium">
                 Built by the team behind Helps2
               </Text>
             </HStack>
           </MotionBox>
 
-          {/* Headline - Antigravity-style bold typography */}
+          {/* Headline - New GEO+SEO messaging */}
           <MotionBox
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -109,25 +117,21 @@ export function HeroSection({ onCtaClick }: Props) {
               fontWeight="bold"
               lineHeight="1.1"
               letterSpacing="-0.02em"
-              color="white"
+              color="gray.800"
             >
-              Turn Your Website Into a
+              Get Found by Google
               <br />
               <Text
                 as="span"
                 bgGradient="linear(to-r, brand.orange, brand.red, orange.300)"
                 bgClip="text"
               >
-                Steady Source of Leads
-              </Text>
-              <br />
-              <Text as="span" color="gray.400" fontWeight="medium">
-                — Automatically
+                AND ChatGPT
               </Text>
             </Heading>
           </MotionBox>
 
-          {/* Subheadline */}
+          {/* Subheadline - Powerful GEO messaging */}
           <MotionBox
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -136,13 +140,15 @@ export function HeroSection({ onCtaClick }: Props) {
           >
             <Text
               fontSize={{ base: 'lg', md: 'xl', lg: '2xl' }}
-              color="gray.400"
+              color="gray.600"
               maxW="3xl"
               mx="auto"
               lineHeight="1.7"
             >
-              Phoo helps purpose-driven local businesses grow traffic, leads, and revenue with an
-              automated SEO system that actually works.
+              Google's AI now answers 40% of searches directly—without users clicking any links.{' '}
+              <Text as="span" fontWeight="semibold" color="gray.800">
+                Traditional SEO gets you ranked. Phoo's GEO gets you cited.
+              </Text>
             </Text>
           </MotionBox>
 
@@ -188,7 +194,7 @@ export function HeroSection({ onCtaClick }: Props) {
         left={0}
         right={0}
         h="30vh"
-        bgGradient="linear(to-t, gray.900, transparent)"
+        bgGradient="linear(to-t, white, transparent)"
         pointerEvents="none"
       />
     </Box>

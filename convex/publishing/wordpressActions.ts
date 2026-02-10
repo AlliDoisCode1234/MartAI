@@ -172,3 +172,163 @@ export const saveAsDraft = action({
     });
   },
 });
+
+/**
+ * Publish a content piece to WordPress
+ * (Works with contentPieces table instead of drafts)
+ */
+export const publishContentPieceToWordPress = action({
+  args: {
+    contentPieceId: v.id('contentPieces'),
+    projectId: v.id('projects'),
+    options: v.optional(
+      v.object({
+        status: v.optional(v.union(v.literal('draft'), v.literal('publish'))),
+        postType: v.optional(v.union(v.literal('post'), v.literal('page'))),
+      })
+    ),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    postId?: number;
+    postUrl?: string;
+    error?: string;
+  }> => {
+    console.log('=== [WP PUBLISH] Step 0: Action called ===');
+    console.log('[WP PUBLISH] Args:', JSON.stringify(args, null, 2));
+
+    try {
+      // 1. Get WordPress connection
+      console.log('[WP PUBLISH] Step 1: Fetching WordPress connection...');
+      const connection = await ctx.runQuery(api.integrations.platformConnections.getConnection, {
+        projectId: args.projectId,
+        platform: 'wordpress',
+      });
+
+      console.log('[WP PUBLISH] Step 1 result:', {
+        hasConnection: !!connection,
+        isValid: connection?.isValid,
+        siteUrl: connection?.siteUrl,
+        hasUsername: !!connection?.credentials?.username,
+        hasPassword: !!connection?.credentials?.applicationPassword,
+      });
+
+      if (!connection) {
+        console.log('[WP PUBLISH] FAIL: No connection found');
+        return {
+          success: false,
+          error: 'WordPress not connected. Please connect your WordPress site first.',
+        };
+      }
+
+      if (!connection.isValid) {
+        console.log('[WP PUBLISH] FAIL: Connection invalid');
+        return {
+          success: false,
+          error: 'WordPress connection is invalid. Please reconnect.',
+        };
+      }
+
+      // 2. Get content piece
+      console.log('[WP PUBLISH] Step 2: Fetching content piece...');
+      const contentPiece = await ctx.runQuery(api.contentPieces.getById, {
+        contentPieceId: args.contentPieceId,
+      });
+
+      console.log('[WP PUBLISH] Step 2 result:', {
+        hasContentPiece: !!contentPiece,
+        title: contentPiece?.title,
+        contentType: contentPiece?.contentType,
+        contentLength: contentPiece?.content?.length,
+        hasKeywords: !!contentPiece?.keywords?.length,
+      });
+
+      if (!contentPiece) {
+        console.log('[WP PUBLISH] FAIL: Content piece not found');
+        return { success: false, error: 'Content piece not found' };
+      }
+
+      // 3. Initialize WordPress client
+      console.log('[WP PUBLISH] Step 3: Initializing WordPress client...');
+      const wpClient = new WordPressClient({
+        siteUrl: connection.siteUrl,
+        username: connection.credentials.username || '',
+        password: connection.credentials.applicationPassword || '',
+      });
+      console.log('[WP PUBLISH] Step 3 done: Client initialized');
+
+      // 4. Determine post type based on content type
+      // Authoritative mapping: These content types publish as WordPress 'post' (chronological, feeds)
+      // All others default to 'page' (static, hierarchical)
+      const BLOG_POST_TYPES = ['blog', 'blogVersus', 'blogVideo', 'contentRefresh', 'events'];
+      const defaultPostType = BLOG_POST_TYPES.includes(contentPiece.contentType) ? 'post' : 'page';
+      const postType = args.options?.postType || defaultPostType;
+      console.log('[WP PUBLISH] Step 4: Post type determined:', {
+        contentType: contentPiece.contentType,
+        postType,
+      });
+
+      // 5. Convert content to WordPress format
+      console.log('[WP PUBLISH] Step 5: Converting content to Gutenberg...');
+      const content = markdownToGutenberg(contentPiece.content || '');
+      console.log('[WP PUBLISH] Step 5 done:', {
+        gutenbergLength: content.length,
+        preview: content.substring(0, 200),
+      });
+
+      // 6. Publish to WordPress
+      const publishPayload = {
+        title: contentPiece.title,
+        content,
+        excerpt: contentPiece.metaDescription || extractExcerpt(contentPiece.content || ''),
+        slug: generateSlug(contentPiece.title),
+        status: args.options?.status || 'publish',
+        tags: contentPiece.keywords,
+        postType,
+      };
+      console.log('[WP PUBLISH] Step 6: Publishing to WordPress...', {
+        title: publishPayload.title,
+        slug: publishPayload.slug,
+        status: publishPayload.status,
+        postType: publishPayload.postType,
+        excerptLength: publishPayload.excerpt?.length,
+        tagsCount: publishPayload.tags?.length,
+      });
+
+      const result = await wpClient.publishArticle(publishPayload);
+      console.log('[WP PUBLISH] Step 6 SUCCESS:', { postId: result.id, postUrl: result.link });
+
+      // 7. Update content piece with WordPress URL
+      console.log('[WP PUBLISH] Step 7: Updating content piece status...');
+      await ctx.runMutation(api.contentPieces.update, {
+        contentPieceId: args.contentPieceId,
+        status: 'published',
+        publishedUrl: result.link,
+      });
+      console.log('[WP PUBLISH] Step 7 done: Content piece updated');
+
+      console.log('=== [WP PUBLISH] COMPLETE SUCCESS ===');
+      return {
+        success: true,
+        postId: result.id,
+        postUrl: result.link,
+      };
+    } catch (error: unknown) {
+      console.error('=== [WP PUBLISH] EXCEPTION ===');
+      console.error('[WP PUBLISH] Error type:', error?.constructor?.name);
+      console.error(
+        '[WP PUBLISH] Error message:',
+        error instanceof Error ? error.message : String(error)
+      );
+      console.error('[WP PUBLISH] Error stack:', error instanceof Error ? error.stack : 'No stack');
+      const message = error instanceof Error ? error.message : 'Publish failed';
+      return {
+        success: false,
+        error: message,
+      };
+    }
+  },
+});

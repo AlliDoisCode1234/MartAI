@@ -29,6 +29,7 @@ import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import { FiGlobe, FiLink, FiZap, FiArrowRight, FiCheck, FiCpu } from 'react-icons/fi';
 import { getHowToSchema, HOW_IT_WORKS_STEPS, schemaToJsonLd } from '@/src/lib/schemas';
+import { LandingHeader } from '@/src/components/home';
 
 const MotionBox = motion(Box);
 
@@ -56,11 +57,11 @@ function StepCard({
       initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.5, delay }}
-      bg="rgba(255, 255, 255, 0.02)"
+      bg="gray.50"
       p={8}
       borderRadius="2xl"
       border="1px solid"
-      borderColor="rgba(255, 255, 255, 0.1)"
+      borderColor="gray.200"
       position="relative"
       _hover={{ transform: 'translateY(-5px)', borderColor: 'brand.orange' }}
     >
@@ -91,11 +92,11 @@ function StepCard({
           <Icon as={icon} boxSize={7} color="brand.orange" />
         </Box>
 
-        <Heading size="md" color="white">
+        <Heading size="md" color="gray.800">
           {title}
         </Heading>
 
-        <Text color="gray.400" lineHeight="tall">
+        <Text color="gray.600" lineHeight="tall">
           {description}
         </Text>
 
@@ -103,7 +104,7 @@ function StepCard({
           {features.map((feature, i) => (
             <HStack key={i} spacing={2}>
               <Icon as={FiCheck} color="green.500" boxSize={4} />
-              <Text fontSize="sm" color="gray.400">
+              <Text fontSize="sm" color="gray.600">
                 {feature}
               </Text>
             </HStack>
@@ -165,7 +166,9 @@ export default function HowItWorksPage() {
         dangerouslySetInnerHTML={{ __html: schemaToJsonLd(howToSchema) }}
       />
 
-      <Box bg="#0A0A0A" minH="100vh">
+      <LandingHeader />
+
+      <Box bg="white" minH="100vh">
         <Container maxW="container.xl" py={{ base: 16, md: 24 }}>
           <VStack spacing={16}>
             {/* Header */}
@@ -203,7 +206,7 @@ export default function HowItWorksPage() {
                   as="h1"
                   fontSize={{ base: '3xl', md: '5xl' }}
                   fontWeight="bold"
-                  color="white"
+                  color="gray.800"
                   mt={2}
                 >
                   3 Simple Steps to{' '}
@@ -211,7 +214,7 @@ export default function HowItWorksPage() {
                     AI-Ready SEO
                   </Text>
                 </Heading>
-                <Text fontSize="lg" color="gray.400" mt={4}>
+                <Text fontSize="lg" color="gray.600" mt={4}>
                   No complex setup. No technical knowledge required. Phoo optimizes your content for
                   both traditional search engines AND Google&apos;s AI—so you appear in search
                   results AND get cited in AI-generated answers.
@@ -233,9 +236,9 @@ export default function HowItWorksPage() {
 
             {/* GEO Differentiator */}
             <Box
-              bg="rgba(255, 157, 0, 0.05)"
+              bg="orange.50"
               border="1px solid"
-              borderColor="rgba(255, 157, 0, 0.2)"
+              borderColor="brand.orange"
               borderRadius="xl"
               p={8}
               textAlign="center"
@@ -243,10 +246,10 @@ export default function HowItWorksPage() {
               maxW="3xl"
             >
               <VStack spacing={4}>
-                <Heading size="md" color="white">
+                <Heading size="md" color="gray.800">
                   Why &ldquo;AI-Ready&rdquo; Matters
                 </Heading>
-                <Text color="gray.400">
+                <Text color="gray.600">
                   Google&apos;s AI now answers 40% of searches directly—without users clicking any
                   links. Traditional SEO gets you ranked. Phoo&apos;s GEO gets you{' '}
                   <strong style={{ color: '#FF9D00' }}>cited</strong>.
@@ -259,9 +262,9 @@ export default function HowItWorksPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.8 }}
-              bg="rgba(255, 255, 255, 0.02)"
+              bg="gray.50"
               border="1px solid"
-              borderColor="rgba(255, 255, 255, 0.1)"
+              borderColor="gray.200"
               p={{ base: 8, md: 12 }}
               borderRadius="2xl"
               textAlign="center"
@@ -269,10 +272,10 @@ export default function HowItWorksPage() {
               maxW="3xl"
             >
               <VStack spacing={6}>
-                <Heading size="lg" color="white">
+                <Heading size="lg" color="gray.800">
                   Ready to dominate both search AND AI?
                 </Heading>
-                <Text color="gray.400" fontSize="lg">
+                <Text color="gray.600" fontSize="lg">
                   Join hundreds of businesses growing their organic traffic—and getting cited by
                   Google&apos;s AI.
                 </Text>
@@ -290,9 +293,9 @@ export default function HowItWorksPage() {
                   <Button
                     size="lg"
                     variant="outline"
-                    borderColor="rgba(255, 255, 255, 0.2)"
-                    color="white"
-                    _hover={{ bg: 'rgba(255, 255, 255, 0.05)' }}
+                    borderColor="gray.300"
+                    color="gray.700"
+                    _hover={{ bg: 'gray.100' }}
                     onClick={() => router.push('/pricing')}
                   >
                     View Pricing

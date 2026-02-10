@@ -237,6 +237,7 @@ export const update = mutation({
     seoScore: v.optional(v.number()),
     geoScore: v.optional(v.number()), // GEO (Generative Engine Optimization) score
     wordCount: v.optional(v.number()),
+    publishedUrl: v.optional(v.string()), // WordPress or other CMS published URL
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);

@@ -52,6 +52,7 @@ import type * as apiKeys from "../apiKeys.js";
 import type * as auth from "../auth.js";
 import type * as auth_passwordRateLimit from "../auth/passwordRateLimit.js";
 import type * as auth_passwordReset from "../auth/passwordReset.js";
+import type * as betaCodes from "../betaCodes.js";
 import type * as cache from "../cache.js";
 import type * as canonical_index from "../canonical/index.js";
 import type * as canonical_metrics from "../canonical/metrics.js";
@@ -212,6 +213,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   "auth/passwordRateLimit": typeof auth_passwordRateLimit;
   "auth/passwordReset": typeof auth_passwordReset;
+  betaCodes: typeof betaCodes;
   cache: typeof cache;
   "canonical/index": typeof canonical_index;
   "canonical/metrics": typeof canonical_metrics;

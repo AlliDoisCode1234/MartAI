@@ -47,7 +47,7 @@ export const PLAN_LIMITS = {
       maxUrls: 1,
       maxKeywordIdeas: 250,
       maxAiReports: 4,
-      maxContentPieces: 4,
+      maxContentPieces: 5,
       maxTeamMembers: 1,
     },
   },

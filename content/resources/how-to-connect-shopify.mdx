@@ -1,0 +1,218 @@
+---
+title: 'How to Connect Shopify to Phoo'
+description: 'Set up Shopify integration with Phoo in under 15 minutes. Complete guide covering custom app creation, API credentials, and troubleshooting.'
+image: '/images/resources/shopify-integration.png'
+category: 'integrations'
+---
+
+# How to Connect Shopify to Phoo: Complete Integration Guide
+
+![Shopify Integration](/images/resources/shopify-integration.png)
+
+**Set up Shopify integration with Phoo in under 15 minutes. This comprehensive guide covers creating a custom app, generating API credentials, troubleshooting common errors, and best practices for publishing SEO content to your Shopify store.**
+
+## Why Connect Shopify to Phoo?
+
+Connecting Shopify to Phoo enables seamless content publishing:
+
+- **SEO Pages** - Create optimized landing pages for your products
+- **Blog Posts** - Publish content marketing directly to Shopify
+- **Service Pages** - Build comprehensive service descriptions
+- **Rich HTML** - Full formatting with headers, lists, and styling
+- **Automatic Handles** - SEO-friendly URLs generated from titles
+
+## Prerequisites
+
+Before connecting Shopify to Phoo, verify these requirements:
+
+| Requirement              | Why It's Needed           | How to Check                        |
+| ------------------------ | ------------------------- | ----------------------------------- |
+| Shopify store            | Active subscription       | Log in at `yourstore.myshopify.com` |
+| Store owner/admin access | Required for app creation | Settings → Staff                    |
+| Online Store 2.0 theme   | Page support              | Themes → Library                    |
+
+## Step 1: Create a Custom App in Shopify
+
+Phoo connects to Shopify via a private custom app. This is the most secure method.
+
+### Navigate to Apps Settings
+
+1. Log in to your Shopify admin: `yourstore.myshopify.com/admin`
+2. Go to **Settings** (bottom-left gear icon)
+3. Click **Apps and sales channels**
+4. Click **Develop apps** (top-right)
+5. If prompted, click **Allow custom app development**
+
+### Create the Custom App
+
+1. Click **Create an app**
+2. Enter app name: `Phoo Integration`
+3. Select yourself as the app developer
+4. Click **Create app**
+
+## Step 2: Configure API Permissions
+
+Your app needs specific permissions to publish content.
+
+### Required Scopes
+
+1. In your new app, click **Configuration**
+2. Under **Admin API integration**, click **Configure**
+3. Enable these scopes:
+
+| Scope                      | Permission   | Purpose                 |
+| -------------------------- | ------------ | ----------------------- |
+| `read_content`             | Read access  | View existing pages     |
+| `write_content`            | Write access | Create and update pages |
+| `read_online_store_pages`  | Read pages   | List page inventory     |
+| `write_online_store_pages` | Write pages  | Publish new pages       |
+
+4. Click **Save**
+
+### Install the App
+
+1. Click **API credentials** tab
+2. Click **Install app**
+3. Review permissions and click **Install**
+
+## Step 3: Get Your API Credentials
+
+After installation, you'll get your access token.
+
+### Copy Your Credentials
+
+1. Under **Admin API access token**, click **Reveal token once**
+2. **Immediately copy this token** — it won't be shown again!
+3. Store it securely (password manager recommended)
+
+| Credential   | Example          | Where to Find                       |
+| ------------ | ---------------- | ----------------------------------- |
+| Shop domain  | `yourstore`      | Your URL: `yourstore.myshopify.com` |
+| Access token | `shpat_xxxxx...` | Admin API access token field        |
+
+> **Security Warning:** Never share your access token. It provides full access to your store's content.
+
+## Step 4: Connect in Phoo
+
+Now you're ready to connect your Shopify store to Phoo.
+
+### Connection Steps
+
+1. Open your project in Phoo
+2. Navigate to **Project Settings → Integrations**
+3. Find **Shopify** and click **Connect**
+4. Enter your credentials:
+
+| Field        | Value                                |
+| ------------ | ------------------------------------ |
+| Shop Domain  | `yourstore` (without .myshopify.com) |
+| Access Token | The token from Step 3                |
+
+5. Click **Test Connection**
+6. Upon success, you'll see a green checkmark ✓
+
+## Troubleshooting Common Errors
+
+### "Invalid API key or access token"
+
+**Checklist:**
+
+- [ ] Access token copied correctly (no extra spaces)
+- [ ] App is installed (check Apps list)
+- [ ] Token hasn't been regenerated since copying
+
+**Fix:** Regenerate the access token and copy it again.
+
+### "Insufficient permissions to manage pages"
+
+**Cause:** Missing required API scopes.
+
+**Solution:**
+
+1. Go to Settings → Apps → Develop apps
+2. Click your Phoo app
+3. Configuration → Admin API integration
+4. Ensure `write_content` and `write_online_store_pages` are enabled
+5. Reinstall the app to apply new permissions
+
+### "Shop not found"
+
+**Checklist:**
+
+- [ ] Shop domain is just the subdomain (e.g., `yourstore` not `yourstore.myshopify.com`)
+- [ ] Store is active (not paused or closed)
+- [ ] Development store hasn't been converted
+
+### "Rate limit exceeded"
+
+Shopify limits API calls. This typically resolves automatically.
+
+**If persistent:**
+
+- Wait 60 seconds before retrying
+- Reduce bulk publishing frequency
+- Contact Phoo support for enterprise rate limits
+
+### "SSL certificate error"
+
+**Cause:** Rare, usually a Shopify outage.
+
+**Solution:**
+
+- Check [Shopify Status](https://www.shopifystatus.com/)
+- Wait and retry after 15 minutes
+- Clear browser cache if using Phoo in browser
+
+## Security Best Practices
+
+Protect your Shopify integration with these recommendations:
+
+| Practice                   | Why It Matters                           |
+| -------------------------- | ---------------------------------------- |
+| Use a dedicated custom app | Limits scope and enables easy revocation |
+| Never share access tokens  | They provide write access to your store  |
+| Rotate tokens periodically | Reduces exposure from old credentials    |
+| Monitor app activity       | Check Shopify admin for unusual changes  |
+| Minimum permissions        | Only grant scopes Phoo actually needs    |
+
+## Supported Content Features
+
+When publishing from Phoo to Shopify, the following features are supported:
+
+| Feature         | Supported | Notes                      |
+| --------------- | --------- | -------------------------- |
+| Pages           | ✓         | Primary content type       |
+| Blog posts      | ✓         | Via Online Store blog      |
+| Products        | ✗         | Use Shopify admin          |
+| Rich HTML       | ✓         | Headers, lists, formatting |
+| SEO handles     | ✓         | Auto-generated from title  |
+| Draft status    | ✓         | Review before publishing   |
+| Featured images | ✗         | Add via Shopify admin      |
+| Metafields      | ✓         | Custom SEO metadata        |
+
+## Shopify vs WordPress
+
+| Aspect        | Shopify               | WordPress             |
+| ------------- | --------------------- | --------------------- |
+| Primary use   | E-commerce pages      | Blog/content sites    |
+| Auth method   | Custom app tokens     | Application passwords |
+| Content types | Pages, blog posts     | Posts, pages, CPTs    |
+| Media upload  | Manual                | Automatic             |
+| Best for      | Product landing pages | Long-form content     |
+
+## Need Help?
+
+**In-App Support:**
+Use the **Phoo Assistant** (the orb in the bottom-left corner) for real-time help with Shopify integration issues.
+
+**Common Questions:**
+
+- "Why is my token being rejected?"
+- "How do I publish to a specific Shopify blog?"
+- "Can I update existing pages?"
+
+The Phoo Assistant can answer these and troubleshoot your specific setup.
+
+---
+
+_Ready to publish AI-generated content directly to Shopify? [Get started with Phoo](/join) today._

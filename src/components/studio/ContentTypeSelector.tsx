@@ -41,13 +41,43 @@ import {
   FiBook,
   FiRefreshCw,
   FiVideo,
+  FiCheck,
 } from 'react-icons/fi';
+import { FaWordpress } from 'react-icons/fa';
 import { IconType } from 'react-icons';
 
 interface Props {
   selectedType: string | null;
   onSelect: (typeId: string) => void;
+  wordpressConnected?: boolean;
+  wordpressCapabilities?: {
+    canPublishPosts?: boolean;
+    canPublishPages?: boolean;
+  };
 }
+
+// Content type to WordPress post type mapping
+const WORDPRESS_POST_TYPE_MAP: Record<string, 'post' | 'page'> = {
+  // Blog types → Posts
+  blog: 'post',
+  blogVersus: 'post',
+  blogVideo: 'post',
+  contentRefresh: 'post',
+  // Everything else → Pages
+  homepage: 'page',
+  about: 'page',
+  service: 'page',
+  landing: 'page',
+  areasWeServe: 'page',
+  employment: 'page',
+  mentorship: 'page',
+  donate: 'page',
+  events: 'page',
+  partner: 'page',
+  program: 'page',
+  leadMagnet: 'page',
+  paidProduct: 'page',
+};
 
 // Icon mapping for content types
 const TYPE_ICONS: Record<string, IconType> = {
@@ -87,7 +117,21 @@ const CATEGORIES = [
   },
 ];
 
-export function ContentTypeSelector({ selectedType, onSelect }: Props) {
+export function ContentTypeSelector({
+  selectedType,
+  onSelect,
+  wordpressConnected = false,
+  wordpressCapabilities,
+}: Props) {
+  // Helper function to check if this type can publish to WordPress
+  const canPublishToWordPress = (typeId: string): boolean => {
+    if (!wordpressConnected || !wordpressCapabilities) return false;
+    const wpPostType = WORDPRESS_POST_TYPE_MAP[typeId];
+    if (!wpPostType) return false;
+    if (wpPostType === 'post') return wordpressCapabilities.canPublishPosts ?? false;
+    if (wpPostType === 'page') return wordpressCapabilities.canPublishPages ?? false;
+    return false;
+  };
   const contentTypes = useQuery(api.phoo.contentTypes.getAllContentTypes);
 
   if (!contentTypes) {
@@ -136,6 +180,8 @@ export function ContentTypeSelector({ selectedType, onSelect }: Props) {
 
               const isSelected = selectedType === typeId;
               const IconComponent = TYPE_ICONS[typeId] || FiFileText;
+              const isWordPressPublishable = canPublishToWordPress(typeId);
+              const wpPostType = WORDPRESS_POST_TYPE_MAP[typeId];
 
               return (
                 <Tooltip
@@ -189,9 +235,30 @@ export function ContentTypeSelector({ selectedType, onSelect }: Props) {
                         >
                           {type.name}
                         </Text>
-                        <Text fontSize="xs" color="gray.500">
-                          {type.wordCount}w
-                        </Text>
+                        <HStack spacing={1}>
+                          <Text fontSize="xs" color="gray.500">
+                            {type.wordCount}w
+                          </Text>
+                          {isWordPressPublishable && (
+                            <Tooltip
+                              label={`Auto-publish as ${wpPostType} to WordPress`}
+                              placement="right"
+                              hasArrow
+                              bg="#21759b"
+                            >
+                              <HStack
+                                spacing={0.5}
+                                bg="rgba(33, 117, 155, 0.2)"
+                                borderRadius="sm"
+                                px={1.5}
+                                py={0.5}
+                              >
+                                <Icon as={FaWordpress} boxSize={3} color="#21759b" />
+                                <Icon as={FiCheck} boxSize={2.5} color="green.400" />
+                              </HStack>
+                            </Tooltip>
+                          )}
+                        </HStack>
                       </VStack>
                     </HStack>
                   </Box>

@@ -33,6 +33,7 @@ import Script from 'next/script';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import { FiZap, FiTarget, FiTrendingUp, FiCpu } from 'react-icons/fi';
 import { getFaqSchema, PRICING_FAQ_ITEMS, schemaToJsonLd } from '@/src/lib/schemas';
+import { LandingHeader } from '@/src/components/home';
 
 const PricingCard = ({
   title,
@@ -156,9 +157,9 @@ export default function PricingPage() {
       price: isAnnual ? '$49' : '$59',
       description: 'Perfect for solopreneurs and freelancers.',
       features: [
-        { text: '1 Project (URL)', included: true },
-        { text: '250 Keyword Analysis / mo', included: true },
-        { text: '4 AI Articles / mo', included: true },
+        { text: '1 Website', included: true },
+        { text: '12 AI Content Pieces', included: true },
+        { text: 'CMS Publishing', included: true },
         { text: 'Basic SEO Audit', included: true },
         { text: 'WordPress Integration', included: true },
         { text: 'Team Members', included: false },
@@ -167,15 +168,15 @@ export default function PricingPage() {
     {
       title: 'Growth',
       icon: FiTrendingUp,
-      price: isAnnual ? '$119' : '$149',
+      price: isAnnual ? '$99' : '$125',
       description: 'For growing businesses scaling their content.',
       isPopular: true,
       features: [
-        { text: '3 Projects (URLs)', included: true },
-        { text: '1,000 Keyword Analysis / mo', included: true },
-        { text: '12 AI Articles / mo', included: true },
-        { text: 'Advanced SEO Audit', included: true },
-        { text: 'WordPress Integration', included: true },
+        { text: '3 Websites', included: true },
+        { text: '50 AI Content Pieces', included: true },
+        { text: 'CMS Publishing', included: true },
+        { text: 'Full SEO Suite', included: true },
+        { text: 'AI Briefs', included: true },
         { text: '3 Team Members', included: true },
       ],
     },
@@ -185,12 +186,27 @@ export default function PricingPage() {
       price: isAnnual ? '$239' : '$299',
       description: 'For marketing teams and small agencies.',
       features: [
-        { text: '10 Projects (URLs)', included: true },
-        { text: '2,500 Keyword Analysis / mo', included: true },
-        { text: '30 AI Articles / mo', included: true },
+        { text: '10 Websites', included: true },
+        { text: '100 AI Content Pieces', included: true },
+        { text: 'CMS Publishing', included: true },
+        { text: 'Full SEO Suite', included: true },
         { text: 'White-label Reports', included: true },
-        { text: 'All Integrations', included: true },
         { text: '10 Team Members', included: true },
+      ],
+    },
+    {
+      title: 'Enterprise',
+      icon: FiCpu,
+      price: 'Custom',
+      description: 'Tailored to your needs.',
+      buttonText: 'Contact Us',
+      features: [
+        { text: 'Unlimited Websites', included: true },
+        { text: 'Unlimited Content', included: true },
+        { text: 'Public API Access', included: true },
+        { text: 'Dedicated Support', included: true },
+        { text: 'Custom Integrations', included: true },
+        { text: 'Unlimited Team Members', included: true },
       ],
     },
   ];
@@ -204,7 +220,9 @@ export default function PricingPage() {
         dangerouslySetInnerHTML={{ __html: schemaToJsonLd(faqSchema) }}
       />
 
-      <Box bg="#0A0A0A" py={20}>
+      <LandingHeader />
+
+      <Box bg="white" py={20}>
         <Container maxW="container.xl">
           <VStack spacing={4} textAlign="center" mb={16}>
             <HStack justify="center" mb={2}>
@@ -222,16 +240,16 @@ export default function PricingPage() {
                 </HStack>
               </Badge>
             </HStack>
-            <Heading size="2xl" fontWeight="bold" color="white">
-              SEO + AI Content for $149/mo
+            <Heading size="2xl" fontWeight="bold" color="gray.800">
+              SEO + AI Content for $125/mo
             </Heading>
-            <Text fontSize="xl" color="gray.400" maxW="2xl">
+            <Text fontSize="xl" color="gray.600" maxW="2xl">
               Competitors charge $600+/mo for SEO tools alone. Phoo gives you keyword research, AI
-              content generation, AND GEO optimization—so you rank in search results AND get cited
-              by Google&apos;s AI.
+              content generation, AND publishes directly to your CMS—so you rank in search results
+              AND get cited by AI assistants like ChatGPT.
             </Text>
             <Text fontSize="md" color="brand.orange" fontWeight="semibold">
-              Join 1,200+ businesses growing their organic traffic with Phoo
+              AI-powered SEO that publishes directly to WordPress, Shopify & more
             </Text>
 
             <Flex align="center" mt={8}>
@@ -261,59 +279,13 @@ export default function PricingPage() {
             </Flex>
           </VStack>
 
-          <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={10} alignItems="center">
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={8} alignItems="center">
             {plans.map((plan, index) => (
               <PricingCard key={index} {...plan} />
             ))}
           </SimpleGrid>
 
-          <Box mt={20} bg={useColorModeValue('gray.50', 'gray.900')} p={10} borderRadius="xl">
-            <Heading size="lg" mb={8} textAlign="center">
-              Frequently Asked Questions
-            </Heading>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
-              <Box>
-                <Heading size="sm" mb={2}>
-                  How do keyword limits work?
-                </Heading>
-                <Text color="gray.600" fontSize="sm">
-                  Each plan includes monthly keyword analysis credits. For example, Growth gives you
-                  500 keyword analyses per month—enough to research 5-10 content clusters. Unused
-                  credits don't roll over.
-                </Text>
-              </Box>
-              <Box>
-                <Heading size="sm" mb={2}>
-                  What counts as an "AI Article"?
-                </Heading>
-                <Text color="gray.600" fontSize="sm">
-                  Each AI article is a 1,500-2,500 word SEO-optimized blog post, complete with meta
-                  tags, headings, and internal linking suggestions. You can regenerate or edit
-                  before publishing.
-                </Text>
-              </Box>
-              <Box>
-                <Heading size="sm" mb={2}>
-                  Can I upgrade or downgrade anytime?
-                </Heading>
-                <Text color="gray.600" fontSize="sm">
-                  Yes! Upgrade instantly to unlock more features. Downgrades take effect at the end
-                  of your billing cycle. Annual plans can be upgraded mid-term with prorated
-                  pricing.
-                </Text>
-              </Box>
-              <Box>
-                <Heading size="sm" mb={2}>
-                  Do you offer refunds?
-                </Heading>
-                <Text color="gray.600" fontSize="sm">
-                  We offer a 14-day money-back guarantee on all plans. If you're not satisfied,
-                  email us within 14 days of your first payment for a full refund—no questions
-                  asked.
-                </Text>
-              </Box>
-            </SimpleGrid>
-          </Box>
+          {/* FAQ Section removed - users can use Ask Phoo for questions */}
 
           <Box mt={20} textAlign="center">
             <Heading size="lg" mb={4}>

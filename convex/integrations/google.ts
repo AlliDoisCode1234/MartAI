@@ -312,3 +312,166 @@ async function runGSCQuery(
     }),
   });
 }
+
+/**
+ * Service Account JSON structure
+ */
+interface ServiceAccountCredentials {
+  type: 'service_account';
+  project_id: string;
+  private_key_id: string;
+  private_key: string;
+  client_email: string;
+  client_id: string;
+  auth_uri: string;
+  token_uri: string;
+}
+
+/**
+ * Verify and connect using a service account JSON key
+ * Enterprise users can use this instead of OAuth
+ */
+export const verifyServiceAccount = action({
+  args: {
+    projectId: v.id('projects'),
+    serviceAccountJson: v.string(),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; error?: string; propertyName?: string }> => {
+    try {
+      // 1. Parse and validate JSON
+      let credentials: ServiceAccountCredentials;
+      try {
+        credentials = JSON.parse(args.serviceAccountJson);
+      } catch {
+        return { success: false, error: 'Invalid JSON format' };
+      }
+
+      if (credentials.type !== 'service_account') {
+        return { success: false, error: 'Invalid key type. Expected a service account key.' };
+      }
+
+      if (!credentials.client_email || !credentials.private_key) {
+        return { success: false, error: 'Missing required fields in service account key' };
+      }
+
+      // 2. Generate JWT for authentication
+      const jwt = await createServiceAccountJWT(credentials);
+
+      // 3. Exchange JWT for access token
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+          assertion: jwt,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        const err = await tokenResponse.text();
+        console.error('Token exchange failed:', err);
+        return {
+          success: false,
+          error: 'Failed to authenticate with Google. Check that the key is valid.',
+        };
+      }
+
+      const tokens = await tokenResponse.json();
+      const accessToken = tokens.access_token;
+
+      // 4. Verify access by listing GA4 properties
+      const propertiesResponse = await fetch(
+        'https://analyticsadmin.googleapis.com/v1beta/accountSummaries',
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      if (!propertiesResponse.ok) {
+        const status = propertiesResponse.status;
+        if (status === 403) {
+          return {
+            success: false,
+            error: `Access denied. Add ${credentials.client_email} as a Viewer in your GA4 property settings.`,
+          };
+        }
+        return {
+          success: false,
+          error: 'Failed to access GA4. Check that the service account has proper permissions.',
+        };
+      }
+
+      const data = await propertiesResponse.json();
+      const accounts = data.accountSummaries || [];
+
+      if (accounts.length === 0) {
+        return {
+          success: false,
+          error: `No GA4 properties found. Add ${credentials.client_email} to your GA4 property and try again.`,
+        };
+      }
+
+      // Get first property for now (could enhance to let user pick)
+      const firstAccount = accounts[0];
+      const firstProperty = firstAccount.propertySummaries?.[0];
+
+      if (!firstProperty) {
+        return { success: false, error: 'No GA4 properties available in this account.' };
+      }
+
+      const propertyId = firstProperty.property.replace('properties/', '');
+      const propertyName = firstProperty.displayName;
+
+      // 5. Save connection to database
+      await ctx.runMutation(api.integrations.ga4Connections.saveServiceAccountConnection, {
+        projectId: args.projectId,
+        propertyId,
+        propertyName,
+        serviceAccountEmail: credentials.client_email,
+        encryptedServiceAccountKey: args.serviceAccountJson, // TODO: encrypt before saving
+      });
+
+      return { success: true, propertyName };
+    } catch (error) {
+      console.error('Service account verification error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'An unexpected error occurred',
+      };
+    }
+  },
+});
+
+/**
+ * Create a JWT for service account authentication
+ */
+async function createServiceAccountJWT(credentials: ServiceAccountCredentials): Promise<string> {
+  const crypto = await import('crypto');
+
+  const header = {
+    alg: 'RS256',
+    typ: 'JWT',
+  };
+
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: credentials.client_email,
+    scope:
+      'https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/analytics.edit',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600, // 1 hour
+  };
+
+  const base64Header = Buffer.from(JSON.stringify(header)).toString('base64url');
+  const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const unsignedToken = `${base64Header}.${base64Payload}`;
+
+  // Sign with RSA-SHA256
+  const sign = crypto.createSign('RSA-SHA256');
+  sign.update(unsignedToken);
+  const signature = sign.sign(credentials.private_key, 'base64url');
+
+  return `${unsignedToken}.${signature}`;
+}

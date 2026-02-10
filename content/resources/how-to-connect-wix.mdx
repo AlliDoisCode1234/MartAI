@@ -1,0 +1,232 @@
+---
+title: 'How to Connect Wix to Phoo'
+description: 'Set up Wix integration with Phoo in under 10 minutes. Complete guide covering API key generation, blog setup, and troubleshooting.'
+image: '/images/resources/wix-integration.png'
+category: 'integrations'
+---
+
+# How to Connect Wix to Phoo: Complete Integration Guide
+
+![Wix Integration](/images/resources/wix-integration.png)
+
+**Set up Wix integration with Phoo in under 10 minutes. This comprehensive guide covers API key generation, blog connection setup, troubleshooting common errors, and best practices for publishing AI-generated content to your Wix blog.**
+
+## Why Connect Wix to Phoo?
+
+Connecting Wix to Phoo enables seamless blog publishing:
+
+- **Direct Publishing** - Push AI-generated blog posts to Wix instantly
+- **Draft Support** - Review content before going live
+- **Category Management** - Auto-create and assign categories
+- **Rich Content** - Full formatting with Wix's native editor
+- **SEO Slugs** - Custom URL handles for each post
+
+## Prerequisites
+
+Before connecting Wix to Phoo, verify these requirements:
+
+| Requirement            | Why It's Needed              | How to Check             |
+| ---------------------- | ---------------------------- | ------------------------ |
+| Wix Premium plan       | API access requires premium  | Settings → Subscriptions |
+| Wix Blog app installed | Required for blog publishing | Add Apps → Wix Blog      |
+| Site owner access      | Required for API credentials | Settings → Roles         |
+
+## Step 1: Install the Wix Blog App
+
+If you haven't already, add the Wix Blog to your site.
+
+1. Log in to your Wix dashboard
+2. Click **Add Apps** from the left menu
+3. Search for **Wix Blog**
+4. Click **Add to Site**
+
+## Step 2: Generate API Credentials
+
+Wix uses API keys for third-party integrations.
+
+### Access the API Keys
+
+1. Go to your Wix dashboard
+2. Click **Settings** (bottom-left)
+3. Under **Advanced**, click **API Keys**
+4. Click **Generate API Key**
+
+### Configure Permissions
+
+Create a key with these settings:
+
+| Setting     | Value              |
+| ----------- | ------------------ |
+| Name        | `Phoo Integration` |
+| Permissions | Blog, Media        |
+
+Select these specific permissions:
+
+| Permission      | Access Level | Purpose                 |
+| --------------- | ------------ | ----------------------- |
+| Wix Blog        | Read & Write | Create and manage posts |
+| Media Manager   | Read & Write | Upload images           |
+| Site Properties | Read         | Verify connection       |
+
+### Copy Your API Key
+
+1. Click **Generate**
+2. **Immediately copy the API key** — it won't be shown again!
+3. Store it securely
+
+> **Security Note:** This key provides write access to your blog. Keep it confidential.
+
+## Step 3: Connect in Phoo
+
+Now you're ready to connect your Wix site to Phoo.
+
+### Connection Steps
+
+1. Open your project in Phoo
+2. Navigate to **Project Settings → Integrations**
+3. Find **Wix** and click **Connect**
+4. Enter your credentials:
+
+| Field   | Value               |
+| ------- | ------------------- |
+| API Key | The key from Step 2 |
+
+5. Click **Test Connection**
+6. Upon success, you'll see a green checkmark ✓
+
+## How Wix Publishing Works
+
+Understanding Wix's content model helps with publishing:
+
+```
+Create Draft → Review → Publish
+     ↓            ↓         ↓
+  Saved as    Visible in   Live on
+  draft post  Wix admin    your site
+```
+
+Phoo creates content as drafts by default. You can:
+
+- **Auto-publish** - Set in publish options for immediate go-live
+- **Draft mode** - Review in Wix before publishing
+
+## Troubleshooting Common Errors
+
+### "Invalid API key"
+
+**Checklist:**
+
+- [ ] API key copied correctly (no extra spaces)
+- [ ] Key hasn't been revoked or regenerated
+- [ ] Using the full key (not account ID)
+
+**Fix:** Generate a new API key and reconnect.
+
+### "Insufficient permissions"
+
+**Cause:** API key missing required scopes.
+
+**Solution:**
+
+1. Go to Settings → API Keys
+2. Delete the old key
+3. Create a new key with **Wix Blog Read & Write** permissions
+4. Reconnect in Phoo
+
+### "Blog not found"
+
+**Cause:** Wix Blog app not installed on site.
+
+**Solution:**
+
+1. Go to Add Apps in Wix
+2. Install **Wix Blog**
+3. Publish your site with the blog added
+4. Retry connection
+
+### "Rate limit exceeded"
+
+Wix limits API calls per minute.
+
+**If you see this:**
+
+- Wait 60 seconds before retrying
+- Reduce bulk publishing frequency
+- Space out multiple posts
+
+### "Draft created but not published"
+
+**Normal behavior** when using draft mode. To auto-publish:
+
+- Enable "Publish immediately" in Phoo publish options
+- Or manually publish in Wix dashboard
+
+## Security Best Practices
+
+Protect your Wix integration with these recommendations:
+
+| Practice                | Why It Matters                |
+| ----------------------- | ----------------------------- |
+| Use a dedicated API key | Easy to revoke if compromised |
+| Never share API keys    | They provide write access     |
+| Rotate keys annually    | Reduces exposure risk         |
+| Monitor blog activity   | Check for unauthorized posts  |
+| Minimum permissions     | Only grant Blog access        |
+
+## Supported Content Features
+
+When publishing from Phoo to Wix, the following features are supported:
+
+| Feature         | Supported | Notes                      |
+| --------------- | --------- | -------------------------- |
+| Blog posts      | ✓         | Primary content type       |
+| Pages           | ✗         | Use Wix editor             |
+| Categories      | ✓         | Auto-created if needed     |
+| Tags            | ✓         | Added to post metadata     |
+| Rich content    | ✓         | Headers, lists, formatting |
+| Draft status    | ✓         | Review before publishing   |
+| Featured images | ✓         | Via media upload           |
+| Custom slugs    | ✓         | SEO-friendly URLs          |
+| Excerpts        | ✓         | Post summaries             |
+| Scheduling      | ✗         | Publish in Wix or manual   |
+
+## Wix Content Format
+
+Phoo converts your content to Wix's native Rich Content format:
+
+| Markdown      | Wix Element       |
+| ------------- | ----------------- |
+| `# Heading`   | HEADING (level 1) |
+| `## Subhead`  | HEADING (level 2) |
+| `- List item` | BULLETED_LIST     |
+| Regular text  | PARAGRAPH         |
+
+This ensures your content looks native in the Wix editor.
+
+## Wix vs WordPress Comparison
+
+| Aspect         | Wix                   | WordPress             |
+| -------------- | --------------------- | --------------------- |
+| Primary use    | Website builder blogs | Content management    |
+| Auth method    | API keys              | Application passwords |
+| Content types  | Blog posts            | Posts, pages, CPTs    |
+| Media handling | Automatic             | Automatic             |
+| Editing        | Visual editor         | Block editor          |
+| Best for       | Small business blogs  | High-volume content   |
+
+## Need Help?
+
+**In-App Support:**
+Use the **Phoo Assistant** (the orb in the bottom-left corner) for real-time help with Wix integration issues.
+
+**Common Questions:**
+
+- "Why won't my Wix post publish?"
+- "How do I add categories to Wix posts?"
+- "Can I update existing Wix posts?"
+
+The Phoo Assistant can answer these and troubleshoot your specific setup.
+
+---
+
+_Ready to publish AI-generated content directly to Wix? [Get started with Phoo](/join) today._

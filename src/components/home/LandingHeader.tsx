@@ -1,0 +1,134 @@
+'use client';
+
+/**
+ * LandingHeader
+ *
+ * Component Hierarchy:
+ * App → LandingPage → LandingHeader
+ *
+ * Minimal header for the marketing landing page.
+ * Uses brand color scheme: white background + orange text.
+ * Sign in/sign up commented out per beta launch.
+ */
+
+import { Box, Container, HStack, Text, Button, Icon } from '@chakra-ui/react';
+import { useConvexAuth } from 'convex/react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { FiMessageCircle } from 'react-icons/fi';
+
+export function LandingHeader() {
+  const { isAuthenticated } = useConvexAuth();
+  const router = useRouter();
+
+  // Logo routes to dashboard for authenticated users, marketing page otherwise
+  const logoHref = isAuthenticated ? '/dashboard' : '/';
+
+  const handleAskPhooClick = () => {
+    if (isAuthenticated) {
+      // Authenticated: Navigate to assistant
+      router.push('/assistant');
+    } else {
+      // Guest: Dispatch custom event to open PhooChatDrawer (handled by Layout)
+      window.dispatchEvent(new CustomEvent('openPhooDrawer'));
+    }
+  };
+
+  return (
+    <Box
+      as="header"
+      bg="white"
+      shadow="sm"
+      borderBottom="1px"
+      borderColor="gray.200"
+      position="sticky"
+      top={0}
+      zIndex={1000}
+    >
+      <Container maxW="6xl">
+        <HStack justify="space-between" h={16}>
+          {/* Logo - Orange on white per brand standards */}
+          <Link href={logoHref} style={{ textDecoration: 'none' }}>
+            <Text fontSize="xl" fontWeight="bold" color="brand.orange">
+              Phoo
+            </Text>
+          </Link>
+
+          {/* Navigation Links */}
+          <HStack spacing={8}>
+            {/* Public nav items */}
+            <Link href="/how-it-works" style={{ textDecoration: 'none' }}>
+              <Text
+                color="gray.700"
+                fontWeight="medium"
+                _hover={{ color: 'brand.orange' }}
+                display={{ base: 'none', md: 'inline' }}
+              >
+                How It Works
+              </Text>
+            </Link>
+            {/* PRICING - COMMENTED OUT FOR BETA
+             * Beta users get 6 months FREE, so showing pricing creates confusion.
+             * TODO: Uncomment for soft launch (April 2026)
+             */}
+            {/*
+            <Link href="/pricing" style={{ textDecoration: 'none' }}>
+              <Text
+                color="gray.700"
+                fontWeight="medium"
+                _hover={{ color: 'brand.orange' }}
+                display={{ base: 'none', md: 'inline' }}
+              >
+                Pricing
+              </Text>
+            </Link>
+            */}
+
+            {/* Resources - Blog, guides, educational content */}
+            <Link href="/resources" style={{ textDecoration: 'none' }}>
+              <Text
+                color="gray.700"
+                fontWeight="medium"
+                _hover={{ color: 'brand.orange' }}
+                display={{ base: 'none', md: 'inline' }}
+              >
+                Resources
+              </Text>
+            </Link>
+
+            {/* Ask Phoo - Opens drawer for guests, navigates for auth */}
+            <Button
+              size="sm"
+              variant="ghost"
+              color="brand.orange"
+              _hover={{ bg: 'orange.50' }}
+              leftIcon={<Icon as={FiMessageCircle} />}
+              onClick={handleAskPhooClick}
+            >
+              Ask Phoo
+            </Button>
+
+            {/* Auth Buttons - COMMENTED OUT FOR BETA LAUNCH
+             * Users can still access /auth/login directly if they know the URL
+             * TODO: Uncomment when ready for public launch
+             */}
+            {/*
+            <HStack spacing={4}>
+              <Link href="/auth/login">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/auth/signup">
+                <Button bg="brand.orange" color="white" size="sm" _hover={{ bg: '#E8851A' }}>
+                  Sign Up
+                </Button>
+              </Link>
+            </HStack>
+            */}
+          </HStack>
+        </HStack>
+      </Container>
+    </Box>
+  );
+}

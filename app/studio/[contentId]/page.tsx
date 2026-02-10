@@ -34,7 +34,7 @@ import {
   FormControl,
   FormLabel,
 } from '@chakra-ui/react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { StudioLayout, SEOScorePanel, MarkdownPreview } from '@/src/components/studio';
 import { IntegrationsPanel } from '@/src/components/content';
@@ -48,7 +48,9 @@ import {
   FiClock,
   FiEye,
   FiEdit3,
+  FiExternalLink,
 } from 'react-icons/fi';
+import { FaWordpress } from 'react-icons/fa';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Id } from '@/convex/_generated/dataModel';
@@ -84,6 +86,29 @@ export default function ContentEditorPage() {
   const [scheduleTime, setScheduleTime] = useState('09:00');
   const [isScheduling, setIsScheduling] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+
+  // WordPress publishing
+  const { isOpen: isWpModalOpen, onOpen: onWpModalOpen, onClose: onWpModalClose } = useDisclosure();
+  const [isPublishingToWp, setIsPublishingToWp] = useState(false);
+  const [wpPublishResult, setWpPublishResult] = useState<{
+    success: boolean;
+    postUrl?: string;
+    error?: string;
+  } | null>(null);
+
+  // Get WordPress connection specifically
+  const wpConnection = useQuery(
+    api.integrations.platformConnections.getConnection,
+    contentPiece?.projectId
+      ? { projectId: contentPiece.projectId, platform: 'wordpress' as const }
+      : 'skip'
+  );
+  const hasWordPress = wpConnection?.isValid ?? false;
+
+  // WordPress publish action
+  const publishToWordPress = useAction(
+    api.publishing.wordpressActions.publishContentPieceToWordPress
+  );
 
   // Sync content from query
   useEffect(() => {
@@ -163,6 +188,68 @@ export default function ContentEditorPage() {
         status: 'error',
         duration: 3000,
       });
+    }
+  };
+
+  const handlePublishToWordPress = async () => {
+    console.log('[WP UI] handlePublishToWordPress called');
+    if (!contentPiece) {
+      console.log('[WP UI] ABORT: No content piece');
+      return;
+    }
+
+    console.log('[WP UI] Starting publish:', {
+      contentPieceId: contentPiece._id,
+      projectId: contentPiece.projectId,
+      title: contentPiece.title,
+    });
+
+    setIsPublishingToWp(true);
+    setWpPublishResult(null);
+
+    try {
+      console.log('[WP UI] Calling publishToWordPress action...');
+      const result = await publishToWordPress({
+        contentPieceId: contentPiece._id,
+        projectId: contentPiece.projectId,
+        options: {
+          status: 'publish',
+        },
+      });
+
+      console.log('[WP UI] Action returned:', result);
+      setWpPublishResult(result);
+
+      if (result.success) {
+        console.log('[WP UI] SUCCESS:', result.postUrl);
+        toast({
+          title: 'Published to WordPress!',
+          description: 'Your content is now live.',
+          status: 'success',
+          duration: 5000,
+        });
+      } else {
+        console.log('[WP UI] FAILED:', result.error);
+        toast({
+          title: 'WordPress publish failed',
+          description: result.error,
+          status: 'error',
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error('[WP UI] EXCEPTION:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      setWpPublishResult({ success: false, error: message });
+      toast({
+        title: 'WordPress publish failed',
+        description: message,
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      console.log('[WP UI] Publish flow complete');
+      setIsPublishingToWp(false);
     }
   };
 
@@ -395,31 +482,30 @@ export default function ContentEditorPage() {
                   >
                     Schedule
                   </Button>
-                  {/* Wave 3: Only show Publish when CMS is connected, otherwise show Mark Complete */}
-                  {hasCmsConnection ? (
-                    <Button
-                      bg="linear-gradient(135deg, #FF9D00, #FF6B00)"
-                      color="white"
-                      leftIcon={<Icon as={FiSend} />}
-                      _hover={{ opacity: 0.9 }}
-                      onClick={handlePublish}
-                    >
-                      Publish
-                    </Button>
-                  ) : (
-                    <Button
-                      bg="linear-gradient(135deg, #22C55E, #16A34A)"
-                      color="white"
-                      leftIcon={<Icon as={FiCheck} />}
-                      _hover={{ opacity: 0.9 }}
-                      onClick={handlePublish}
-                      title="Mark as complete (no CMS connected)"
-                    >
-                      Mark Complete
-                    </Button>
-                  )}
+                  <Button
+                    bg="linear-gradient(135deg, #22C55E, #16A34A)"
+                    color="white"
+                    leftIcon={<Icon as={FiCheck} />}
+                    _hover={{ opacity: 0.9 }}
+                    onClick={handlePublish}
+                    title="Mark as ready internally"
+                  >
+                    Mark Ready
+                  </Button>
                 </>
               )
+            )}
+            {/* WordPress publish - always available when connected (independent of internal status) */}
+            {hasWordPress && contentPiece?.content && (
+              <Button
+                bg="linear-gradient(135deg, #21759b, #1a5a7a)"
+                color="white"
+                leftIcon={<Icon as={FaWordpress} />}
+                _hover={{ opacity: 0.9 }}
+                onClick={onWpModalOpen}
+              >
+                Publish to WordPress
+              </Button>
             )}
           </HStack>
         </HStack>
@@ -574,6 +660,132 @@ export default function ContentEditorPage() {
             >
               Schedule
             </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* WordPress Publish Modal */}
+      <Modal isOpen={isWpModalOpen} onClose={onWpModalClose} isCentered size="md">
+        <ModalOverlay bg="rgba(0, 0, 0, 0.8)" backdropFilter="blur(4px)" />
+        <ModalContent bg="#1A1A1A" border="1px solid rgba(255, 255, 255, 0.1)" borderRadius="16px">
+          <ModalHeader color="white">
+            <HStack spacing={2}>
+              <Icon as={FaWordpress} color="#21759b" />
+              <Text>Publish to WordPress</Text>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton color="gray.400" />
+          <ModalBody>
+            <VStack spacing={4} align="stretch">
+              {!wpPublishResult ? (
+                <>
+                  <Box
+                    bg="rgba(33, 117, 155, 0.1)"
+                    border="1px solid rgba(33, 117, 155, 0.3)"
+                    borderRadius="md"
+                    p={4}
+                  >
+                    <VStack spacing={2} align="start">
+                      <Text color="gray.300" fontSize="sm">
+                        Publishing to:
+                      </Text>
+                      <Text color="white" fontWeight="medium">
+                        {wpConnection?.siteName || wpConnection?.siteUrl}
+                      </Text>
+                    </VStack>
+                  </Box>
+                  <Box
+                    bg="rgba(255, 255, 255, 0.03)"
+                    border="1px solid rgba(255, 255, 255, 0.1)"
+                    borderRadius="md"
+                    p={4}
+                  >
+                    <VStack spacing={2} align="start">
+                      <Text color="gray.400" fontSize="sm">
+                        Content:
+                      </Text>
+                      <Text color="white" fontWeight="medium" noOfLines={2}>
+                        {contentPiece?.title}
+                      </Text>
+                      <Badge bg="rgba(255, 157, 0, 0.1)" color="#FF9D00">
+                        {wordCount.toLocaleString()} words
+                      </Badge>
+                    </VStack>
+                  </Box>
+                  <Text color="gray.500" fontSize="sm">
+                    This will publish your content directly to WordPress as a live post/page.
+                  </Text>
+                </>
+              ) : wpPublishResult.success ? (
+                <VStack spacing={4} py={4}>
+                  <Box bg="rgba(34, 197, 94, 0.1)" borderRadius="full" p={4}>
+                    <Icon as={FiCheck} boxSize={8} color="green.400" />
+                  </Box>
+                  <Text color="white" fontWeight="medium">
+                    Published Successfully!
+                  </Text>
+                  <Button
+                    as="a"
+                    href={wpPublishResult.postUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="outline"
+                    borderColor="#21759b"
+                    color="#21759b"
+                    leftIcon={<Icon as={FiExternalLink} />}
+                    _hover={{ bg: 'rgba(33, 117, 155, 0.1)' }}
+                  >
+                    View on WordPress
+                  </Button>
+                </VStack>
+              ) : (
+                <VStack spacing={4} py={4}>
+                  <Box bg="rgba(239, 68, 68, 0.1)" borderRadius="full" p={4}>
+                    <Icon as={FiRefreshCw} boxSize={8} color="red.400" />
+                  </Box>
+                  <Text color="white" fontWeight="medium">
+                    Publish Failed
+                  </Text>
+                  <Text color="gray.400" fontSize="sm" textAlign="center">
+                    {wpPublishResult.error}
+                  </Text>
+                </VStack>
+              )}
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            {!wpPublishResult ? (
+              <>
+                <Button variant="ghost" color="gray.400" mr={3} onClick={onWpModalClose}>
+                  Cancel
+                </Button>
+                <Button
+                  bg="linear-gradient(135deg, #21759b, #1a5a7a)"
+                  color="white"
+                  leftIcon={<Icon as={FaWordpress} />}
+                  onClick={handlePublishToWordPress}
+                  isLoading={isPublishingToWp}
+                  loadingText="Publishing..."
+                  _hover={{ opacity: 0.9 }}
+                >
+                  Publish Now
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                color="gray.400"
+                onClick={() => {
+                  onWpModalClose();
+                  if (wpPublishResult.success) {
+                    router.push('/studio/library');
+                  }
+                  setWpPublishResult(null);
+                }}
+              >
+                {wpPublishResult.success ? 'Done' : 'Close'}
+              </Button>
+            )}
           </ModalFooter>
         </ModalContent>
       </Modal>

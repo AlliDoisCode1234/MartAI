@@ -14,8 +14,8 @@
  *     └── Footer
  *
  * Public waitlist page for phoo.ai domain.
- * Accessible at phoo.ai/join (and phoo.ai/ redirects here).
- * Uses Chakra UI with brand.orange/white palette.
+ * Accessible at phoo.ai/join.
+ * Imports from src/components/landing (production copy from main branch).
  */
 
 import { Box, Container, Text, HStack, Link as ChakraLink } from '@chakra-ui/react';

@@ -28,6 +28,7 @@ import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { useSearchParams } from 'next/navigation';
+import { ServiceAccountUpload } from '../integrations/ServiceAccountUpload';
 
 interface Props {
   projectId: Id<'projects'>;
@@ -278,6 +279,21 @@ export function GoogleConnect({ projectId }: Props) {
         <Text fontSize="sm" color="gray.500">
           Connect your Google account to import analytics data and track search performance.
         </Text>
+      )}
+
+      {/* Service Account Upload (Advanced Option) */}
+      {!ga4Connected && (
+        <ServiceAccountUpload
+          projectId={projectId}
+          onSuccess={() => {
+            toast({
+              title: 'Service account connected',
+              description: 'GA4 connection established via service account',
+              status: 'success',
+              duration: 5000,
+            });
+          }}
+        />
       )}
     </VStack>
   );

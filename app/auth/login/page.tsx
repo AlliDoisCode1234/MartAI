@@ -23,6 +23,9 @@ import {
   TabPanels,
   TabPanel,
   Icon,
+  InputGroup,
+  InputRightElement,
+  Spinner,
 } from '@chakra-ui/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { FaGoogle } from 'react-icons/fa';
@@ -183,7 +186,6 @@ export default function LoginPage() {
                 {success}
               </Alert>
             )}
-
             <Button
               leftIcon={<FaGoogle />}
               onClick={handleGoogleLogin}

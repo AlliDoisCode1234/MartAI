@@ -1,5 +1,3 @@
-const createMDX = require('@next/mdx');
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -33,9 +31,18 @@ const nextConfig = {
   },
 };
 
-// Wrap with MDX support
-const withMDX = createMDX({
-  extension: /\.mdx?$/,
-});
+// Async config to support ESM-only packages like remark-gfm v4
+module.exports = async () => {
+  const createMDX = (await import('@next/mdx')).default;
+  const remarkGfm = (await import('remark-gfm')).default;
 
-module.exports = withMDX(nextConfig);
+  const withMDX = createMDX({
+    extension: /\.mdx?$/,
+    options: {
+      remarkPlugins: [remarkGfm],
+      rehypePlugins: [],
+    },
+  });
+
+  return withMDX(nextConfig);
+};
