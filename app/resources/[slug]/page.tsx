@@ -33,6 +33,7 @@ import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { FiClock, FiEye, FiChevronRight, FiArrowLeft, FiShare2 } from 'react-icons/fi';
 import { MDXContent } from '@/src/components/resources/MDXContent';
+import { LandingHeader } from '@/src/components/home';
 
 // Hero image mapping by slug
 const HERO_IMAGES: Record<string, string> = {
@@ -47,6 +48,11 @@ const HERO_IMAGES: Record<string, string> = {
   'internal-linking-strategy': '/images/resources/internal-linking.png',
   'content-optimization-workflow': '/images/resources/content-optimization.png',
   'measuring-content-roi': '/images/resources/content-roi.png',
+  'how-to-connect-wordpress': '/images/resources/wordpress-integration.png',
+  'how-to-connect-shopify': '/images/resources/shopify-integration.png',
+  'how-to-connect-wix': '/images/resources/wix-integration.png',
+  'how-to-connect-webflow': '/images/resources/webflow-integration.png',
+  'how-to-connect-google-analytics': '/images/resources/google-analytics-gsc.png',
 };
 
 // Category config
@@ -56,6 +62,7 @@ const CATEGORY_CONFIG = {
   'case-study': { label: 'Case Study', color: 'purple' },
   insight: { label: 'Insight', color: 'orange' },
   news: { label: 'News', color: 'gray' },
+  integrations: { label: 'Integration', color: 'teal' },
 } as const;
 
 export default function ResourceDetailPage() {
@@ -143,6 +150,8 @@ export default function ResourceDetailPage() {
 
   return (
     <>
+      <LandingHeader />
+
       {/* Article Schema Markup */}
       <script
         type="application/ld+json"

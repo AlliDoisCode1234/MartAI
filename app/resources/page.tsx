@@ -44,6 +44,7 @@ const CATEGORY_CONFIG = {
   'case-study': { label: 'Case Study', color: 'purple' },
   insight: { label: 'Insight', color: 'orange' },
   news: { label: 'News', color: 'gray' },
+  integrations: { label: 'Integration', color: 'teal' },
 } as const;
 
 type CategoryKey = keyof typeof CATEGORY_CONFIG;
@@ -135,6 +136,7 @@ export default function ResourcesPage() {
                   'tutorial',
                   'case-study',
                   'insight',
+                  'integrations',
                   'news',
                 ];
                 setActiveCategory(categories[index]);
@@ -146,6 +148,7 @@ export default function ResourcesPage() {
                 <Tab>Tutorials</Tab>
                 <Tab>Case Studies</Tab>
                 <Tab>Insights</Tab>
+                <Tab>Integrations</Tab>
                 <Tab>News</Tab>
               </TabList>
             </Tabs>

@@ -247,7 +247,10 @@ export function WordPressConnect({ projectId }: Props) {
                 >
                   Application Password
                 </Link>{' '}
-                from your WordPress admin → Users → Profile → Application Passwords
+                from your WordPress admin → Users → Profile → Application Passwords.{' '}
+                <Link href="/resources/how-to-connect-wordpress" color="blue.500">
+                  View full setup guide
+                </Link>
               </AlertDescription>
             </Box>
           </Alert>

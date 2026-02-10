@@ -178,6 +178,16 @@ export function WixConnect({ projectId }: Props) {
           Connect
         </Button>
       </HStack>
+
+      <Link
+        href="/resources/how-to-connect-wix"
+        fontSize="xs"
+        color="blue.500"
+        mt={2}
+        display="block"
+      >
+        Need help? View setup guide
+      </Link>
     </Box>
   );
 }

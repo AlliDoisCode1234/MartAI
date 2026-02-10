@@ -103,6 +103,27 @@ export const seedInitialResources = internalMutation({
         createdAt: now,
         updatedAt: now,
       },
+      {
+        slug: 'how-to-connect-google-analytics',
+        title: 'How to Connect Google Analytics & Search Console to Phoo',
+        description:
+          'Connect GA4 and Google Search Console to Phoo in 2 minutes. One-click OAuth setup, property selection, troubleshooting, and data privacy explained.',
+        excerpt: 'Step-by-step guide to connecting GA4 and GSC to your Phoo project.',
+        category: 'integrations' as const,
+        tags: ['integrations', 'google analytics', 'search console', 'ga4', 'gsc'],
+        readTimeMinutes: 6,
+        wordCount: 1800,
+        authorName: 'Phoo Team',
+        authorTitle: 'SEO & Content Experts',
+        status: 'published' as const,
+        featured: true,
+        views: 0,
+        phooRating: 100,
+        phooRatedAt: now,
+        publishedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      },
     ];
 
     for (const resource of resources) {

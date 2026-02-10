@@ -1,0 +1,214 @@
+---
+title: 'How to Connect Google Analytics & Search Console to Phoo'
+description: 'Connect GA4 and Google Search Console to Phoo in 2 minutes. One-click OAuth setup, property selection, troubleshooting, and data privacy explained.'
+image: '/images/resources/google-analytics-gsc.png'
+category: 'integrations'
+---
+
+# How to Connect Google Analytics & Search Console to Phoo
+
+![Google Analytics & Search Console Integration](/images/resources/google-analytics-gsc.png)
+
+**Connect Google Analytics 4 and Google Search Console to Phoo with a single OAuth click. This guide covers the authorization flow, property selection, troubleshooting common issues, and exactly what data Phoo accesses.**
+
+## Why Connect GA4 & Search Console?
+
+Connecting your Google services unlocks data-driven SEO:
+
+- **Real Performance Data** - See actual clicks, impressions, and rankings from GSC
+- **Traffic Intelligence** - GA4 shows which content drives engagement
+- **Smart Strategy** - Phoo uses your real data to prioritize keyword opportunities
+- **Automated Reporting** - Track content ROI without manual exports
+- **Nightly Sync** - Data refreshes automatically every night
+
+## Prerequisites
+
+Before connecting, verify these requirements:
+
+| Requirement          | Why It's Needed        | How to Check                                      |
+| -------------------- | ---------------------- | ------------------------------------------------- |
+| Google account       | OAuth authentication   | You can log in at accounts.google.com             |
+| GA4 property access  | At least Viewer role   | GA4 Admin → Account Access Management             |
+| GSC site ownership   | Owner or Full user     | Search Console → Settings → Users and permissions |
+| Phoo project created | Connection destination | Dashboard shows your project                      |
+
+> **Don't have GA4 or GSC yet?** You can still use Phoo without them. Analytics connections enhance your strategy but aren't required to get started.
+
+## Step 1: Start the Connection
+
+Phoo connects both GA4 and GSC in a single OAuth flow.
+
+### From Onboarding
+
+During onboarding (Step 4), you'll see the integration panel:
+
+1. Click **Connect Google Account**
+2. A Google OAuth consent screen will appear
+
+### From Project Settings
+
+If you skipped during onboarding:
+
+1. Open your project in Phoo
+2. Navigate to **Project Settings → Integrations**
+3. Find **Google Analytics 4** or **Google Search Console**
+4. Click **Connect with Google**
+
+## Step 2: Authorize Phoo
+
+The Google consent screen explains exactly what Phoo is requesting.
+
+### What Phoo Requests
+
+| Permission                      | Purpose                                | Access Level |
+| ------------------------------- | -------------------------------------- | ------------ |
+| View your Google Analytics data | Import traffic and engagement metrics  | Read-only    |
+| View your Search Console data   | Import search performance and keywords | Read-only    |
+
+> **Privacy Note:** Phoo requests **read-only** access. We cannot modify your Analytics configuration, delete data, or make changes to your Google accounts.
+
+### Authorization Steps
+
+1. **Select your Google account** - Use the account that has access to your GA4 and GSC properties
+2. **Review permissions** - Google shows exactly what Phoo can access
+3. **Click "Allow"** - This grants Phoo read-only access to your analytics data
+4. **You'll be redirected back to Phoo** - The connection is established
+
+> **Multiple Google accounts?** Make sure you select the account that owns (or has access to) your GA4 property and GSC site. If they're under different accounts, connect with the account that has GA4 access first.
+
+## Step 3: Select Your Properties
+
+After authorization, Phoo needs to know which GA4 property and GSC site to use.
+
+### Property Picker
+
+If you have multiple GA4 properties or GSC sites, Phoo will show a picker:
+
+| Selection    | What to Look For                                   |
+| ------------ | -------------------------------------------------- |
+| GA4 Property | Your website's property (e.g., "My Site - GA4")    |
+| GSC Site     | Your verified domain (e.g., "https://example.com") |
+
+> **Auto-Connect:** If you only have one GA4 property and one GSC site, Phoo connects them automatically. No picker needed.
+
+### Verifying the Connection
+
+After selection, you should see:
+
+- **GA4:** Green "Connected" badge with your property name
+- **GSC:** Green "Connected" badge with your site URL
+
+Data sync begins immediately and refreshes nightly.
+
+## Troubleshooting Common Issues
+
+### "I don't see my GA4 property in the picker"
+
+**Checklist:**
+
+- [ ] You authorized with the correct Google account
+- [ ] You have at least Viewer access to the GA4 property
+- [ ] The property is a GA4 property (not Universal Analytics)
+
+**Fix:** Check GA4 Admin → Account Access Management to verify your access level. If you don't have access, ask the property owner to add you as a Viewer.
+
+### "I don't see my GSC site"
+
+**Checklist:**
+
+- [ ] Your site is verified in Google Search Console
+- [ ] You're an Owner or Full User (not Restricted)
+- [ ] You authorized with the account that has GSC access
+
+**Fix:** Visit [Google Search Console](https://search.google.com/search-console) directly and verify your site ownership. Then reconnect in Phoo.
+
+### "Access denied" or "Insufficient permissions"
+
+**Cause:** Your Google account doesn't have the required access level.
+
+**Solution:**
+
+1. For GA4: Ask the property admin to grant you Viewer access
+2. For GSC: Ask the site owner to add you as a Full User
+3. Reconnect with the account that has proper access
+
+### "I authorized but nothing connected"
+
+**Checklist:**
+
+- [ ] Browser didn't block the redirect popup
+- [ ] You clicked "Allow" on the Google consent screen
+- [ ] You completed the property selection step
+
+**Fix:** Try disconnecting and reconnecting. Go to Project Settings → Integrations and click "Connect with Google" again.
+
+### "Data isn't showing up after connecting"
+
+**Normal behavior** for new connections:
+
+- **Initial sync** takes a few minutes
+- **Full data** appears after the first nightly sync
+- **Historical data** covers the last 90 days
+
+If no data appears after 24 hours, try disconnecting and reconnecting.
+
+### "I connected the wrong property"
+
+**Solution:**
+
+1. Go to Project Settings → Integrations
+2. Click **Disconnect** on the incorrect property
+3. Click **Connect with Google** again
+4. Select the correct property from the picker
+
+## How to Disconnect
+
+You can disconnect Google services at any time:
+
+1. Go to **Project Settings → Integrations**
+2. Find the Google service (GA4 or GSC)
+3. Click **Disconnect**
+
+This immediately revokes Phoo's access to that service. You can also revoke access from [Google Account Security](https://myaccount.google.com/permissions).
+
+## Data Privacy & Security
+
+| Question                            | Answer                                            |
+| ----------------------------------- | ------------------------------------------------- |
+| What data does Phoo access?         | Search queries, clicks, impressions, traffic data |
+| Can Phoo modify my Google accounts? | No — read-only access only                        |
+| Where is my data stored?            | Encrypted in our secure Convex database           |
+| Can I delete my data?               | Yes — disconnecting removes synced data           |
+| Does Phoo share my data?            | Never — your data is used only for your project   |
+| How often does data sync?           | Automatically every night                         |
+| What happens if I revoke access?    | Sync stops immediately, existing data is retained |
+
+## GA4 vs GSC: What Each Provides
+
+| Data Point         | GA4                  | GSC                      |
+| ------------------ | -------------------- | ------------------------ |
+| Organic traffic    | Page views, sessions | Clicks from search       |
+| Keywords           | Not available        | Search queries, rankings |
+| Click-through rate | Not available        | Average CTR per query    |
+| User behavior      | Bounce rate, time    | Not available            |
+| Page performance   | Engagement metrics   | Impressions, position    |
+| Best for           | Engagement analysis  | Search performance       |
+
+**Recommendation:** Connect both for the most complete picture. GA4 tells you what users do on your site. GSC tells you how they find you.
+
+## Need Help?
+
+**In-App Support:**
+Use the **Phoo Assistant** (the orb in the bottom-left corner) for real-time help with Google integration issues.
+
+**Common Questions:**
+
+- "Why can't I see my analytics data?"
+- "How do I switch to a different GA4 property?"
+- "What does the nightly sync include?"
+
+The Phoo Assistant can answer these and troubleshoot your specific setup.
+
+---
+
+_Ready to unlock data-driven SEO? [Connect your Google Analytics](/) and let Phoo build a strategy based on your real performance data._

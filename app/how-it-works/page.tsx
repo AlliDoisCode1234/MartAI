@@ -290,6 +290,7 @@ export default function HowItWorksPage() {
                   >
                     Start Your Trial
                   </Button>
+                  {/* PRICING CTA - COMMENTED OUT FOR BETA
                   <Button
                     size="lg"
                     variant="outline"
@@ -300,6 +301,7 @@ export default function HowItWorksPage() {
                   >
                     View Pricing
                   </Button>
+                  */}
                 </HStack>
               </VStack>
             </MotionBox>

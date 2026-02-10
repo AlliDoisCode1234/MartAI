@@ -120,6 +120,7 @@ import type * as resources_resetViews from "../resources/resetViews.js";
 import type * as resources_seed from "../resources/seed.js";
 import type * as resources_seedAdditional from "../resources/seedAdditional.js";
 import type * as resources_seedGeo from "../resources/seedGeo.js";
+import type * as resources_seedGoogleAnalytics from "../resources/seedGoogleAnalytics.js";
 import type * as resources_updateRatings from "../resources/updateRatings.js";
 import type * as scores from "../scores.js";
 import type * as scripts_seedKeywordLibrary from "../scripts/seedKeywordLibrary.js";
@@ -281,6 +282,7 @@ declare const fullApi: ApiFromModules<{
   "resources/seed": typeof resources_seed;
   "resources/seedAdditional": typeof resources_seedAdditional;
   "resources/seedGeo": typeof resources_seedGeo;
+  "resources/seedGoogleAnalytics": typeof resources_seedGoogleAnalytics;
   "resources/updateRatings": typeof resources_updateRatings;
   scores: typeof scores;
   "scripts/seedKeywordLibrary": typeof scripts_seedKeywordLibrary;

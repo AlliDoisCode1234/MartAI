@@ -202,7 +202,10 @@ export function ShopifyConnect({ projectId }: Props) {
           <CMSCapabilityAlert platform="shopify" />
 
           <Text fontSize="sm" color="gray.600">
-            Enter your Shopify store domain to connect via OAuth.
+            Enter your Shopify store domain to connect via OAuth.{' '}
+            <Link href="/resources/how-to-connect-shopify" color="blue.500" fontSize="sm">
+              View setup guide
+            </Link>
           </Text>
 
           <FormControl isRequired>

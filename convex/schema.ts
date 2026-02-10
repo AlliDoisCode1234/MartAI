@@ -1724,7 +1724,8 @@ export default defineSchema({
       v.literal('tutorial'), // Step-by-step tutorials
       v.literal('case-study'), // Customer success stories
       v.literal('insight'), // Thought leadership
-      v.literal('news') // Product updates
+      v.literal('news'), // Product updates
+      v.literal('integrations') // Integration setup guides
     ),
     tags: v.optional(v.array(v.string())),
 

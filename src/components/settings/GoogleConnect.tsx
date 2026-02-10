@@ -276,9 +276,21 @@ export function GoogleConnect({ projectId }: Props) {
 
       {/* Info text */}
       {!ga4Connected && !gscConnected && (
-        <Text fontSize="sm" color="gray.500">
-          Connect your Google account to import analytics data and track search performance.
-        </Text>
+        <VStack align="start" spacing={1}>
+          <Text fontSize="sm" color="gray.500">
+            Connect your Google account to import analytics data and track search performance.
+          </Text>
+          <Link
+            href="/resources/how-to-connect-google-analytics"
+            fontSize="xs"
+            color="blue.500"
+            display="flex"
+            alignItems="center"
+            gap={1}
+          >
+            Need help? View setup guide <FiExternalLink size={10} />
+          </Link>
+        </VStack>
       )}
 
       {/* Service Account Upload (Advanced Option) */}
