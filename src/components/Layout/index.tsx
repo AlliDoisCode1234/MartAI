@@ -52,12 +52,16 @@ const STANDALONE_ROUTES = [
   '/',
   '/auth/callback',
   '/auth/login',
+  '/join',
   '/privacy',
   '/terms',
   '/how-it-works',
   '/pricing',
   '/resources',
 ];
+
+// Standalone routes that should NOT show PhooFab either
+const NO_FAB_STANDALONE = ['/join'];
 
 export const Layout: FC<Props> = ({ children }) => {
   const pathname = usePathname();
@@ -116,18 +120,8 @@ export const Layout: FC<Props> = ({ children }) => {
     // CRITICAL: If authenticated, do nothing - let user navigate freely
     if (isAuthenticated) return;
 
-    // Not authenticated - redirect to appropriate page
-    const isPhooAi =
-      typeof window !== 'undefined' &&
-      (window.location.hostname.includes('phoo.ai') ||
-        window.location.hostname.includes('phoo-ai'));
-
-    if (isPhooAi) {
-      // BETA LAUNCH: Redirect to home page, not waitlist
-      router.replace('/');
-    } else {
-      router.replace('/auth/login');
-    }
+    // Not authenticated - redirect to home page
+    router.replace('/');
   }, [authLoading, isAuthenticated, isPublicRoute, isStandaloneRoute, router]);
 
   // Separate effect for onboarding redirect (only for authenticated users)
@@ -146,12 +140,18 @@ export const Layout: FC<Props> = ({ children }) => {
   // Standalone routes render children with PhooFab but no Navigation
   // These pages have full control over their own styling but still get the AI orb
   if (isStandaloneRoute) {
+    const showFabOnStandalone = !NO_FAB_STANDALONE.some(
+      (p) => pathname === p || pathname?.startsWith(p + '/')
+    );
     return (
       <>
         {children}
-        {/* PhooFab for all marketing pages */}
-        <PhooFab onOpenDrawer={onOpenDrawer} />
-        <PhooChatDrawer isOpen={isDrawerOpen} onClose={onCloseDrawer} />
+        {showFabOnStandalone && (
+          <>
+            <PhooFab onOpenDrawer={onOpenDrawer} />
+            <PhooChatDrawer isOpen={isDrawerOpen} onClose={onCloseDrawer} />
+          </>
+        )}
       </>
     );
   }
