@@ -66,7 +66,8 @@ export const BottomTabBar: FC = () => {
       >
         {TAB_ITEMS.map((tab) => {
           const isActive =
-            pathname === tab.path || (tab.path !== '/dashboard' && pathname?.startsWith(tab.path));
+            pathname === tab.path ||
+            (tab.path !== '/dashboard' && pathname?.startsWith(tab.path + '/'));
 
           return (
             <Link key={tab.path} href={tab.path} style={{ textDecoration: 'none', flex: 1 }}>

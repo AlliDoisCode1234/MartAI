@@ -116,7 +116,8 @@ export const MobileNav: FC<Props> = ({
           <VStack align="stretch" spacing={1}>
             {navItems.map((item) => {
               const isActive =
-                pathname === item.path || (item.path !== '/' && pathname?.startsWith(item.path));
+                pathname === item.path ||
+                (item.path !== '/' && pathname?.startsWith(item.path + '/'));
 
               return (
                 <Link
