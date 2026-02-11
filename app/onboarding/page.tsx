@@ -203,8 +203,17 @@ export default function OnboardingPage() {
   // ==========================================================================
 
   // Redirect unauthenticated users to login
+  // IMPORTANT: Only check auth state here, NOT user data.
+  // user === undefined means the query is still loading, not that no user exists.
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || !user)) {
+    if (!authLoading && !isAuthenticated) {
+      router.replace('/auth/login');
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  // Edge case: authenticated but no user record in DB
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user === null) {
       router.replace('/auth/login');
     }
   }, [authLoading, isAuthenticated, user, router]);
@@ -230,10 +239,28 @@ export default function OnboardingPage() {
   }
 
   // Guard 2: Not authenticated - show loading while useEffect redirects
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated) {
     return (
       <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
         <MartLoader message="Redirecting to login..." />
+      </Box>
+    );
+  }
+
+  // Guard 3: User data still loading from Convex query
+  if (user === undefined) {
+    return (
+      <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
+        <MartLoader message="Loading your account..." />
+      </Box>
+    );
+  }
+
+  // Guard 4: Authenticated but no user record (edge case - redirecting)
+  if (user === null) {
+    return (
+      <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
+        <MartLoader message="Setting up your account..." />
       </Box>
     );
   }
