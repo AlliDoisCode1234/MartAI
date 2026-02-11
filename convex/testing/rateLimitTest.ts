@@ -1,9 +1,9 @@
-import { action, internalAction, internalMutation } from '../_generated/server';
+import { internalAction, internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import { RATE_LIMIT_TIERS } from '../rateLimits';
 
-export const verifyRateLimit = action({
+export const verifyRateLimit = internalAction({
   args: {
     tier: v.union(
       v.literal('free'),
@@ -19,9 +19,7 @@ export const verifyRateLimit = action({
     const limitConfig = RATE_LIMIT_TIERS[tier].draftGeneration;
     const expectedLimit = limitConfig.rate;
 
-    console.log(
-      `[RateLimitTest] Testing ${tier} tier. Limit: ${expectedLimit}, Requests: ${concurrentRequests}`
-    );
+    // Structured result returned instead of console.log
 
     // 1. Create a dummy user with the specific tier
     const setup = await ctx.runMutation(internal.testing.rateLimitTest.setupTestUser, { tier });
@@ -66,7 +64,7 @@ export const verifyRateLimit = action({
     const allowed = outcomes.filter((o) => o.status === 'allowed').length;
     const blocked = outcomes.filter((o) => o.status === 'blocked').length;
 
-    console.log(`[RateLimitTest] Allowed: ${allowed}, Blocked: ${blocked}`);
+    // Results returned in structured response below
 
     // 4. Cleanup
     await ctx.runMutation(internal.testing.rateLimitTest.cleanupTestUser, { userId, projectId });
@@ -116,7 +114,7 @@ export const setupTestUser = internalMutation({
     const userId = await ctx.db.insert('users', {
       email: `test_ratelimit_${Date.now()}@test.com`,
       membershipTier,
-      role: 'user',
+      role: args.tier === 'admin' ? 'admin' : 'user',
     });
     const projectId = await ctx.db.insert('projects', {
       userId,

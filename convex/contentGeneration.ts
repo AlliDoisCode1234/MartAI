@@ -91,26 +91,25 @@ export const generateContentInternal = internalAction({
       }
     }
 
-    // 2. Enforce Rate Limit (HOTFIX)
+    // 2. Enforce Rate Limit (per-user keyed)
     const limitKey = `generateDraft_${tier}` as const;
     try {
-      await rateLimits.limit(ctx, limitKey, { throws: true });
+      await rateLimits.limit(ctx, limitKey, { key: userId, throws: true });
     } catch (error: unknown) {
-      // Re-throw with user-friendly message
-      const tierLimit = RATE_LIMIT_TIERS[tier].draftGeneration;
-
-      // Check if it's likely a rate limit error (often has specific properties or just assume based on context)
-      // Since we know rateLimits.limit throws on limit, we can be confident.
-      const isRateLimit = true; // Simplified for hotfix, ideally check error type
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isRateLimit =
+        errorMessage.includes('Rate limited') || errorMessage.includes('rate limit');
 
       if (isRateLimit) {
+        const tierLimit = RATE_LIMIT_TIERS[tier].draftGeneration;
         throw new Error(
           `Rate limit exceeded for your ${tier} plan. Limit: ${tierLimit.rate} drafts per ${
             tierLimit.period === HOUR ? 'hour' : 'day'
           }. Please upgrade or wait.`
         );
       }
-      throw error; // Re-throw unexpected errors
+      // Re-throw unexpected errors (DB failures, config issues) unmolested
+      throw error;
     }
 
     // Get or create Writer Persona for this project
