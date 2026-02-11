@@ -52,6 +52,7 @@ export function AdminSidebar() {
       borderColor={borderColor}
       py={6}
       overflowY="auto"
+      display={{ base: 'none', md: 'block' }}
     >
       <VStack align="stretch" spacing={8}>
         <Box px={4}>

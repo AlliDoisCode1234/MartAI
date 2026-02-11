@@ -62,7 +62,7 @@ export default function PhooFab({ onOpenDrawer }: Props) {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0, opacity: 0 }}
           position="fixed"
-          bottom={4}
+          bottom={{ base: '72px', md: 4 }}
           left={4}
           zIndex={1000}
         >
@@ -86,7 +86,7 @@ export default function PhooFab({ onOpenDrawer }: Props) {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0, opacity: 0 }}
           position="fixed"
-          bottom={4}
+          bottom={{ base: '72px', md: 4 }}
           left={4}
           zIndex={1000}
         >

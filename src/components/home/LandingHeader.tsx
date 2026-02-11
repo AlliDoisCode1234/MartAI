@@ -4,22 +4,39 @@
  * LandingHeader
  *
  * Component Hierarchy:
- * App → LandingPage → LandingHeader
+ * App -> LandingPage -> LandingHeader
  *
  * Minimal header for the marketing landing page.
  * Uses brand color scheme: white background + orange text.
  * Sign in/sign up commented out per beta launch.
  */
 
-import { Box, Container, HStack, Text, Button, Icon } from '@chakra-ui/react';
+import {
+  Box,
+  Container,
+  HStack,
+  Text,
+  Button,
+  Icon,
+  IconButton,
+  useDisclosure,
+} from '@chakra-ui/react';
 import { useConvexAuth } from 'convex/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiMessageCircle } from 'react-icons/fi';
+import { FiMessageCircle, FiMenu, FiInfo, FiBook } from 'react-icons/fi';
+import { MobileNav } from '@/src/components/Navigation/MobileNav';
+
+// Public nav items for the mobile drawer
+const publicMobileNavItems = [
+  { label: 'How It Works', path: '/how-it-works', icon: FiInfo },
+  { label: 'Resources', path: '/resources', icon: FiBook },
+];
 
 export function LandingHeader() {
   const { isAuthenticated } = useConvexAuth();
   const router = useRouter();
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Logo routes to dashboard for authenticated users, marketing page otherwise
   const logoHref = isAuthenticated ? '/dashboard' : '/';
@@ -35,100 +52,126 @@ export function LandingHeader() {
   };
 
   return (
-    <Box
-      as="header"
-      bg="white"
-      shadow="sm"
-      borderBottom="1px"
-      borderColor="gray.200"
-      position="sticky"
-      top={0}
-      zIndex={1000}
-    >
-      <Container maxW="6xl">
-        <HStack justify="space-between" h={16}>
-          {/* Logo - Orange on white per brand standards */}
-          <Link href={logoHref} style={{ textDecoration: 'none' }}>
-            <Text fontSize="xl" fontWeight="bold" color="brand.orange">
-              Phoo
-            </Text>
-          </Link>
-
-          {/* Navigation Links */}
-          <HStack spacing={8}>
-            {/* Public nav items */}
-            <Link href="/how-it-works" style={{ textDecoration: 'none' }}>
-              <Text
-                color="gray.700"
-                fontWeight="medium"
-                _hover={{ color: 'brand.orange' }}
-                display={{ base: 'none', md: 'inline' }}
-              >
-                How It Works
-              </Text>
-            </Link>
-            {/* PRICING - COMMENTED OUT FOR BETA
-             * Beta users get 6 months FREE, so showing pricing creates confusion.
-             * TODO: Uncomment for soft launch (April 2026)
-             */}
-            {/*
-            <Link href="/pricing" style={{ textDecoration: 'none' }}>
-              <Text
-                color="gray.700"
-                fontWeight="medium"
-                _hover={{ color: 'brand.orange' }}
-                display={{ base: 'none', md: 'inline' }}
-              >
-                Pricing
-              </Text>
-            </Link>
-            */}
-
-            {/* Resources - Blog, guides, educational content */}
-            <Link href="/resources" style={{ textDecoration: 'none' }}>
-              <Text
-                color="gray.700"
-                fontWeight="medium"
-                _hover={{ color: 'brand.orange' }}
-                display={{ base: 'none', md: 'inline' }}
-              >
-                Resources
+    <>
+      <Box
+        as="header"
+        bg="white"
+        shadow="sm"
+        borderBottom="1px"
+        borderColor="gray.200"
+        position="sticky"
+        top={0}
+        zIndex={1000}
+      >
+        <Container maxW="6xl">
+          <HStack justify="space-between" h={16}>
+            {/* Left: Logo */}
+            <Link href={logoHref} style={{ textDecoration: 'none' }}>
+              <Text fontSize="xl" fontWeight="bold" color="brand.orange">
+                Phoo
               </Text>
             </Link>
 
-            {/* Ask Phoo - Opens drawer for guests, navigates for auth */}
-            <Button
-              size="sm"
-              variant="ghost"
-              color="brand.orange"
-              _hover={{ bg: 'orange.50' }}
-              leftIcon={<Icon as={FiMessageCircle} />}
-              onClick={handleAskPhooClick}
-            >
-              Ask Phoo
-            </Button>
-
-            {/* Auth Buttons - COMMENTED OUT FOR BETA LAUNCH
-             * Users can still access /auth/login directly if they know the URL
-             * TODO: Uncomment when ready for public launch
-             */}
-            {/*
-            <HStack spacing={4}>
-              <Link href="/auth/login">
-                <Button variant="ghost" size="sm">
-                  Sign In
-                </Button>
+            {/* Navigation Links */}
+            <HStack spacing={8}>
+              {/* Public nav items */}
+              <Link href="/how-it-works" style={{ textDecoration: 'none' }}>
+                <Text
+                  color="gray.700"
+                  fontWeight="medium"
+                  _hover={{ color: 'brand.orange' }}
+                  display={{ base: 'none', md: 'inline' }}
+                >
+                  How It Works
+                </Text>
               </Link>
-              <Link href="/auth/signup">
-                <Button bg="brand.orange" color="white" size="sm" _hover={{ bg: '#E8851A' }}>
-                  Sign Up
-                </Button>
+              {/* PRICING - COMMENTED OUT FOR BETA
+               * Beta users get 6 months FREE, so showing pricing creates confusion.
+               * TODO: Uncomment for soft launch (April 2026)
+               */}
+              {/*
+              <Link href="/pricing" style={{ textDecoration: 'none' }}>
+                <Text
+                  color="gray.700"
+                  fontWeight="medium"
+                  _hover={{ color: 'brand.orange' }}
+                  display={{ base: 'none', md: 'inline' }}
+                >
+                  Pricing
+                </Text>
               </Link>
+              */}
+
+              {/* Resources - Blog, guides, educational content */}
+              <Link href="/resources" style={{ textDecoration: 'none' }}>
+                <Text
+                  color="gray.700"
+                  fontWeight="medium"
+                  _hover={{ color: 'brand.orange' }}
+                  display={{ base: 'none', md: 'inline' }}
+                >
+                  Resources
+                </Text>
+              </Link>
+
+              {/* Ask Phoo - Opens drawer for guests, navigates for auth */}
+              <Button
+                size="sm"
+                variant="ghost"
+                color="brand.orange"
+                _hover={{ bg: 'orange.50' }}
+                leftIcon={<Icon as={FiMessageCircle} />}
+                onClick={handleAskPhooClick}
+                display={{ base: 'none', md: 'flex' }}
+              >
+                Ask Phoo
+              </Button>
+
+              {/* Auth Buttons - COMMENTED OUT FOR BETA LAUNCH
+               * Users can still access /auth/login directly if they know the URL
+               * TODO: Uncomment when ready for public launch
+               */}
+              {/*
+              <HStack spacing={4}>
+                <Link href="/auth/login">
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth/signup">
+                  <Button bg="brand.orange" color="white" size="sm" _hover={{ bg: '#E8851A' }}>
+                    Sign Up
+                  </Button>
+                </Link>
+              </HStack>
+              */}
+              {/* Hamburger menu (mobile only) - right side */}
+              <IconButton
+                aria-label="Open navigation"
+                icon={<Icon as={FiMenu} />}
+                variant="ghost"
+                color="gray.600"
+                _hover={{ color: 'brand.orange', bg: 'orange.50' }}
+                size="sm"
+                display={{ base: 'flex', md: 'none' }}
+                onClick={onOpen}
+                minW="44px"
+                minH="44px"
+              />
             </HStack>
-            */}
           </HStack>
-        </HStack>
-      </Container>
-    </Box>
+        </Container>
+      </Box>
+      <MobileNav
+        isOpen={isOpen}
+        onClose={onClose}
+        navItems={publicMobileNavItems}
+        brandLabel="Phoo"
+        brandColor="brand.orange"
+        placement="right"
+        variant="light"
+        user={null}
+      />
+    </>
   );
 }

@@ -19,6 +19,8 @@ import {
   contentTypeValidator,
 } from './phoo/contentTypes';
 import { buildPersonaContext } from './ai/writerPersonas/index';
+import { rateLimits, RATE_LIMIT_TIERS } from './rateLimits';
+import { HOUR } from '@convex-dev/rate-limiter';
 
 // Quality threshold for A+ grade
 const QUALITY_THRESHOLD = 90;
@@ -58,6 +60,57 @@ export const generateContentInternal = internalAction({
   },
   handler: async (ctx, args) => {
     const { userId } = args;
+
+    // 1. Fetch user to determine rate limit tier
+    const user = await ctx.runQuery(internal.users.getUser, { userId });
+    if (!user) throw new Error('User not found');
+
+    // Map schema tier to rate limit tier
+    let tier: 'free' | 'starter' | 'growth' | 'pro' | 'admin' = 'free';
+
+    // Admins get admin limits
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      tier = 'admin';
+    } else {
+      const membership = user.membershipTier || 'free';
+      switch (membership) {
+        case 'solo':
+        case 'starter':
+          tier = 'starter';
+          break;
+        case 'growth':
+        case 'team': // Map team to growth for now
+          tier = 'growth';
+          break;
+        case 'pro':
+        case 'enterprise':
+          tier = 'pro';
+          break;
+        default:
+          tier = 'free';
+      }
+    }
+
+    // 2. Enforce Rate Limit (per-user keyed)
+    const limitKey = `generateDraft_${tier}` as const;
+    try {
+      await rateLimits.limit(ctx, limitKey, { key: userId, throws: true });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isRateLimit =
+        errorMessage.includes('Rate limited') || errorMessage.includes('rate limit');
+
+      if (isRateLimit) {
+        const tierLimit = RATE_LIMIT_TIERS[tier].draftGeneration;
+        throw new Error(
+          `Rate limit exceeded for your ${tier} plan. Limit: ${tierLimit.rate} drafts per ${
+            tierLimit.period === HOUR ? 'hour' : 'day'
+          }. Please upgrade or wait.`
+        );
+      }
+      // Re-throw unexpected errors (DB failures, config issues) unmolested
+      throw error;
+    }
 
     // Get or create Writer Persona for this project
     const persona = await ctx.runMutation(
