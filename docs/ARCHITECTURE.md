@@ -207,7 +207,7 @@ super_admin (Level 100) - Full system access
 
 ```
 User clicks "Connect Google"
-  -> /api/oauth/google/connect (OAuth consent)
+  -> /api/oauth/google (OAuth consent)
   -> Google returns auth code
   -> Exchange for tokens
   -> Store encrypted refresh token in Convex

@@ -42,8 +42,8 @@ See `.env.example` for the full list. Critical ones:
 | `STRIPE_SECRET_KEY`           | Payment processing                |
 | `STRIPE_WEBHOOK_SECRET`       | Stripe event verification         |
 | `PHOO_BETA_PASSWORD`          | Production beta gate              |
-| `RESEND_API_KEY`              | Transactional emails              |
-| `ENCRYPTION_KEY`              | AES-256-GCM credential encryption |
+| `AUTH_RESEND_KEY`             | Transactional emails              |
+| `CREDENTIAL_ENCRYPTION_KEY`   | AES-256-GCM credential encryption |
 
 ---
 
