@@ -55,7 +55,7 @@ export function StudioSidebar({ collapsed = false }: Props) {
       backdropFilter="blur(20px)"
       py={6}
       transition="width 0.2s ease"
-      display="flex"
+      display={{ base: 'none', md: 'flex' }}
       flexDirection="column"
     >
       {/* Logo/Brand */}

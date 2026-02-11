@@ -151,7 +151,7 @@ export default function DashboardPage() {
       position="relative"
       overflow="hidden"
     >
-      {/* Ambient glow effects */}
+      {/* Ambient glow effects - hidden on mobile for performance */}
       <Box
         position="absolute"
         top="-20%"
@@ -160,6 +160,7 @@ export default function DashboardPage() {
         h="600px"
         bg="radial-gradient(circle, rgba(249, 159, 42, 0.15) 0%, transparent 70%)"
         pointerEvents="none"
+        display={{ base: 'none', md: 'block' }}
       />
       <Box
         position="absolute"
@@ -169,9 +170,16 @@ export default function DashboardPage() {
         h="500px"
         bg="radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)"
         pointerEvents="none"
+        display={{ base: 'none', md: 'block' }}
       />
 
-      <Container maxW="container.xl" py={8} position="relative" zIndex={1}>
+      <Container
+        maxW="container.xl"
+        py={{ base: 4, md: 8 }}
+        px={{ base: 4, md: 6 }}
+        position="relative"
+        zIndex={1}
+      >
         <VStack spacing={8} align="stretch">
           {/* Hero Section */}
           <MotionBox
@@ -185,14 +193,14 @@ export default function DashboardPage() {
                   DASHBOARD
                 </Text>
                 <Heading
-                  size="2xl"
+                  size={{ base: 'xl', md: '2xl' }}
                   bgGradient="linear(to-r, white, gray.300)"
                   bgClip="text"
                   fontWeight="bold"
                 >
                   Welcome back, {userName}
                 </Heading>
-                <Text color="gray.400" fontSize="lg">
+                <Text color="gray.400" fontSize={{ base: 'md', md: 'lg' }}>
                   {project.name}
                 </Text>
               </VStack>
@@ -222,7 +230,7 @@ export default function DashboardPage() {
             <GridItem>
               <MotionBox
                 {...glassCard}
-                p={8}
+                p={{ base: 5, md: 8 }}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
@@ -233,8 +241,17 @@ export default function DashboardPage() {
                   </Text>
 
                   {/* Circular Score */}
-                  <Box position="relative" w="200px" h="200px">
-                    <svg width="200" height="200" style={{ transform: 'rotate(-90deg)' }}>
+                  <Box
+                    position="relative"
+                    w={{ base: '160px', md: '200px' }}
+                    h={{ base: '160px', md: '200px' }}
+                  >
+                    <svg
+                      width="100%"
+                      height="100%"
+                      viewBox="0 0 200 200"
+                      style={{ transform: 'rotate(-90deg)' }}
+                    >
                       <defs>
                         <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                           <stop offset="0%" stopColor="#F99F2A" />
@@ -338,12 +355,12 @@ export default function DashboardPage() {
                   >
                     QUICK ACTIONS
                   </Text>
-                  <Grid templateColumns="repeat(3, 1fr)" gap={4}>
+                  <Grid templateColumns={{ base: '1fr', sm: 'repeat(3, 1fr)' }} gap={4}>
                     {quickActions.map((action, i) => (
                       <Link key={action.href} href={action.href}>
                         <MotionBox
                           {...glassCard}
-                          p={5}
+                          p={{ base: 4, md: 5 }}
                           cursor="pointer"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -379,12 +396,12 @@ export default function DashboardPage() {
                   >
                     OVERVIEW
                   </Text>
-                  <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                  <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)' }} gap={4}>
                     {statsData.map((stat, i) => (
                       <MotionBox
                         key={stat.label}
                         {...glassCard}
-                        p={5}
+                        p={{ base: 4, md: 5 }}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.4 + i * 0.1 }}
@@ -394,7 +411,11 @@ export default function DashboardPage() {
                             <Text color="gray.500" fontSize="xs" fontWeight="medium">
                               {stat.label}
                             </Text>
-                            <Text color="white" fontSize="2xl" fontWeight="bold">
+                            <Text
+                              color="white"
+                              fontSize={{ base: 'xl', md: '2xl' }}
+                              fontWeight="bold"
+                            >
                               {stat.isScore ? `${stat.value}/100` : stat.value}
                             </Text>
                           </VStack>
@@ -439,7 +460,7 @@ export default function DashboardPage() {
                     borderRadius="xl"
                     p={5}
                   >
-                    <HStack justify="space-between">
+                    <HStack justify="space-between" flexDir={{ base: 'column', sm: 'row' }} gap={3}>
                       <HStack spacing={4}>
                         <Circle size="40px" bg="orange.500">
                           <Icon as={FiZap} color="white" />

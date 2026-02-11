@@ -5,7 +5,7 @@ import { Menu, MenuButton, MenuList, MenuItem, MenuDivider, Avatar, Icon } from 
 import { FiUser, FiSettings, FiCreditCard, FiShield, FiLogOut } from 'react-icons/fi';
 import Link from 'next/link';
 import { useAuth } from '@/lib/useAuth';
-import { getUserDisplayName, getInitials } from '@/lib/funNames';
+import { getUserDisplayName } from '@/lib/funNames';
 
 export const UserDropdown: FC = () => {
   const { user, logout } = useAuth();
@@ -14,7 +14,6 @@ export const UserDropdown: FC = () => {
 
   const isAdmin = user.role === 'admin' || user.role === 'super_admin';
   const displayName = getUserDisplayName(user);
-  const initials = getInitials(displayName);
 
   // Beta users don't see billing until their beta period expires
   const isActiveBetaUser = user.isBetaUser && user.betaExpiresAt && user.betaExpiresAt > Date.now();
@@ -24,15 +23,15 @@ export const UserDropdown: FC = () => {
       <MenuButton>
         <Avatar
           size="sm"
+          name={displayName}
+          src={user.image ?? undefined}
           bg="brand.orange"
           color="white"
           fontWeight="bold"
           cursor="pointer"
           _hover={{ transform: 'scale(1.05)', boxShadow: 'md' }}
           transition="all 0.2s"
-        >
-          {initials}
-        </Avatar>
+        />
       </MenuButton>
       <MenuList>
         <MenuItem as={Link} href="/profile" icon={<Icon as={FiUser} />}>

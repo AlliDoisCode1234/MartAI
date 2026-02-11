@@ -72,7 +72,7 @@ export function StatCard({
               {label}
             </StatLabel>
           </HStack>
-          <StatNumber fontSize="3xl">{value}</StatNumber>
+          <StatNumber fontSize={{ base: '2xl', md: '3xl' }}>{value}</StatNumber>
           {(helpText || trend) && (
             <StatHelpText>
               {trend && trendValue && <StatArrow type={trend} />}

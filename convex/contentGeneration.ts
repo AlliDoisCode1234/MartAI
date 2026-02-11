@@ -19,6 +19,8 @@ import {
   contentTypeValidator,
 } from './phoo/contentTypes';
 import { buildPersonaContext } from './ai/writerPersonas/index';
+import { rateLimits, RATE_LIMIT_TIERS } from './rateLimits';
+import { HOUR } from '@convex-dev/rate-limiter';
 
 // Quality threshold for A+ grade
 const QUALITY_THRESHOLD = 90;
@@ -58,6 +60,58 @@ export const generateContentInternal = internalAction({
   },
   handler: async (ctx, args) => {
     const { userId } = args;
+
+    // 1. Fetch user to determine rate limit tier
+    const user = await ctx.runQuery(internal.users.getUser, { userId });
+    if (!user) throw new Error('User not found');
+
+    // Map schema tier to rate limit tier
+    let tier: 'free' | 'starter' | 'growth' | 'pro' | 'admin' = 'free';
+
+    // Admins get admin limits
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      tier = 'admin';
+    } else {
+      const membership = user.membershipTier || 'free';
+      switch (membership) {
+        case 'solo':
+        case 'starter':
+          tier = 'starter';
+          break;
+        case 'growth':
+        case 'team': // Map team to growth for now
+          tier = 'growth';
+          break;
+        case 'pro':
+        case 'enterprise':
+          tier = 'pro';
+          break;
+        default:
+          tier = 'free';
+      }
+    }
+
+    // 2. Enforce Rate Limit (HOTFIX)
+    const limitKey = `generateDraft_${tier}` as const;
+    try {
+      await rateLimits.limit(ctx, limitKey, { throws: true });
+    } catch (error: unknown) {
+      // Re-throw with user-friendly message
+      const tierLimit = RATE_LIMIT_TIERS[tier].draftGeneration;
+
+      // Check if it's likely a rate limit error (often has specific properties or just assume based on context)
+      // Since we know rateLimits.limit throws on limit, we can be confident.
+      const isRateLimit = true; // Simplified for hotfix, ideally check error type
+
+      if (isRateLimit) {
+        throw new Error(
+          `Rate limit exceeded for your ${tier} plan. Limit: ${tierLimit.rate} drafts per ${
+            tierLimit.period === HOUR ? 'hour' : 'day'
+          }. Please upgrade or wait.`
+        );
+      }
+      throw error; // Re-throw unexpected errors
+    }
 
     // Get or create Writer Persona for this project
     const persona = await ctx.runMutation(

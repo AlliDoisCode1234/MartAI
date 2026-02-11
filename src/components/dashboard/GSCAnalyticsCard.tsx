@@ -133,7 +133,7 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
       >
         <VStack spacing={4} align="stretch">
           <Skeleton height="20px" width="150px" />
-          <Grid templateColumns="repeat(4, 1fr)" gap={3}>
+          <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={3}>
             {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} height="80px" borderRadius="xl" />
             ))}
@@ -156,7 +156,12 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
         bg="linear-gradient(135deg, rgba(249, 159, 42, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)"
         border="1px solid rgba(249, 159, 42, 0.2)"
       >
-        <HStack justify="space-between">
+        <HStack
+          justify="space-between"
+          flexDir={{ base: 'column', sm: 'row' }}
+          gap={3}
+          align={{ base: 'start', sm: 'center' }}
+        >
           <VStack align="start" spacing={1}>
             <Text color="white" fontWeight="semibold">
               Connect Google Search Console
@@ -226,7 +231,7 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
         </HStack>
 
         {/* Metrics Grid */}
-        <Grid templateColumns="repeat(4, 1fr)" gap={3}>
+        <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={3}>
           <StatCard
             label="Search Clicks"
             value={formatNumber(gscStats.totalClicks)}
@@ -263,7 +268,12 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
             <Text color="gray.400" fontSize="xs" fontWeight="semibold" mb={3} letterSpacing="wider">
               TOP KEYWORDS
             </Text>
-            <Table size="sm" variant="unstyled">
+            <Table
+              size="sm"
+              variant="unstyled"
+              display={{ base: 'block', md: 'table' }}
+              overflowX="auto"
+            >
               <Tbody>
                 {gscStats.topKeywords.map((kw, i) => (
                   <Tr key={kw.keyword} _hover={{ bg: 'whiteAlpha.50' }}>

@@ -19,6 +19,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Navigation } from '../Navigation';
+import { BottomTabBar } from '../Navigation/BottomTabBar';
 import { PhooFab, PhooChatDrawer } from '@/src/components/phoo';
 import PhooPopover from '@/src/components/phoo/PhooPopover';
 import { SkipLink, MainContent } from '@/src/lib/accessibility';
@@ -176,12 +177,24 @@ export const Layout: FC<Props> = ({ children }) => {
     );
   }
 
+  // Determine if bottom tab bar should show
+  // Only for authenticated member portal pages (not studio, admin, standalone)
+  const isStudioRoute = pathname?.startsWith('/studio');
+  const isAdminRoute = pathname?.startsWith('/admin');
+  const showBottomTabBar = isAuthenticated && !isStudioRoute && !isAdminRoute;
+
   return (
     <Box minH="100vh" w="100%" bg="brand.light">
       <ImpersonationBanner />
       <SkipLink />
       <Navigation />
-      <MainContent>{children}</MainContent>
+      <MainContent>
+        {/* Add bottom padding on mobile when tab bar is visible to prevent content overlap */}
+        <Box pb={{ base: showBottomTabBar ? '72px' : 0, md: 0 }}>{children}</Box>
+      </MainContent>
+
+      {/* BottomTabBar - mobile tab navigation for member portal */}
+      {showBottomTabBar && <BottomTabBar />}
 
       {/* PhooFab - floating chat button (bottom-left) */}
       {showFab && <PhooFab onOpenDrawer={handlePhooFabClick} />}

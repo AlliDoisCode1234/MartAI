@@ -34,12 +34,13 @@ export function StudioLayout({ children }: Props) {
           <Box
             flex={1}
             bg="linear-gradient(180deg, #0D0D0D 0%, #1A1A1A 100%)"
-            p={8}
+            p={{ base: 4, md: 8 }}
             overflowY="auto"
           >
             <VStack align="stretch" spacing={4}>
               {/* Breadcrumb with dark mode styling */}
               <Box
+                display={{ base: 'none', md: 'block' }}
                 sx={{
                   '& nav': { color: 'gray.400' },
                   '& a': { color: 'gray.400', _hover: { color: 'orange.400' } },

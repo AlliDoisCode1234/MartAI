@@ -1,4 +1,4 @@
-import { query, mutation } from './_generated/server';
+import { query, mutation, internalQuery } from './_generated/server';
 import { v } from 'convex/values';
 import { auth } from './auth';
 import { checkAdminRole } from './lib/rbac';
@@ -55,6 +55,25 @@ export const me = query({
 
 // Alias for backward compatibility - some components use api.users.current
 export const current = me;
+
+/**
+ * Internal: Get user by ID for server-side operations (rate limiting, etc.)
+ * Security: Internal-only, not exposed to clients.
+ * Returns only fields needed for authorization decisions.
+ */
+export const getUser = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) return null;
+    return {
+      _id: user._id,
+      role: user.role,
+      membershipTier: user.membershipTier,
+      accountStatus: user.accountStatus,
+    };
+  },
+});
 
 export const completeOnboarding = mutation({
   args: {},

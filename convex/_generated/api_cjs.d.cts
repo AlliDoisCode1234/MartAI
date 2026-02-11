@@ -150,6 +150,7 @@ import type * as teams_invitations from "../teams/invitations.js";
 import type * as teams_teams from "../teams/teams.js";
 import type * as testing_betaUserFlow from "../testing/betaUserFlow.js";
 import type * as testing_e2e from "../testing/e2e.js";
+import type * as testing_rateLimitTest from "../testing/rateLimitTest.js";
 import type * as testing_testPersonas from "../testing/testPersonas.js";
 import type * as users from "../users.js";
 import type * as waitlist from "../waitlist.js";
@@ -312,6 +313,7 @@ declare const fullApi: ApiFromModules<{
   "teams/teams": typeof teams_teams;
   "testing/betaUserFlow": typeof testing_betaUserFlow;
   "testing/e2e": typeof testing_e2e;
+  "testing/rateLimitTest": typeof testing_rateLimitTest;
   "testing/testPersonas": typeof testing_testPersonas;
   users: typeof users;
   waitlist: typeof waitlist;
