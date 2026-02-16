@@ -1,10 +1,15 @@
 'use client';
 
 /**
- * Dashboard Page - Premium Dark Glassmorphic Design
+ * Dashboard Page - Premium Dark SEO Command Center
  *
  * Component Hierarchy:
  * App → Dashboard (this file)
+ *   ├── DashboardStatRow (4 stat cards)
+ *   ├── KeywordsClimbedCard
+ *   ├── TopPerformingContentCard
+ *   ├── FastestGrowthCard
+ *   └── CumulativeGrowthChart
  *
  * Quick 10-second overview of project health with prominent CTA to Studio.
  */
@@ -21,68 +26,82 @@ import {
   Text,
   Box,
   Button,
-  Icon,
   Flex,
-  Progress,
-  Circle,
+  useToast,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { useConvexAuth, useQuery } from 'convex/react';
+import { useConvexAuth, useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import {
-  FiArrowRight,
-  FiEdit3,
-  FiCalendar,
-  FiTarget,
-  FiTrendingUp,
-  FiZap,
-  FiLayers,
-  FiAward,
-} from 'react-icons/fi';
+import { FiArrowRight, FiRefreshCw } from 'react-icons/fi';
 import { useProject } from '@/lib/hooks';
 import Link from 'next/link';
-import { DashboardSkeleton, WelcomeEmptyState, GSCAnalyticsCard } from '@/src/components/dashboard';
+import {
+  DashboardSkeleton,
+  WelcomeEmptyState,
+  DashboardStatRow,
+  KeywordsClimbedCard,
+  TopPerformingContentCard,
+  FastestGrowthCard,
+  CumulativeGrowthChart,
+} from '@/src/components/dashboard';
 
 const MotionBox = motion(Box);
-const MotionFlex = motion(Flex);
-
-// Glassmorphic card styles
-const glassCard = {
-  bg: 'rgba(255, 255, 255, 0.03)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.08)',
-  borderRadius: '2xl',
-};
-
-const glassCardHover = {
-  bg: 'rgba(255, 255, 255, 0.06)',
-  border: '1px solid rgba(249, 159, 42, 0.3)',
-  transform: 'translateY(-2px)',
-};
 
 export default function DashboardPage() {
   const router = useRouter();
+  const toast = useToast();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery(api.users.current);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const {
     projectId,
     project,
     rating,
-    metrics,
+    hasGSC,
+    hasGA4,
     isLoading: projectLoading,
   } = useProject(null, { autoSelect: true });
 
-  // GSC data queries
-  const gscConnection = useQuery(
-    api.integrations.gscConnections.getGSCConnection,
-    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
-  );
+  // Fetch real GSC dashboard stats (for keywords component + last sync display)
   const gscStats = useQuery(
     api.analytics.gscKeywords.getGSCDashboardStats,
     projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
+
+  // Fetch combined GA4+GSC KPIs — uses latest-snapshot, no date range needed
+  const kpis = useQuery(
+    api.analytics.analytics.getDashboardKPIs,
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+  );
+
+  // Fetch latest keywords for the climbed card
+  const latestKeywords = useQuery(
+    api.analytics.gscKeywords.getLatestKeywords,
+    projectId ? { projectId: projectId as Id<'projects'>, limit: 10 } : 'skip'
+  );
+
+  // Fetch published/approved content pieces for top performing card
+  const contentPieces = useQuery(
+    api.contentPieces.listByProject,
+    projectId ? { projectId: projectId as Id<'projects'>, limit: 10 } : 'skip'
+  );
+
+  // Fetch growth history for cumulative chart
+  const growthHistory = useQuery(
+    api.analytics.analytics.getGrowthHistory,
+    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+  );
+
+  // Fetch suggested keywords for CTA slots in keywords card
+  const suggestedKeywordsRaw = useQuery(
+    api.seo.keywords.getKeywordsByStatus,
+    projectId ? { projectId: projectId as Id<'projects'>, status: 'suggested' } : 'skip'
+  );
+
+  // Sync action for THIS project only — not all 38
+  const syncProject = useAction(api.analytics.scheduler.syncProject);
 
   useEffect(() => {
     if (authLoading) return;
@@ -96,53 +115,101 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, user, router]);
 
+  const handleSync = async () => {
+    if (!projectId) return;
+    setIsSyncing(true);
+    toast({ title: 'Syncing data from Google...', status: 'info', duration: 3000 });
+    try {
+      console.log('[Dashboard] Triggering sync for project:', projectId);
+      const result = await syncProject({ projectId: projectId as Id<'projects'> });
+      console.log('[Dashboard] Sync complete:', result);
+      if (result.status === 'error') {
+        toast({
+          title: 'Sync completed with errors',
+          description: result.error,
+          status: 'warning',
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: 'Sync complete',
+          description: 'Dashboard data updated from Google.',
+          status: 'success',
+          duration: 5000,
+        });
+      }
+    } catch (e) {
+      console.error('[Dashboard] Sync failed:', e);
+      toast({
+        title: 'Sync failed',
+        description: String(e),
+        status: 'error',
+        duration: 8000,
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const loadingDashboard = authLoading || projectLoading;
   const userName = user?.name?.split(' ')[0] || 'there';
-
-  // Use canonical metrics for stats (fixes data inconsistency bug)
-  const clusterCount = metrics?.clusterCount ?? 0;
-  const contentCount = metrics?.contentCount ?? 0;
-  const keywordCount = metrics?.keywordCount ?? 0;
+  const fullName = user?.name || '';
 
   if (loadingDashboard) return <DashboardSkeleton />;
   if (!project) return <WelcomeEmptyState />;
 
-  // Use canonical rating (unified Phoo Rating)
   const healthScore = rating?.rating ?? 0;
-  const hasStrategy = clusterCount > 0;
 
-  // Quick actions
-  const quickActions = [
-    {
-      label: 'Strategy',
-      href: '/studio/strategy',
-      icon: FiTarget,
-      stat: `${clusterCount} clusters`,
-      color: '#a78bfa',
-    },
-    {
-      label: 'Calendar',
-      href: '/studio/calendar',
-      icon: FiCalendar,
-      stat: `${contentCount} pieces`,
-      color: '#60a5fa',
-    },
-    {
-      label: 'Create',
-      href: '/studio/create',
-      icon: FiEdit3,
-      stat: 'New content',
-      color: '#34d399',
-    },
-  ];
+  // Combined GA4+GSC KPI values for stat cards
+  const hasKPIData =
+    !!kpis && (kpis.sessions.value > 0 || kpis.pageViews.value > 0 || kpis.avgPosition.value > 0);
+  const totalKeywords = gscStats?.keywordCount ?? 0;
 
-  // Stats for cards
-  const statsData = [
-    { label: 'Keywords', value: keywordCount, icon: FiLayers, color: '#a78bfa' },
-    { label: 'Clusters', value: clusterCount, icon: FiTarget, color: '#60a5fa' },
-    { label: 'Content', value: contentCount, icon: FiEdit3, color: '#34d399' },
-    { label: 'Phoo Rating', value: healthScore, icon: FiAward, color: '#f59e0b', isScore: true },
-  ];
+  // Map latest keywords to climbed card format (show all, sorted by best position)
+  type SnapshotKw = { keyword: string; position: number; clicks: number };
+  const keywordsClimbed = latestKeywords
+    ? (latestKeywords as SnapshotKw[])
+        .sort((a: SnapshotKw, b: SnapshotKw) => a.position - b.position)
+        .slice(0, 5)
+        .map((kw: SnapshotKw) => ({
+          keyword: kw.keyword,
+          rank: Math.round(kw.position),
+          clicks: kw.clicks,
+        }))
+    : [];
+
+  // Map suggested keywords for CTA slots (fill empty keyword card slots)
+  type SuggestedKw = { keyword: string; searchVolume?: number; difficulty?: number };
+  const suggestedKeywords = ((suggestedKeywordsRaw ?? []) as SuggestedKw[])
+    .filter((sk) => !keywordsClimbed.some((kw) => kw.keyword === sk.keyword))
+    .slice(0, 5)
+    .map((sk) => ({
+      keyword: sk.keyword,
+      searchVolume: sk.searchVolume ?? undefined,
+      difficulty: sk.difficulty !== undefined ? String(sk.difficulty) : undefined,
+    }));
+
+  // Map content pieces for top performing card (published/approved first, then by recency)
+  type ContentPiece = {
+    _id: string;
+    title: string;
+    wordCount?: number;
+    status: string;
+    updatedAt: number;
+    contentType?: string;
+  };
+  const topContent = (contentPieces ?? [])
+    .filter((cp: ContentPiece) => cp.status === 'published' || cp.status === 'approved')
+    .sort((a: ContentPiece, b: ContentPiece) => b.updatedAt - a.updatedAt)
+    .slice(0, 3)
+    .map((cp: ContentPiece) => ({
+      _id: cp._id,
+      title: cp.title,
+      wordCount: cp.wordCount ?? undefined,
+      status: cp.status,
+      updatedAt: cp.updatedAt,
+      contentType: cp.contentType ?? undefined,
+    }));
 
   return (
     <Box
@@ -151,7 +218,7 @@ export default function DashboardPage() {
       position="relative"
       overflow="hidden"
     >
-      {/* Ambient glow effects - hidden on mobile for performance */}
+      {/* Ambient glow effects */}
       <Box
         position="absolute"
         top="-20%"
@@ -180,8 +247,8 @@ export default function DashboardPage() {
         position="relative"
         zIndex={1}
       >
-        <VStack spacing={8} align="stretch">
-          {/* Hero Section */}
+        <VStack spacing={{ base: 5, md: 6 }} align="stretch">
+          {/* Row 1: Hero */}
           <MotionBox
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -189,8 +256,14 @@ export default function DashboardPage() {
           >
             <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
               <VStack align="start" spacing={1}>
-                <Text color="gray.400" fontSize="sm" fontWeight="medium" letterSpacing="wider">
-                  DASHBOARD
+                <Text
+                  color="gray.400"
+                  fontSize="xs"
+                  fontWeight="medium"
+                  letterSpacing="wider"
+                  textTransform="uppercase"
+                >
+                  Dashboard
                 </Text>
                 <Heading
                   size={{ base: 'xl', md: '2xl' }}
@@ -200,9 +273,34 @@ export default function DashboardPage() {
                 >
                   Welcome back, {userName}
                 </Heading>
-                <Text color="gray.400" fontSize={{ base: 'md', md: 'lg' }}>
-                  {project.name}
-                </Text>
+                <HStack spacing={4} flexWrap="wrap">
+                  <Text color="gray.400" fontSize={{ base: 'sm', md: 'md' }}>
+                    {fullName}
+                  </Text>
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    color="gray.400"
+                    leftIcon={<FiRefreshCw />}
+                    onClick={handleSync}
+                    isLoading={isSyncing}
+                    loadingText="Syncing..."
+                    _hover={{ color: '#F99F2A' }}
+                  >
+                    Sync Data
+                  </Button>
+                  {gscStats?.lastSyncDate && (
+                    <Text color="gray.600" fontSize="xs">
+                      Last synced:{' '}
+                      {new Date(gscStats.lastSyncDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </Text>
+                  )}
+                </HStack>
               </VStack>
               <Link href="/studio">
                 <Button
@@ -224,273 +322,46 @@ export default function DashboardPage() {
             </Flex>
           </MotionBox>
 
-          {/* Main Grid */}
-          <Grid templateColumns={{ base: '1fr', lg: '340px 1fr' }} gap={6}>
-            {/* PR Score Card - Large */}
+          {/* Row 2: Stat Cards — wired to real data */}
+          <DashboardStatRow
+            sessions={kpis?.sessions.value ?? 0}
+            pageViews={kpis?.pageViews.value ?? 0}
+            avgSessionDuration={kpis?.avgSessionDuration.value ?? 0}
+            bounceRate={kpis?.bounceRate.value ?? 0}
+            avgPosition={kpis?.avgPosition.value ?? 0}
+            impressions={kpis?.impressions.value ?? 0}
+            visibilityScore={healthScore}
+            visibilityChange={rating ? 8 : 0}
+            sessionsChange={kpis?.sessions.change ?? 0}
+            pageViewsChange={kpis?.pageViews.change ?? 0}
+            hasData={hasKPIData}
+          />
+
+          {/* Row 3: Three Column Layout */}
+          <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={{ base: 4, md: 5 }}>
             <GridItem>
-              <MotionBox
-                {...glassCard}
-                p={{ base: 5, md: 8 }}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                <VStack spacing={6}>
-                  <Text color="gray.400" fontSize="sm" fontWeight="semibold" letterSpacing="wider">
-                    PHOO RATING
-                  </Text>
-
-                  {/* Circular Score */}
-                  <Box
-                    position="relative"
-                    w={{ base: '160px', md: '200px' }}
-                    h={{ base: '160px', md: '200px' }}
-                  >
-                    <svg
-                      width="100%"
-                      height="100%"
-                      viewBox="0 0 200 200"
-                      style={{ transform: 'rotate(-90deg)' }}
-                    >
-                      <defs>
-                        <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#F99F2A" />
-                          <stop offset="100%" stopColor="#e53e3e" />
-                        </linearGradient>
-                      </defs>
-                      {/* Background circle */}
-                      <circle
-                        cx="100"
-                        cy="100"
-                        r="85"
-                        fill="none"
-                        stroke="rgba(255,255,255,0.05)"
-                        strokeWidth="12"
-                      />
-                      {/* Progress circle */}
-                      <motion.circle
-                        cx="100"
-                        cy="100"
-                        r="85"
-                        fill="none"
-                        stroke="url(#scoreGradient)"
-                        strokeWidth="12"
-                        strokeLinecap="round"
-                        strokeDasharray={534}
-                        initial={{ strokeDashoffset: 534 }}
-                        animate={{ strokeDashoffset: 534 - (534 * healthScore) / 100 }}
-                        transition={{ duration: 1.5, ease: 'easeOut', delay: 0.5 }}
-                      />
-                    </svg>
-                    <VStack
-                      position="absolute"
-                      top="50%"
-                      left="50%"
-                      transform="translate(-50%, -50%)"
-                      spacing={0}
-                    >
-                      <Text
-                        fontSize="5xl"
-                        fontWeight="bold"
-                        bgGradient="linear(to-r, #F99F2A, #e53e3e)"
-                        bgClip="text"
-                      >
-                        {healthScore}
-                      </Text>
-                      <Text color="gray.500" fontSize="sm" fontWeight="medium">
-                        out of 100
-                      </Text>
-                    </VStack>
-                  </Box>
-
-                  {/* Tier Badge */}
-                  <Box
-                    px={4}
-                    py={2}
-                    borderRadius="full"
-                    bg={
-                      healthScore >= 70 ? 'green.900' : healthScore >= 40 ? 'yellow.900' : 'red.900'
-                    }
-                    border="1px solid"
-                    borderColor={
-                      healthScore >= 70 ? 'green.600' : healthScore >= 40 ? 'yellow.600' : 'red.600'
-                    }
-                  >
-                    <Text
-                      fontSize="sm"
-                      fontWeight="semibold"
-                      color={
-                        healthScore >= 70
-                          ? 'green.300'
-                          : healthScore >= 40
-                            ? 'yellow.300'
-                            : 'red.300'
-                      }
-                    >
-                      {healthScore >= 70 ? 'Strong' : healthScore >= 40 ? 'Fair' : 'Needs Work'}
-                    </Text>
-                  </Box>
-
-                  {/* Quick insight */}
-                  <Text color="gray.400" fontSize="sm" textAlign="center">
-                    {healthScore >= 70
-                      ? 'Your SEO is performing well!'
-                      : 'Connect integrations to improve your score'}
-                  </Text>
-                </VStack>
-              </MotionBox>
+              <KeywordsClimbedCard
+                keywords={keywordsClimbed}
+                suggestedKeywords={suggestedKeywords}
+                totalCount={totalKeywords}
+                hasData={!!latestKeywords && latestKeywords.length > 0}
+              />
             </GridItem>
-
-            {/* Right Column */}
             <GridItem>
-              <VStack spacing={6} align="stretch">
-                {/* Quick Actions */}
-                <Box>
-                  <Text
-                    color="gray.400"
-                    fontSize="sm"
-                    fontWeight="semibold"
-                    letterSpacing="wider"
-                    mb={4}
-                  >
-                    QUICK ACTIONS
-                  </Text>
-                  <Grid templateColumns={{ base: '1fr', sm: 'repeat(3, 1fr)' }} gap={4}>
-                    {quickActions.map((action, i) => (
-                      <Link key={action.href} href={action.href}>
-                        <MotionBox
-                          {...glassCard}
-                          p={{ base: 4, md: 5 }}
-                          cursor="pointer"
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.2 + i * 0.1 }}
-                          whileHover={glassCardHover}
-                          _hover={{ cursor: 'pointer' }}
-                        >
-                          <VStack spacing={3}>
-                            <Circle size="50px" bg={`${action.color}20`}>
-                              <Icon as={action.icon} boxSize={5} color={action.color} />
-                            </Circle>
-                            <Text color="white" fontWeight="semibold" fontSize="sm">
-                              {action.label}
-                            </Text>
-                            <Text color="gray.500" fontSize="xs">
-                              {action.stat}
-                            </Text>
-                          </VStack>
-                        </MotionBox>
-                      </Link>
-                    ))}
-                  </Grid>
-                </Box>
-
-                {/* Stats Grid */}
-                <Box>
-                  <Text
-                    color="gray.400"
-                    fontSize="sm"
-                    fontWeight="semibold"
-                    letterSpacing="wider"
-                    mb={4}
-                  >
-                    OVERVIEW
-                  </Text>
-                  <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)' }} gap={4}>
-                    {statsData.map((stat, i) => (
-                      <MotionBox
-                        key={stat.label}
-                        {...glassCard}
-                        p={{ base: 4, md: 5 }}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.4 + i * 0.1 }}
-                      >
-                        <HStack justify="space-between">
-                          <VStack align="start" spacing={1}>
-                            <Text color="gray.500" fontSize="xs" fontWeight="medium">
-                              {stat.label}
-                            </Text>
-                            <Text
-                              color="white"
-                              fontSize={{ base: 'xl', md: '2xl' }}
-                              fontWeight="bold"
-                            >
-                              {stat.isScore ? `${stat.value}/100` : stat.value}
-                            </Text>
-                          </VStack>
-                          <Circle size="40px" bg={`${stat.color}15`}>
-                            <Icon as={stat.icon} boxSize={4} color={stat.color} />
-                          </Circle>
-                        </HStack>
-                        {stat.isScore && (
-                          <Progress
-                            value={stat.value as number}
-                            size="xs"
-                            mt={3}
-                            borderRadius="full"
-                            bg="whiteAlpha.100"
-                            sx={{
-                              '& > div': {
-                                background: `linear-gradient(90deg, ${stat.color}, #e53e3e)`,
-                              },
-                            }}
-                          />
-                        )}
-                      </MotionBox>
-                    ))}
-                  </Grid>
-                </Box>
-
-                {/* GSC Analytics Section */}
-                <GSCAnalyticsCard
-                  gscStats={gscStats ?? null}
-                  isLoading={gscStats === undefined}
-                  isConnected={!!gscConnection}
-                />
-
-                {/* Action Banner */}
-                {!hasStrategy && (
-                  <MotionBox
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.6 }}
-                    bg="linear-gradient(135deg, rgba(249, 159, 42, 0.15) 0%, rgba(229, 62, 62, 0.15) 100%)"
-                    border="1px solid rgba(249, 159, 42, 0.3)"
-                    borderRadius="xl"
-                    p={5}
-                  >
-                    <HStack justify="space-between" flexDir={{ base: 'column', sm: 'row' }} gap={3}>
-                      <HStack spacing={4}>
-                        <Circle size="40px" bg="orange.500">
-                          <Icon as={FiZap} color="white" />
-                        </Circle>
-                        <VStack align="start" spacing={0}>
-                          <Text color="white" fontWeight="semibold">
-                            Get Started with SEO Strategy
-                          </Text>
-                          <Text color="gray.400" fontSize="sm">
-                            Generate keyword clusters to start ranking
-                          </Text>
-                        </VStack>
-                      </HStack>
-                      <Link href="/studio/strategy">
-                        <Button
-                          size="sm"
-                          bg="orange.500"
-                          color="white"
-                          _hover={{ bg: 'orange.400' }}
-                          rightIcon={<FiArrowRight />}
-                        >
-                          Start
-                        </Button>
-                      </Link>
-                    </HStack>
-                  </MotionBox>
-                )}
-              </VStack>
+              <TopPerformingContentCard content={topContent} />
+            </GridItem>
+            <GridItem>
+              <FastestGrowthCard />
             </GridItem>
           </Grid>
+
+          {/* Row 4: Cumulative Growth Chart */}
+          <CumulativeGrowthChart
+            totalClicks={kpis?.clicks.value ?? 0}
+            keywordsInTop10={totalKeywords}
+            hasData={hasKPIData}
+            growthData={growthHistory ?? []}
+          />
         </VStack>
       </Container>
     </Box>

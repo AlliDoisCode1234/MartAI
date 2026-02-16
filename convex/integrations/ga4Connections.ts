@@ -12,10 +12,7 @@ export const upsertGA4Connection = mutation({
     refreshToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    console.log('[GoogleOAuth][Mutation] upsertGA4Connection called with:', {
-      projectId: args.projectId,
-      propertyId: args.propertyId,
-      propertyName: args.propertyName,
+    console.log('[GoogleOAuth][Mutation] upsertGA4Connection called:', {
       hasAccessToken: !!args.accessToken,
       hasRefreshToken: !!args.refreshToken,
     });

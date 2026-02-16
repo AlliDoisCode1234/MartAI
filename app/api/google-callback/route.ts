@@ -77,6 +77,7 @@ export async function GET(req: NextRequest) {
     const tokens = await convex.action(api.integrations.google.exchangeCode, {
       code,
       projectId: projectId as any,
+      redirectUri: process.env.GOOGLE_REDIRECT_URI || undefined,
     });
 
     console.log('[GoogleOAuth][LegacyCallback] Token exchange result:', {
@@ -169,12 +170,45 @@ export async function GET(req: NextRequest) {
       projectId,
     });
 
-    // Step 4: Redirect to settings page with success indicator
+    // Step 4: Redirect based on actual save results
     const redirectPath = returnTo || '/settings?tab=integrations';
     const redirectUrl = new URL(redirectPath, baseUrl);
-    redirectUrl.searchParams.set('setup', 'ga4');
-    redirectUrl.searchParams.set('success', 'true');
-    console.log('[GoogleOAuth][LegacyCallback] Redirecting to:', redirectUrl.toString());
+
+    if (ga4Saved || gscSaved) {
+      // Trigger initial per-project sync (fire-and-forget so redirect isn't delayed)
+      try {
+        console.log(
+          '[GoogleOAuth][LegacyCallback] Triggering initial sync for project:',
+          projectId
+        );
+        convex
+          .action(api['analytics/scheduler'].syncProject, {
+            projectId: projectId as any,
+          })
+          .then(
+            (result: unknown) =>
+              console.log('[GoogleOAuth][LegacyCallback] Initial sync complete:', result),
+            (err: unknown) =>
+              console.error('[GoogleOAuth][LegacyCallback] Initial sync failed:', err)
+          );
+      } catch (syncErr) {
+        console.error('[GoogleOAuth][LegacyCallback] Failed to trigger sync:', syncErr);
+      }
+
+      redirectUrl.searchParams.set('setup', 'ga4');
+      redirectUrl.searchParams.set('success', 'true');
+      if (ga4Saved) redirectUrl.searchParams.set('ga4', 'saved');
+      if (gscSaved) redirectUrl.searchParams.set('gsc', 'saved');
+      console.log(
+        '[GoogleOAuth][LegacyCallback] SUCCESS — redirecting to:',
+        redirectUrl.toString()
+      );
+    } else {
+      redirectUrl.searchParams.set('error', 'no_properties_saved');
+      console.error(
+        '[GoogleOAuth][LegacyCallback] FAILED — tokens exchanged but no properties saved'
+      );
+    }
 
     return NextResponse.redirect(redirectUrl);
   } catch (e) {

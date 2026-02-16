@@ -11,6 +11,9 @@ export const syncProjectData = internalAction({
   handler: async (ctx, args) => {
     const projectId = args.projectId;
     const now = Date.now();
+    // Round to start-of-day (UTC) so same-day syncs upsert the same row
+    // This prevents data accumulation when syncing multiple times per day
+    const syncDateKey = new Date(now).setUTCHours(0, 0, 0, 0);
     // Use centralized config for date range
     const endDate = new Date(now).toISOString().split('T')[0];
     const startDate = new Date(now - THRESHOLDS.sync.defaultDays * 24 * 60 * 60 * 1000)
@@ -42,7 +45,7 @@ export const syncProjectData = internalAction({
         })) as { rows?: Array<{ metricValues: Array<{ value: string }> }> };
 
         // Parse GA4 Response structure
-        // Metrics order: sessions, totalUsers, userEngagementDuration, screenPageViews, bounceRate, averageSessionDuration, newUsers
+        // Metrics order: sessions, totalUsers, userEngagementDuration, screenPageViews, bounceRate, averageSessionDuration, newUsers, engagedSessions, eventCount, conversions
         if (raw.rows && raw.rows.length > 0) {
           const row = raw.rows[0];
           const getValue = (index: number) => parseFloat(row.metricValues[index]?.value || '0');
@@ -54,6 +57,9 @@ export const syncProjectData = internalAction({
             bounceRate: getValue(4),
             avgSessionDuration: getValue(5),
             newUsers: getValue(6),
+            engagedSessions: getValue(7),
+            eventCount: getValue(8),
+            conversions: getValue(9),
           };
         }
         await ctx.runMutation(api.integrations.ga4Connections.updateLastSync, {
@@ -85,6 +91,9 @@ export const syncProjectData = internalAction({
         };
 
         // Parse GSC Response - now with keyword (query) data
+        console.log(
+          `[GSC Sync] Raw API response for ${projectId}: ${raw.rows?.length ?? 0} keyword rows returned`
+        );
         if (raw.rows && raw.rows.length > 0) {
           // Aggregate totals for analytics data
           let totalClicks = 0;
@@ -103,20 +112,34 @@ export const syncProjectData = internalAction({
             totalImpressions += impressions;
             avgPosition += position;
 
-            // Store keyword snapshot for history
+            // Store keyword snapshot for history (use syncDateKey for day-level dedup)
             await ctx.runMutation(internal.analytics.gscKeywords.storeKeywordSnapshot, {
               projectId,
-              syncDate: now,
+              syncDate: syncDateKey,
               keyword,
               clicks,
               impressions,
               ctr,
               position,
             });
+
+            // Bridge GSC keyword into keyword library (upsert)
+            await ctx.runMutation(internal.analytics.keywordEnrichment.upsertGSCKeyword, {
+              projectId,
+              keyword,
+              position,
+              clicks,
+              impressions,
+              ctr,
+            });
           }
 
           // Calculate averages
           avgPosition = raw.rows.length > 0 ? avgPosition / raw.rows.length : 0;
+
+          console.log(
+            `[GSC Sync] Stored ${raw.rows.length} keyword snapshots. Totals: ${totalClicks} clicks, ${totalImpressions} impressions, avg position ${avgPosition.toFixed(1)}`
+          );
 
           gscData = {
             clicks: totalClicks,
@@ -124,12 +147,14 @@ export const syncProjectData = internalAction({
             ctr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0,
             position: avgPosition,
           };
+        } else {
+          console.warn(`[GSC Sync] No keyword rows returned from GSC API for ${projectId}`);
         }
         await ctx.runMutation(api.integrations.gscConnections.updateLastSync, {
           connectionId: gscConnection._id,
         });
       } catch (e) {
-        console.error(`GSC Sync Failed for project ${projectId}:`, e);
+        console.error(`[GSC Sync] Failed for project ${projectId}:`, e);
       }
     }
 
@@ -137,14 +162,18 @@ export const syncProjectData = internalAction({
     if (ga4Data) {
       await ctx.runMutation(api.analytics.analytics.storeAnalyticsData, {
         projectId,
-        date: now,
+        date: syncDateKey,
         source: 'ga4',
         sessions: ga4Data.sessions,
         pageViews: ga4Data.pageViews,
         bounceRate: ga4Data.bounceRate,
         avgSessionDuration: ga4Data.avgSessionDuration,
-        leads: 0, // Placeholder
-        revenue: 0, // Placeholder
+        newUsers: ga4Data.newUsers,
+        engagedSessions: ga4Data.engagedSessions,
+        eventCount: ga4Data.eventCount,
+        conversions: ga4Data.conversions,
+        leads: 0,
+        revenue: 0,
       });
 
       // Insight: Low Traffic (using centralized threshold)
@@ -175,7 +204,7 @@ export const syncProjectData = internalAction({
     if (gscData) {
       await ctx.runMutation(api.analytics.analytics.storeAnalyticsData, {
         projectId,
-        date: now, // We are saving "Sync Date" as the data point for trend tracking
+        date: syncDateKey,
         source: 'gsc',
         clicks: gscData.clicks,
         impressions: gscData.impressions,

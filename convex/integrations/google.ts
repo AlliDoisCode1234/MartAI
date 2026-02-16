@@ -20,6 +20,7 @@ export const generateAuthUrl = action({
   args: {
     projectId: v.optional(v.id('projects')),
     returnTo: v.optional(v.string()), // Where to redirect after OAuth
+    redirectUri: v.optional(v.string()), // Override redirect URI for local dev
   },
   handler: async (ctx, args) => {
     console.log('[GoogleOAuth][Convex] generateAuthUrl called with:', {
@@ -28,7 +29,7 @@ export const generateAuthUrl = action({
     });
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+    const redirectUri = args.redirectUri || process.env.GOOGLE_REDIRECT_URI;
 
     console.log('[GoogleOAuth][Convex] Environment check:', {
       GOOGLE_CLIENT_ID: clientId ? 'SET' : 'UNSET',
@@ -75,13 +76,14 @@ export const exchangeCode = action({
   args: {
     code: v.string(),
     projectId: v.optional(v.id('projects')),
+    redirectUri: v.optional(v.string()), // Override redirect URI for local dev
   },
   handler: async (ctx, args) => {
     console.log('[GoogleOAuth][Convex] exchangeCode called with projectId:', args.projectId);
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+    const redirectUri = args.redirectUri || process.env.GOOGLE_REDIRECT_URI;
 
     console.log('[GoogleOAuth][Convex] exchangeCode env check:', {
       GOOGLE_CLIENT_ID: clientId ? 'SET' : 'UNSET',
@@ -174,11 +176,7 @@ export const listGA4Properties = action({
       }
     }
 
-    console.log(
-      '[GoogleOAuth][Convex] GA4 properties found:',
-      properties.length,
-      properties.map((p) => p.displayName)
-    );
+    console.log('[GoogleOAuth][Convex] GA4 properties found:', properties.length);
     return properties;
   },
 });
@@ -305,6 +303,9 @@ async function runGA4Report(
         { name: 'bounceRate' },
         { name: 'averageSessionDuration' },
         { name: 'newUsers' },
+        { name: 'engagedSessions' },
+        { name: 'eventCount' },
+        { name: 'conversions' },
       ],
     }),
   });
@@ -366,7 +367,7 @@ async function runGSCQuery(
       startDate,
       endDate,
       dimensions: ['query'],
-      rowLimit: 100,
+      rowLimit: 500,
     }),
   });
 }

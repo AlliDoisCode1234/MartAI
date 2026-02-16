@@ -66,9 +66,7 @@ function oauthResponse(
 
 export async function GET(request: NextRequest) {
   const baseUrl = request.nextUrl.origin;
-  console.log('[GoogleOAuth][NewerCallback] === CALLBACK HIT ===');
-  console.log('[GoogleOAuth][NewerCallback] Full URL:', request.nextUrl.toString());
-  console.log('[GoogleOAuth][NewerCallback] api import status:', api ? 'LOADED' : 'NULL');
+  console.log('[GoogleOAuth][Callback] === CALLBACK HIT ===');
 
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -76,10 +74,10 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state');
     const error = searchParams.get('error');
 
-    console.log('[GoogleOAuth][NewerCallback] Raw params:', {
+    console.log('[GoogleOAuth][Callback] Params received:', {
       hasCode: !!code,
       hasState: !!state,
-      error: error || 'none',
+      hasError: !!error,
     });
 
     // Parse state first to get returnTo

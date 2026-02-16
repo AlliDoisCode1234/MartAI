@@ -77,7 +77,7 @@ export function GoogleConnect({ projectId }: Props) {
       console.error('[GoogleOAuth][Client] OAuth returned error:', error);
       toast({
         title: 'Connection failed',
-        description: `Google OAuth error: ${error}`,
+        description: 'Unable to connect to Google. Please try again.',
         status: 'error',
         duration: 8000,
       });
@@ -99,7 +99,10 @@ export function GoogleConnect({ projectId }: Props) {
     setIsConnecting(true);
     try {
       console.log('[GoogleOAuth][Client] Calling generateAuthUrl Convex action...');
-      const authUrl = await generateAuthUrl({ projectId });
+      // Pass the current origin's callback URL so local dev auto-resolves to localhost
+      const localRedirectUri = `${window.location.origin}/api/google-callback`;
+      console.log('[GoogleOAuth][Client] Using redirectUri:', localRedirectUri);
+      const authUrl = await generateAuthUrl({ projectId, redirectUri: localRedirectUri });
       console.log(
         '[GoogleOAuth][Client] Received authUrl:',
         authUrl ? `${authUrl.substring(0, 80)}...` : 'NULL'
