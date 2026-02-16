@@ -42,6 +42,7 @@ import type * as analytics_eventTracking from "../analytics/eventTracking.js";
 import type * as analytics_events from "../analytics/events.js";
 import type * as analytics_gscKeywords from "../analytics/gscKeywords.js";
 import type * as analytics_insights from "../analytics/insights.js";
+import type * as analytics_keywordEnrichment from "../analytics/keywordEnrichment.js";
 import type * as analytics_martaiRating from "../analytics/martaiRating.js";
 import type * as analytics_martaiRatingQueries from "../analytics/martaiRatingQueries.js";
 import type * as analytics_queries from "../analytics/queries.js";
@@ -205,6 +206,7 @@ declare const fullApi: ApiFromModules<{
   "analytics/events": typeof analytics_events;
   "analytics/gscKeywords": typeof analytics_gscKeywords;
   "analytics/insights": typeof analytics_insights;
+  "analytics/keywordEnrichment": typeof analytics_keywordEnrichment;
   "analytics/martaiRating": typeof analytics_martaiRating;
   "analytics/martaiRatingQueries": typeof analytics_martaiRatingQueries;
   "analytics/queries": typeof analytics_queries;

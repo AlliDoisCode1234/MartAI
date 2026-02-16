@@ -11,11 +11,23 @@ export const upsertGSCConnection = mutation({
     refreshToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    console.log('[GoogleOAuth][Mutation] upsertGSCConnection called with:', {
+      projectId: args.projectId,
+      siteUrl: args.siteUrl,
+      hasAccessToken: !!args.accessToken,
+      hasRefreshToken: !!args.refreshToken,
+    });
+
     // Check if connection exists
     const existing = await ctx.db
       .query('gscConnections')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .first();
+
+    console.log(
+      '[GoogleOAuth][Mutation] Existing GSC connection:',
+      existing ? existing._id : 'NONE'
+    );
 
     // Encrypt tokens before storage
     const encryptedAccessToken = await encryptCredential(args.accessToken);
@@ -33,13 +45,17 @@ export const upsertGSCConnection = mutation({
     };
 
     if (existing) {
-      return await ctx.db.patch(existing._id, connectionData);
+      const result = await ctx.db.patch(existing._id, connectionData);
+      console.log('[GoogleOAuth][Mutation] GSC connection PATCHED:', existing._id);
+      return result;
     }
 
-    return await ctx.db.insert('gscConnections', {
+    const result = await ctx.db.insert('gscConnections', {
       ...connectionData,
       createdAt: Date.now(),
     });
+    console.log('[GoogleOAuth][Mutation] GSC connection INSERTED:', result);
+    return result;
   },
 });
 

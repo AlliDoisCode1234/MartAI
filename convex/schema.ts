@@ -267,13 +267,20 @@ export default defineSchema({
     status: v.string(), // suggested, approved, implemented
     source: v.optional(v.string()), // 'intelligence', 'gsc', 'import', 'serp'
     phase: v.optional(v.string()), // 'foundation', 'authority', 'conversion'
+    // GSC performance fields (enriched from sync)
+    gscPosition: v.optional(v.number()),
+    gscClicks: v.optional(v.number()),
+    gscImpressions: v.optional(v.number()),
+    gscCtr: v.optional(v.number()),
+    gscLastUpdated: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index('by_project', ['projectId'])
     .index('by_status', ['status'])
     .index('by_keyword', ['keyword'])
     .index('by_project_source', ['projectId', 'source'])
-    .index('by_project_phase', ['projectId', 'phase']),
+    .index('by_project_phase', ['projectId', 'phase'])
+    .index('by_project_keyword', ['projectId', 'keyword']),
 
   // OAuth tokens for WordPress/Shopify
   oauthTokens: defineTable({
@@ -759,7 +766,7 @@ export default defineSchema({
   // Analytics Data
   analyticsData: defineTable({
     projectId: v.id('projects'),
-    date: v.number(), // timestamp
+    date: v.number(), // timestamp (rounded to day for upsert dedup)
     source: v.string(), // ga4, gsc
     sessions: v.optional(v.number()),
     clicks: v.optional(v.number()),
@@ -773,6 +780,9 @@ export default defineSchema({
     bounceRate: v.optional(v.number()),
     avgSessionDuration: v.optional(v.number()),
     newUsers: v.optional(v.number()),
+    engagedSessions: v.optional(v.number()),
+    eventCount: v.optional(v.number()),
+    conversions: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -822,15 +832,27 @@ export default defineSchema({
     engagementQuality: v.number(),
     quickWinPotential: v.number(),
     contentVelocity: v.number(),
-    // Raw metrics for debugging
+    // Raw metrics for debugging + dashboard KPI snapshots
     rawMetrics: v.optional(
       v.object({
+        // MR scoring inputs
         avgPosition: v.optional(v.number()),
         sessionsChange: v.optional(v.number()),
         ctr: v.optional(v.number()),
         bounceRate: v.optional(v.number()),
         quickWinCount: v.optional(v.number()),
         briefsThisMonth: v.optional(v.number()),
+        // Dashboard KPI snapshot (from latest analyticsData)
+        sessions: v.optional(v.number()),
+        pageViews: v.optional(v.number()),
+        avgSessionDuration: v.optional(v.number()),
+        impressions: v.optional(v.number()),
+        clicks: v.optional(v.number()),
+        newUsers: v.optional(v.number()),
+        engagedSessions: v.optional(v.number()),
+        eventCount: v.optional(v.number()),
+        conversions: v.optional(v.number()),
+        keywordCount: v.optional(v.number()),
       })
     ),
   })

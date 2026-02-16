@@ -134,6 +134,8 @@ export const calculateMartAIRating = internalAction({
     // 1. Get GSC data for visibility and CTR
     let avgPosition: number | null = null;
     let ctr: number | null = null;
+    let gscImpressions = 0;
+    let gscClicks = 0;
 
     try {
       const gscData = await ctx.runQuery(api.analytics.analytics.getAnalyticsData, {
@@ -147,6 +149,8 @@ export const calculateMartAIRating = internalAction({
         const latestGSC = gscData[gscData.length - 1];
         avgPosition = latestGSC.avgPosition || null;
         ctr = latestGSC.ctr || null;
+        gscImpressions = latestGSC.impressions || 0;
+        gscClicks = latestGSC.clicks || 0;
       }
     } catch (e) {
       console.error('[MR] Failed to get GSC data:', e);
@@ -155,6 +159,14 @@ export const calculateMartAIRating = internalAction({
     // 2. Get GA4 data for traffic health and engagement
     let sessionsChange: number | null = null;
     let bounceRate: number | null = null;
+    // KPI snapshot fields for IL
+    let kpiSessions = 0;
+    let kpiPageViews = 0;
+    let kpiAvgSessionDuration = 0;
+    let kpiNewUsers = 0;
+    let kpiEngagedSessions = 0;
+    let kpiEventCount = 0;
+    let kpiConversions = 0;
 
     try {
       const ga4Data = await ctx.runQuery(api.analytics.analytics.getAnalyticsData, {
@@ -185,6 +197,15 @@ export const calculateMartAIRating = internalAction({
 
         const latestGA4 = ga4Data[ga4Data.length - 1];
         bounceRate = latestGA4.bounceRate || null;
+
+        // Capture KPI snapshot from latest GA4 data
+        kpiSessions = latestGA4.sessions || 0;
+        kpiPageViews = latestGA4.pageViews || 0;
+        kpiAvgSessionDuration = latestGA4.avgSessionDuration || 0;
+        kpiNewUsers = latestGA4.newUsers || 0;
+        kpiEngagedSessions = latestGA4.engagedSessions || 0;
+        kpiEventCount = latestGA4.eventCount || 0;
+        kpiConversions = latestGA4.conversions || 0;
       }
     } catch (e) {
       console.error('[MR] Failed to get GA4 data:', e);
@@ -222,6 +243,16 @@ export const calculateMartAIRating = internalAction({
       console.error('[MR] Failed to get briefs:', e);
     }
 
+    // 4b. Get keyword count from enriched keywords table
+    let keywordCount = 0;
+    try {
+      keywordCount = await ctx.runQuery(internal.analytics.keywordEnrichment.countKeywords, {
+        projectId: args.projectId,
+      });
+    } catch (e) {
+      console.error('[MR] Failed to get keyword count:', e);
+    }
+
     // 5. Calculate component scores
     const visibility = scoreVisibility(avgPosition);
     const trafficHealth = scoreTrafficHealth(sessionsChange);
@@ -244,7 +275,7 @@ export const calculateMartAIRating = internalAction({
     // 7. Determine tier
     const { tier, label } = getTier(overall);
 
-    // 8. Store the score
+    // 8. Store the score with full KPI snapshot
     await ctx.runMutation(internal.analytics.martaiRatingQueries.storeScore, {
       projectId: args.projectId,
       date: now,
@@ -257,12 +288,24 @@ export const calculateMartAIRating = internalAction({
       quickWinPotential,
       contentVelocity,
       rawMetrics: {
-        avgPosition,
-        sessionsChange,
-        ctr,
-        bounceRate,
+        // MR scoring inputs
+        avgPosition: avgPosition ?? undefined,
+        sessionsChange: sessionsChange ?? undefined,
+        ctr: ctr ?? undefined,
+        bounceRate: bounceRate ?? undefined,
         quickWinCount,
         briefsThisMonth,
+        // Dashboard KPI snapshot
+        sessions: kpiSessions,
+        pageViews: kpiPageViews,
+        avgSessionDuration: kpiAvgSessionDuration,
+        impressions: gscImpressions,
+        clicks: gscClicks,
+        newUsers: kpiNewUsers,
+        engagedSessions: kpiEngagedSessions,
+        eventCount: kpiEventCount,
+        conversions: kpiConversions,
+        keywordCount,
       },
     });
 

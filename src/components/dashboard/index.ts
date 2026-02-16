@@ -14,3 +14,10 @@ export { TopKeywordsCard } from './TopKeywordsCard';
 export { QuickWinsCard } from './QuickWinsCard';
 export { BadgeModal } from './BadgeModal';
 export { GSCAnalyticsCard } from './GSCAnalyticsCard';
+
+// Dashboard redesign components
+export { DashboardStatRow } from './DashboardStatRow';
+export { KeywordsClimbedCard } from './KeywordsClimbedCard';
+export { TopPerformingContentCard } from './TopPerformingContentCard';
+export { FastestGrowthCard } from './FastestGrowthCard';
+export { CumulativeGrowthChart } from './CumulativeGrowthChart';

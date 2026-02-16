@@ -3,12 +3,8 @@ import { api, internal } from './_generated/api';
 
 const crons = cronJobs();
 
-// Run analytics sync every night at 2 AM UTC
-crons.daily(
-  'analytics-sync',
-  { hourUTC: 2, minuteUTC: 0 },
-  api['analytics/scheduler'].syncAllProjects
-);
+// Run analytics sync every 6 hours for fresh dashboard data
+crons.interval('analytics-sync', { hours: 6 }, api['analytics/scheduler'].syncAllProjects);
 
 // Clean up expired password reset tokens daily at 3 AM UTC
 crons.daily(

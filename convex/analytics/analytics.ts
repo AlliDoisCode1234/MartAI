@@ -20,6 +20,9 @@ export const storeAnalyticsData = mutation({
     bounceRate: v.optional(v.number()),
     avgSessionDuration: v.optional(v.number()),
     newUsers: v.optional(v.number()),
+    engagedSessions: v.optional(v.number()),
+    eventCount: v.optional(v.number()),
+    conversions: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { projectId, date, source, ...metrics } = args;
@@ -123,72 +126,111 @@ export const getKPIs = query({
   },
 });
 
-// Get Dashboard KPIs with comparison
+// Get Dashboard KPIs with comparison (GA4 + GSC combined)
+// ARCHITECTURE: Each sync stores a ROLLING 30-day aggregate from Google.
+// Therefore we take the LATEST snapshot per source, NOT sum across snapshots.
 export const getDashboardKPIs = query({
   args: {
     projectId: v.id('projects'),
-    startDate: v.number(),
-    endDate: v.number(),
   },
   handler: async (ctx, args) => {
-    const periodLength = args.endDate - args.startDate;
-    const prevStartDate = args.startDate - periodLength;
-    const prevEndDate = args.startDate - 1;
-
-    // Fetch all data once
+    // Fetch all data for this project
     const allData = await ctx.db
       .query('analyticsData')
       .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
       .collect();
 
-    const currentData = allData.filter((d) => d.date >= args.startDate && d.date <= args.endDate);
-    const prevData = allData.filter((d) => d.date >= prevStartDate && d.date <= prevEndDate);
+    // Sort by date descending to find latest snapshots
+    const sorted = allData.sort((a, b) => b.date - a.date);
 
-    const calculateMetrics = (data: any[]) => {
-      const ga4 = data.filter((d: any) => d.source === 'ga4');
-      const gsc = data.filter((d: any) => d.source === 'gsc');
+    // Get latest GA4 and GSC snapshots (these ARE the 30-day aggregates from Google)
+    const ga4Rows = sorted.filter((d) => d.source === 'ga4');
+    const gscRows = sorted.filter((d) => d.source === 'gsc');
+    const latestGA4 = ga4Rows[0] ?? null;
+    const latestGSC = gscRows[0] ?? null;
 
-      const sessions = ga4.reduce((sum, d) => sum + (d.sessions || 0), 0);
-      const clicks = gsc.reduce((sum, d) => sum + (d.clicks || 0), 0);
-      const impressions = gsc.reduce((sum, d) => sum + (d.impressions || 0), 0);
-      const leads = ga4.reduce((sum, d) => sum + (d.leads || 0), 0);
-      const revenue = ga4.reduce((sum, d) => sum + (d.revenue || 0), 0);
-      const avgCTR = impressions > 0 ? (clicks / impressions) * 100 : 0;
-      const avgPosition =
-        gsc.length > 0 ? gsc.reduce((sum, d) => sum + (d.avgPosition || 0), 0) / gsc.length : 0;
-      const conversionRate = sessions > 0 ? (leads / sessions) * 100 : 0;
-
-      return { sessions, clicks, ctr: avgCTR, avgPosition, leads, revenue, conversionRate };
-    };
-
-    const current = calculateMetrics(currentData);
-    const previous = calculateMetrics(prevData);
+    // Get previous snapshots for period-over-period comparison
+    const prevGA4 = ga4Rows[1] ?? null;
+    const prevGSC = gscRows[1] ?? null;
 
     const calculateChange = (curr: number, prev: number) => {
       if (prev === 0) return curr > 0 ? 100 : 0;
       return ((curr - prev) / prev) * 100;
     };
 
+    // Extract metrics from latest snapshots (or 0 if no data)
+    const sessions = latestGA4?.sessions ?? 0;
+    const pageViews = latestGA4?.pageViews ?? 0;
+    const bounceRate = latestGA4?.bounceRate ?? 0;
+    const avgSessionDuration = latestGA4?.avgSessionDuration ?? 0;
+    const newUsers = latestGA4?.newUsers ?? 0;
+    const engagedSessions = latestGA4?.engagedSessions ?? 0;
+    const eventCount = latestGA4?.eventCount ?? 0;
+    const conversions = latestGA4?.conversions ?? 0;
+    const leads = latestGA4?.leads ?? 0;
+    const revenue = latestGA4?.revenue ?? 0;
+
+    const clicks = latestGSC?.clicks ?? 0;
+    const impressions = latestGSC?.impressions ?? 0;
+    const ctr = latestGSC?.ctr ?? 0;
+    const avgPosition = latestGSC?.avgPosition ?? 0;
+
+    const conversionRate = sessions > 0 ? (leads / sessions) * 100 : 0;
+
     return {
       sessions: {
-        value: current.sessions,
-        change: calculateChange(current.sessions, previous.sessions),
+        value: sessions,
+        change: calculateChange(sessions, prevGA4?.sessions ?? 0),
       },
-      clicks: { value: current.clicks, change: calculateChange(current.clicks, previous.clicks) },
-      ctr: { value: current.ctr, change: calculateChange(current.ctr, previous.ctr) },
+      clicks: { value: clicks, change: calculateChange(clicks, prevGSC?.clicks ?? 0) },
+      ctr: { value: ctr, change: calculateChange(ctr, prevGSC?.ctr ?? 0) },
       avgPosition: {
-        value: current.avgPosition,
-        change: calculateChange(current.avgPosition, previous.avgPosition),
+        value: avgPosition,
+        change: calculateChange(avgPosition, prevGSC?.avgPosition ?? 0),
       },
-      leads: { value: current.leads, change: calculateChange(current.leads, previous.leads) },
+      leads: { value: leads, change: calculateChange(leads, prevGA4?.leads ?? 0) },
       revenue: {
-        value: current.revenue,
-        change: calculateChange(current.revenue, previous.revenue),
+        value: revenue,
+        change: calculateChange(revenue, prevGA4?.revenue ?? 0),
       },
       conversionRate: {
-        value: current.conversionRate,
-        change: calculateChange(current.conversionRate, previous.conversionRate),
+        value: conversionRate,
+        change: 0,
       },
+      // GA4 expanded
+      pageViews: {
+        value: pageViews,
+        change: calculateChange(pageViews, prevGA4?.pageViews ?? 0),
+      },
+      newUsers: {
+        value: newUsers,
+        change: calculateChange(newUsers, prevGA4?.newUsers ?? 0),
+      },
+      bounceRate: {
+        value: bounceRate,
+        change: calculateChange(bounceRate, prevGA4?.bounceRate ?? 0),
+      },
+      avgSessionDuration: {
+        value: avgSessionDuration,
+        change: calculateChange(avgSessionDuration, prevGA4?.avgSessionDuration ?? 0),
+      },
+      impressions: {
+        value: impressions,
+        change: calculateChange(impressions, prevGSC?.impressions ?? 0),
+      },
+      engagedSessions: {
+        value: engagedSessions,
+        change: calculateChange(engagedSessions, prevGA4?.engagedSessions ?? 0),
+      },
+      eventCount: {
+        value: eventCount,
+        change: calculateChange(eventCount, prevGA4?.eventCount ?? 0),
+      },
+      conversions: {
+        value: conversions,
+        change: calculateChange(conversions, prevGA4?.conversions ?? 0),
+      },
+      lastSyncDate: latestGA4?.date ?? latestGSC?.date ?? null,
     };
   },
 });
@@ -264,5 +306,48 @@ export const applyInsight = mutation({
       status: 'applied',
       updatedAt: Date.now(),
     });
+  },
+});
+
+/**
+ * Get historical analytics snapshots for the growth chart.
+ * Returns data points sorted by date, with sessions (GA4) and clicks (GSC) per snapshot.
+ */
+export const getGrowthHistory = query({
+  args: {
+    projectId: v.id('projects'),
+  },
+  handler: async (ctx, args) => {
+    const snapshots = await ctx.db
+      .query('analyticsData')
+      .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
+      .order('asc')
+      .collect();
+
+    // Group by date, merge ga4+gsc into single data points
+    const dateMap = new Map<number, { sessions: number; clicks: number }>();
+    for (const snap of snapshots) {
+      const existing = dateMap.get(snap.date) || { sessions: 0, clicks: 0 };
+      if (snap.source === 'ga4') {
+        existing.sessions = snap.sessions || 0;
+      }
+      if (snap.source === 'gsc') {
+        existing.clicks = snap.clicks || 0;
+      }
+      dateMap.set(snap.date, existing);
+    }
+
+    // Convert to array with formatted labels
+    return Array.from(dateMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([date, data]) => {
+        const d = new Date(date);
+        const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return {
+          label,
+          sessions: data.sessions,
+          clicks: data.clicks,
+        };
+      });
   },
 });
