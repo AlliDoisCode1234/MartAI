@@ -12,11 +12,24 @@ export const upsertGA4Connection = mutation({
     refreshToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    console.log('[GoogleOAuth][Mutation] upsertGA4Connection called with:', {
+      projectId: args.projectId,
+      propertyId: args.propertyId,
+      propertyName: args.propertyName,
+      hasAccessToken: !!args.accessToken,
+      hasRefreshToken: !!args.refreshToken,
+    });
+
     // Check if connection exists
     const existing = await ctx.db
       .query('ga4Connections')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .first();
+
+    console.log(
+      '[GoogleOAuth][Mutation] Existing GA4 connection:',
+      existing ? existing._id : 'NONE'
+    );
 
     // Encrypt tokens before storage
     const encryptedAccessToken = await encryptCredential(args.accessToken);
@@ -35,13 +48,17 @@ export const upsertGA4Connection = mutation({
     };
 
     if (existing) {
-      return await ctx.db.patch(existing._id, connectionData);
+      const result = await ctx.db.patch(existing._id, connectionData);
+      console.log('[GoogleOAuth][Mutation] GA4 connection PATCHED:', existing._id);
+      return result;
     }
 
-    return await ctx.db.insert('ga4Connections', {
+    const result = await ctx.db.insert('ga4Connections', {
       ...connectionData,
       createdAt: Date.now(),
     });
+    console.log('[GoogleOAuth][Mutation] GA4 connection INSERTED:', result);
+    return result;
   },
 });
 

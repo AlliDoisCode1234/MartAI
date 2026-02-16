@@ -59,8 +59,32 @@ export function GoogleConnect({ projectId }: Props) {
   // Check for OAuth callback success
   useEffect(() => {
     const setup = searchParams?.get('setup');
+    const success = searchParams?.get('success');
+    const error = searchParams?.get('error');
+    const type = searchParams?.get('type');
+
+    console.log('[GoogleOAuth][Client] Callback params on mount:', {
+      setup,
+      success,
+      error,
+      type,
+      ga4Property: searchParams?.get('ga4Property'),
+      gscSite: searchParams?.get('gscSite'),
+      fullUrl: typeof window !== 'undefined' ? window.location.href : 'SSR',
+    });
+
+    if (error) {
+      console.error('[GoogleOAuth][Client] OAuth returned error:', error);
+      toast({
+        title: 'Connection failed',
+        description: `Google OAuth error: ${error}`,
+        status: 'error',
+        duration: 8000,
+      });
+    }
 
     if (setup === 'ga4') {
+      console.log('[GoogleOAuth][Client] Setup=ga4 detected, showing toast');
       toast({
         title: 'Google connected',
         description: 'Select your GA4 property and GSC site',
@@ -71,15 +95,23 @@ export function GoogleConnect({ projectId }: Props) {
   }, [searchParams, toast]);
 
   const handleConnect = async () => {
+    console.log('[GoogleOAuth][Client] handleConnect triggered with projectId:', projectId);
     setIsConnecting(true);
     try {
+      console.log('[GoogleOAuth][Client] Calling generateAuthUrl Convex action...');
       const authUrl = await generateAuthUrl({ projectId });
+      console.log(
+        '[GoogleOAuth][Client] Received authUrl:',
+        authUrl ? `${authUrl.substring(0, 80)}...` : 'NULL'
+      );
       if (authUrl) {
+        console.log('[GoogleOAuth][Client] Redirecting to Google OAuth consent...');
         window.location.href = authUrl;
       } else {
         throw new Error('Failed to generate authorization URL');
       }
     } catch (error) {
+      console.error('[GoogleOAuth][Client] handleConnect error:', error);
       toast({
         title: 'Connection failed',
         description: error instanceof Error ? error.message : 'Unknown error',

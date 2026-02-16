@@ -22,8 +22,19 @@ export const generateAuthUrl = action({
     returnTo: v.optional(v.string()), // Where to redirect after OAuth
   },
   handler: async (ctx, args) => {
+    console.log('[GoogleOAuth][Convex] generateAuthUrl called with:', {
+      projectId: args.projectId,
+      returnTo: args.returnTo,
+    });
+
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+
+    console.log('[GoogleOAuth][Convex] Environment check:', {
+      GOOGLE_CLIENT_ID: clientId ? 'SET' : 'UNSET',
+      GOOGLE_REDIRECT_URI: redirectUri || 'UNSET',
+      GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'UNSET',
+    });
 
     if (!clientId || !redirectUri) {
       throw new Error('Missing Google Client ID or Redirect URI in environment variables');
@@ -46,10 +57,17 @@ export const generateAuthUrl = action({
       stateData.returnTo = args.returnTo;
     }
     if (Object.keys(stateData).length > 0) {
-      url.searchParams.append('state', Buffer.from(JSON.stringify(stateData)).toString('base64'));
+      const encodedState = Buffer.from(JSON.stringify(stateData)).toString('base64');
+      url.searchParams.append('state', encodedState);
+      console.log('[GoogleOAuth][Convex] State payload:', stateData);
     }
 
-    return url.toString();
+    const finalUrl = url.toString();
+    console.log(
+      '[GoogleOAuth][Convex] Generated auth URL (first 100 chars):',
+      finalUrl.substring(0, 100)
+    );
+    return finalUrl;
   },
 });
 
@@ -59,13 +77,23 @@ export const exchangeCode = action({
     projectId: v.optional(v.id('projects')),
   },
   handler: async (ctx, args) => {
+    console.log('[GoogleOAuth][Convex] exchangeCode called with projectId:', args.projectId);
+
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
+    console.log('[GoogleOAuth][Convex] exchangeCode env check:', {
+      GOOGLE_CLIENT_ID: clientId ? 'SET' : 'UNSET',
+      GOOGLE_CLIENT_SECRET: clientSecret ? 'SET' : 'UNSET',
+      GOOGLE_REDIRECT_URI: redirectUri || 'UNSET',
+    });
+
     if (!clientId || !clientSecret || !redirectUri) {
       throw new Error('Missing Google Creds');
     }
+
+    console.log('[GoogleOAuth][Convex] Exchanging code for tokens with redirect_uri:', redirectUri);
 
     const response = await fetch(GOOGLE_TOKEN_URL, {
       method: 'POST',
@@ -79,12 +107,22 @@ export const exchangeCode = action({
       }),
     });
 
+    console.log('[GoogleOAuth][Convex] Token exchange response status:', response.status);
+
     if (!response.ok) {
       const err = await response.text();
+      console.error('[GoogleOAuth][Convex] Token exchange FAILED:', err);
       throw new Error(`Google Token Exchange Failed: ${err}`);
     }
 
     const tokens = await response.json();
+
+    console.log('[GoogleOAuth][Convex] Token exchange SUCCESS:', {
+      hasAccessToken: !!tokens.access_token,
+      hasRefreshToken: !!tokens.refresh_token,
+      expiresIn: tokens.expires_in,
+      tokenType: tokens.token_type,
+    });
 
     // Return tokens - the callback will pass them to the frontend
     // which will prompt for Property ID and then save
@@ -103,12 +141,17 @@ export const exchangeCode = action({
 export const listGA4Properties = action({
   args: { accessToken: v.string() },
   handler: async (ctx, args) => {
+    console.log('[GoogleOAuth][Convex] listGA4Properties called');
+
     const response = await fetch('https://analyticsadmin.googleapis.com/v1beta/accountSummaries', {
       headers: { Authorization: `Bearer ${args.accessToken}` },
     });
 
+    console.log('[GoogleOAuth][Convex] GA4 accountSummaries response status:', response.status);
+
     if (!response.ok) {
       const err = await response.text();
+      console.error('[GoogleOAuth][Convex] GA4 accountSummaries FAILED:', err);
       throw new Error(`Failed to list GA4 properties: ${err}`);
     }
 
@@ -131,6 +174,11 @@ export const listGA4Properties = action({
       }
     }
 
+    console.log(
+      '[GoogleOAuth][Convex] GA4 properties found:',
+      properties.length,
+      properties.map((p) => p.displayName)
+    );
     return properties;
   },
 });
@@ -141,24 +189,34 @@ export const listGA4Properties = action({
 export const listGSCSites = action({
   args: { accessToken: v.string() },
   handler: async (ctx, args) => {
+    console.log('[GoogleOAuth][Convex] listGSCSites called');
+
     const response = await fetch('https://www.googleapis.com/webmasters/v3/sites', {
       headers: { Authorization: `Bearer ${args.accessToken}` },
     });
 
+    console.log('[GoogleOAuth][Convex] GSC sites response status:', response.status);
+
     if (!response.ok) {
       const err = await response.text();
+      console.error('[GoogleOAuth][Convex] GSC sites FAILED:', err);
       throw new Error(`Failed to list GSC sites: ${err}`);
     }
 
     const data = await response.json();
 
-    // Return site URLs with permission level
-    return (
+    const sites =
       data.siteEntry?.map((site: { siteUrl: string; permissionLevel: string }) => ({
         siteUrl: site.siteUrl,
         permissionLevel: site.permissionLevel,
-      })) || []
+      })) || [];
+
+    console.log(
+      '[GoogleOAuth][Convex] GSC sites found:',
+      sites.length,
+      sites.map((s: { siteUrl: string }) => s.siteUrl)
     );
+    return sites;
   },
 });
 
