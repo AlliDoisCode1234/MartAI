@@ -48,18 +48,10 @@ import {
 import { useQuery, useAction, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useProject } from '@/lib/hooks';
-import {
-  FiLayers,
-  FiEdit3,
-  FiTrendingUp,
-  FiMoreVertical,
-  FiTrash2,
-  FiStar,
-  FiEyeOff,
-  FiCheckCircle,
-} from 'react-icons/fi';
+import { FiLayers, FiEdit3, FiTrendingUp, FiMoreVertical, FiTrash2, FiPlus } from 'react-icons/fi';
 import { Id } from '@/convex/_generated/dataModel';
 import { IntentBadge } from '@/src/components/keywords/IntentBadge';
+import { AddToClusterModal } from './AddToClusterModal';
 
 const thStyle = {
   color: 'gray.500',
@@ -82,12 +74,12 @@ export function KeywordClusters() {
 
   const generateContent = useAction(api.contentGeneration.generateContent);
   const deleteClusterMut = useMutation(api.seo.keywordClusters.deleteCluster);
-  const updateStatusMut = useMutation(api.seo.keywordClusters.updateClusterStatus);
 
   const [generatingClusterId, setGeneratingClusterId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const allSelected = clusters && clusters.length > 0 && selectedIds.length === clusters.length;
 
@@ -149,24 +141,6 @@ export function KeywordClusters() {
     onClose();
   };
 
-  const handleStatusChange = async (clusterId: string, status: string) => {
-    try {
-      await updateStatusMut({ clusterId: clusterId as Id<'keywordClusters'>, status });
-      toast({
-        title: `Cluster ${status === 'hidden' ? 'hidden' : `set to ${status}`}`,
-        status: 'info',
-        duration: 2000,
-      });
-    } catch (error) {
-      toast({
-        title: 'Status update failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        status: 'error',
-        duration: 5000,
-      });
-    }
-  };
-
   const handleCreateContent = async (cluster: NonNullable<typeof clusters>[number]) => {
     if (!projectId) return;
     setGeneratingClusterId(cluster._id);
@@ -217,9 +191,24 @@ export function KeywordClusters() {
           </Text>
           <Text color="gray.400" fontSize="sm" maxW="420px" textAlign="center">
             Group related keywords into topic clusters to plan content strategy and maximize topical
-            authority. Import keywords first, then sync from GSC to auto-generate clusters.
+            authority.
           </Text>
         </VStack>
+        <Button
+          bg="#F99F2A"
+          color="white"
+          size="sm"
+          _hover={{ bg: '#e8901f' }}
+          leftIcon={<FiPlus />}
+          onClick={() => setShowCreateModal(true)}
+        >
+          New Cluster
+        </Button>
+        <AddToClusterModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          projectId={projectId as string}
+        />
       </VStack>
     );
   }
@@ -234,6 +223,16 @@ export function KeywordClusters() {
             {clusters.length} Cluster{clusters.length !== 1 ? 's' : ''}
           </Text>
         </HStack>
+        <Button
+          size="sm"
+          bg="#F99F2A"
+          color="white"
+          _hover={{ bg: '#e8901f' }}
+          leftIcon={<FiPlus />}
+          onClick={() => setShowCreateModal(true)}
+        >
+          New Cluster
+        </Button>
       </HStack>
 
       {/* Bulk Action Bar */}
@@ -455,37 +454,6 @@ export function KeywordClusters() {
                         py={1}
                       >
                         <MenuItem
-                          icon={<FiCheckCircle />}
-                          fontSize="sm"
-                          color="gray.300"
-                          bg="transparent"
-                          _hover={{ bg: 'rgba(255,255,255,0.06)', color: 'white' }}
-                          onClick={() => handleStatusChange(cluster._id, 'active')}
-                        >
-                          Set Active
-                        </MenuItem>
-                        <MenuItem
-                          icon={<FiStar />}
-                          fontSize="sm"
-                          color="gray.300"
-                          bg="transparent"
-                          _hover={{ bg: 'rgba(255,255,255,0.06)', color: '#F99F2A' }}
-                          onClick={() => handleStatusChange(cluster._id, 'favorite')}
-                        >
-                          Favorite
-                        </MenuItem>
-                        <MenuItem
-                          icon={<FiEyeOff />}
-                          fontSize="sm"
-                          color="gray.300"
-                          bg="transparent"
-                          _hover={{ bg: 'rgba(255,255,255,0.06)', color: 'gray.400' }}
-                          onClick={() => handleStatusChange(cluster._id, 'hidden')}
-                        >
-                          Hide
-                        </MenuItem>
-                        <MenuDivider borderColor="rgba(255,255,255,0.08)" />
-                        <MenuItem
                           icon={<FiTrash2 />}
                           fontSize="sm"
                           color="#ef4444"
@@ -539,6 +507,13 @@ export function KeywordClusters() {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+
+      {/* Create Cluster Modal */}
+      <AddToClusterModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        projectId={projectId as string}
+      />
     </VStack>
   );
 }

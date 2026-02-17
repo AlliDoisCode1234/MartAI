@@ -179,3 +179,32 @@ export const deleteKeywords = mutation({
     return { deleted };
   },
 });
+
+// Assign keyword to cluster (requires project editor access)
+export const assignKeywordToCluster = mutation({
+  args: {
+    keywordId: v.id('keywords'),
+    clusterId: v.id('keywordClusters'),
+  },
+  handler: async (ctx, args) => {
+    const keyword = await ctx.db.get(args.keywordId);
+    if (!keyword) throw new Error('Keyword not found');
+
+    await requireProjectAccess(ctx, keyword.projectId, 'editor');
+
+    const cluster = await ctx.db.get(args.clusterId);
+    if (!cluster) throw new Error('Cluster not found');
+
+    // Update keyword's clusterId
+    await ctx.db.patch(args.keywordId, { clusterId: args.clusterId });
+
+    // Add keyword text to cluster's keywords array (deduped)
+    const updatedKeywords = [...new Set([...cluster.keywords, keyword.keyword])];
+    await ctx.db.patch(args.clusterId, {
+      keywords: updatedKeywords,
+      updatedAt: Date.now(),
+    });
+
+    return { keywordId: args.keywordId, clusterId: args.clusterId };
+  },
+});

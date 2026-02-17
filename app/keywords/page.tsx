@@ -77,10 +77,8 @@ export default function KeywordsPage() {
   const [activeTab, setActiveTab] = useState('library');
   const toast = useToast();
 
-  // Mutations for keyword actions
   const deleteKeywordMut = useMutation(api.seo.keywords.deleteKeyword);
   const deleteKeywordsMut = useMutation(api.seo.keywords.deleteKeywords);
-  const updateStatusMut = useMutation(api.seo.keywords.updateKeywordStatus);
 
   const handleDelete = async (ids: string[]) => {
     try {
@@ -98,24 +96,6 @@ export default function KeywordsPage() {
     } catch (error) {
       toast({
         title: 'Delete failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        status: 'error',
-        duration: 5000,
-      });
-    }
-  };
-
-  const handleStatusChange = async (id: string, status: string) => {
-    try {
-      await updateStatusMut({ keywordId: id as Id<'keywords'>, status });
-      toast({
-        title: `Keyword ${status === 'hidden' ? 'hidden' : `set to ${status}`}`,
-        status: 'info',
-        duration: 2000,
-      });
-    } catch (error) {
-      toast({
-        title: 'Status update failed',
         description: error instanceof Error ? error.message : 'Unknown error',
         status: 'error',
         duration: 5000,
@@ -254,7 +234,7 @@ export default function KeywordsPage() {
               selectedIds={selectedIds}
               onSelectionChange={setSelectedIds}
               onDelete={handleDelete}
-              onStatusChange={handleStatusChange}
+              projectId={projectId as string}
             />
 
             <KeywordPagination

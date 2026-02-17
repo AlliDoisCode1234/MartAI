@@ -43,20 +43,13 @@ import {
   AlertDialogBody,
   AlertDialogFooter,
 } from '@chakra-ui/react';
-import {
-  FiInfo,
-  FiMoreVertical,
-  FiTrash2,
-  FiStar,
-  FiEyeOff,
-  FiCheckCircle,
-  FiLayers,
-} from 'react-icons/fi';
+import { FiInfo, FiMoreVertical, FiTrash2, FiLayers } from 'react-icons/fi';
 import { Link } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { IntentBadge } from './IntentBadge';
 import { PhooScoreBadge, computeKeywordPhooScore } from './PhooScoreBadge';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { AddToClusterModal } from './AddToClusterModal';
 
 interface EnrichedKeyword {
   _id: string;
@@ -77,7 +70,7 @@ interface Props {
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onDelete?: (ids: string[]) => void;
-  onStatusChange?: (id: string, status: string) => void;
+  projectId: string;
 }
 
 const thStyle = {
@@ -95,11 +88,15 @@ export function KeywordTable({
   selectedIds,
   onSelectionChange,
   onDelete,
-  onStatusChange,
+  projectId,
 }: Props) {
   const allSelected = keywords.length > 0 && selectedIds.length === keywords.length;
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const [clusterModalKeyword, setClusterModalKeyword] = useState<{
+    id: string;
+    text: string;
+  } | null>(null);
 
   function toggleAll() {
     if (allSelected) {
@@ -317,39 +314,9 @@ export function KeywordTable({
                           color="gray.300"
                           bg="transparent"
                           _hover={{ bg: 'rgba(255,255,255,0.06)', color: 'white' }}
+                          onClick={() => setClusterModalKeyword({ id: kw._id, text: kw.keyword })}
                         >
                           Add to Cluster
-                        </MenuItem>
-                        <MenuDivider borderColor="rgba(255,255,255,0.08)" />
-                        <MenuItem
-                          icon={<FiCheckCircle />}
-                          fontSize="sm"
-                          color="gray.300"
-                          bg="transparent"
-                          _hover={{ bg: 'rgba(255,255,255,0.06)', color: 'white' }}
-                          onClick={() => onStatusChange?.(kw._id, 'active')}
-                        >
-                          Set Active
-                        </MenuItem>
-                        <MenuItem
-                          icon={<FiStar />}
-                          fontSize="sm"
-                          color="gray.300"
-                          bg="transparent"
-                          _hover={{ bg: 'rgba(255,255,255,0.06)', color: '#F99F2A' }}
-                          onClick={() => onStatusChange?.(kw._id, 'favorite')}
-                        >
-                          Favorite
-                        </MenuItem>
-                        <MenuItem
-                          icon={<FiEyeOff />}
-                          fontSize="sm"
-                          color="gray.300"
-                          bg="transparent"
-                          _hover={{ bg: 'rgba(255,255,255,0.06)', color: 'gray.400' }}
-                          onClick={() => onStatusChange?.(kw._id, 'hidden')}
-                        >
-                          Hide
                         </MenuItem>
                         <MenuDivider borderColor="rgba(255,255,255,0.08)" />
                         <MenuItem
@@ -371,6 +338,14 @@ export function KeywordTable({
           </Tbody>
         </Table>
       </Box>
+      {/* Add to Cluster Modal */}
+      <AddToClusterModal
+        isOpen={!!clusterModalKeyword}
+        onClose={() => setClusterModalKeyword(null)}
+        projectId={projectId}
+        keywordId={clusterModalKeyword?.id}
+        keywordText={clusterModalKeyword?.text}
+      />
 
       {/* Bulk Delete Confirm Dialog */}
       <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose} isCentered>

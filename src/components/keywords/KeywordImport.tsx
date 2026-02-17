@@ -75,7 +75,7 @@ export function KeywordImport() {
 
   const handleGenerateFromUrl = async () => {
     if (!projectId) return;
-    setIsSyncing(true);
+    setIsSyncingAi(true);
     try {
       const result = await generateFromUrl({
         projectId: projectId as Id<'projects'>,

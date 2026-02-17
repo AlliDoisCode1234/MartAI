@@ -286,3 +286,51 @@ export const mergeClusters = mutation({
 });
 
 // generateClusters action moved to keywordActions.ts
+
+// Create a cluster manually (minimal fields, sensible defaults)
+export const createManualCluster = mutation({
+  args: {
+    projectId: v.id('projects'),
+    clusterName: v.string(),
+    keywords: v.array(v.string()),
+    intent: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
+    if (args.keywords.length < 3) {
+      throw new Error('A cluster needs at least 3 keywords');
+    }
+
+    // Check for existing cluster with same name
+    const existing = await ctx.db
+      .query('keywordClusters')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .filter((q) => q.eq(q.field('clusterName'), args.clusterName))
+      .first();
+
+    if (existing) {
+      throw new Error(`A cluster named "${args.clusterName}" already exists`);
+    }
+
+    // Deduplicate keywords
+    const keywords = [...new Set(args.keywords.map((k) => k.trim()).filter(Boolean))];
+    if (keywords.length < 3) {
+      throw new Error('A cluster needs at least 3 unique keywords');
+    }
+
+    return await ctx.db.insert('keywordClusters', {
+      projectId: args.projectId,
+      clusterName: args.clusterName,
+      keywords,
+      intent: args.intent ?? 'informational',
+      difficulty: 50,
+      volumeRange: { min: 0, max: 0 },
+      impactScore: 0.5,
+      topSerpUrls: [],
+      status: 'active',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+  },
+});
