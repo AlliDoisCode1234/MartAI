@@ -104,7 +104,7 @@ export function HeroSection({ onCtaClick }: Props) {
             </HStack>
           </MotionBox>
 
-          {/* Headline - New GEO+SEO messaging */}
+          {/* Headline - Lead gen / agency alternative */}
           <MotionBox
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -119,19 +119,19 @@ export function HeroSection({ onCtaClick }: Props) {
               letterSpacing="-0.02em"
               color="gray.800"
             >
-              Get Found by Google
+              Predictable Leads.
               <br />
               <Text
                 as="span"
                 bgGradient="linear(to-r, brand.orange, brand.red, orange.300)"
                 bgClip="text"
               >
-                AND ChatGPT
+                No Agency Required.
               </Text>
             </Heading>
           </MotionBox>
 
-          {/* Subheadline - Powerful GEO messaging */}
+          {/* Subheadline */}
           <MotionBox
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -145,9 +145,10 @@ export function HeroSection({ onCtaClick }: Props) {
               mx="auto"
               lineHeight="1.7"
             >
-              Google's AI now answers 40% of searches directly—without users clicking any links.{' '}
+              Phoo replaces your $2,500/mo marketing agency with an AI-powered lead generation
+              system.{' '}
               <Text as="span" fontWeight="semibold" color="gray.800">
-                Traditional SEO gets you ranked. Phoo's GEO gets you cited.
+                Built for Google and the new AI search era.
               </Text>
             </Text>
           </MotionBox>
@@ -181,7 +182,7 @@ export function HeroSection({ onCtaClick }: Props) {
               rightIcon={<Icon as={ArrowRight} boxSize={6} />}
               transition="all 0.3s ease"
             >
-              Join the Phoo Beta
+              Start Getting Leads
             </Button>
           </MotionBox>
         </VStack>

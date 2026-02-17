@@ -25,23 +25,23 @@ import { Search, Zap, Bot, Users, Check } from 'lucide-react';
 const FEATURES = [
   {
     icon: Search,
-    title: 'Get found on Google',
-    description: 'Rank for keywords your customers actually search.',
-  },
-  {
-    icon: Bot,
-    title: 'Get cited by ChatGPT',
-    description: 'AI assistants recommend your business.',
+    title: 'Found on Google AND AI search',
+    description: 'Optimized for traditional search and the new era of AI-powered answers.',
   },
   {
     icon: Zap,
-    title: 'AI writes your content',
-    description: 'SEO-optimized articles created automatically.',
+    title: 'Content created automatically',
+    description: 'AI writes, optimizes, and publishes — you approve.',
   },
   {
     icon: Users,
-    title: 'Turn visitors into leads',
-    description: 'Traffic that converts, not vanity metrics.',
+    title: 'Designed to convert',
+    description: 'Content engineered for leads, not vanity traffic.',
+  },
+  {
+    icon: Bot,
+    title: 'No agency needed',
+    description: 'The system agencies use — at 1/5 the cost.',
   },
 ];
 
@@ -58,7 +58,7 @@ export function FeaturesSection() {
             color="white"
             textAlign="center"
           >
-            How Phoo Gets You More Customers
+            Your Lead Generation System
           </Heading>
 
           {/* Illustration */}
@@ -99,7 +99,7 @@ export function FeaturesSection() {
             <HStack>
               <Icon as={Check} color="green.500" />
               <Text fontWeight="medium" color="gray.800">
-                Small business SEO automation that works 24/7
+                The $2,500/mo agency alternative — that works 24/7
               </Text>
             </HStack>
           </Box>

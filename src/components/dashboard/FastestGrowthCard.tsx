@@ -16,6 +16,11 @@ import Link from 'next/link';
 
 const MotionBox = motion(Box);
 
+type Props = {
+  firstPageReadyCount: number;
+  contentRefreshCount: number;
+};
+
 type QuickAction = {
   label: string;
   subtitle: string;
@@ -48,7 +53,9 @@ const QUICK_ACTIONS: QuickAction[] = [
   },
 ];
 
-export function FastestGrowthCard() {
+export function FastestGrowthCard({ firstPageReadyCount, contentRefreshCount }: Props) {
+  const hasOpportunities = firstPageReadyCount > 0 || contentRefreshCount > 0;
+
   return (
     <MotionBox
       initial={{ opacity: 0, y: 20 }}
@@ -76,27 +83,40 @@ export function FastestGrowthCard() {
               </Text>
             </HStack>
 
-            {/* TODO: Wire to canonicalRating.insights */}
-            <VStack align="start" spacing={2} pl={2}>
-              <HStack spacing={2}>
-                <Box w="6px" h="6px" borderRadius="full" bg="#34d399" />
-                <Text color="gray.300" fontSize="xs">
-                  <Text as="span" fontWeight="bold" color="white">
-                    5
-                  </Text>{' '}
-                  Keywords are 1st Page Ready
-                </Text>
-              </HStack>
-              <HStack spacing={2}>
-                <Box w="6px" h="6px" borderRadius="full" bg="#F99F2A" />
-                <Text color="gray.300" fontSize="xs">
-                  <Text as="span" fontWeight="bold" color="white">
-                    1
-                  </Text>{' '}
-                  Blog Post is Ready for a Refresh
-                </Text>
-              </HStack>
-            </VStack>
+            {hasOpportunities ? (
+              <VStack align="start" spacing={2} pl={2}>
+                {firstPageReadyCount > 0 && (
+                  <HStack spacing={2}>
+                    <Box w="6px" h="6px" borderRadius="full" bg="#34d399" />
+                    <Text color="gray.300" fontSize="xs">
+                      <Text as="span" fontWeight="bold" color="white">
+                        {firstPageReadyCount}
+                      </Text>{' '}
+                      {firstPageReadyCount === 1
+                        ? 'Keyword is 1st Page Ready'
+                        : 'Keywords are 1st Page Ready'}
+                    </Text>
+                  </HStack>
+                )}
+                {contentRefreshCount > 0 && (
+                  <HStack spacing={2}>
+                    <Box w="6px" h="6px" borderRadius="full" bg="#F99F2A" />
+                    <Text color="gray.300" fontSize="xs">
+                      <Text as="span" fontWeight="bold" color="white">
+                        {contentRefreshCount}
+                      </Text>{' '}
+                      {contentRefreshCount === 1
+                        ? 'Blog Post is Ready for a Refresh'
+                        : 'Blog Posts are Ready for a Refresh'}
+                    </Text>
+                  </HStack>
+                )}
+              </VStack>
+            ) : (
+              <Text color="gray.500" fontSize="xs" pl={2}>
+                Sync your data to discover growth opportunities
+              </Text>
+            )}
 
             <Link href="/studio/strategy">
               <Button

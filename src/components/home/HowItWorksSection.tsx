@@ -22,15 +22,15 @@ const STEPS = [
     icon: Globe,
     step: '1',
     title: 'Connect your site',
-    description: 'One URL unlocks your integrations',
+    description: 'One URL unlocks your lead engine',
     color: 'blue.500',
     bgColor: 'blue.50',
   },
   {
     icon: Sparkles,
     step: '2',
-    title: 'AI creates content',
-    description: 'Optimized for Google & ChatGPT',
+    title: 'AI builds your pipeline',
+    description: 'Content optimized for Google & AI search',
     color: 'brand.orange',
     bgColor: 'orange.50',
   },
@@ -38,7 +38,7 @@ const STEPS = [
     icon: TrendingUp,
     step: '3',
     title: 'You get leads',
-    description: 'Traffic that converts',
+    description: 'Predictable inbound pipeline',
     color: 'green.500',
     bgColor: 'green.50',
   },
@@ -103,7 +103,7 @@ export function HowItWorksSection() {
             textAlign="center"
             fontWeight="medium"
           >
-            Three simple steps to more customers
+            Three simple steps to replace your marketing agency
           </Text>
         </VStack>
 

@@ -14,10 +14,10 @@ import { Box, Container, Heading, Text, SimpleGrid, HStack, Icon } from '@chakra
 import { Check } from 'lucide-react';
 
 const AUDIENCE_TRAITS = [
-  'Care about serving their community',
-  'Want sustainable growth, not gimmicks',
-  'Believe their work has purpose',
-  'Tired of marketing that feels busy but not effective',
+  'Spending $0–$500/mo on marketing and want more from it',
+  "Know they need leads but can't justify a $2,500/mo agency",
+  'Want a system that generates pipeline, not just content',
+  'Ready to invest in predictable growth, not guesswork',
 ];
 
 export function AudienceSection() {
@@ -35,7 +35,7 @@ export function AudienceSection() {
         </Heading>
 
         <Text fontSize="xl" color="gray.600" mb={8}>
-          Phoo is built for local businesses who:
+          Phoo is built for SMBs who:
         </Text>
 
         <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4} maxW="2xl" mx="auto" textAlign="left">
@@ -56,7 +56,7 @@ export function AudienceSection() {
         </SimpleGrid>
 
         <Text color="gray.500" mt={8} fontStyle="italic">
-          (And yes — others are welcome too.)
+          Currently in beta — built from a real client&apos;s workflow, not a whiteboard.
         </Text>
       </Container>
     </Box>

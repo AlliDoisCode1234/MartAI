@@ -95,6 +95,7 @@ export default function PhooFab({ onOpenDrawer }: Props) {
             borderRadius="2xl"
             boxShadow="xl"
             p={2}
+            pb={7}
             cursor="pointer"
             onClick={handleClick}
             position="relative"
