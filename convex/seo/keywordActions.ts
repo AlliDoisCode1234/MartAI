@@ -29,13 +29,16 @@ export interface KeywordInput {
 }
 
 async function insertKeywordsFromInputs(
-  ctx: { runMutation: (...args: any[]) => Promise<any> },
+  ctx: {
+    runMutation: (...args: any[]) => Promise<any>;
+    runQuery: (...args: any[]) => Promise<any>;
+  },
   projectId: any,
   inputs: KeywordInput[]
 ) {
   if (inputs.length === 0) return;
 
-  // Deduplicate by keyword string
+  // Deduplicate by keyword string within input list
   const seen = new Set<string>();
   const unique = inputs.filter((k) => {
     const lower = k.keyword.toLowerCase();
@@ -44,10 +47,19 @@ async function insertKeywordsFromInputs(
     return true;
   });
 
+  // Deduplicate against existing DB records to prevent duplicate rows
+  const existing = await ctx.runQuery(api.seo.keywords.getKeywordsByProject, { projectId });
+  const existingSet = new Set(
+    (existing as Array<{ keyword: string }>).map((k) => k.keyword.toLowerCase())
+  );
+  const newOnly = unique.filter((k) => !existingSet.has(k.keyword.toLowerCase()));
+
+  if (newOnly.length === 0) return;
+
   // Batch in chunks of 50 to avoid mutation size limits
   const BATCH_SIZE = 50;
-  for (let i = 0; i < unique.length; i += BATCH_SIZE) {
-    const batch = unique.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < newOnly.length; i += BATCH_SIZE) {
+    const batch = newOnly.slice(i, i + BATCH_SIZE);
     await ctx.runMutation(api.seo.keywords.createKeywords, {
       projectId,
       keywords: batch.map((k) => ({
@@ -178,19 +190,27 @@ export const generateClusters = action({
           await ctx.runMutation(api.integrations.gscConnections.updateLastSync, {
             connectionId: connection._id,
           });
-          console.log(`GSC import: ${imported.length} keywords imported`);
+          console.log(
+            JSON.stringify({
+              event: 'gsc_import',
+              projectId: args.projectId,
+              count: imported.length,
+            })
+          );
         } else {
           throw new Error(
             'GSC returned no keyword data. Your site may not have enough search impressions yet.'
           );
         }
       } catch (error) {
+        console.error('[KeywordActions] GSC sync error:', error);
         // Re-throw with context — do NOT silently fall back when GSC was explicitly requested
         if (error instanceof Error && error.message.includes('GSC')) {
           throw error;
         }
+        // Security: Do NOT expose raw error.message to caller
         throw new Error(
-          `GSC sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+          'GSC sync failed. Please check your Google Search Console connection and try again.'
         );
       }
     }

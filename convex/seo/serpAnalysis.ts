@@ -102,6 +102,17 @@ export const canAnalyze = query({
   },
 });
 
+/**
+ * Verify editor access for a project (used by analyzeSERP action before AI call)
+ */
+export const verifyEditorAccess = query({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+    return { authorized: true };
+  },
+});
+
 // ============================================
 // MUTATIONS
 // ============================================
@@ -205,6 +216,12 @@ export const analyzeSERP = action({
     }
 
     try {
+      // Security: Verify editor access BEFORE expensive AI call
+      // canAnalyze only checks viewer access; storeSerpResults checks editor but runs after AI
+      await ctx.runQuery(api.seo.serpAnalysis.verifyEditorAccess, {
+        projectId: args.projectId,
+      });
+
       // Use the AI router for intelligent SERP analysis
       const aiResult = await ctx.runAction(api.ai.router.router.generateWithFallback, {
         systemPrompt: `You are an expert SEO analyst. When given a keyword, you analyze the likely top 10 Google organic search results for that keyword. Provide realistic, data-informed results based on your knowledge of which domains typically rank well for this type of query.
@@ -257,7 +274,7 @@ Return a JSON array of exactly 10 results.`,
         }));
       } catch (parseError) {
         console.error('[SerpAnalysis] Failed to parse AI response:', parseError);
-        console.error('[SerpAnalysis] Raw AI content:', aiResult.content.substring(0, 500));
+        // Security: Do NOT log raw AI content — may contain user-provided context
         return {
           success: false,
           error: 'Failed to parse SERP analysis results. Please try again.',
@@ -281,10 +298,10 @@ Return a JSON array of exactly 10 results.`,
       };
     } catch (error: unknown) {
       console.error('[SerpAnalysis] SERP analysis failed:', error);
-      const message = error instanceof Error ? error.message : 'Failed to analyze SERP';
+      // Security: Return generic error — do NOT expose internal error.message to caller
       return {
         success: false,
-        error: message,
+        error: 'SERP analysis failed. Please try again.',
       };
     }
   },

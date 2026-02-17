@@ -1,6 +1,7 @@
 import { mutation, query } from '../_generated/server';
 import { internal } from '../_generated/api';
 import { v } from 'convex/values';
+import type { Id } from '../_generated/dataModel';
 import { requireProjectAccess } from '../lib/rbac';
 
 // Create keywords (requires project editor access)
@@ -162,14 +163,16 @@ export const getKeywordEnriched = query({
     if (keyword.clusterId) {
       cluster = await ctx.db.get(keyword.clusterId);
 
-      // Fetch all keywords in the same cluster
-      const allProjectKeywords = await ctx.db
+      // Use by_project_cluster index for efficient sibling lookup
+      const siblings = await ctx.db
         .query('keywords')
-        .withIndex('by_project', (q) => q.eq('projectId', keyword.projectId))
+        .withIndex('by_project_cluster', (q) =>
+          q.eq('projectId', keyword.projectId).eq('clusterId', keyword.clusterId)
+        )
         .collect();
 
-      clusterKeywords = allProjectKeywords
-        .filter((k) => k.clusterId && k.clusterId === keyword.clusterId && k._id !== keyword._id)
+      clusterKeywords = siblings
+        .filter((k) => k._id !== keyword._id)
         .map((k) => ({
           _id: k._id,
           keyword: k.keyword,
@@ -263,6 +266,20 @@ export const deleteKeyword = mutation({
     // Security: Require project access
     await requireProjectAccess(ctx, keyword.projectId, 'editor');
 
+    // Clean up cluster membership to prevent drift
+    if (keyword.clusterId) {
+      const cluster = await ctx.db.get(keyword.clusterId);
+      if (cluster) {
+        const updatedKeywords = cluster.keywords.filter(
+          (k: string) => k.toLowerCase() !== keyword.keyword.toLowerCase()
+        );
+        await ctx.db.patch(keyword.clusterId, {
+          keywords: updatedKeywords,
+          updatedAt: Date.now(),
+        });
+      }
+    }
+
     await ctx.db.delete(args.keywordId);
     return args.keywordId;
   },
@@ -277,18 +294,55 @@ export const deleteKeywords = mutation({
       throw new Error('Cannot delete more than 50 keywords at once');
     }
 
-    // Verify access on first keyword's project
+    // Fetch all keywords first to validate ownership
     const first = await ctx.db.get(args.keywordIds[0]);
     if (!first) return { deleted: 0 };
-    await requireProjectAccess(ctx, first.projectId, 'editor');
+    const projectId = first.projectId;
+    await requireProjectAccess(ctx, projectId, 'editor');
 
-    let deleted = 0;
+    // Security: Verify ALL keywords belong to the same project before deleting any
+    const keywords = [];
     for (const id of args.keywordIds) {
       const kw = await ctx.db.get(id);
       if (kw) {
-        await ctx.db.delete(id);
-        deleted++;
+        if (kw.projectId !== projectId) {
+          throw new Error('All keywords must belong to the same project');
+        }
+        keywords.push(kw);
       }
+    }
+
+    // Clean up cluster memberships to prevent drift
+    const clusterUpdates = new Map<string, Set<string>>();
+    for (const kw of keywords) {
+      if (kw.clusterId) {
+        const key = kw.clusterId as string;
+        if (!clusterUpdates.has(key)) {
+          clusterUpdates.set(key, new Set());
+        }
+        clusterUpdates.get(key)!.add(kw.keyword.toLowerCase());
+      }
+    }
+
+    // Batch update clusters
+    for (const [clusterId, removedKeywords] of clusterUpdates) {
+      const clusterDoc = await ctx.db.get(clusterId as Id<'keywordClusters'>);
+      if (clusterDoc) {
+        const updated = clusterDoc.keywords.filter(
+          (k: string) => !removedKeywords.has(k.toLowerCase())
+        );
+        await ctx.db.patch(clusterId as Id<'keywordClusters'>, {
+          keywords: updated,
+          updatedAt: Date.now(),
+        });
+      }
+    }
+
+    // Delete all validated keywords
+    let deleted = 0;
+    for (const kw of keywords) {
+      await ctx.db.delete(kw._id);
+      deleted++;
     }
 
     return { deleted };
@@ -309,6 +363,11 @@ export const assignKeywordToCluster = mutation({
 
     const cluster = await ctx.db.get(args.clusterId);
     if (!cluster) throw new Error('Cluster not found');
+
+    // Security: Verify cluster belongs to the same project
+    if (cluster.projectId !== keyword.projectId) {
+      throw new Error('Cluster must belong to the same project as the keyword');
+    }
 
     // Update keyword's clusterId
     await ctx.db.patch(args.keywordId, { clusterId: args.clusterId });
