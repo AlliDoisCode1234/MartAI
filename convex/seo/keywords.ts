@@ -137,3 +137,45 @@ export const getKeyword = query({
     return keyword;
   },
 });
+
+// Delete single keyword (requires project editor access)
+export const deleteKeyword = mutation({
+  args: { keywordId: v.id('keywords') },
+  handler: async (ctx, args) => {
+    const keyword = await ctx.db.get(args.keywordId);
+    if (!keyword) return null;
+
+    // Security: Require project access
+    await requireProjectAccess(ctx, keyword.projectId, 'editor');
+
+    await ctx.db.delete(args.keywordId);
+    return args.keywordId;
+  },
+});
+
+// Bulk delete keywords (requires project editor access, max 50)
+export const deleteKeywords = mutation({
+  args: { keywordIds: v.array(v.id('keywords')) },
+  handler: async (ctx, args) => {
+    if (args.keywordIds.length === 0) return { deleted: 0 };
+    if (args.keywordIds.length > 50) {
+      throw new Error('Cannot delete more than 50 keywords at once');
+    }
+
+    // Verify access on first keyword's project
+    const first = await ctx.db.get(args.keywordIds[0]);
+    if (!first) return { deleted: 0 };
+    await requireProjectAccess(ctx, first.projectId, 'editor');
+
+    let deleted = 0;
+    for (const id of args.keywordIds) {
+      const kw = await ctx.db.get(id);
+      if (kw) {
+        await ctx.db.delete(id);
+        deleted++;
+      }
+    }
+
+    return { deleted };
+  },
+});

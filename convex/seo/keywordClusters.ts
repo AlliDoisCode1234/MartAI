@@ -31,6 +31,29 @@ export const createCluster = mutation({
     // Security: Require project access
     await requireProjectAccess(ctx, args.projectId, 'editor');
 
+    // Upsert: check for existing cluster with same name in this project
+    const existing = await ctx.db
+      .query('keywordClusters')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .filter((q) => q.eq(q.field('clusterName'), args.clusterName))
+      .first();
+
+    if (existing) {
+      // Update existing cluster — merge keywords, refresh metrics
+      const mergedKeywords = [...new Set([...existing.keywords, ...args.keywords])];
+      await ctx.db.patch(existing._id, {
+        keywords: mergedKeywords,
+        intent: args.intent,
+        difficulty: args.difficulty,
+        volumeRange: args.volumeRange,
+        impactScore: args.impactScore,
+        topSerpUrls: args.topSerpUrls,
+        status: args.status || existing.status,
+        updatedAt: Date.now(),
+      });
+      return existing._id;
+    }
+
     return await ctx.db.insert('keywordClusters', {
       projectId: args.projectId,
       clusterName: args.clusterName,

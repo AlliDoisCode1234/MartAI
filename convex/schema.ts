@@ -267,8 +267,11 @@ export default defineSchema({
     status: v.string(), // suggested, approved, implemented
     source: v.optional(v.string()), // 'intelligence', 'gsc', 'import', 'serp'
     phase: v.optional(v.string()), // 'foundation', 'authority', 'conversion'
+    // Cluster association (server-side join)
+    clusterId: v.optional(v.id('keywordClusters')),
     // GSC performance fields (enriched from sync)
     gscPosition: v.optional(v.number()),
+    previousGscPosition: v.optional(v.number()), // rank history tracking
     gscClicks: v.optional(v.number()),
     gscImpressions: v.optional(v.number()),
     gscCtr: v.optional(v.number()),
@@ -280,7 +283,8 @@ export default defineSchema({
     .index('by_keyword', ['keyword'])
     .index('by_project_source', ['projectId', 'source'])
     .index('by_project_phase', ['projectId', 'phase'])
-    .index('by_project_keyword', ['projectId', 'keyword']),
+    .index('by_project_keyword', ['projectId', 'keyword'])
+    .index('by_project_cluster', ['projectId', 'clusterId']),
 
   // OAuth tokens for WordPress/Shopify
   oauthTokens: defineTable({
