@@ -267,6 +267,11 @@ export const generateClusters = action({
       // Also insert individual keywords into the keywords table
       await insertKeywordsFromInputs(ctx, args.projectId, keywordInputs);
 
+      // Link newly inserted keywords to their clusters
+      await ctx.runMutation(api.seo.keywords.linkKeywordsToClusters, {
+        projectId: args.projectId,
+      });
+
       return { success: true, count: clusters.length, cached: true, storage: true };
     }
 
@@ -291,6 +296,11 @@ export const generateClusters = action({
 
       // Also insert individual keywords into the keywords table
       await insertKeywordsFromInputs(ctx, args.projectId, keywordInputs);
+
+      // Link newly inserted keywords to their clusters
+      await ctx.runMutation(api.seo.keywords.linkKeywordsToClusters, {
+        projectId: args.projectId,
+      });
 
       return { success: true, count: cached.clusters.length, cached: true };
     }
@@ -326,6 +336,11 @@ export const generateClusters = action({
 
     // Also insert individual keywords into the keywords table
     await insertKeywordsFromInputs(ctx, args.projectId, keywordInputs);
+
+    // Link newly inserted keywords to their clusters
+    await ctx.runMutation(api.seo.keywords.linkKeywordsToClusters, {
+      projectId: args.projectId,
+    });
 
     // 3. Store in Persistence & Cache
     const outputData = { clusters };

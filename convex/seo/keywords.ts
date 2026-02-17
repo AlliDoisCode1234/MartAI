@@ -264,7 +264,7 @@ export const deleteKeyword = mutation({
     if (!keyword) return null;
 
     // Security: Require project access
-    await requireProjectAccess(ctx, keyword.projectId, 'editor');
+    const { userId } = await requireProjectAccess(ctx, keyword.projectId, 'editor');
 
     // Clean up cluster membership to prevent drift
     if (keyword.clusterId) {
@@ -281,6 +281,20 @@ export const deleteKeyword = mutation({
     }
 
     await ctx.db.delete(args.keywordId);
+
+    // Audit log: track keyword deletion
+    await ctx.db.insert('biEvents', {
+      projectId: keyword.projectId,
+      userId,
+      event: 'keyword:deleted',
+      properties: {
+        keywordId: args.keywordId,
+        keyword: keyword.keyword,
+        clusterId: keyword.clusterId,
+      },
+      timestamp: Date.now(),
+    });
+
     return args.keywordId;
   },
 });
@@ -298,7 +312,7 @@ export const deleteKeywords = mutation({
     const first = await ctx.db.get(args.keywordIds[0]);
     if (!first) return { deleted: 0 };
     const projectId = first.projectId;
-    await requireProjectAccess(ctx, projectId, 'editor');
+    const { userId } = await requireProjectAccess(ctx, projectId, 'editor');
 
     // Security: Verify ALL keywords belong to the same project before deleting any
     const keywords = [];
@@ -345,6 +359,18 @@ export const deleteKeywords = mutation({
       deleted++;
     }
 
+    // Audit log: track bulk keyword deletion
+    await ctx.db.insert('biEvents', {
+      projectId,
+      userId,
+      event: 'keyword:bulk_deleted',
+      properties: {
+        count: deleted,
+        keywords: keywords.map((kw) => kw.keyword),
+      },
+      timestamp: Date.now(),
+    });
+
     return { deleted };
   },
 });
@@ -380,5 +406,49 @@ export const assignKeywordToCluster = mutation({
     });
 
     return { keywordId: args.keywordId, clusterId: args.clusterId };
+  },
+});
+
+/**
+ * Link unlinked keyword rows to their clusters by matching keyword text.
+ * Called after generateClusters to connect orphaned keyword rows.
+ */
+export const linkKeywordsToClusters = mutation({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
+    // Get all clusters for this project
+    const clusters = await ctx.db
+      .query('keywordClusters')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .collect();
+
+    // Build a map: lowercase keyword text -> cluster ID
+    const keywordToCluster = new Map<string, Id<'keywordClusters'>>();
+    for (const cluster of clusters) {
+      for (const kw of cluster.keywords) {
+        keywordToCluster.set(kw.toLowerCase(), cluster._id);
+      }
+    }
+
+    // Get all unlinked keywords (no clusterId) for this project
+    const keywords = await ctx.db
+      .query('keywords')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .collect();
+
+    let linked = 0;
+    for (const kw of keywords) {
+      if (!kw.clusterId) {
+        const clusterId = keywordToCluster.get(kw.keyword.toLowerCase());
+        if (clusterId) {
+          await ctx.db.patch(kw._id, { clusterId });
+          linked++;
+        }
+      }
+    }
+
+    return { linked };
   },
 });
