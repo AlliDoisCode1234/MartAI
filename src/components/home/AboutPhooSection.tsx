@@ -72,8 +72,8 @@ export function AboutPhooSection() {
                 animate={isInView ? { opacity: 1 } : { opacity: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
               >
-                You&apos;re great at what you do. But if Google can&apos;t find you, neither can
-                your customers.
+                You&apos;re great at what you do. But if your phone isn&apos;t ringing, your
+                marketing isn&apos;t working.
               </MotionText>
 
               <MotionBox
@@ -100,7 +100,7 @@ export function AboutPhooSection() {
                 }}
               >
                 <Text fontSize={{ base: 'lg', md: 'xl' }} color="gray.800" fontWeight="bold" mb={5}>
-                  Phoo transforms your expertise into content that:
+                  Phoo transforms your expertise into a lead generation system that:
                 </Text>
                 <VStack align="start" spacing={4} pl={2}>
                   <HStack spacing={3}>
@@ -164,9 +164,9 @@ export function AboutPhooSection() {
                     </Box>
                     <Text fontSize={{ base: 'md', md: 'lg' }} color="gray.700">
                       <Text as="span" fontWeight="bold" color="gray.800">
-                        Brings leads to your door
+                        Replaces your agency
                       </Text>{' '}
-                      without hiring an agency
+                      at a fraction of the cost
                     </Text>
                   </HStack>
                 </VStack>

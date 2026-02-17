@@ -14,7 +14,11 @@ import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { ListItemNode, ListNode } from '@lexical/list';
 import { LinkNode } from '@lexical/link';
 import { $getRoot, EditorState, $isTextNode } from 'lexical';
-import { $convertFromMarkdownString, $convertToMarkdownString, TRANSFORMERS } from '@lexical/markdown';
+import {
+  $convertFromMarkdownString,
+  $convertToMarkdownString,
+  TRANSFORMERS,
+} from '@lexical/markdown';
 import { Box, VStack, HStack, Text } from '@chakra-ui/react';
 import './editor.css';
 
@@ -68,13 +72,7 @@ export function LexicalEditorComponent({
     theme,
     onError,
     editable: !isReadOnly,
-    nodes: [
-      HeadingNode,
-      ListNode,
-      ListItemNode,
-      QuoteNode,
-      LinkNode,
-    ],
+    nodes: [HeadingNode, ListNode, ListItemNode, QuoteNode, LinkNode],
   };
 
   const handleChange = (editorState: EditorState) => {
@@ -143,34 +141,81 @@ export function LexicalEditorComponent({
 // Component to show metrics outside the editor
 function EditorMetrics({ content }: { content: string }) {
   // Calculate word count from markdown
-  const wordCount = content ? content.split(/\s+/).filter(w => w.length > 0).length : 0;
-  
+  const wordCount = content ? content.split(/\s+/).filter((w) => w.length > 0).length : 0;
+
   // Calculate H2 count
   const h2Count = (content.match(/^##\s/gm) || []).length;
   const h1Count = (content.match(/^#\s/gm) || []).length;
-  
+
   // Internal links
   const internalLinks = (content.match(/\[\[([^\]]+)\]\]/g) || []).length;
-  
-  // Simple tone score (placeholder)
-  const toneScore = 75; // Would calculate from content
-  
+
+  // Calculate tone score from content heuristics
+  const toneScore = calculateToneScore(content);
+
   const seoChecks = [
     { item: 'Word count ≥ 800', passed: wordCount >= 800, note: `${wordCount} words` },
     { item: 'H1 present', passed: h1Count === 1, note: `${h1Count} H1` },
     { item: 'H2 sections ≥ 5', passed: h2Count >= 5, note: `${h2Count} H2s` },
     { item: 'Internal links ≥ 3', passed: internalLinks >= 3, note: `${internalLinks} links` },
   ];
-  
-  const passedCount = seoChecks.filter(c => c.passed).length;
-  
+
+  const passedCount = seoChecks.filter((c) => c.passed).length;
+
   return (
     <HStack spacing={4} p={3} bg="gray.50" borderRadius="md" fontSize="sm">
       <Text fontWeight="semibold">Word Count: {wordCount}</Text>
-      <Text>SEO: {passedCount}/{seoChecks.length}</Text>
+      <Text>
+        SEO: {passedCount}/{seoChecks.length}
+      </Text>
       <Text>Tone: {toneScore}/100</Text>
     </HStack>
   );
+}
+
+/**
+ * Calculate a tone score from content heuristics.
+ * Evaluates sentence length, heading structure, and engagement signals.
+ * Returns 0-100 where higher = more engaging, readable tone.
+ */
+function calculateToneScore(content: string): number {
+  if (!content || content.trim().length === 0) return 0;
+
+  // Strip markdown syntax for sentence analysis
+  const plainText = content
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/[*_~`]/g, '')
+    .trim();
+
+  // Split into sentences
+  const sentences = plainText.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+  if (sentences.length === 0) return 0;
+
+  // 1. Sentence length score (target avg: 15-20 words = 100, penalize extremes)
+  const avgWords =
+    sentences.reduce((sum, s) => sum + s.trim().split(/\s+/).length, 0) / sentences.length;
+  const sentenceLengthScore =
+    avgWords >= 15 && avgWords <= 20
+      ? 100
+      : avgWords < 15
+        ? Math.max(0, 50 + (avgWords / 15) * 50)
+        : Math.max(0, 100 - (avgWords - 20) * 5);
+
+  // 2. Heading-to-paragraph ratio (target: 1 heading per ~150 words)
+  const headingCount = (content.match(/^#{1,6}\s/gm) || []).length;
+  const words = plainText.split(/\s+/).length;
+  const idealHeadings = Math.max(1, Math.floor(words / 150));
+  const headingScore = Math.min(100, (headingCount / idealHeadings) * 100);
+
+  // 3. Question usage (engagement signal — at least 1 per 500 words)
+  const questionCount = (content.match(/\?/g) || []).length;
+  const idealQuestions = Math.max(1, Math.floor(words / 500));
+  const questionScore = Math.min(100, (questionCount / idealQuestions) * 100);
+
+  // Weighted average
+  const score = Math.round(sentenceLengthScore * 0.5 + headingScore * 0.3 + questionScore * 0.2);
+  return Math.max(0, Math.min(100, score));
 }
 
 // Export the main component
@@ -187,7 +232,7 @@ function LoadMarkdownPlugin({ markdown }: { markdown: string }) {
         try {
           const root = $getRoot();
           const currentText = root.getTextContent();
-          
+
           // Only load if content is different
           if (currentText.trim() === '' || markdown !== loadedRef.current) {
             root.clear();
@@ -203,4 +248,3 @@ function LoadMarkdownPlugin({ markdown }: { markdown: string }) {
 
   return null;
 }
-

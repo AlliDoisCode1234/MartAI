@@ -4,59 +4,55 @@
  * KeywordsLayout
  *
  * Component Hierarchy:
- * App → KeywordsLayout
- *   ├→ AuthProvider (guards auth)
- *   ├→ ProjectProvider (guards project selection)
- *   ├→ Tab Navigation (All Keywords | Import | Settings)
- *   └→ Main Content (children)
+ * App -> KeywordsLayout
+ *   |-> AuthProvider (guards auth)
+ *   |-> ProjectProvider (guards project selection)
+ *   |-> Tab Navigation (All Keywords | Clusters | Import | Settings)
+ *   |-> Main Content (children)
  *
  * Layout wrapper for Keywords pages with tab navigation.
- * Different from Content Studio which uses sidebar navigation.
+ * "All Keywords" and "Clusters" use client-side display:none toggle.
+ * "Import" and "Settings" remain route-based.
  */
 
 import { Box, Container, HStack, Heading, Button, Tab, TabList, Tabs } from '@chakra-ui/react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AuthProvider } from '@/src/providers/AuthProvider';
 import { ProjectProvider } from '@/src/providers/ProjectProvider';
-import { FiPlus, FiKey } from 'react-icons/fi';
+import { FiPlus, FiKey, FiLayers } from 'react-icons/fi';
 import { Icon } from '@chakra-ui/react';
 
 interface Props {
   children: React.ReactNode;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-const TABS = [
-  { label: 'All Keywords', path: '/keywords' },
-  { label: 'Import', path: '/keywords/import' },
-  { label: 'Settings', path: '/keywords/settings' },
-];
+const TAB_KEYS = ['library', 'clusters', 'import', 'settings'] as const;
+const TAB_LABELS = ['All Keywords', 'Clusters', 'Import', 'Settings'];
 
-export function KeywordsLayout({ children }: Props) {
+export function KeywordsLayout({ children, activeTab = 'library', onTabChange }: Props) {
   const pathname = usePathname();
   const router = useRouter();
 
   // Determine active tab index
   const getTabIndex = () => {
-    // Exact match for /keywords (not /keywords/something)
-    if (pathname === '/keywords') return 0;
-    // Match import and settings
-    const tabIndex = TABS.findIndex((tab, i) => i > 0 && pathname.startsWith(tab.path));
-    // If on a keyword detail page (/keywords/[id]), keep "All Keywords" active
-    return tabIndex >= 0 ? tabIndex : 0;
+    return TAB_KEYS.indexOf(activeTab as (typeof TAB_KEYS)[number]);
   };
 
   const handleTabChange = (index: number) => {
-    router.push(TABS[index].path);
+    const key = TAB_KEYS[index];
+    if (onTabChange) onTabChange(key);
   };
 
   return (
     <AuthProvider darkMode allowOnboarding={false} loadingMessage="Loading Keywords...">
       <ProjectProvider darkMode requiredForRender>
-        <Box minH="100vh" bg="#0D0D0D">
+        <Box minH="100vh" bg="#110d1b">
           {/* Header */}
           <Box
-            bg="linear-gradient(180deg, #1A1A1A 0%, #0D0D0D 100%)"
-            borderBottom="1px solid rgba(255, 255, 255, 0.1)"
+            bg="linear-gradient(180deg, #1a1230 0%, #110d1b 100%)"
+            borderBottom="1px solid rgba(255, 255, 255, 0.08)"
             py={6}
             px={8}
           >
@@ -69,23 +65,29 @@ export function KeywordsLayout({ children }: Props) {
                   </Heading>
                 </HStack>
                 <Button
-                  leftIcon={<FiPlus />}
+                  leftIcon={activeTab === 'clusters' ? <FiLayers /> : <FiPlus />}
                   bg="#FF9D00"
                   color="black"
                   _hover={{ bg: '#E68A00' }}
                   size="md"
-                  onClick={() => router.push('/keywords/import')}
+                  onClick={() => {
+                    if (activeTab === 'clusters') {
+                      // TODO: Open cluster creation modal
+                    } else {
+                      router.push('/keywords/import');
+                    }
+                  }}
                 >
-                  Add Keywords
+                  {activeTab === 'clusters' ? 'Add New Cluster' : 'Add Keywords'}
                 </Button>
               </HStack>
 
               {/* Tab Navigation */}
               <Tabs index={getTabIndex()} onChange={handleTabChange} mt={6} variant="unstyled">
                 <TabList gap={2}>
-                  {TABS.map((tab, index) => (
+                  {TAB_LABELS.map((label) => (
                     <Tab
-                      key={tab.path}
+                      key={label}
                       color="gray.500"
                       fontWeight="medium"
                       px={4}
@@ -101,7 +103,7 @@ export function KeywordsLayout({ children }: Props) {
                         bg: 'rgba(255, 255, 255, 0.05)',
                       }}
                     >
-                      {tab.label}
+                      {label}
                     </Tab>
                   ))}
                 </TabList>

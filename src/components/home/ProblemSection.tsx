@@ -29,9 +29,9 @@ export function ProblemSection() {
 
         <VStack spacing={6} maxW="2xl" mx="auto">
           {[
-            "Your website looks fine… but doesn't bring in consistent leads",
-            "You're \"doing marketing,\" but you're not sure what's actually working",
-            'SEO feels confusing, slow, or like something only big companies can afford',
+            "You're spending hours on marketing but can't point to a single lead it brought in",
+            "Agencies want $2,500/mo and you're not even sure what they do",
+            "Your competitors are showing up on Google and in AI answers — and you're not",
           ].map((problem, i) => (
             <Box
               key={i}
@@ -73,10 +73,10 @@ export function ProblemSection() {
         >
           <Text fontSize="xl" color="gray.600" lineHeight="relaxed">
             <Text as="span" fontWeight="semibold" color="gray.800">
-              You didn&apos;t start your business just to chase algorithms.
+              You shouldn&apos;t need a $30,000/year agency to get leads.
             </Text>
             <br />
-            You started it to serve people and build something meaningful.
+            Phoo gives you the system agencies use — at a fraction of the cost.
           </Text>
         </Box>
       </Container>

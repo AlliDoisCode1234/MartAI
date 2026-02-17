@@ -28,6 +28,50 @@ export interface KeywordInput {
   intent: string;
 }
 
+async function insertKeywordsFromInputs(
+  ctx: {
+    runMutation: (...args: any[]) => Promise<any>;
+    runQuery: (...args: any[]) => Promise<any>;
+  },
+  projectId: any,
+  inputs: KeywordInput[]
+) {
+  if (inputs.length === 0) return;
+
+  // Deduplicate by keyword string within input list
+  const seen = new Set<string>();
+  const unique = inputs.filter((k) => {
+    const lower = k.keyword.toLowerCase();
+    if (seen.has(lower)) return false;
+    seen.add(lower);
+    return true;
+  });
+
+  // Deduplicate against existing DB records to prevent duplicate rows
+  const existing = await ctx.runQuery(api.seo.keywords.getKeywordsByProject, { projectId });
+  const existingSet = new Set(
+    (existing as Array<{ keyword: string }>).map((k) => k.keyword.toLowerCase())
+  );
+  const newOnly = unique.filter((k) => !existingSet.has(k.keyword.toLowerCase()));
+
+  if (newOnly.length === 0) return;
+
+  // Batch in chunks of 50 to avoid mutation size limits
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < newOnly.length; i += BATCH_SIZE) {
+    const batch = newOnly.slice(i, i + BATCH_SIZE);
+    await ctx.runMutation(api.seo.keywords.createKeywords, {
+      projectId,
+      keywords: batch.map((k) => ({
+        keyword: k.keyword,
+        searchVolume: k.volume,
+        difficulty: k.difficulty,
+        intent: k.intent,
+      })),
+    });
+  }
+}
+
 const keywordInputArg = v.object({
   keyword: v.string(),
   volume: v.number(),
@@ -115,33 +159,64 @@ export const generateClusters = action({
     }));
 
     if (args.importFromGSC ?? false) {
+      const connection = await ctx.runQuery(api.integrations.gscConnections.getGSCConnection, {
+        projectId: args.projectId,
+      });
+
+      if (!connection?.accessToken || !connection?.siteUrl) {
+        throw new Error(
+          'GSC is not connected. Please connect Google Search Console in Settings first.'
+        );
+      }
+
       try {
-        const connection = await ctx.runQuery(api.integrations.gscConnections.getGSCConnection, {
-          projectId: args.projectId,
-        });
-        if (connection?.accessToken && connection?.siteUrl) {
-          const gscData = await getGSCData(
-            connection.accessToken,
-            connection.refreshToken,
-            connection.siteUrl,
-            '30daysAgo',
-            'today',
-            150
+        // GSC API requires yyyy-MM-dd format (not GA4-style relative dates)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 90); // 90 days for broader coverage
+        const fmt = (d: Date) => d.toISOString().split('T')[0];
+
+        const gscData = await getGSCData(
+          connection.accessToken,
+          connection.refreshToken,
+          connection.siteUrl,
+          fmt(startDate),
+          fmt(endDate),
+          150
+        );
+        const imported = importKeywordsFromGSC(gscData);
+        if (imported.length > 0) {
+          keywordInputs = keywordInputs.concat(imported);
+          await ctx.runMutation(api.integrations.gscConnections.updateLastSync, {
+            connectionId: connection._id,
+          });
+          console.log(
+            JSON.stringify({
+              event: 'gsc_import',
+              projectId: args.projectId,
+              count: imported.length,
+            })
           );
-          const imported = importKeywordsFromGSC(gscData);
-          if (imported.length > 0) {
-            keywordInputs = keywordInputs.concat(imported);
-            await ctx.runMutation(api.integrations.gscConnections.updateLastSync, {
-              connectionId: connection._id,
-            });
-          }
+        } else {
+          throw new Error(
+            'GSC returned no keyword data. Your site may not have enough search impressions yet.'
+          );
         }
       } catch (error) {
-        console.warn('GSC import failed:', error);
+        console.error('[KeywordActions] GSC sync error:', error);
+        // Re-throw with context — do NOT silently fall back when GSC was explicitly requested
+        if (error instanceof Error && error.message.includes('GSC')) {
+          throw error;
+        }
+        // Security: Do NOT expose raw error.message to caller
+        throw new Error(
+          'GSC sync failed. Please check your Google Search Console connection and try again.'
+        );
       }
     }
 
-    if (keywordInputs.length === 0) {
+    // Only use IL fallback when GSC was NOT explicitly requested
+    if (keywordInputs.length === 0 && !(args.importFromGSC ?? false)) {
       keywordInputs = buildFallbackKeywords(project ?? undefined);
     }
 
@@ -176,10 +251,26 @@ export const generateClusters = action({
 
       for (const cluster of clusters) {
         await ctx.runMutation(api.seo.keywordClusters.createCluster, {
-          ...cluster,
           projectId: args.projectId,
+          clusterName: cluster.clusterName,
+          keywords: cluster.keywords,
+          intent: cluster.intent,
+          difficulty: cluster.difficulty,
+          volumeRange: cluster.volumeRange,
+          impactScore: cluster.impactScore,
+          topSerpUrls: cluster.topSerpUrls ?? [],
+          status: cluster.status ?? 'active',
+          createdAt: cluster.createdAt ?? Date.now(),
         });
       }
+
+      // Also insert individual keywords into the keywords table
+      await insertKeywordsFromInputs(ctx, args.projectId, keywordInputs);
+
+      // Link newly inserted keywords to their clusters
+      await ctx.runMutation(api.seo.keywords.linkKeywordsToClusters, {
+        projectId: args.projectId,
+      });
 
       return { success: true, count: clusters.length, cached: true, storage: true };
     }
@@ -189,8 +280,28 @@ export const generateClusters = action({
     if (cached) {
       console.log('Cache hit for keyword clustering');
       for (const cluster of cached.clusters) {
-        await ctx.runMutation(api.seo.keywordClusters.createCluster, cluster);
+        await ctx.runMutation(api.seo.keywordClusters.createCluster, {
+          projectId: args.projectId,
+          clusterName: cluster.clusterName,
+          keywords: cluster.keywords,
+          intent: cluster.intent,
+          difficulty: cluster.difficulty,
+          volumeRange: cluster.volumeRange,
+          impactScore: cluster.impactScore,
+          topSerpUrls: cluster.topSerpUrls ?? [],
+          status: cluster.status ?? 'active',
+          createdAt: cluster.createdAt ?? Date.now(),
+        });
       }
+
+      // Also insert individual keywords into the keywords table
+      await insertKeywordsFromInputs(ctx, args.projectId, keywordInputs);
+
+      // Link newly inserted keywords to their clusters
+      await ctx.runMutation(api.seo.keywords.linkKeywordsToClusters, {
+        projectId: args.projectId,
+      });
+
       return { success: true, count: cached.clusters.length, cached: true };
     }
 
@@ -222,6 +333,14 @@ export const generateClusters = action({
         console.error('Failed to store cluster:', error);
       }
     }
+
+    // Also insert individual keywords into the keywords table
+    await insertKeywordsFromInputs(ctx, args.projectId, keywordInputs);
+
+    // Link newly inserted keywords to their clusters
+    await ctx.runMutation(api.seo.keywords.linkKeywordsToClusters, {
+      projectId: args.projectId,
+    });
 
     // 3. Store in Persistence & Cache
     const outputData = { clusters };

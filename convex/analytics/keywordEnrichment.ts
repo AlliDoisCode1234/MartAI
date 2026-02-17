@@ -40,7 +40,9 @@ export const upsertGSCKeyword = internalMutation({
 
     if (existing) {
       // Patch GSC fields only — don't overwrite curated data
+      // Save current position as previous for rank change tracking
       await ctx.db.patch(existing._id, {
+        previousGscPosition: existing.gscPosition ?? args.position,
         gscPosition: args.position,
         gscClicks: args.clicks,
         gscImpressions: args.impressions,

@@ -25,14 +25,14 @@ export function GEOExplainerSection() {
             color="white"
             textAlign="center"
           >
-            AI SEO That Gets You Found Everywhere
+            Built for Google AND AI Search
           </Heading>
 
           {/* Simple explanation */}
           <Text fontSize="xl" color="white" textAlign="center" maxW="2xl">
-            People search on <strong>Google</strong> and <strong>ChatGPT</strong> now.
+            People search on <strong>Google</strong> and ask <strong>ChatGPT</strong> now.
             <br />
-            Phoo optimizes your content for both.
+            Phoo makes sure your business gets recommended in both.
           </Text>
 
           {/* Two-column comparison */}
@@ -82,7 +82,7 @@ export function GEOExplainerSection() {
           <Box p={6} borderRadius="xl" bg="white" textAlign="center" maxW="2xl" boxShadow="lg">
             <Text fontSize="lg" color="gray.800" fontWeight="medium">
               <Icon as={Check} color="green.500" mr={2} />
-              <strong>Small business SEO automation</strong> that works 24/7
+              <strong>Future-proof lead generation</strong> for the AI search era
             </Text>
           </Box>
         </VStack>

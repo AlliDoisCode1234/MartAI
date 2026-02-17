@@ -198,11 +198,12 @@ export default function DashboardPage() {
     updatedAt: number;
     contentType?: string;
   };
-  const topContent = (contentPieces ?? [])
-    .filter((cp: ContentPiece) => cp.status === 'published' || cp.status === 'approved')
-    .sort((a: ContentPiece, b: ContentPiece) => b.updatedAt - a.updatedAt)
+  const allContent = (contentPieces ?? []) as ContentPiece[];
+  const topContent = allContent
+    .filter((cp) => cp.status === 'published' || cp.status === 'approved')
+    .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, 3)
-    .map((cp: ContentPiece) => ({
+    .map((cp) => ({
       _id: cp._id,
       title: cp.title,
       wordCount: cp.wordCount ?? undefined,
@@ -210,6 +211,18 @@ export default function DashboardPage() {
       updatedAt: cp.updatedAt,
       contentType: cp.contentType ?? undefined,
     }));
+
+  // Compute growth opportunity counts from real data
+  // Keywords positioned 11-20 are "one push" from page 1
+  const firstPageReadyCount = latestKeywords
+    ? (latestKeywords as SnapshotKw[]).filter((kw) => kw.position >= 11 && kw.position <= 20).length
+    : 0;
+
+  // Published content older than 90 days without updates = refresh candidates
+  const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+  const contentRefreshCount = allContent.filter(
+    (cp) => cp.status === 'published' && Date.now() - cp.updatedAt > NINETY_DAYS_MS
+  ).length;
 
   return (
     <Box
@@ -331,7 +344,7 @@ export default function DashboardPage() {
             avgPosition={kpis?.avgPosition.value ?? 0}
             impressions={kpis?.impressions.value ?? 0}
             visibilityScore={healthScore}
-            visibilityChange={rating ? 8 : 0}
+            visibilityChange={0}
             sessionsChange={kpis?.sessions.change ?? 0}
             pageViewsChange={kpis?.pageViews.change ?? 0}
             hasData={hasKPIData}
@@ -351,7 +364,10 @@ export default function DashboardPage() {
               <TopPerformingContentCard content={topContent} />
             </GridItem>
             <GridItem>
-              <FastestGrowthCard />
+              <FastestGrowthCard
+                firstPageReadyCount={firstPageReadyCount}
+                contentRefreshCount={contentRefreshCount}
+              />
             </GridItem>
           </Grid>
 

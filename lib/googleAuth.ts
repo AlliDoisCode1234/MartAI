@@ -198,7 +198,8 @@ export async function getGSCData(
     return response.data;
   } catch (error) {
     console.error('Error fetching GSC data:', error);
-    // Return empty data structure on error
-    return { rows: [] };
+    // Re-throw with context so callers can surface the real error
+    const message = error instanceof Error ? error.message : 'Unknown GSC API error';
+    throw new Error(`GSC API error: ${message}`);
   }
 }
