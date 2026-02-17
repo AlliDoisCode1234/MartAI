@@ -138,6 +138,121 @@ export const getKeyword = query({
   },
 });
 
+// Get enriched keyword with cluster context and sibling data (requires project viewer access)
+export const getKeywordEnriched = query({
+  args: { keywordId: v.id('keywords') },
+  handler: async (ctx, args) => {
+    const keyword = await ctx.db.get(args.keywordId);
+    if (!keyword) return null;
+
+    await requireProjectAccess(ctx, keyword.projectId, 'viewer');
+
+    // Fetch cluster data if keyword belongs to one
+    let cluster = null;
+    let clusterKeywords: Array<{
+      _id: string;
+      keyword: string;
+      searchVolume?: number;
+      difficulty?: number;
+      cpc?: number;
+      intent?: string;
+      gscPosition?: number;
+    }> = [];
+
+    if (keyword.clusterId) {
+      cluster = await ctx.db.get(keyword.clusterId);
+
+      // Fetch all keywords in the same cluster
+      const allProjectKeywords = await ctx.db
+        .query('keywords')
+        .withIndex('by_project', (q) => q.eq('projectId', keyword.projectId))
+        .collect();
+
+      clusterKeywords = allProjectKeywords
+        .filter((k) => k.clusterId && k.clusterId === keyword.clusterId && k._id !== keyword._id)
+        .map((k) => ({
+          _id: k._id,
+          keyword: k.keyword,
+          searchVolume: k.searchVolume,
+          difficulty: k.difficulty,
+          cpc: k.cpc,
+          intent: k.intent,
+          gscPosition: k.gscPosition,
+        }));
+    }
+
+    // Calculate aggregate stats from sibling keywords
+    const allRelated = [
+      keyword,
+      ...clusterKeywords.map((k) => ({
+        searchVolume: k.searchVolume,
+        difficulty: k.difficulty,
+        cpc: k.cpc,
+      })),
+    ];
+
+    const volumes = allRelated
+      .map((k) => k.searchVolume)
+      .filter((v): v is number => v !== undefined && v !== null);
+    const difficulties = allRelated
+      .map((k) => k.difficulty)
+      .filter((d): d is number => d !== undefined && d !== null);
+    const cpcs = allRelated
+      .map((k) => k.cpc)
+      .filter((c): c is number => c !== undefined && c !== null);
+
+    return {
+      ...keyword,
+      cluster: cluster
+        ? {
+            _id: cluster._id,
+            clusterName: cluster.clusterName,
+            keywords: cluster.keywords,
+            intent: cluster.intent,
+            difficulty: cluster.difficulty,
+            volumeRange: cluster.volumeRange,
+            impactScore: cluster.impactScore,
+            topSerpUrls: cluster.topSerpUrls,
+            status: cluster.status,
+          }
+        : null,
+      siblingKeywords: clusterKeywords,
+      aggregateStats: {
+        totalVolume: volumes.reduce((a, b) => a + b, 0),
+        avgDifficulty:
+          difficulties.length > 0
+            ? Math.round(difficulties.reduce((a, b) => a + b, 0) / difficulties.length)
+            : null,
+        avgCpc:
+          cpcs.length > 0
+            ? Number((cpcs.reduce((a, b) => a + b, 0) / cpcs.length).toFixed(2))
+            : null,
+        minVolume: volumes.length > 0 ? Math.min(...volumes) : null,
+        maxVolume: volumes.length > 0 ? Math.max(...volumes) : null,
+        keywordCount: allRelated.length,
+      },
+      // Fetch stored SERP analysis for this keyword
+      serpAnalysis: await (async () => {
+        const analysis = await ctx.db
+          .query('serpAnalyses')
+          .withIndex('by_project_keyword', (q) =>
+            q.eq('projectId', keyword.projectId).eq('keyword', keyword.keyword)
+          )
+          .first();
+        if (!analysis) return null;
+        return {
+          _id: analysis._id,
+          results: analysis.results,
+          analyzedAt: analysis.analyzedAt,
+          source: analysis.source,
+          searchVolume: analysis.searchVolume,
+          difficulty: analysis.difficulty,
+        };
+      })(),
+    };
+  },
+});
+
 // Delete single keyword (requires project editor access)
 export const deleteKeyword = mutation({
   args: { keywordId: v.id('keywords') },

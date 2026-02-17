@@ -146,7 +146,9 @@ export function AddToClusterModal({ isOpen, onClose, projectId, keywordId, keywo
         clusterId: selectedClusterId as Id<'keywordClusters'>,
       });
 
-      const cluster = clusters?.find((c) => c._id === selectedClusterId);
+      const cluster = clusters?.find(
+        (c: NonNullable<typeof clusters>[number]) => c._id === selectedClusterId
+      );
       toast({
         title: `Added to "${cluster?.clusterName ?? 'cluster'}"`,
         status: 'success',
@@ -214,7 +216,7 @@ export function AddToClusterModal({ isOpen, onClose, projectId, keywordId, keywo
                     },
                   }}
                 >
-                  {clusters.map((cluster) => (
+                  {clusters.map((cluster: NonNullable<typeof clusters>[number]) => (
                     <HStack
                       key={cluster._id}
                       px={3}

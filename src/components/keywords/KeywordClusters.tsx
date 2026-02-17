@@ -88,7 +88,7 @@ export function KeywordClusters() {
     if (allSelected) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(clusters.map((c) => c._id));
+      setSelectedIds(clusters.map((c: NonNullable<typeof clusters>[number]) => c._id));
     }
   }
 
@@ -313,7 +313,7 @@ export function KeywordClusters() {
             </Tr>
           </Thead>
           <Tbody>
-            {clusters.map((cluster) => {
+            {clusters.map((cluster: NonNullable<typeof clusters>[number]) => {
               const isGenerating = generatingClusterId === cluster._id;
               return (
                 <Tr

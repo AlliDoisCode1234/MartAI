@@ -160,7 +160,7 @@ export default function ClustersPage() {
             </Tr>
           </Thead>
           <Tbody>
-            {clusters.map((cluster) => {
+            {clusters.map((cluster: NonNullable<typeof clusters>[number]) => {
               const isGenerating = generatingClusterId === cluster._id;
               return (
                 <Tr
