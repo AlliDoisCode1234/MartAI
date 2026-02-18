@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Container,
   VStack,
@@ -50,6 +50,7 @@ const MotionBox = motion(Box);
 
 export default function DashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery(api.users.current);
@@ -114,6 +115,21 @@ export default function DashboardPage() {
       return;
     }
   }, [isAuthenticated, authLoading, user, router]);
+
+  // Post-checkout success toast
+  useEffect(() => {
+    if (searchParams.get('subscription') === 'success') {
+      toast({
+        title: 'Welcome to Phoo!',
+        description: 'Your subscription is active. Let\u0027s build something great.',
+        status: 'success',
+        duration: 6000,
+        isClosable: true,
+      });
+      // Clean the URL without a reload
+      router.replace('/dashboard', { scroll: false });
+    }
+  }, [searchParams, toast, router]);
 
   const handleSync = async () => {
     if (!projectId) return;

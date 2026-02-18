@@ -48,7 +48,7 @@ export const createSubscriptionCheckout = action({
       priceId: args.priceId,
       customerId: customer.customerId,
       mode: 'subscription',
-      successUrl: `${process.env.SITE_URL ?? 'http://localhost:3000'}/home?success=true`,
+      successUrl: `${process.env.SITE_URL ?? 'http://localhost:3000'}/dashboard?subscription=success`,
       cancelUrl: `${process.env.SITE_URL ?? 'http://localhost:3000'}/pricing?canceled=true`,
       subscriptionMetadata: {
         userId: identity.subject,
@@ -85,7 +85,7 @@ export const createPaymentCheckout = action({
       priceId: args.priceId,
       customerId: customer.customerId,
       mode: 'payment',
-      successUrl: `${process.env.SITE_URL ?? 'http://localhost:3000'}/home?success=true`,
+      successUrl: `${process.env.SITE_URL ?? 'http://localhost:3000'}/dashboard?subscription=success`,
       cancelUrl: `${process.env.SITE_URL ?? 'http://localhost:3000'}/pricing?canceled=true`,
       paymentIntentMetadata: {
         userId: identity.subject,

@@ -103,13 +103,21 @@ const PLANS = [
   },
 ];
 
-// Stripe Price IDs for each plan (set in Stripe Dashboard)
-// TODO: Move to environment variables for production
-const STRIPE_PRICE_IDS: Record<string, string> = {
-  solo: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO || 'price_solo_placeholder',
-  growth: process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH || 'price_growth_placeholder',
-  team: process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM || 'price_team_placeholder',
-  enterprise: '', // Enterprise is custom pricing
+// Stripe Price IDs for each plan × billing cycle
+const STRIPE_PRICE_IDS: Record<string, { monthly: string; annual: string }> = {
+  solo: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_ANNUAL || '',
+  },
+  growth: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH_ANNUAL || '',
+  },
+  team: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM_ANNUAL || '',
+  },
+  enterprise: { monthly: '', annual: '' },
 };
 
 export default function SubscriptionPage() {
@@ -138,12 +146,15 @@ export default function SubscriptionPage() {
 
   // Handle upgrade to a specific plan
   const handleUpgrade = async (planId: string) => {
-    const priceId = STRIPE_PRICE_IDS[planId];
-    if (!priceId || planId === 'enterprise') {
+    const priceIds = STRIPE_PRICE_IDS[planId];
+    if (!priceIds || planId === 'enterprise') {
       // Enterprise plan - contact sales
       window.location.href = `mailto:${BRAND.supportEmail}?subject=Enterprise Plan Inquiry`;
       return;
     }
+
+    // Default to monthly for the subscription management page
+    const priceId = priceIds.monthly;
 
     setUpgradeLoading(planId);
     try {

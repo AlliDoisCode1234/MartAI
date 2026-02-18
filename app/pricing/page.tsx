@@ -7,7 +7,7 @@
  * App → PricingPage (this file)
  *
  * GEO-optimized pricing page with FAQ schema for Google AI Overviews.
- * Highlights the SEO + GEO value proposition.
+ * Wired to Stripe checkout via @convex-dev/stripe component.
  */
 
 import {
@@ -27,13 +27,47 @@ import {
   SimpleGrid,
   VStack,
   HStack,
+  useToast,
 } from '@chakra-ui/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Script from 'next/script';
+import { useAction } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import { FiZap, FiTarget, FiTrendingUp, FiCpu } from 'react-icons/fi';
 import { getFaqSchema, PRICING_FAQ_ITEMS, schemaToJsonLd } from '@/src/lib/schemas';
 import { LandingHeader } from '@/src/components/home';
+import { BRAND } from '@/lib/constants/brand';
+
+// Stripe Price IDs for each plan x billing cycle
+const STRIPE_PRICE_IDS: Record<string, { monthly: string; annual: string }> = {
+  solo: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_ANNUAL || '',
+  },
+  growth: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH_ANNUAL || '',
+  },
+  team: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM_ANNUAL || '',
+  },
+  enterprise: { monthly: '', annual: '' },
+};
+
+interface PricingCardProps {
+  id: string;
+  title: string;
+  price: string;
+  description: string;
+  features: { text: string; included: boolean }[];
+  isPopular?: boolean;
+  icon: React.ElementType;
+  buttonText?: string;
+  isLoading?: boolean;
+  onButtonClick?: () => void;
+}
 
 const PricingCard = ({
   title,
@@ -43,17 +77,9 @@ const PricingCard = ({
   isPopular,
   icon,
   buttonText = 'Get Started',
+  isLoading,
   onButtonClick,
-}: {
-  title: string;
-  price: string;
-  description: string;
-  features: { text: string; included: boolean }[];
-  isPopular?: boolean;
-  icon: any;
-  buttonText?: string;
-  onButtonClick?: () => void;
-}) => {
+}: PricingCardProps) => {
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const popularBorderColor = 'blue.500';
@@ -109,7 +135,7 @@ const PricingCard = ({
 
         <HStack align="baseline" spacing={1}>
           <Heading size="2xl">{price}</Heading>
-          <Text color="gray.500">/mo</Text>
+          {price !== 'Custom' && <Text color="gray.500">/mo</Text>}
         </HStack>
 
         <Button
@@ -118,6 +144,8 @@ const PricingCard = ({
           variant={isPopular ? 'solid' : 'outline'}
           size="lg"
           onClick={onButtonClick}
+          isLoading={isLoading}
+          loadingText="Redirecting..."
         >
           {buttonText}
         </Button>
@@ -146,12 +174,55 @@ const PricingCard = ({
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(true);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const toast = useToast();
+
+  // Stripe checkout action
+  const createCheckout = useAction(api.stripe.checkout.createSubscriptionCheckout);
 
   // Generate FAQ schema for Google AI Overviews
   const faqSchema = getFaqSchema(PRICING_FAQ_ITEMS);
 
+  const handlePlanSelect = async (planId: string) => {
+    if (planId === 'enterprise') {
+      window.location.href = `mailto:${BRAND.supportEmail}?subject=Enterprise Plan Inquiry`;
+      return;
+    }
+
+    const priceIds = STRIPE_PRICE_IDS[planId];
+    const priceId = isAnnual ? priceIds.annual : priceIds.monthly;
+
+    if (!priceId) {
+      toast({
+        title: 'Coming soon',
+        description: 'Stripe checkout is being configured. Please check back shortly.',
+        status: 'info',
+        duration: 4000,
+      });
+      return;
+    }
+
+    setLoadingPlan(planId);
+    try {
+      const result = await createCheckout({ priceId });
+      if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (error) {
+      toast({
+        title: 'Checkout unavailable',
+        description: 'Please try again or contact support.',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
   const plans = [
     {
+      id: 'solo',
       title: 'Solo',
       icon: FiTarget,
       price: isAnnual ? '$49' : '$59',
@@ -166,6 +237,7 @@ export default function PricingPage() {
       ],
     },
     {
+      id: 'growth',
       title: 'Growth',
       icon: FiTrendingUp,
       price: isAnnual ? '$99' : '$125',
@@ -181,6 +253,7 @@ export default function PricingPage() {
       ],
     },
     {
+      id: 'team',
       title: 'Team',
       icon: FiZap,
       price: isAnnual ? '$239' : '$299',
@@ -195,6 +268,7 @@ export default function PricingPage() {
       ],
     },
     {
+      id: 'enterprise',
       title: 'Enterprise',
       icon: FiCpu,
       price: 'Custom',
@@ -280,12 +354,15 @@ export default function PricingPage() {
           </VStack>
 
           <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={8} alignItems="center">
-            {plans.map((plan, index) => (
-              <PricingCard key={index} {...plan} />
+            {plans.map((plan) => (
+              <PricingCard
+                key={plan.id}
+                {...plan}
+                isLoading={loadingPlan === plan.id}
+                onButtonClick={() => handlePlanSelect(plan.id)}
+              />
             ))}
           </SimpleGrid>
-
-          {/* FAQ Section removed - users can use Ask Phoo for questions */}
 
           <Box mt={20} textAlign="center">
             <Heading size="lg" mb={4}>
@@ -294,7 +371,12 @@ export default function PricingPage() {
             <Text color="gray.500" mb={8}>
               We offer custom plans for large agencies and enterprise teams with high-volume needs.
             </Text>
-            <Button variant="outline" size="lg">
+            <Button
+              variant="outline"
+              size="lg"
+              as="a"
+              href={`mailto:${BRAND.supportEmail}?subject=Enterprise Plan Inquiry`}
+            >
               Contact Sales
             </Button>
           </Box>
