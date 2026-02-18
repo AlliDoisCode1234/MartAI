@@ -2,42 +2,60 @@
  * Onboarding Constants
  *
  * Plan options and configuration for onboarding flow.
+ * Updated Feb 2026: Lead Generation System positioning
+ *   - Lead Starter ($197) replaces Solo ($59)
+ *   - Growth Engine ($397) replaces Growth ($149)
+ *   - Agency ($697) replaces Team ($299)
+ *   - Enterprise removed from onboarding (Contact Sales only)
  */
 
 export const PLANS = [
   {
-    id: 'solo',
-    name: 'Solo',
-    price: '$59/mo',
-    description: '1 website, for solopreneurs',
-    features: ['1 Website', 'Basic SEO Audit', 'Weekly Reports', 'WordPress Integration'],
+    id: 'starter',
+    name: 'Lead Starter',
+    price: '$197/mo',
+    description: 'Your in-house lead engine',
+    features: [
+      '1 Website',
+      'Lead-Focused Content Engine',
+      'SEO + GEO Optimization',
+      'CMS Publishing Automation',
+      'Monthly Performance Dashboard',
+      'Email Support',
+    ],
     color: 'blue',
   },
   {
-    id: 'growth',
-    name: 'Growth',
-    price: '$149/mo',
-    description: '3 websites, full features',
-    features: ['3 Websites', 'Full SEO Suite', 'Daily Sync', 'AI Briefs', '3 Team Members'],
+    id: 'engine',
+    name: 'Growth Engine',
+    price: '$397/mo',
+    description: 'Replace your marketing agency',
+    features: [
+      '3 Websites',
+      'Advanced Keyword Strategy',
+      'AI Content Briefs',
+      'Conversion Optimization',
+      'Lead Tracking Integration',
+      '5 Team Members',
+      'Priority Support',
+    ],
     color: 'purple',
     popular: true,
   },
   {
-    id: 'team',
-    name: 'Team',
-    price: '$299/mo',
-    description: 'For marketing teams',
-    features: ['10 Websites', 'Full SEO Suite', 'White-label Reports', '10 Team Members'],
+    id: 'agency',
+    name: 'Agency',
+    price: '$697/mo',
+    description: 'For agencies & multi-location',
+    features: [
+      '10 Websites',
+      'White-Label Reports',
+      'Client Access Portals',
+      'Revenue Tracking',
+      '25 Team Members',
+      'Dedicated Onboarding Strategist',
+    ],
     color: 'green',
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 'Custom',
-    description: 'Tailored to your needs',
-    features: ['Unlimited Websites', 'Dedicated Support', 'Custom Integrations', 'SLA Guarantee'],
-    color: 'orange',
-    cta: 'Contact Us',
   },
 ] as const;
 

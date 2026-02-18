@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<
   }
 > = {
   welcome: {
-    getSubject: () => 'Welcome to Phoo - Get Started with AI-Powered SEO',
+    getSubject: () => 'Welcome to Phoo - Get Found on Google and in AI Answers',
     getHtml: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #F99F2A;">Welcome to Phoo!</h1>
@@ -175,7 +175,7 @@ const EMAIL_TEMPLATES: Record<
           <h1 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">You're invited!</h1>
           
           <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
-            <strong>${data.inviterName || 'Someone'}</strong> has invited you to join <strong>${data.orgName || 'their team'}</strong> on Phoo, the AI-powered SEO platform.
+            <strong>${data.inviterName || 'Someone'}</strong> has invited you to join <strong>${data.orgName || 'their team'}</strong> on Phoo, the inbound lead generation platform.
           </p>
           
           <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
@@ -221,7 +221,7 @@ const EMAIL_TEMPLATES: Record<
           <h1 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">You're In!</h1>
           
           <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
-            You've been selected for early access to Phoo, the AI-powered SEO platform that helps you rank higher and drive more traffic.
+            You've been selected for early access to Phoo, the inbound lead generation platform that helps you get found on Google and in AI answers.
           </p>
           
           <div style="background: linear-gradient(135deg, #F99F2A 0%, #e53e3e 100%); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">

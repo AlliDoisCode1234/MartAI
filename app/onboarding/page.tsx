@@ -10,7 +10,7 @@
  * Uses extracted step components for modularity.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Container, VStack, Box, useToast } from '@chakra-ui/react';
 import { AnimatePresence } from 'framer-motion';
@@ -99,27 +99,42 @@ export default function OnboardingPage() {
     }
   }, [isAuthenticated, user, step, updateOnboardingStep]);
 
-  // Restore step from user's onboardingStep in DB if available
-  // BUT: URL step takes precedence (e.g., coming back from OAuth with ?step=4)
+  // ONE-SHOT step restoration on initial load
+  // Computes the correct step from onboardingSteps flags when the page first loads.
+  // Uses a ref to prevent re-firing — after initial restore, step is driven by user interaction only.
+  const hasRestoredStep = useRef(false);
   useEffect(() => {
-    // Check if URL has a step param - that takes priority
+    if (hasRestoredStep.current) return;
+
+    // Check URL step first (e.g., returning from OAuth with ?step=4)
     const urlStep = searchParams?.get('step');
     if (urlStep) {
       const parsed = parseInt(urlStep, 10);
       if (parsed >= 1 && parsed <= 5) {
         setStep(parsed);
-        return; // Don't override with DB value
+        hasRestoredStep.current = true;
+        return;
       }
     }
 
-    // Fall back to DB step if no URL step
-    if (user?.onboardingStep && typeof user.onboardingStep === 'number') {
-      const dbStep = user.onboardingStep;
-      if (dbStep >= 1 && dbStep <= 5 && dbStep !== step) {
-        setStep(dbStep);
+    // Compute step from onboardingSteps boolean flags
+    const steps = (user as Record<string, unknown>)?.onboardingSteps as
+      | Record<string, boolean | string | number>
+      | undefined;
+    if (steps && Object.keys(steps).length > 0) {
+      let computedStep = 1;
+      if (steps.signupCompleted) computedStep = 2;
+      if (steps.planSelected) computedStep = 3;
+      if (steps.paymentCompleted || steps.projectCreated) computedStep = 4;
+      if (steps.ga4Connected) computedStep = 5;
+
+      if (computedStep > 1) {
+        setStep(computedStep);
       }
+      hasRestoredStep.current = true;
     }
-  }, [user?.onboardingStep, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(user as Record<string, unknown>)?.onboardingSteps, searchParams]);
 
   // Prevent browser back button during onboarding
   useEffect(() => {
@@ -128,6 +143,31 @@ export default function OnboardingPage() {
     window.addEventListener('popstate', preventBack);
     return () => window.removeEventListener('popstate', preventBack);
   }, []);
+
+  // Handle Stripe payment return during onboarding
+  useEffect(() => {
+    const payment = searchParams?.get('payment');
+    if (payment === 'success') {
+      toast({
+        title: 'Payment successful!',
+        description: 'Setting up your workspace...',
+        status: 'success',
+        duration: 3000,
+      });
+      // Clean URL and auto-advance (handleStep3Next creates the project)
+      window.history.replaceState({}, '', '/onboarding?step=3');
+      handleStep3Next();
+    } else if (payment === 'canceled') {
+      toast({
+        title: 'Payment canceled',
+        description: 'You can try again or skip for now.',
+        status: 'info',
+        duration: 4000,
+      });
+      window.history.replaceState({}, '', '/onboarding?step=3');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Handle OAuth callback when returning from Google
   useEffect(() => {

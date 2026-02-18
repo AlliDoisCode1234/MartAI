@@ -47,77 +47,70 @@ const MotionBox = motion(Box);
 
 const PLANS = [
   {
-    id: 'solo',
-    name: 'Solo',
-    price: 59,
+    id: 'starter',
+    name: 'Lead Starter',
+    price: 197,
     urls: 1,
-    reports: 4,
-    content: 4,
-    features: ['1 Website', '4 AI Reports/mo', '4 Content Pieces/mo', 'Email Support'],
+    reports: 10,
+    content: 15,
+    features: [
+      '1 Website',
+      '10 AI Reports/mo',
+      '15 Content Pieces/mo',
+      'Lead-Focused Content Engine',
+      'Email Support',
+    ],
   },
   {
-    id: 'growth',
-    name: 'Growth',
-    price: 149,
+    id: 'engine',
+    name: 'Growth Engine',
+    price: 397,
     urls: 3,
-    reports: 15,
-    content: 20,
+    reports: 30,
+    content: 50,
     popular: true,
     features: [
       '3 Websites',
-      '15 AI Reports/mo',
-      '20 Content Pieces/mo',
-      'Priority Support',
-      '3 Team Members',
-    ],
-  },
-  {
-    id: 'team',
-    name: 'Team',
-    price: 299,
-    urls: 10,
-    reports: 30,
-    content: 50,
-    features: [
-      '10 Websites',
       '30 AI Reports/mo',
       '50 Content Pieces/mo',
-      'White-label Reports',
-      '10 Team Members',
+      'Conversion Optimization',
+      '5 Team Members',
+      'Priority Support',
     ],
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: null, // Custom pricing
-    urls: -1, // Unlimited
-    reports: -1,
-    content: -1,
+    id: 'agency',
+    name: 'Agency',
+    price: 697,
+    urls: 10,
+    reports: 100,
+    content: 100,
     features: [
-      'Unlimited Websites',
-      'Unlimited Reports',
-      'Unlimited Content',
-      'Dedicated Support',
-      'Custom Integrations',
+      '10 Websites',
+      '100 AI Reports/mo',
+      '100 Content Pieces/mo',
+      'White-Label Reports',
+      '25 Team Members',
+      'Dedicated Onboarding Strategist',
     ],
   },
 ];
 
 // Stripe Price IDs for each plan × billing cycle
+// Feb 2026: Lead Generation System pricing pivot
 const STRIPE_PRICE_IDS: Record<string, { monthly: string; annual: string }> = {
-  solo: {
-    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_MONTHLY || '',
-    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_ANNUAL || '',
+  starter: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_ANNUAL || '',
   },
-  growth: {
-    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH_MONTHLY || '',
-    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH_ANNUAL || '',
+  engine: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_ENGINE_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_ENGINE_ANNUAL || '',
   },
-  team: {
-    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM_MONTHLY || '',
-    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM_ANNUAL || '',
+  agency: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY_ANNUAL || '',
   },
-  enterprise: { monthly: '', annual: '' },
 };
 
 export default function SubscriptionPage() {

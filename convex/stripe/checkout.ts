@@ -25,6 +25,8 @@ const stripeClient = new StripeSubscriptions(components.stripe, {});
 export const createSubscriptionCheckout = action({
   args: {
     priceId: v.string(),
+    successUrl: v.optional(v.string()),
+    cancelUrl: v.optional(v.string()),
   },
   returns: v.object({
     sessionId: v.string(),
@@ -43,13 +45,15 @@ export const createSubscriptionCheckout = action({
       name: identity.name,
     });
 
+    const baseUrl = process.env.SITE_URL ?? 'http://localhost:3000';
+
     // Create checkout session
     return await stripeClient.createCheckoutSession(ctx, {
       priceId: args.priceId,
       customerId: customer.customerId,
       mode: 'subscription',
-      successUrl: `${process.env.SITE_URL ?? 'http://localhost:3000'}/dashboard?subscription=success`,
-      cancelUrl: `${process.env.SITE_URL ?? 'http://localhost:3000'}/pricing?canceled=true`,
+      successUrl: args.successUrl ?? `${baseUrl}/dashboard?subscription=success`,
+      cancelUrl: args.cancelUrl ?? `${baseUrl}/pricing?canceled=true`,
       subscriptionMetadata: {
         userId: identity.subject,
       },

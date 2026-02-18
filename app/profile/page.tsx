@@ -98,7 +98,7 @@ export default function ProfilePage() {
   }
 
   const tier = me.subscriptionTier || 'starter';
-  const isStarter = tier === 'starter';
+  const isStarter = tier === 'starter' || tier === 'solo';
   const initials = getInitials(me.name, me.email);
   const memberSince = me._creationTime ? formatLongDate(me._creationTime) : 'Unknown';
 
@@ -252,20 +252,23 @@ export default function ProfilePage() {
               <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
                 <Box>
                   <Heading size="md" mb={1}>
-                    Upgrade to Growth
+                    Upgrade to Growth Engine
                   </Heading>
                   <Text opacity={0.9}>
-                    Get team collaboration, advanced analytics, and priority support.
+                    Replace your marketing agency. Get conversion optimization, lead tracking, and
+                    priority support.
                   </Text>
                 </Box>
-                <Button
-                  bg="white"
-                  color="brand.orange"
-                  rightIcon={<FiArrowRight />}
-                  _hover={{ bg: 'gray.100' }}
-                >
-                  Upgrade Now
-                </Button>
+                <Link href="/subscription" passHref>
+                  <Button
+                    bg="white"
+                    color="brand.orange"
+                    rightIcon={<FiArrowRight />}
+                    _hover={{ bg: 'gray.100' }}
+                  >
+                    Upgrade Now
+                  </Button>
+                </Link>
               </HStack>
             </Box>
           )}

@@ -8,7 +8,7 @@ import Link from 'next/link';
 export const HeroSection: FC = () => (
   <Box flex={1}>
     <VStack align="start" spacing={6} textAlign="left">
-      <InfoBadge>AI-Powered SEO Automation</InfoBadge>
+      <InfoBadge>Built for Google and the New AI Search Era</InfoBadge>
       <Heading size="3xl" fontWeight="bold" color="gray.800" fontFamily="heading">
         Your Answer to All Your Lead Generation and Revenue Problems
       </Heading>

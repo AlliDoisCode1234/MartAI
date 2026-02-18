@@ -276,9 +276,11 @@ export default function SettingsPage() {
                             Upgrade to Growth to invite up to 3 team members. Enterprise plans
                             support unlimited seats with advanced permissions.
                           </Text>
-                          <Button colorScheme="orange" size="md" mt={2}>
-                            Upgrade Plan
-                          </Button>
+                          <Link href="/subscription" passHref>
+                            <Button colorScheme="orange" size="md" mt={2}>
+                              Upgrade Plan
+                            </Button>
+                          </Link>
                         </VStack>
                       </Box>
                     )}

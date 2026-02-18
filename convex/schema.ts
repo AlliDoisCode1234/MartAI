@@ -54,12 +54,15 @@ export default defineSchema({
     membershipTier: v.optional(
       v.union(
         v.literal('free'),
-        v.literal('solo'), // Canonical entry tier
-        v.literal('starter'), // Legacy alias for solo
-        v.literal('growth'), // Canonical mid tier
-        v.literal('team'), // Team tier ($299/mo)
-        v.literal('pro'), // Legacy alias for growth
-        v.literal('enterprise') // Canonical top tier
+        v.literal('starter'), // Canonical entry tier ($197/mo)
+        v.literal('engine'), // Canonical mid tier ($397/mo)
+        v.literal('agency'), // Canonical top tier ($697/mo)
+        v.literal('enterprise'), // Custom pricing
+        // Legacy aliases (kept for backward compat with existing records)
+        v.literal('solo'), // Legacy → starter
+        v.literal('growth'), // Legacy → engine
+        v.literal('team'), // Legacy → agency
+        v.literal('pro') // Legacy → engine
       )
     ),
     bio: v.optional(v.string()),
@@ -1002,12 +1005,15 @@ export default defineSchema({
     plan: v.optional(
       v.union(
         v.literal('free'),
-        v.literal('solo'), // Canonical entry tier
-        v.literal('starter'), // Legacy alias for solo
-        v.literal('growth'), // Canonical mid tier
-        v.literal('team'), // Team tier ($299/mo)
-        v.literal('pro'), // Legacy alias for growth
-        v.literal('enterprise') // Canonical top tier
+        v.literal('starter'), // Canonical entry tier ($197/mo)
+        v.literal('engine'), // Canonical mid tier ($397/mo)
+        v.literal('agency'), // Canonical top tier ($697/mo)
+        v.literal('enterprise'), // Custom pricing
+        // Legacy aliases
+        v.literal('solo'),
+        v.literal('growth'),
+        v.literal('team'),
+        v.literal('pro')
       )
     ),
     // Limits

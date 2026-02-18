@@ -24,7 +24,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useConvexAuth } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import {
   Box,
   Container,
@@ -46,13 +47,23 @@ import {
 export default function Home() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useConvexAuth();
+  // Query user to check onboarding status — avoids 3-hop redirect (/ → /dashboard → /onboarding)
+  const user = useQuery(api.users.me);
 
-  // Redirect authenticated users to member portal
+  // Redirect authenticated users based on onboarding status
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (isLoading) return;
+    if (!isAuthenticated) return;
+    // Wait for user record to load from Convex
+    if (user === undefined) return;
+
+    if (user && user.onboardingStatus === 'completed') {
       router.replace('/dashboard');
+    } else {
+      // Incomplete or no user record → onboarding directly (no dashboard bounce)
+      router.replace('/onboarding');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, user, router]);
 
   // Show loading while checking auth
   if (isLoading) {

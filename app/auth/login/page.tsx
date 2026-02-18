@@ -11,7 +11,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Container,
   VStack,
@@ -35,12 +35,27 @@ import {
   Icon,
 } from '@chakra-ui/react';
 import { useAuthActions } from '@convex-dev/auth/react';
+import { useConvexAuth } from 'convex/react';
 import { FaGoogle } from 'react-icons/fa';
 import { FiMail, FiLock } from 'react-icons/fi';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signIn } = useAuthActions();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo') || '/dashboard';
+  const isCheckoutIntent = searchParams.get('intent') === 'checkout';
+  const { signIn, signOut } = useAuthActions();
+  const { isAuthenticated } = useConvexAuth();
+
+  // Clear stale auth session when landing on login page
+  // Prevents onboarding redirect loop caused by stale JWT tokens after server restart
+  useEffect(() => {
+    if (isAuthenticated) {
+      signOut().catch(console.warn);
+    }
+    // Only run on mount — don't re-trigger on auth state changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -230,7 +245,7 @@ export default function LoginPage() {
         password,
         flow: 'signIn',
       });
-      router.replace('/dashboard');
+      router.replace(returnTo);
     } catch (err) {
       setError('Invalid email or password');
       setLoading(false);
@@ -258,6 +273,10 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
+      // Persist returnTo so the callback page can redirect back after OAuth
+      if (returnTo !== '/dashboard') {
+        sessionStorage.setItem('authReturnTo', returnTo);
+      }
       console.log('[GoogleLogin] Calling signIn("google")...');
       const result = await signIn('google', { redirectTo: '/auth/callback' });
       console.log('[GoogleLogin] signIn result:', result);
@@ -268,7 +287,7 @@ export default function LoginPage() {
         window.location.href = result.redirect.toString();
       } else if (result?.signingIn) {
         console.log('[GoogleLogin] User signed in immediately');
-        router.replace('/dashboard');
+        router.replace(returnTo);
       } else {
         console.log('[GoogleLogin] No redirect or signingIn - unexpected state');
         setError('Failed to start Google sign-in flow');
@@ -294,10 +313,12 @@ export default function LoginPage() {
               color="gray.800"
               textAlign="center"
             >
-              Welcome to Phoo
+              {isCheckoutIntent ? 'Sign in to continue to checkout' : 'Welcome to Phoo'}
             </Heading>
             <Text color="gray.600" textAlign="center">
-              Sign in to your account to continue
+              {isCheckoutIntent
+                ? 'Quick sign-in, then straight to payment'
+                : 'Sign in to your account to continue'}
             </Text>
 
             {error && (

@@ -104,7 +104,7 @@ export function getOrganizationSchema(): OrganizationSchema {
     url: SITE_URL,
     logo: `${SITE_URL}/icon.png`,
     description:
-      'AI-powered SEO and content automation platform. Optimize for both traditional search and AI-generated search results with GEO (Generative Engine Optimization).',
+      'Predictable inbound lead generation for businesses ready to grow. Get found on Google and in AI answers with automated content strategy, CMS publishing, and Generative Engine Optimization (GEO).',
     sameAs: [
       // Add social profiles as they become available
       // 'https://twitter.com/phooai',

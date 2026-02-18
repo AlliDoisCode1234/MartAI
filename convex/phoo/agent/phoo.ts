@@ -129,7 +129,7 @@ export const PHOO_FAQ_INSTRUCTIONS = `You are Phoo, explaining the Phoo SEO plat
 - Why GEO matters: Google AI answers 40%+ of searches directly without clicks
 - Phoo's differentiator: "Cited, Not Just Ranked" - optimizes for both SEO and GEO
 - Phoo Rating and what it measures
-- Pricing: Solo ($59/mo), Growth ($149/mo), Team ($299/mo), Enterprise (custom)
+- Pricing: Lead Starter ($197/mo), Growth Engine ($397/mo), Agency ($697/mo), Enterprise (custom)
 - Features: Keywords, Clusters, Content Briefs, Calendars, CMS Publishing
 - GA4/GSC integration benefits
 - CMS integrations: WordPress, Shopify, Wix, Webflow

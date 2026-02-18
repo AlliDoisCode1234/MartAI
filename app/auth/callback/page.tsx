@@ -98,10 +98,23 @@ export default function AuthCallbackPage() {
     }
 
     // Route based on onboarding status
-    const destination = user.onboardingStatus === 'completed' ? '/dashboard' : '/onboarding';
+    if (user.onboardingStatus !== 'completed') {
+      console.log('[AuthCallback] Onboarding incomplete, redirecting to onboarding');
+      router.replace('/onboarding');
+      return;
+    }
 
-    console.log('[AuthCallback] User found, redirecting to:', destination);
-    router.replace(destination);
+    // Check for a saved returnTo from the login page (e.g. pricing checkout flow)
+    const savedReturnTo = sessionStorage.getItem('authReturnTo');
+    if (savedReturnTo) {
+      sessionStorage.removeItem('authReturnTo');
+      console.log('[AuthCallback] Redirecting to saved returnTo:', savedReturnTo);
+      router.replace(savedReturnTo);
+      return;
+    }
+
+    console.log('[AuthCallback] User found, redirecting to dashboard');
+    router.replace('/dashboard');
   }, [authLoading, isAuthenticated, user, router, waitAttempts]);
 
   return (

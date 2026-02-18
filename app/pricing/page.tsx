@@ -32,6 +32,8 @@ import {
 import { useState } from 'react';
 import Script from 'next/script';
 import { useAction } from 'convex/react';
+import { useConvexAuth } from 'convex/react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import { FiZap, FiTarget, FiTrendingUp, FiCpu } from 'react-icons/fi';
@@ -40,20 +42,20 @@ import { LandingHeader } from '@/src/components/home';
 import { BRAND } from '@/lib/constants/brand';
 
 // Stripe Price IDs for each plan x billing cycle
+// Feb 2026: Lead Generation System pricing pivot
 const STRIPE_PRICE_IDS: Record<string, { monthly: string; annual: string }> = {
-  solo: {
-    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_MONTHLY || '',
-    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_ANNUAL || '',
+  starter: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_ANNUAL || '',
   },
-  growth: {
-    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH_MONTHLY || '',
-    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH_ANNUAL || '',
+  engine: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_ENGINE_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_ENGINE_ANNUAL || '',
   },
-  team: {
-    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM_MONTHLY || '',
-    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM_ANNUAL || '',
+  agency: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY_MONTHLY || '',
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY_ANNUAL || '',
   },
-  enterprise: { monthly: '', annual: '' },
 };
 
 interface PricingCardProps {
@@ -176,6 +178,8 @@ export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const toast = useToast();
+  const router = useRouter();
+  const { isAuthenticated } = useConvexAuth();
 
   // Stripe checkout action
   const createCheckout = useAction(api.stripe.checkout.createSubscriptionCheckout);
@@ -186,6 +190,12 @@ export default function PricingPage() {
   const handlePlanSelect = async (planId: string) => {
     if (planId === 'enterprise') {
       window.location.href = `mailto:${BRAND.supportEmail}?subject=Enterprise Plan Inquiry`;
+      return;
+    }
+
+    // Redirect unauthenticated users to login first
+    if (!isAuthenticated) {
+      router.push('/auth/login?returnTo=/pricing&intent=checkout');
       return;
     }
 
@@ -222,65 +232,52 @@ export default function PricingPage() {
 
   const plans = [
     {
-      id: 'solo',
-      title: 'Solo',
+      id: 'starter',
+      title: 'Lead Starter',
       icon: FiTarget,
-      price: isAnnual ? '$49' : '$59',
-      description: 'Perfect for solopreneurs and freelancers.',
+      price: isAnnual ? '$164' : '$197',
+      description: 'Your in-house lead engine.',
       features: [
         { text: '1 Website', included: true },
-        { text: '12 AI Content Pieces', included: true },
-        { text: 'CMS Publishing', included: true },
-        { text: 'Basic SEO Audit', included: true },
-        { text: 'WordPress Integration', included: true },
+        { text: '15 AI Content Pieces/mo', included: true },
+        { text: 'Lead-Focused Content Engine', included: true },
+        { text: 'SEO + GEO Optimization', included: true },
+        { text: 'CMS Publishing Automation', included: true },
+        { text: 'Monthly Performance Dashboard', included: true },
         { text: 'Team Members', included: false },
       ],
     },
     {
-      id: 'growth',
-      title: 'Growth',
+      id: 'engine',
+      title: 'Growth Engine',
       icon: FiTrendingUp,
-      price: isAnnual ? '$99' : '$125',
-      description: 'For growing businesses scaling their content.',
+      price: isAnnual ? '$330' : '$397',
+      description: 'Replace your marketing agency.',
       isPopular: true,
       features: [
         { text: '3 Websites', included: true },
-        { text: '50 AI Content Pieces', included: true },
-        { text: 'CMS Publishing', included: true },
-        { text: 'Full SEO Suite', included: true },
-        { text: 'AI Briefs', included: true },
-        { text: '3 Team Members', included: true },
+        { text: '50 AI Content Pieces/mo', included: true },
+        { text: 'Advanced Keyword Strategy', included: true },
+        { text: 'Conversion Optimization', included: true },
+        { text: 'Lead Tracking Integration', included: true },
+        { text: '5 Team Members', included: true },
+        { text: 'Priority Support', included: true },
       ],
     },
     {
-      id: 'team',
-      title: 'Team',
+      id: 'agency',
+      title: 'Agency',
       icon: FiZap,
-      price: isAnnual ? '$239' : '$299',
-      description: 'For marketing teams and small agencies.',
+      price: isAnnual ? '$580' : '$697',
+      description: 'For agencies & multi-location.',
       features: [
         { text: '10 Websites', included: true },
-        { text: '100 AI Content Pieces', included: true },
-        { text: 'CMS Publishing', included: true },
-        { text: 'Full SEO Suite', included: true },
-        { text: 'White-label Reports', included: true },
-        { text: '10 Team Members', included: true },
-      ],
-    },
-    {
-      id: 'enterprise',
-      title: 'Enterprise',
-      icon: FiCpu,
-      price: 'Custom',
-      description: 'Tailored to your needs.',
-      buttonText: 'Contact Us',
-      features: [
-        { text: 'Unlimited Websites', included: true },
-        { text: 'Unlimited Content', included: true },
-        { text: 'Public API Access', included: true },
-        { text: 'Dedicated Support', included: true },
-        { text: 'Custom Integrations', included: true },
-        { text: 'Unlimited Team Members', included: true },
+        { text: '100 AI Content Pieces/mo', included: true },
+        { text: 'White-Label Reports', included: true },
+        { text: 'Client Access Portals', included: true },
+        { text: 'Revenue Tracking', included: true },
+        { text: '25 Team Members', included: true },
+        { text: 'Dedicated Onboarding Strategist', included: true },
       ],
     },
   ];
@@ -310,20 +307,20 @@ export default function PricingPage() {
               >
                 <HStack spacing={1}>
                   <Icon as={FiCpu} boxSize={3} />
-                  <Text>SEO + GEO Included</Text>
+                  <Text>Built for Google + AI Search</Text>
                 </HStack>
               </Badge>
             </HStack>
             <Heading size="2xl" fontWeight="bold" color="gray.800">
-              SEO + AI Content for $125/mo
+              The $2,500/mo Agency Alternative
             </Heading>
             <Text fontSize="xl" color="gray.600" maxW="2xl">
-              Competitors charge $600+/mo for SEO tools alone. Phoo gives you keyword research, AI
-              content generation, AND publishes directly to your CMS—so you rank in search results
-              AND get cited by AI assistants like ChatGPT.
+              Most Phoo users generate 3-5 new inbound leads per month within 6-8 months. Get the
+              system agencies use — keyword strategy, AI content, conversion optimization, CMS
+              publishing — at 1/5 the cost.
             </Text>
             <Text fontSize="md" color="brand.orange" fontWeight="semibold">
-              AI-powered SEO that publishes directly to WordPress, Shopify & more
+              Predictable inbound lead generation for businesses ready to grow
             </Text>
 
             <Flex align="center" mt={8}>
@@ -353,7 +350,7 @@ export default function PricingPage() {
             </Flex>
           </VStack>
 
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={8} alignItems="center">
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} alignItems="center">
             {plans.map((plan) => (
               <PricingCard
                 key={plan.id}

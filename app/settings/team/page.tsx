@@ -297,7 +297,12 @@ export default function TeamSettingsPage() {
                     Sync with plan
                   </Button>
                   {' or '}
-                  <Button variant="link" colorScheme="orange" size="sm">
+                  <Button
+                    variant="link"
+                    colorScheme="orange"
+                    size="sm"
+                    onClick={() => (window.location.href = '/subscription')}
+                  >
                     Upgrade plan
                   </Button>
                 </Text>

@@ -14,7 +14,7 @@ import type { Metadata } from 'next';
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || 'G-8LBCMYNZ6R';
 
 export const metadata: Metadata = {
-  title: 'Phoo - AI-Powered SEO Automation',
+  title: 'Phoo - Get Found on Google and in AI Answers',
   description: 'Automate your SEO. Accelerate your growth.',
   // Security metadata
   robots: {

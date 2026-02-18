@@ -5,26 +5,34 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 /**
  * Pricing Tiers with Cost Analysis
  *
- * CANONICAL TIER NAMES (as of Jan 2026):
+ * CANONICAL TIER NAMES (as of Feb 2026 — Lead Generation System pivot):
  *   - free: No subscription (default for new users)
- *   - solo: Entry tier ($59/mo) - Solopreneurs, freelancers
- *   - growth: Mid tier ($149/mo) - SMBs, small agencies
- *   - team: Team tier ($299/mo, 10 seats) - Marketing teams, agencies
- *   - enterprise: Custom pricing (contact sales)
+ *   - starter: Lead Starter ($197/mo) - Solopreneurs, 1 website
+ *   - engine: Growth Engine ($397/mo) - SMBs scaling, 3 websites
+ *   - agency: Agency ($697/mo) - Agencies, multi-location, 10 websites
+ *   - enterprise: Custom pricing (contact sales, existing subscribers only)
  *
- * Legacy aliases for backward compatibility:
- *   - starter → solo
- *   - pro → growth
+ * Legacy aliases for backward compatibility (TECHDEBT: migrate records):
+ *   - solo → starter
+ *   - growth → engine
+ *   - team → agency
+ *   - starter (old) → starter (new)
+ *   - pro → engine
+ *
+ * Positioning: "The $2,500/month Agency Alternative"
+ *   - Value = predictable inbound lead generation
+ *   - 3-5 new leads/month within 6-8 months
+ *   - $12k-$30k annual revenue impact vs $197-697/mo price
  *
  * AI Token Costs (GPT-4o-mini, Dec 2024):
  *   Input:  $0.15 per 1M tokens
  *   Output: $0.60 per 1M tokens
  *
- * Pricing Philosophy (BILL-approved, Updated Jan 2026):
- *   - AI costs are <1% of price
- *   - Value is in intelligence layer + time savings (~10hrs/mo @ $50/hr)
+ * Pricing Philosophy (BILL-approved, Updated Feb 2026):
+ *   - Premium pricing attracts action-takers, not dabblers
+ *   - AI costs are <1% of price — value is in the lead pipeline
  *   - No free tier (value requires investment)
- *   - Team tier @ $299/mo for collaboration needs (10 seats)
+ *   - Agency tier for white-label and multi-location
  *   - Enterprise = relationship, not sticker price
  */
 export const PLAN_LIMITS = {
@@ -39,44 +47,47 @@ export const PLAN_LIMITS = {
       maxTeamMembers: 0,
     },
   },
-  // Solo: $59/mo - AI cost ~$0.13/mo (10x markup + intelligence value)
-  // Target: Solopreneurs, freelancers, 1 website, getting started with SEO
-  solo: {
-    priceMonthly: 59,
+  // Lead Starter: $197/mo
+  // "Your in-house lead engine for less than the cost of one freelancer."
+  // Target: Solopreneurs, 1 website, predictable lead generation
+  starter: {
+    priceMonthly: 197,
     features: {
       maxUrls: 1,
-      maxKeywordIdeas: 250,
-      maxAiReports: 4,
-      maxContentPieces: 5,
+      maxKeywordIdeas: 500,
+      maxAiReports: 10,
+      maxContentPieces: 15,
       maxTeamMembers: 1,
     },
   },
-  // Growth: $149/mo - AI cost ~$0.85/mo
-  // Target: Growing businesses, 3 websites, content scaling
-  growth: {
-    priceMonthly: 149,
+  // Growth Engine: $397/mo
+  // "Replace your marketing agency for 1/6 the cost."
+  // Target: Scaling SMBs, 3 websites, conversion optimization
+  engine: {
+    priceMonthly: 397,
     features: {
       maxUrls: 3,
-      maxKeywordIdeas: 1000,
-      maxAiReports: 12,
-      maxContentPieces: 12,
-      maxTeamMembers: 3,
+      maxKeywordIdeas: 2000,
+      maxAiReports: 30,
+      maxContentPieces: 50,
+      maxTeamMembers: 5,
     },
   },
-  // Team: $299/mo
-  // Target: Marketing Teams
-  team: {
-    priceMonthly: 299,
+  // Agency: $697/mo
+  // "Built for agencies and multi-location businesses."
+  // Target: Agencies, white-label, 10 websites, client access
+  agency: {
+    priceMonthly: 697,
     features: {
       maxUrls: 10,
-      maxKeywordIdeas: 2500,
-      maxAiReports: 30,
-      maxContentPieces: 30,
-      maxTeamMembers: 10,
+      maxKeywordIdeas: 5000,
+      maxAiReports: 100,
+      maxContentPieces: 100,
+      maxTeamMembers: 25,
     },
   },
-  // Enterprise: Custom - AI cost ~$4/mo (contact sales)
-  // Target: Large companies, need API access, SLA, custom integrations, unlimited seats
+  // Enterprise: Custom - existing subscribers and contact sales
+  // Target: Large companies, need API access, SLA, custom integrations
   enterprise: {
     priceMonthly: 0, // Contact Sales
     features: {
@@ -91,8 +102,22 @@ export const PLAN_LIMITS = {
 
 export type PlanName = keyof typeof PLAN_LIMITS;
 
+/**
+ * Legacy tier alias map — maps old plan IDs to new canonical IDs.
+ * TECHDEBT: Once all existing subscriber records are migrated,
+ * remove these aliases and reference new IDs directly.
+ */
+const LEGACY_TIER_ALIASES: Record<string, PlanName> = {
+  solo: 'starter',
+  growth: 'engine',
+  team: 'agency',
+  pro: 'engine',
+};
+
 export function planConfig(planTier: string) {
-  const tier = planTier.toLowerCase() as PlanName;
+  const normalized = planTier.toLowerCase();
+  const canonical = LEGACY_TIER_ALIASES[normalized] ?? normalized;
+  const tier = canonical as PlanName;
   return PLAN_LIMITS[tier] ?? null;
 }
 
@@ -145,7 +170,7 @@ const metricToField: Record<'urls' | 'keywordIdeas' | 'aiReports' | 'contentPiec
   contentPieces: 'contentPiecesPlanned',
 };
 
-const fieldToLimit: Record<UsageField, keyof typeof PLAN_LIMITS.solo.features> = {
+const fieldToLimit: Record<UsageField, keyof typeof PLAN_LIMITS.starter.features> = {
   urlsAnalyzed: 'maxUrls',
   keywordIdeasGenerated: 'maxKeywordIdeas',
   aiReportsGenerated: 'maxAiReports',

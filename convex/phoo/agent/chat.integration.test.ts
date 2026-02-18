@@ -38,9 +38,9 @@ describe('Phoo System Prompts', () => {
     });
 
     it('includes pricing information', () => {
-      expect(PHOO_FAQ_INSTRUCTIONS).toContain('$59');
-      expect(PHOO_FAQ_INSTRUCTIONS).toContain('$149');
-      expect(PHOO_FAQ_INSTRUCTIONS).toContain('$299');
+      expect(PHOO_FAQ_INSTRUCTIONS).toContain('$197');
+      expect(PHOO_FAQ_INSTRUCTIONS).toContain('$397');
+      expect(PHOO_FAQ_INSTRUCTIONS).toContain('$697');
     });
 
     it('includes call-to-action requirement', () => {

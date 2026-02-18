@@ -3,11 +3,13 @@
  *
  * Centralized brand configuration for Phoo.
  * Use these constants throughout the app for consistency.
+ *
+ * Updated Feb 2026: Lead generation positioning
  */
 
 export const BRAND = {
   name: 'Phoo',
-  tagline: 'AI-Powered SEO Automation',
+  tagline: 'Get Found on Google — and in AI Answers',
 
   // Contact
   supportEmail: 'phoosupport@helps2.com',

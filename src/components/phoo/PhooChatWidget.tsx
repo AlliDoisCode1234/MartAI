@@ -179,17 +179,17 @@ I'll be back to my usual chatty self shortly. Try again in a moment!`;
     return `Thanks for your interest in Phoo!
 
 **Here's what Phoo can do for you:**
-- **AI-Powered SEO:** Discover keywords your competitors are missing
+- **Inbound Lead Generation:** Predictable lead pipeline through SEO + AI content
 - **Topic Clustering:** Organize content into strategic pillars
 - **Content Calendar:** Plan and schedule your content strategy
 - **Phoo Rating:** Track your SEO health score from 0-100
 
 **Pricing:**
-- Solo: $59/mo (1 project)
-- Growth: $149/mo (5 projects)
-- Team: $299/mo (unlimited)
+- Lead Starter: $197/mo (1 website)
+- Growth Engine: $397/mo (3 websites)
+- Agency: $697/mo (10 websites)
 
-Ready to improve your rankings? **Sign up to get started!**`;
+Ready to replace your marketing agency? **Sign up to get started!**`;
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

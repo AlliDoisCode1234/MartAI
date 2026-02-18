@@ -149,7 +149,11 @@ export function SerpAnalyzer({ projectId }: Props) {
             {limitCheck.used}/{limitCheck.limit} analyses used
           </Badge>
           {!limitCheck.canAnalyze && (
-            <Badge colorScheme="purple" cursor="pointer">
+            <Badge
+              colorScheme="purple"
+              cursor="pointer"
+              onClick={() => (window.location.href = '/subscription')}
+            >
               <HStack spacing={1}>
                 <Icon as={FiLock} boxSize={3} />
                 <Text>Upgrade for more</Text>
