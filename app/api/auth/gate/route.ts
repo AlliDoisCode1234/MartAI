@@ -13,6 +13,11 @@ const COOKIE_NAME = 'phoo_login_gate';
 const COOKIE_MAX_AGE = 60 * 60 * 24; // 24 hours
 
 export async function POST(request: NextRequest) {
+  // TEMPORARILY DISABLED — gate is open for testing (Feb 2026)
+  // To re-enable: remove this early return and uncomment the logic below
+  return NextResponse.json({ success: true });
+
+  /* GATE LOGIC — RE-ENABLE WHEN READY
   try {
     const body = await request.json();
     const { password } = body;
@@ -22,7 +27,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!GATE_PASSWORD) {
-      // If no password is configured, allow through
       return NextResponse.json({ success: true });
     }
 
@@ -30,7 +34,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Incorrect password' }, { status: 401 });
     }
 
-    // Set httpOnly cookie — cannot be read or modified by client-side JS
     const response = NextResponse.json({ success: true });
     response.cookies.set(COOKIE_NAME, 'authenticated', {
       httpOnly: true,
@@ -44,4 +47,5 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ success: false, error: 'Invalid request' }, { status: 400 });
   }
+  */
 }

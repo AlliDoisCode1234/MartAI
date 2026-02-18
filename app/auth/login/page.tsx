@@ -4,8 +4,7 @@
  * Component Hierarchy:
  * App → auth/login → LoginPage
  *
- * Login page with password gate for beta access.
- * Gate validates via server-side API (/api/auth/gate) using httpOnly cookie.
+ * Login page with Google OAuth, email/password, and magic link sign-in.
  */
 
 'use client';
@@ -44,18 +43,9 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('returnTo') || '/dashboard';
   const isCheckoutIntent = searchParams.get('intent') === 'checkout';
-  const { signIn, signOut } = useAuthActions();
+  const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
 
-  // Clear stale auth session when landing on login page
-  // Prevents onboarding redirect loop caused by stale JWT tokens after server restart
-  useEffect(() => {
-    if (isAuthenticated) {
-      signOut().catch(console.warn);
-    }
-    // Only run on mount — don't re-trigger on auth state changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -64,14 +54,6 @@ export default function LoginPage() {
     password: '',
   });
   const [magicLinkEmail, setMagicLinkEmail] = useState('');
-
-  // Password gate state — TEMPORARILY DISABLED for testing (Feb 2026)
-  // To re-enable: set isUnlocked=false, isCheckingGate=true
-  const [isUnlocked, setIsUnlocked] = useState(true);
-  const [isCheckingGate, setIsCheckingGate] = useState(false);
-  const [gatePassword, setGatePassword] = useState('');
-  const [gateError, setGateError] = useState(false);
-  const [gateLoading, setGateLoading] = useState(false);
 
   // Refs to detect browser autofill
   const emailInputRef = useRef<HTMLInputElement>(null);
@@ -89,34 +71,6 @@ export default function LoginPage() {
       });
     }
   }, [formData.email, formData.password]);
-
-  // Check if gate cookie exists on mount (cookie presence = already authenticated)
-  useEffect(() => {
-    const hasCookie = document.cookie.includes('phoo_login_gate=');
-    // If cookie exists OR no gate is configured, unlock immediately
-    // We check by trying a no-op validation — if no password is set server-side, API returns success
-    if (hasCookie) {
-      setIsUnlocked(true);
-      setIsCheckingGate(false);
-    } else {
-      // Try a probe — if PHOO_BETA_PASSWORD isn't set, the gate should be open
-      fetch('/api/auth/gate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: '' }),
-      })
-        .then((res) => {
-          if (res.ok) {
-            // No password configured, gate is open
-            setIsUnlocked(true);
-          }
-          setIsCheckingGate(false);
-        })
-        .catch(() => {
-          setIsCheckingGate(false);
-        });
-    }
-  }, []);
 
   // Check for autofill on mount and after short delay (browser timing)
   useEffect(() => {
@@ -141,95 +95,6 @@ export default function LoginPage() {
       passwordInput?.removeEventListener('animationstart', handleAnimationStart);
     };
   }, [syncAutofillValues]);
-
-  // Server-side gate validation
-  const handleGateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setGateLoading(true);
-    setGateError(false);
-
-    try {
-      const res = await fetch('/api/auth/gate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: gatePassword }),
-      });
-
-      if (res.ok) {
-        setIsUnlocked(true);
-      } else {
-        setGateError(true);
-      }
-    } catch {
-      setGateError(true);
-    } finally {
-      setGateLoading(false);
-    }
-  };
-
-  // Loading state while checking gate
-  if (isCheckingGate) {
-    return (
-      <Box minH="100vh" bg="gray.50" display="flex" alignItems="center" justifyContent="center">
-        <Text color="gray.400">Loading...</Text>
-      </Box>
-    );
-  }
-
-  // Password gate - server-validated, shown before login form
-  if (!isUnlocked) {
-    return (
-      <Box minH="100vh" bg="gray.50" display="flex" alignItems="center" justifyContent="center">
-        <Container maxW="sm">
-          <Box bg="white" p={8} borderRadius="xl" shadow="lg" textAlign="center">
-            <VStack spacing={5}>
-              <Icon as={FiLock} boxSize={10} color="brand.orange" />
-              <Heading size="md" color="gray.800">
-                Beta Access Required
-              </Heading>
-              <Text fontSize="sm" color="gray.500">
-                Enter the access password to continue.
-              </Text>
-              <form onSubmit={handleGateSubmit} style={{ width: '100%' }}>
-                <VStack spacing={4}>
-                  <Input
-                    type="password"
-                    placeholder="Access password"
-                    value={gatePassword}
-                    onChange={(e) => {
-                      setGatePassword(e.target.value);
-                      setGateError(false);
-                    }}
-                    isInvalid={gateError}
-                    size="lg"
-                    borderRadius="lg"
-                    autoFocus
-                  />
-                  {gateError && (
-                    <Text fontSize="sm" color="red.500">
-                      Incorrect password. Please try again.
-                    </Text>
-                  )}
-                  <Button
-                    type="submit"
-                    bg="brand.orange"
-                    color="white"
-                    size="lg"
-                    w="100%"
-                    _hover={{ bg: '#E8851A' }}
-                    borderRadius="lg"
-                    isLoading={gateLoading}
-                  >
-                    Enter
-                  </Button>
-                </VStack>
-              </form>
-            </VStack>
-          </Box>
-        </Container>
-      </Box>
-    );
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -4,16 +4,8 @@ import type { NextRequest } from 'next/server';
 /**
  * Next.js Middleware - Runs on every request
  * - Adds security headers to ALL responses (pages and API routes)
- * - Handles phoo.ai domain routing (landing page + password protection)
- * - Handles legacy route redirects
+ * - Handles phoo.ai domain routing (landing page)
  */
-
-// Password protection credentials (set in Vercel environment variables)
-const PHOO_PASSWORD = process.env.PHOO_BETA_PASSWORD;
-
-if (!PHOO_PASSWORD && process.env.NODE_ENV === 'production') {
-  console.error('PHOO_BETA_PASSWORD not set in production');
-}
 
 /**
  * Check if request is from phoo.ai domain
@@ -21,40 +13,6 @@ if (!PHOO_PASSWORD && process.env.NODE_ENV === 'production') {
 function isPhooAiDomain(request: NextRequest): boolean {
   const host = request.headers.get('host') || '';
   return host.includes('phoo.ai') || host.includes('phoo-ai');
-}
-
-/**
- * Basic auth check for password-protected routes
- * Returns true if authenticated, false otherwise
- */
-function checkBasicAuth(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader || !authHeader.startsWith('Basic ')) {
-    return false;
-  }
-
-  const base64Credentials = authHeader.substring(6);
-  try {
-    const credentials = atob(base64Credentials);
-    // Format: "username:password" - we only check password
-    const [, password] = credentials.split(':');
-    return password === PHOO_PASSWORD;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Return 401 Unauthorized response with Basic Auth challenge
- */
-function unauthorizedResponse(): NextResponse {
-  return new NextResponse('Unauthorized - Please enter password', {
-    status: 401,
-    headers: {
-      'WWW-Authenticate': 'Basic realm="Phoo Beta Access"',
-      'Content-Type': 'text/plain',
-    },
-  });
 }
 
 export function middleware(request: NextRequest) {
@@ -99,23 +57,6 @@ export function middleware(request: NextRequest) {
     if (!isPublicRoute && !isApiRoute) {
       // Fall through to security headers
       // Layout component will check auth and redirect to / if needed
-    }
-  }
-
-  // ==========================================================================
-  // Login Gate: Password-protect /auth/login and /auth/signup
-  // Uses httpOnly cookie set by /api/auth/gate (server-side validation)
-  // ==========================================================================
-  const gatedRoutes = ['/auth/login', '/auth/signup'];
-  const isGatedRoute = gatedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + '/')
-  );
-
-  if (isGatedRoute && PHOO_PASSWORD) {
-    const gateCookie = request.cookies.get('phoo_login_gate');
-    if (!gateCookie || gateCookie.value !== 'authenticated') {
-      // No valid gate cookie — let the page handle showing the gate UI
-      // The page checks for the cookie absence and shows the password form
     }
   }
 
