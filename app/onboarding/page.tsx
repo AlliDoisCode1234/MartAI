@@ -245,11 +245,14 @@ export default function OnboardingPage() {
   // Redirect unauthenticated users to login
   // IMPORTANT: Only check auth state here, NOT user data.
   // user === undefined means the query is still loading, not that no user exists.
+  // SKIP when returning from OAuth/payment flows — Convex auth needs time to reconnect.
+  const isOAuthReturn = !!(searchParams?.get("success") || searchParams?.get("setup") || searchParams?.get("payment") || searchParams?.get("ga4") || searchParams?.get("gsc"));
   useEffect(() => {
+    if (isOAuthReturn) return; // Don't redirect during OAuth callback processing
     if (!authLoading && !isAuthenticated) {
-      router.replace('/auth/login');
+      router.replace("/auth/login");
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router, isOAuthReturn]);
 
   // Edge case: authenticated but no user record in DB
   useEffect(() => {
