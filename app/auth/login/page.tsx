@@ -65,9 +65,10 @@ export default function LoginPage() {
   });
   const [magicLinkEmail, setMagicLinkEmail] = useState('');
 
-  // Password gate state — validated server-side via /api/auth/gate
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [isCheckingGate, setIsCheckingGate] = useState(true);
+  // Password gate state — TEMPORARILY DISABLED for testing (Feb 2026)
+  // To re-enable: set isUnlocked=false, isCheckingGate=true
+  const [isUnlocked, setIsUnlocked] = useState(true);
+  const [isCheckingGate, setIsCheckingGate] = useState(false);
   const [gatePassword, setGatePassword] = useState('');
   const [gateError, setGateError] = useState(false);
   const [gateLoading, setGateLoading] = useState(false);
