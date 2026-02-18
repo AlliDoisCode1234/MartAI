@@ -24,6 +24,7 @@ type StatItem = {
   icon: React.ElementType;
   iconColor: string;
   iconBg: string;
+  isHighlighted?: boolean;
 };
 
 type Props = {
@@ -98,7 +99,7 @@ export function DashboardStatRow({
       iconBg: 'rgba(52, 211, 153, 0.15)',
     },
     {
-      label: 'Search Visibility',
+      label: 'Phoo Rating',
       value:
         hasData && avgPosition > 0
           ? avgPosition.toFixed(1)
@@ -112,10 +113,11 @@ export function DashboardStatRow({
             ? `+${visibilityChange}`
             : '',
       changeColor: '#F99F2A',
-      subtitle: hasData && avgPosition > 0 ? 'Avg Search Position' : 'Phoo Rating',
+      subtitle: hasData && avgPosition > 0 ? 'Avg Search Position' : 'Your visibility score',
       icon: FiTarget,
-      iconColor: '#a78bfa',
-      iconBg: 'rgba(167, 139, 250, 0.15)',
+      iconColor: '#F99F2A',
+      iconBg: 'rgba(249, 159, 42, 0.15)',
+      isHighlighted: true,
     },
   ];
 
@@ -124,9 +126,18 @@ export function DashboardStatRow({
       {stats.map((stat, i) => (
         <MotionBox
           key={stat.label}
-          bg="rgba(255, 255, 255, 0.03)"
+          bg={stat.isHighlighted ? 'rgba(249, 159, 42, 0.06)' : 'rgba(255, 255, 255, 0.03)'}
           backdropFilter="blur(20px)"
-          border="1px solid rgba(255, 255, 255, 0.08)"
+          border={
+            stat.isHighlighted
+              ? '1px solid rgba(249, 159, 42, 0.4)'
+              : '1px solid rgba(255, 255, 255, 0.08)'
+          }
+          boxShadow={
+            stat.isHighlighted
+              ? '0 0 20px rgba(249, 159, 42, 0.12), inset 0 1px 0 rgba(249, 159, 42, 0.1)'
+              : 'none'
+          }
           borderRadius="2xl"
           p={{ base: 4, md: 5 }}
           initial={{ opacity: 0, y: 20 }}
