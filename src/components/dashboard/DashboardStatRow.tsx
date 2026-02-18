@@ -126,30 +126,55 @@ export function DashboardStatRow({
       {stats.map((stat, i) => (
         <MotionBox
           key={stat.label}
-          bg={stat.isHighlighted ? 'rgba(249, 159, 42, 0.06)' : 'rgba(255, 255, 255, 0.03)'}
+          bg={
+            stat.isHighlighted
+              ? 'linear-gradient(135deg, rgba(249, 159, 42, 0.14) 0%, rgba(249, 159, 42, 0.04) 100%)'
+              : 'rgba(255, 255, 255, 0.03)'
+          }
           backdropFilter="blur(20px)"
           border={
             stat.isHighlighted
-              ? '1px solid rgba(249, 159, 42, 0.4)'
+              ? '1.5px solid rgba(249, 159, 42, 0.55)'
               : '1px solid rgba(255, 255, 255, 0.08)'
           }
           boxShadow={
             stat.isHighlighted
-              ? '0 0 20px rgba(249, 159, 42, 0.12), inset 0 1px 0 rgba(249, 159, 42, 0.1)'
+              ? '0 0 30px rgba(249, 159, 42, 0.2), 0 0 60px rgba(249, 159, 42, 0.08), inset 0 1px 0 rgba(249, 159, 42, 0.2)'
               : 'none'
           }
           borderRadius="2xl"
           p={{ base: 4, md: 5 }}
+          position="relative"
+          overflow="hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 + i * 0.08 }}
+          _before={
+            stat.isHighlighted
+              ? {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  bg: 'linear-gradient(90deg, transparent, #F99F2A, transparent)',
+                }
+              : undefined
+          }
         >
           <VStack align="start" spacing={3}>
             <HStack spacing={2}>
               <Box p={2} borderRadius="lg" bg={stat.iconBg}>
                 <Icon as={stat.icon} boxSize={4} color={stat.iconColor} />
               </Box>
-              <Text color="gray.300" fontSize="xs" fontWeight="semibold" letterSpacing="wider">
+              <Text
+                color={stat.isHighlighted ? '#F99F2A' : 'gray.300'}
+                fontSize="xs"
+                fontWeight={stat.isHighlighted ? 'bold' : 'semibold'}
+                letterSpacing="wider"
+                textTransform={stat.isHighlighted ? 'uppercase' : undefined}
+              >
                 {stat.label}
               </Text>
             </HStack>
