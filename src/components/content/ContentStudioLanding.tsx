@@ -12,6 +12,7 @@
  * Shows templates, quick wins, and recent drafts.
  */
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -26,6 +27,7 @@ import {
   Card,
   CardBody,
   Badge,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { FiPlusCircle, FiZap, FiFileText, FiArrowRight } from 'react-icons/fi';
 import { motion } from 'framer-motion';
@@ -35,6 +37,7 @@ import { useProject } from '@/lib/hooks';
 import { CONTENT_TEMPLATES } from '@/lib/constants/contentTemplates';
 import type { ContentTemplate } from '@/lib/constants/contentTemplates';
 import { TemplateCard } from './TemplateCard';
+import { LetPhooBuildItModal } from './LetPhooBuildItModal';
 import { Id } from '@/convex/_generated/dataModel';
 
 const MotionBox = motion(Box);
@@ -52,6 +55,11 @@ type Props = {
 export function ContentStudioLanding({ onTemplateSelect }: Props) {
   const router = useRouter();
   const { projectId } = useProject(null, { autoSelect: true });
+  const {
+    isOpen: isPhooBuildOpen,
+    onOpen: onPhooBuildOpen,
+    onClose: onPhooBuildClose,
+  } = useDisclosure();
 
   // Get quick wins for the project
   const quickWins = useQuery(
@@ -93,6 +101,22 @@ export function ContentStudioLanding({ onTemplateSelect }: Props) {
                 Pick a template, grab a quick win keyword, or start from scratch. Phoo will help you
                 every step of the way.
               </Text>
+              <Button
+                size="lg"
+                bg="linear-gradient(135deg, #F99F2A 0%, #e53e3e 100%)"
+                color="white"
+                px={8}
+                leftIcon={<FiZap />}
+                onClick={onPhooBuildOpen}
+                _hover={{
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 20px 40px rgba(249, 159, 42, 0.3)',
+                }}
+                transition="all 0.3s"
+                fontWeight="semibold"
+              >
+                Let Phoo Build It
+              </Button>
             </VStack>
           </MotionBox>
 
@@ -191,6 +215,9 @@ export function ContentStudioLanding({ onTemplateSelect }: Props) {
               </HStack>
             </CardBody>
           </Card>
+
+          {/* Let Phoo Build It Modal */}
+          <LetPhooBuildItModal isOpen={isPhooBuildOpen} onClose={onPhooBuildClose} />
         </VStack>
       </Container>
     </Box>

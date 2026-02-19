@@ -6,7 +6,7 @@
  * Includes retry loop to ensure 90+ SEO score guarantee.
  */
 
-import { action, internalMutation, internalAction } from './_generated/server';
+import { action, internalMutation, internalAction, internalQuery } from './_generated/server';
 import { v } from 'convex/values';
 import { auth } from './auth';
 import { internal, api } from './_generated/api';
@@ -46,6 +46,82 @@ export const generateContent = action({
       ...args,
       userId,
     });
+  },
+});
+
+// ============================================================================
+// AI Title Generation — "Let Phoo Build It" Flow
+// ============================================================================
+
+/**
+ * Generate SEO-optimized title suggestions for a keyword.
+ * Returns 5 ranked titles the user can pick from before full generation.
+ */
+export const generateContentTitle = action({
+  args: {
+    projectId: v.id('projects'),
+    keyword: v.string(),
+    contentType: contentTypeValidator,
+  },
+  handler: async (ctx, args): Promise<string[]> => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    // Get Writer Persona for brand-aware titles
+    const persona = await ctx.runMutation(
+      internal.ai.writerPersonas.index.getOrCreatePersonaInternal,
+      { projectId: args.projectId, userId }
+    );
+    const personaContext = persona ? buildPersonaContext(persona) : '';
+
+    const personaInstructions = personaContext
+      ? `\n\nBRAND CONTEXT:\n${personaContext}\nApply the brand voice to your titles.`
+      : '';
+
+    const systemPrompt = `You are an expert SEO content strategist. Generate exactly 5 engaging, click-worthy, SEO-optimized titles for a ${args.contentType} article about the keyword "${args.keyword}".
+
+Requirements:
+- Each title MUST include the primary keyword "${args.keyword}" or a close semantic variant
+- Titles should be 50-65 characters for optimal SERP display
+- Use proven headline formulas (How-to, Listicle, Question, Guide, Ultimate)
+- Vary the style across all 5 titles
+- Prioritize search intent match over cleverness
+${personaInstructions}
+
+Respond with ONLY the 5 titles, one per line. No numbering, no explanations, just the titles.`;
+
+    const prompt = `Generate 5 SEO-optimized titles for a ${args.contentType} about: "${args.keyword}"`;
+
+    try {
+      const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
+        prompt,
+        systemPrompt,
+        maxTokens: 300,
+        temperature: 0.8,
+        taskType: 'analysis',
+        strategy: 'best_quality',
+      });
+
+      const titles = response.content
+        .split('\n')
+        .map((t: string) => t.trim())
+        .filter((t: string) => t.length > 10 && !t.startsWith('#'));
+
+      // Return up to 5, with at least 1 fallback
+      if (titles.length === 0) {
+        return [`The Complete Guide to ${args.keyword}`];
+      }
+
+      return titles.slice(0, 5);
+    } catch (error) {
+      const safeMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.warn('[generateContentTitle] AI failed, returning fallback:', safeMessage);
+      return [
+        `The Complete Guide to ${args.keyword}`,
+        `How to Master ${args.keyword} in ${new Date().getFullYear()}`,
+        `${args.keyword}: Everything You Need to Know`,
+      ];
+    }
   },
 });
 
@@ -339,30 +415,7 @@ export const generateContentForPiece = internalAction({
 export const createContentPiece = internalMutation({
   args: {
     projectId: v.id('projects'),
-    contentType: v.union(
-      // Core Pages
-      v.literal('homepage'),
-      v.literal('about'),
-      v.literal('service'),
-      v.literal('landing'),
-      // Blog Content
-      v.literal('blog'),
-      v.literal('blogVersus'),
-      v.literal('blogVideo'),
-      v.literal('contentRefresh'),
-      // Conversion
-      v.literal('leadMagnet'),
-      v.literal('paidProduct'),
-      // Local/Geo
-      v.literal('areasWeServe'),
-      // Specialty
-      v.literal('employment'),
-      v.literal('mentorship'),
-      v.literal('donate'),
-      v.literal('events'),
-      v.literal('partner'),
-      v.literal('program')
-    ),
+    contentType: contentTypeValidator,
     title: v.string(),
     keywords: v.array(v.string()),
     clusterId: v.optional(v.id('keywordClusters')),
@@ -480,7 +533,8 @@ Content type: ${contentType}`;
 
     return sections.length > 0 ? sections : getDefaultOutline(contentType, primaryKeyword);
   } catch (error) {
-    console.warn('[ContentGeneration] AI outline failed, using template:', error);
+    const safeMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.warn('[ContentGeneration] AI outline failed, using template:', safeMessage);
     return getDefaultOutline(contentType, primaryKeyword);
   }
 }
@@ -578,7 +632,8 @@ Write the full article now, following the outline structure.`;
 
     return response.content;
   } catch (error) {
-    console.warn('[ContentGeneration] AI content failed, using fallback:', error);
+    const safeMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.warn('[ContentGeneration] AI content failed, using fallback:', safeMessage);
     return generateFallbackContent(title, outline, keywords);
   }
 }
@@ -772,3 +827,153 @@ function scoreContent(
     },
   };
 }
+
+// ============================================================================
+// Internal Queries for Auto-Generation (bypass auth — trust boundary is the internalAction)
+// ============================================================================
+
+/** Check if any content exists for a project (idempotency guard). */
+export const getContentCountForProject = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const piece = await ctx.db
+      .query('contentPieces')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+    return piece !== null;
+  },
+});
+
+/** Get suggested keywords for a project (no auth needed — internal only). */
+export const getKeywordsForAutoGen = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const keywords = await ctx.db
+      .query('keywords')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .collect();
+    return keywords
+      .filter((k) => k.status === 'suggested')
+      .sort((a, b) => (a.difficulty ?? 100) - (b.difficulty ?? 100))
+      .slice(0, 5);
+  },
+});
+
+/** Get project data for auto-gen (filtered — only returns needed fields). */
+export const getProjectForAutoGen = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const project = await ctx.db.get(args.projectId);
+    if (!project) return null;
+    // SEC-3: Return only fields auto-gen needs — never expose full document
+    return {
+      _id: project._id,
+      industry: project.industry,
+      name: project.name,
+    };
+  },
+});
+
+/**
+ * Automatically generates the user's first content piece after onboarding.
+ * Picks the best keyword from the library (or uses a sensible default),
+ * generates a title via AI, and kicks off full content generation.
+ *
+ * Scheduled from onboarding.markComplete — user sees content being generated
+ * when they land on the dashboard for the first time.
+ */
+export const autoGenerateFirstContent = internalAction({
+  args: {
+    userId: v.id('users'),
+    projectId: v.id('projects'),
+  },
+  handler: async (ctx, args) => {
+    const { userId, projectId } = args;
+
+    try {
+      console.log(
+        `[AutoGen] Starting first content generation for user ${userId}, project ${projectId}`
+      );
+
+      // 1. Check if content already exists (idempotency guard — uses internal query, no auth)
+      const hasContent = await ctx.runQuery(internal.contentGeneration.getContentCountForProject, {
+        projectId,
+      });
+      if (hasContent) {
+        console.log('[AutoGen] Content already exists, skipping auto-generation');
+        return;
+      }
+
+      // 2. Find the best keyword from the library (internal query — no auth bypass needed)
+      let bestKeyword = '';
+      try {
+        const keywords = await ctx.runQuery(internal.contentGeneration.getKeywordsForAutoGen, {
+          projectId,
+        });
+
+        if (keywords && keywords.length > 0) {
+          bestKeyword = keywords[0].keyword;
+          console.log(`[AutoGen] Best keyword from library: "${bestKeyword}"`);
+        }
+      } catch (kwError) {
+        const safeMessage = kwError instanceof Error ? kwError.message : 'Unknown error';
+        console.warn('[AutoGen] Could not fetch keywords:', safeMessage);
+      }
+
+      // 3. If no keywords in library, get the project's industry for a default
+      if (!bestKeyword) {
+        try {
+          const project = await ctx.runQuery(internal.contentGeneration.getProjectForAutoGen, {
+            projectId,
+          });
+          const industry = project?.industry || 'digital marketing';
+          bestKeyword = `${industry} best practices`;
+          console.log(`[AutoGen] Using industry default keyword: "${bestKeyword}"`);
+        } catch {
+          bestKeyword = 'getting started with SEO';
+          console.log('[AutoGen] Using fallback keyword');
+        }
+      }
+
+      // 4. Generate title via AI (same as generateContentTitle but server-side)
+      let title = `The Complete Guide to ${bestKeyword}`;
+      try {
+        const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
+          prompt: `Generate 1 engaging, SEO-optimized blog post title about: "${bestKeyword}"`,
+          systemPrompt: `You are an expert SEO content strategist. Generate exactly 1 compelling, click-worthy title for a blog post about "${bestKeyword}". Requirements: include the keyword, 50-65 characters, use a proven headline formula. Respond with ONLY the title, nothing else.`,
+          maxTokens: 100,
+          temperature: 0.7,
+          taskType: 'analysis',
+          strategy: 'balanced',
+        });
+
+        const generated = response?.content?.trim()?.split('\n')[0]?.trim() ?? '';
+        if (generated.length > 10) {
+          title = generated;
+        }
+      } catch (aiError) {
+        const safeMessage = aiError instanceof Error ? aiError.message : 'Unknown error';
+        console.warn('[AutoGen] AI title generation failed, using default:', safeMessage);
+      }
+
+      console.log(
+        `[AutoGen] Generating content with title: "${title}" for keyword: "${bestKeyword}"`
+      );
+
+      // 5. Kick off full content generation
+      await ctx.runAction(internal.contentGeneration.generateContentInternal, {
+        projectId,
+        contentType: 'blog',
+        title,
+        keywords: [bestKeyword],
+        userId,
+      });
+
+      console.log(`[AutoGen] First content generation complete for project ${projectId}`);
+    } catch (error) {
+      // Never let auto-gen failure block the user experience
+      const safeMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[AutoGen] Auto-generation failed (non-blocking):', safeMessage);
+    }
+  },
+});

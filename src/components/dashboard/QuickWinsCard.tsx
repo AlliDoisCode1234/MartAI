@@ -135,7 +135,9 @@ export function QuickWinsCard({ projectId }: Props) {
                       KD {win.difficulty ?? 0}
                     </Badge>
                     <Text fontSize="xs" color="gray.500">
-                      {formatVolume(win.searchVolume ?? 0)}/mo
+                      {win.searchVolume != null
+                        ? `${formatVolume(win.searchVolume)}/mo`
+                        : 'Volume: N/A'}
                     </Text>
                     <Text fontSize="xs" color="gray.400">
                       {win.intent || 'informational'}

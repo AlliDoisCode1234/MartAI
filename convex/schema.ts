@@ -617,6 +617,15 @@ export default defineSchema({
     siteUrl: v.string(),
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
+    // All sites available in this Google account (for property picker)
+    availableSites: v.optional(
+      v.array(
+        v.object({
+          siteUrl: v.string(),
+          permissionLevel: v.string(),
+        })
+      )
+    ),
     lastSync: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),

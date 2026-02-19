@@ -7,7 +7,7 @@
 import { v } from 'convex/values';
 import { mutation, internalMutation, internalQuery } from './_generated/server';
 import { auth } from './auth';
-import { api } from './_generated/api';
+import { api, internal } from './_generated/api';
 
 /**
  * Public mutation for frontend to update onboarding step
@@ -244,6 +244,22 @@ export const markComplete = internalMutation({
 
     // NOTE: Content calendar generation happens in handleStep4Next via generateContentCalendar
     // That function is called during onboarding step 4, not here in markComplete
+
+    // Auto-generate first content piece (zero-touch experience)
+    // Find user's project and schedule content generation
+    const project = await ctx.db
+      .query('projects')
+      .filter((q) => q.eq(q.field('userId'), args.userId))
+      .first();
+
+    if (project) {
+      // Delay 5s to let GSC sync populate keywords first
+      ctx.scheduler.runAfter(5000, internal.contentGeneration.autoGenerateFirstContent, {
+        userId: args.userId,
+        projectId: project._id,
+      });
+      console.log(`[Onboarding] Scheduled auto-content generation for project ${project._id}`);
+    }
 
     console.log(`[Onboarding] Marked complete for ${args.userId}. Active: ${shouldActivate}`);
 

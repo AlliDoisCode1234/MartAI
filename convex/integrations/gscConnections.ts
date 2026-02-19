@@ -9,6 +9,14 @@ export const upsertGSCConnection = mutation({
     siteUrl: v.string(),
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
+    availableSites: v.optional(
+      v.array(
+        v.object({
+          siteUrl: v.string(),
+          permissionLevel: v.string(),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
     console.log('[GoogleOAuth][Mutation] upsertGSCConnection called with:', {
@@ -40,6 +48,7 @@ export const upsertGSCConnection = mutation({
       siteUrl: args.siteUrl,
       accessToken: encryptedAccessToken,
       refreshToken: encryptedRefreshToken,
+      availableSites: args.availableSites,
       lastSync: Date.now(),
       updatedAt: Date.now(),
     };
@@ -122,5 +131,39 @@ export const updateTokens = mutation({
       updates.refreshToken = await encryptCredential(args.refreshToken);
     }
     await ctx.db.patch(args.connectionId, updates);
+  },
+});
+
+// Switch the active GSC site (property picker)
+export const switchGSCSite = mutation({
+  args: {
+    projectId: v.id('projects'),
+    siteUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const connection = await ctx.db
+      .query('gscConnections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+
+    if (!connection) {
+      throw new Error('No GSC connection found for this project');
+    }
+
+    // Verify the requested site is in the available list
+    if (connection.availableSites) {
+      const isValid = connection.availableSites.some((site) => site.siteUrl === args.siteUrl);
+      if (!isValid) {
+        throw new Error('Selected site is not available in your Google account');
+      }
+    }
+
+    await ctx.db.patch(connection._id, {
+      siteUrl: args.siteUrl,
+      updatedAt: Date.now(),
+    });
+
+    console.log(`[GSC] Switched project ${args.projectId} to site: ${args.siteUrl}`);
+    return { success: true, siteUrl: args.siteUrl };
   },
 });

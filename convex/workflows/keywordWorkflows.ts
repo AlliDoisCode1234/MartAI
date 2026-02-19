@@ -126,7 +126,11 @@ export const gscImportWorkflow = workflow.define({
     // Step 2: Import keywords
     const keywords = gscData.rows.map((row: any) => ({
       keyword: row.keys[0],
-      searchVolume: row.impressions,
+      // TRUTH: GSC impressions are NOT search volume.
+      // Impressions = how many times this result appeared in search.
+      // Search Volume = estimated monthly searches for this term.
+      // We do NOT fabricate search volume from impressions.
+      searchVolume: undefined,
       difficulty: undefined, // GSC doesn't provide difficulty
       intent: undefined, // Will be determined by AI clustering
     }));

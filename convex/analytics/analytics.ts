@@ -158,78 +158,117 @@ export const getDashboardKPIs = query({
       return ((curr - prev) / prev) * 100;
     };
 
-    // Extract metrics from latest snapshots (or 0 if no data)
-    const sessions = latestGA4?.sessions ?? 0;
-    const pageViews = latestGA4?.pageViews ?? 0;
-    const bounceRate = latestGA4?.bounceRate ?? 0;
-    const avgSessionDuration = latestGA4?.avgSessionDuration ?? 0;
-    const newUsers = latestGA4?.newUsers ?? 0;
-    const engagedSessions = latestGA4?.engagedSessions ?? 0;
-    const eventCount = latestGA4?.eventCount ?? 0;
-    const conversions = latestGA4?.conversions ?? 0;
-    const leads = latestGA4?.leads ?? 0;
-    const revenue = latestGA4?.revenue ?? 0;
+    // Extract metrics from latest snapshots (or null if no data)
+    const hasGA4Data = latestGA4 !== null;
+    const hasGSCData = latestGSC !== null;
 
-    const clicks = latestGSC?.clicks ?? 0;
-    const impressions = latestGSC?.impressions ?? 0;
-    const ctr = latestGSC?.ctr ?? 0;
-    const avgPosition = latestGSC?.avgPosition ?? 0;
+    const sessions = hasGA4Data ? (latestGA4.sessions ?? 0) : null;
+    const pageViews = hasGA4Data ? (latestGA4.pageViews ?? 0) : null;
+    const bounceRate = hasGA4Data ? (latestGA4.bounceRate ?? 0) : null;
+    const avgSessionDuration = hasGA4Data ? (latestGA4.avgSessionDuration ?? 0) : null;
+    const newUsers = hasGA4Data ? (latestGA4.newUsers ?? 0) : null;
+    const engagedSessions = hasGA4Data ? (latestGA4.engagedSessions ?? 0) : null;
+    const eventCount = hasGA4Data ? (latestGA4.eventCount ?? 0) : null;
+    const conversions = hasGA4Data ? (latestGA4.conversions ?? 0) : null;
+    const leads = hasGA4Data ? (latestGA4.leads ?? 0) : null;
+    const revenue = hasGA4Data ? (latestGA4.revenue ?? 0) : null;
 
-    const conversionRate = sessions > 0 ? (leads / sessions) * 100 : 0;
+    const clicks = hasGSCData ? (latestGSC.clicks ?? 0) : null;
+    const impressions = hasGSCData ? (latestGSC.impressions ?? 0) : null;
+    const ctr = hasGSCData ? (latestGSC.ctr ?? 0) : null;
+    const avgPosition = hasGSCData ? (latestGSC.avgPosition ?? 0) : null;
+
+    const conversionRate =
+      sessions !== null && sessions > 0 && leads !== null ? (leads / sessions) * 100 : null;
 
     return {
       sessions: {
         value: sessions,
-        change: calculateChange(sessions, prevGA4?.sessions ?? 0),
+        change:
+          sessions !== null && prevGA4 ? calculateChange(sessions, prevGA4.sessions ?? 0) : null,
       },
-      clicks: { value: clicks, change: calculateChange(clicks, prevGSC?.clicks ?? 0) },
-      ctr: { value: ctr, change: calculateChange(ctr, prevGSC?.ctr ?? 0) },
+      clicks: {
+        value: clicks,
+        change: clicks !== null && prevGSC ? calculateChange(clicks, prevGSC.clicks ?? 0) : null,
+      },
+      ctr: {
+        value: ctr,
+        change: ctr !== null && prevGSC ? calculateChange(ctr, prevGSC.ctr ?? 0) : null,
+      },
       avgPosition: {
         value: avgPosition,
-        change: calculateChange(avgPosition, prevGSC?.avgPosition ?? 0),
+        change:
+          avgPosition !== null && prevGSC
+            ? calculateChange(avgPosition, prevGSC.avgPosition ?? 0)
+            : null,
       },
-      leads: { value: leads, change: calculateChange(leads, prevGA4?.leads ?? 0) },
+      leads: {
+        value: leads,
+        change: leads !== null && prevGA4 ? calculateChange(leads, prevGA4.leads ?? 0) : null,
+      },
       revenue: {
         value: revenue,
-        change: calculateChange(revenue, prevGA4?.revenue ?? 0),
+        change: revenue !== null && prevGA4 ? calculateChange(revenue, prevGA4.revenue ?? 0) : null,
       },
       conversionRate: {
         value: conversionRate,
-        change: 0,
+        change: null,
       },
       // GA4 expanded
       pageViews: {
         value: pageViews,
-        change: calculateChange(pageViews, prevGA4?.pageViews ?? 0),
+        change:
+          pageViews !== null && prevGA4 ? calculateChange(pageViews, prevGA4.pageViews ?? 0) : null,
       },
       newUsers: {
         value: newUsers,
-        change: calculateChange(newUsers, prevGA4?.newUsers ?? 0),
+        change:
+          newUsers !== null && prevGA4 ? calculateChange(newUsers, prevGA4.newUsers ?? 0) : null,
       },
       bounceRate: {
         value: bounceRate,
-        change: calculateChange(bounceRate, prevGA4?.bounceRate ?? 0),
+        change:
+          bounceRate !== null && prevGA4
+            ? calculateChange(bounceRate, prevGA4.bounceRate ?? 0)
+            : null,
       },
       avgSessionDuration: {
         value: avgSessionDuration,
-        change: calculateChange(avgSessionDuration, prevGA4?.avgSessionDuration ?? 0),
+        change:
+          avgSessionDuration !== null && prevGA4
+            ? calculateChange(avgSessionDuration, prevGA4.avgSessionDuration ?? 0)
+            : null,
       },
       impressions: {
         value: impressions,
-        change: calculateChange(impressions, prevGSC?.impressions ?? 0),
+        change:
+          impressions !== null && prevGSC
+            ? calculateChange(impressions, prevGSC.impressions ?? 0)
+            : null,
       },
       engagedSessions: {
         value: engagedSessions,
-        change: calculateChange(engagedSessions, prevGA4?.engagedSessions ?? 0),
+        change:
+          engagedSessions !== null && prevGA4
+            ? calculateChange(engagedSessions, prevGA4.engagedSessions ?? 0)
+            : null,
       },
       eventCount: {
         value: eventCount,
-        change: calculateChange(eventCount, prevGA4?.eventCount ?? 0),
+        change:
+          eventCount !== null && prevGA4
+            ? calculateChange(eventCount, prevGA4.eventCount ?? 0)
+            : null,
       },
       conversions: {
         value: conversions,
-        change: calculateChange(conversions, prevGA4?.conversions ?? 0),
+        change:
+          conversions !== null && prevGA4
+            ? calculateChange(conversions, prevGA4.conversions ?? 0)
+            : null,
       },
+      hasGA4Data,
+      hasGSCData,
       lastSyncDate: latestGA4?.date ?? latestGSC?.date ?? null,
     };
   },

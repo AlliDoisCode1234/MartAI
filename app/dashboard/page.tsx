@@ -28,12 +28,14 @@ import {
   Button,
   Flex,
   useToast,
+  Badge,
+  ButtonGroup,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useConvexAuth, useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { FiArrowRight, FiRefreshCw } from 'react-icons/fi';
+import { FiArrowRight, FiRefreshCw, FiZap, FiBarChart2, FiCalendar } from 'react-icons/fi';
 import { useProject } from '@/lib/hooks';
 import Link from 'next/link';
 import {
@@ -47,6 +49,7 @@ import {
 } from '@/src/components/dashboard';
 
 const MotionBox = motion(Box);
+const MotionCard = motion(Box);
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -55,6 +58,7 @@ export default function DashboardPage() {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery(api.users.current);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
   const {
     projectId,
@@ -176,10 +180,11 @@ export default function DashboardPage() {
 
   const healthScore = rating?.rating ?? 0;
 
-  // Combined GA4+GSC KPI values for stat cards
-  const hasKPIData =
-    !!kpis && (kpis.sessions.value > 0 || kpis.pageViews.value > 0 || kpis.avgPosition.value > 0);
+  // Use backend-provided flags to determine if we have actual analytics data
+  const hasKPIData = !!kpis && (kpis.hasGA4Data || kpis.hasGSCData);
   const totalKeywords = gscStats?.keywordCount ?? 0;
+  const hasContent = contentPieces && contentPieces.length > 0;
+  const isNewUser = !hasKPIData && !hasContent;
 
   // Map latest keywords to climbed card format (show all, sorted by best position)
   type SnapshotKw = { keyword: string; position: number; clicks: number };
@@ -294,6 +299,16 @@ export default function DashboardPage() {
                 >
                   Dashboard
                 </Text>
+                <Badge
+                  colorScheme="orange"
+                  variant="subtle"
+                  fontSize="2xs"
+                  px={2}
+                  py={0.5}
+                  borderRadius="full"
+                >
+                  Last {timeRange === '7d' ? '7 days' : timeRange === '30d' ? '30 days' : '90 days'}
+                </Badge>
                 <Heading
                   size={{ base: 'xl', md: '2xl' }}
                   bgGradient="linear(to-r, white, gray.300)"
@@ -331,25 +346,139 @@ export default function DashboardPage() {
                   )}
                 </HStack>
               </VStack>
-              <Link href="/studio">
-                <Button
-                  size="lg"
-                  bg="linear-gradient(135deg, #F99F2A 0%, #e53e3e 100%)"
-                  color="white"
-                  px={8}
-                  rightIcon={<FiArrowRight />}
-                  _hover={{
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 20px 40px rgba(249, 159, 42, 0.3)',
-                  }}
-                  transition="all 0.3s"
-                  fontWeight="semibold"
-                >
-                  Open Studio
-                </Button>
-              </Link>
+              <HStack spacing={3} flexWrap="wrap">
+                <ButtonGroup size="xs" isAttached variant="outline">
+                  {(['7d', '30d', '90d'] as const).map((range) => (
+                    <Button
+                      key={range}
+                      onClick={() => setTimeRange(range)}
+                      bg={timeRange === range ? 'rgba(249, 159, 42, 0.2)' : 'transparent'}
+                      color={timeRange === range ? '#F99F2A' : 'gray.500'}
+                      borderColor={
+                        timeRange === range ? 'rgba(249, 159, 42, 0.5)' : 'whiteAlpha.200'
+                      }
+                      _hover={{ bg: 'rgba(249, 159, 42, 0.1)', color: '#F99F2A' }}
+                      fontWeight={timeRange === range ? 'bold' : 'normal'}
+                    >
+                      {range}
+                    </Button>
+                  ))}
+                </ButtonGroup>
+                <Link href="/studio">
+                  <Button
+                    size="lg"
+                    bg="linear-gradient(135deg, #F99F2A 0%, #e53e3e 100%)"
+                    color="white"
+                    px={8}
+                    rightIcon={<FiArrowRight />}
+                    _hover={{
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 20px 40px rgba(249, 159, 42, 0.3)',
+                    }}
+                    transition="all 0.3s"
+                    fontWeight="semibold"
+                  >
+                    Open Studio
+                  </Button>
+                </Link>
+              </HStack>
             </Flex>
           </MotionBox>
+
+          {/* New User Awareness Banner */}
+          {isNewUser && (
+            <MotionCard
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              bg="linear-gradient(135deg, rgba(249, 159, 42, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)"
+              borderWidth="1px"
+              borderColor="rgba(249, 159, 42, 0.3)"
+              borderRadius="xl"
+              p={{ base: 5, md: 6 }}
+              position="relative"
+              overflow="hidden"
+            >
+              {/* Animated pulse behind the icon */}
+              <Box
+                position="absolute"
+                top="50%"
+                left="30px"
+                transform="translateY(-50%)"
+                w="60px"
+                h="60px"
+                bg="radial-gradient(circle, rgba(249, 159, 42, 0.3) 0%, transparent 70%)"
+                borderRadius="full"
+                animation="pulse 2s ease-in-out infinite"
+                display={{ base: 'none', md: 'block' }}
+              />
+              <Flex align="center" gap={4} flexWrap="wrap">
+                <Box
+                  bg="rgba(249, 159, 42, 0.2)"
+                  borderRadius="full"
+                  p={3}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <FiZap color="#F99F2A" size={24} />
+                </Box>
+                <VStack align="start" spacing={1} flex={1}>
+                  {!hasContent ? (
+                    <>
+                      <Heading size="sm" color="white">
+                        Phoo is crafting your first article
+                      </Heading>
+                      <Text color="gray.400" fontSize="sm">
+                        Your AI-generated content will appear here in a few minutes. Meanwhile,
+                        connect Google Analytics for real-time insights.
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Heading size="sm" color="white">
+                        Connect your data sources
+                      </Heading>
+                      <Text color="gray.400" fontSize="sm">
+                        Link Google Analytics and Search Console to unlock real-time SEO metrics.
+                      </Text>
+                    </>
+                  )}
+                </VStack>
+                <HStack spacing={3}>
+                  {!hasGA4 && (
+                    <Link href="/settings">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        borderColor="rgba(249, 159, 42, 0.5)"
+                        color="#F99F2A"
+                        leftIcon={<FiBarChart2 />}
+                        _hover={{ bg: 'rgba(249, 159, 42, 0.1)' }}
+                      >
+                        Connect Google
+                      </Button>
+                    </Link>
+                  )}
+                  <Link href="/strategy">
+                    <Button
+                      size="sm"
+                      bg="linear-gradient(135deg, #F99F2A 0%, #e53e3e 100%)"
+                      color="white"
+                      rightIcon={<FiArrowRight />}
+                      _hover={{
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 10px 20px rgba(249, 159, 42, 0.3)',
+                      }}
+                      transition="all 0.2s"
+                    >
+                      Add Keywords
+                    </Button>
+                  </Link>
+                </HStack>
+              </Flex>
+            </MotionCard>
+          )}
 
           {/* Row 2: Stat Cards — wired to real data */}
           <DashboardStatRow
