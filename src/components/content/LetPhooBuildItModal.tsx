@@ -63,7 +63,7 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
 
   const [step, setStep] = useState<Step>('keyword');
   const [selectedKeyword, setSelectedKeyword] = useState('');
-  const [contentType, setContentType] = useState('blogPost');
+  const [contentType, setContentType] = useState('blog');
   const [titles, setTitles] = useState<string[]>([]);
   const [selectedTitle, setSelectedTitle] = useState('');
   const [isLoadingTitles, setIsLoadingTitles] = useState(false);
@@ -89,12 +89,13 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
       const result = await generateTitles({
         projectId: projectId as Id<'projects'>,
         keyword,
-        contentType: contentType as 'blogPost',
+        contentType: contentType as 'blog',
       });
       setTitles(result);
       setSelectedTitle(result[0] || '');
     } catch (error) {
-      console.error('[LetPhooBuildIt] Title generation failed:', error);
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[LetPhooBuildIt] Title generation failed:', msg);
       toast({
         title: 'Could not generate titles',
         description: 'Phoo had trouble. Try again or pick manually.',
@@ -114,7 +115,7 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
     try {
       await generateContent({
         projectId: projectId as Id<'projects'>,
-        contentType: contentType as 'blogPost',
+        contentType: contentType as 'blog',
         title: selectedTitle,
         keywords: [selectedKeyword],
       });
@@ -128,7 +129,8 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
       handleReset();
       onClose();
     } catch (error) {
-      console.error('[LetPhooBuildIt] Content generation failed:', error);
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[LetPhooBuildIt] Content generation failed:', msg);
       toast({
         title: 'Generation failed',
         description: String(error),
@@ -144,7 +146,7 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
     setSelectedKeyword('');
     setTitles([]);
     setSelectedTitle('');
-    setContentType('blogPost');
+    setContentType('blog');
   };
 
   const handleClose = () => {
@@ -186,20 +188,20 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
                 borderColor="whiteAlpha.200"
                 _hover={{ borderColor: '#F99F2A' }}
               >
-                <option value="blogPost" style={{ background: '#1a202c' }}>
+                <option value="blog" style={{ background: '#1a202c' }}>
                   Blog Post
                 </option>
-                <option value="howToGuide" style={{ background: '#1a202c' }}>
-                  How-To Guide
+                <option value="blogVersus" style={{ background: '#1a202c' }}>
+                  Comparison Post
                 </option>
-                <option value="pillarPage" style={{ background: '#1a202c' }}>
-                  Pillar Page
+                <option value="service" style={{ background: '#1a202c' }}>
+                  Service Page
                 </option>
-                <option value="listicle" style={{ background: '#1a202c' }}>
-                  Listicle
+                <option value="leadMagnet" style={{ background: '#1a202c' }}>
+                  Lead Magnet
                 </option>
-                <option value="caseStudy" style={{ background: '#1a202c' }}>
-                  Case Study
+                <option value="contentRefresh" style={{ background: '#1a202c' }}>
+                  Content Refresh
                 </option>
               </Select>
 

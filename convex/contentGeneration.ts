@@ -50,6 +50,149 @@ export const generateContent = action({
 });
 
 // ============================================================================
+// Adaptive Auto-Generate — "Let Phoo Build It"
+// AI continues creation from wherever the user stops.
+// ============================================================================
+
+/**
+ * Auto-generate content with adaptive pipeline.
+ * Fills in whatever the user hasn't provided: type, keywords, title.
+ *
+ * Pipeline: resolve type → discover keywords → create cluster → AI title → generate content
+ */
+export const autoGenerateContent = action({
+  args: {
+    projectId: v.id('projects'),
+    contentType: v.optional(contentTypeValidator),
+    title: v.optional(v.string()),
+    keywords: v.optional(v.array(v.string())),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    contentPieceId: Id<'contentPieces'>;
+    contentType: ContentTypeId;
+    keyword: string;
+    title: string;
+  }> => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    const { projectId } = args;
+
+    // ── Step 1: Resolve content type ────────────────────────────────
+    const contentType: ContentTypeId = args.contentType ?? 'blog';
+
+    // ── Step 2: Resolve keywords ────────────────────────────────────
+    let resolvedKeywords = args.keywords?.filter((k) => k.trim().length > 0) ?? [];
+
+    if (resolvedKeywords.length === 0) {
+      // Try keyword library first
+      try {
+        const libraryKeywords = await ctx.runQuery(
+          internal.contentGeneration.getKeywordsForAutoGen,
+          { projectId }
+        );
+        if (libraryKeywords && libraryKeywords.length > 0) {
+          resolvedKeywords = libraryKeywords.map((k: { keyword: string }) => k.keyword).slice(0, 3);
+        }
+      } catch {
+        // Fallback below
+      }
+
+      // If still empty, derive from project industry
+      if (resolvedKeywords.length === 0) {
+        try {
+          const project = await ctx.runQuery(internal.contentGeneration.getProjectForAutoGen, {
+            projectId,
+          });
+          const industry = project?.industry || 'digital marketing';
+          resolvedKeywords = [
+            `${industry} best practices`,
+            `${industry} tips`,
+            `${industry} guide`,
+          ];
+        } catch {
+          resolvedKeywords = [
+            'getting started with SEO',
+            'content marketing tips',
+            'digital marketing guide',
+          ];
+        }
+      }
+    }
+
+    const primaryKeyword = resolvedKeywords[0];
+
+    // ── Step 3: Create keyword cluster (non-blocking) ───────────────
+    let clusterId: Id<'keywordClusters'> | undefined;
+    try {
+      clusterId = await ctx.runMutation(api.seo.keywordClusters.createCluster, {
+        projectId,
+        clusterName: primaryKeyword,
+        keywords: resolvedKeywords,
+        intent: 'informational',
+        difficulty: 50,
+        volumeRange: { min: 0, max: 0 },
+        impactScore: 0.5,
+        topSerpUrls: [],
+        status: 'active',
+        createdAt: Date.now(),
+      });
+    } catch (clusterError) {
+      const msg = clusterError instanceof Error ? clusterError.message : 'Unknown';
+      console.warn('[AutoGen] Cluster creation failed (non-blocking):', msg);
+    }
+
+    // ── Step 4: Resolve title ───────────────────────────────────────
+    let resolvedTitle = args.title?.trim() || '';
+
+    if (!resolvedTitle) {
+      try {
+        const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
+          prompt: `Generate 1 engaging, SEO-optimized ${contentType} title about: "${primaryKeyword}"`,
+          systemPrompt: `You are an expert SEO content strategist. Generate exactly 1 compelling, click-worthy title for a ${contentType} about "${primaryKeyword}". Requirements: include the keyword, 50-65 characters, use a proven headline formula. Respond with ONLY the title, nothing else.`,
+          maxTokens: 100,
+          temperature: 0.7,
+          taskType: 'analysis',
+          strategy: 'balanced',
+        });
+
+        const generated = response?.content?.trim()?.split('\n')[0]?.trim() ?? '';
+        if (generated.length > 10) {
+          resolvedTitle = generated;
+        }
+      } catch (titleError) {
+        const msg = titleError instanceof Error ? titleError.message : 'Unknown';
+        console.warn('[AutoGen] AI title generation failed, using fallback:', msg);
+      }
+
+      if (!resolvedTitle) {
+        resolvedTitle = `The Complete Guide to ${primaryKeyword}`;
+      }
+    }
+
+    // ── Step 5: Generate content ────────────────────────────────────
+    const contentPieceId = await ctx.runAction(internal.contentGeneration.generateContentInternal, {
+      projectId,
+      contentType,
+      title: resolvedTitle,
+      keywords: resolvedKeywords,
+      userId,
+      ...(clusterId ? { clusterId } : {}),
+    });
+
+    return {
+      contentPieceId,
+      contentType,
+      keyword: primaryKeyword,
+      title: resolvedTitle,
+    };
+  },
+});
+
+// ============================================================================
 // AI Title Generation — "Let Phoo Build It" Flow
 // ============================================================================
 
