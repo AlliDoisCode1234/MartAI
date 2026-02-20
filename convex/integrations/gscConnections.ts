@@ -1,5 +1,6 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from '../lib/rbac';
 import { encryptCredential, decryptCredential } from '../lib/encryption';
 
 // Create or update GSC connection
@@ -9,6 +10,14 @@ export const upsertGSCConnection = mutation({
     siteUrl: v.string(),
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
+    availableSites: v.optional(
+      v.array(
+        v.object({
+          siteUrl: v.string(),
+          permissionLevel: v.string(),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
     console.log('[GoogleOAuth][Mutation] upsertGSCConnection called with:', {
@@ -40,6 +49,7 @@ export const upsertGSCConnection = mutation({
       siteUrl: args.siteUrl,
       accessToken: encryptedAccessToken,
       refreshToken: encryptedRefreshToken,
+      availableSites: args.availableSites,
       lastSync: Date.now(),
       updatedAt: Date.now(),
     };
@@ -122,5 +132,46 @@ export const updateTokens = mutation({
       updates.refreshToken = await encryptCredential(args.refreshToken);
     }
     await ctx.db.patch(args.connectionId, updates);
+  },
+});
+
+// Switch the active GSC site (property picker)
+export const switchGSCSite = mutation({
+  args: {
+    projectId: v.id('projects'),
+    siteUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Security: Require project editor access
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
+    const connection = await ctx.db
+      .query('gscConnections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+
+    if (!connection) {
+      throw new Error('No GSC connection found for this project');
+    }
+
+    // Verify the requested site is in the available list (mandatory — never skip)
+    if (!connection.availableSites || connection.availableSites.length === 0) {
+      throw new Error(
+        'No available sites list for this connection. Please reconnect Google Search Console.'
+      );
+    }
+
+    const isValid = connection.availableSites.some((site) => site.siteUrl === args.siteUrl);
+    if (!isValid) {
+      throw new Error('Selected site is not available in your Google account');
+    }
+
+    await ctx.db.patch(connection._id, {
+      siteUrl: args.siteUrl,
+      updatedAt: Date.now(),
+    });
+
+    console.log('[GSC] Site switched for project', args.projectId);
+    return { success: true, siteUrl: args.siteUrl };
   },
 });

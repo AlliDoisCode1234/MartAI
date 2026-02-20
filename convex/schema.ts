@@ -617,6 +617,15 @@ export default defineSchema({
     siteUrl: v.string(),
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
+    // All sites available in this Google account (for property picker)
+    availableSites: v.optional(
+      v.array(
+        v.object({
+          siteUrl: v.string(),
+          permissionLevel: v.string(),
+        })
+      )
+    ),
     lastSync: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -778,13 +787,15 @@ export default defineSchema({
     sessions: v.optional(v.number()),
     clicks: v.optional(v.number()),
     impressions: v.optional(v.number()),
-    ctr: v.optional(v.number()),
+    ctr: v.optional(v.number()), // stored as 0-100 percentage
     avgPosition: v.optional(v.number()),
     leads: v.optional(v.number()),
     revenue: v.optional(v.number()),
     // Expanded GA4 metrics
+    users: v.optional(v.number()), // totalUsers from GA4
+    engagementDuration: v.optional(v.number()), // userEngagementDuration (seconds)
     pageViews: v.optional(v.number()),
-    bounceRate: v.optional(v.number()),
+    bounceRate: v.optional(v.number()), // stored as 0-100 percentage
     avgSessionDuration: v.optional(v.number()),
     newUsers: v.optional(v.number()),
     engagedSessions: v.optional(v.number()),

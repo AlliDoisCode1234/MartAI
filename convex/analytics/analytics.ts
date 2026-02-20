@@ -11,13 +11,15 @@ export const storeAnalyticsData = mutation({
     sessions: v.optional(v.number()),
     clicks: v.optional(v.number()),
     impressions: v.optional(v.number()),
-    ctr: v.optional(v.number()),
+    ctr: v.optional(v.number()), // 0-100 percentage
     avgPosition: v.optional(v.number()),
     leads: v.optional(v.number()),
     revenue: v.optional(v.number()),
     // Expanded GA4 metrics
+    users: v.optional(v.number()),
+    engagementDuration: v.optional(v.number()),
     pageViews: v.optional(v.number()),
-    bounceRate: v.optional(v.number()),
+    bounceRate: v.optional(v.number()), // 0-100 percentage
     avgSessionDuration: v.optional(v.number()),
     newUsers: v.optional(v.number()),
     engagedSessions: v.optional(v.number()),
@@ -95,33 +97,31 @@ export const getKPIs = query({
 
     const data = allData.filter((d) => d.date >= args.startDate && d.date <= args.endDate);
 
-    const ga4Data = data.filter((d: any) => d.source === 'ga4');
-    const gscData = data.filter((d: any) => d.source === 'gsc');
+    const ga4Data = data.filter((d) => d.source === 'ga4');
+    const gscData = data.filter((d) => d.source === 'gsc');
 
     // Calculate totals
-    const sessions = ga4Data.reduce((sum: number, d: any) => sum + (d.sessions || 0), 0);
-    const clicks = gscData.reduce((sum: number, d: any) => sum + (d.clicks || 0), 0);
-    const impressions = gscData.reduce((sum: number, d: any) => sum + (d.impressions || 0), 0);
-    const leads = ga4Data.reduce((sum: number, d: any) => sum + (d.leads || 0), 0);
-    const revenue = ga4Data.reduce((sum: number, d: any) => sum + (d.revenue || 0), 0);
+    const sessions = ga4Data.reduce((sum, d) => sum + (d.sessions || 0), 0);
+    const users = ga4Data.reduce((sum, d) => sum + (d.users || 0), 0);
+    const engagementDuration = ga4Data.reduce((sum, d) => sum + (d.engagementDuration || 0), 0);
+    const clicks = gscData.reduce((sum, d) => sum + (d.clicks || 0), 0);
+    const impressions = gscData.reduce((sum, d) => sum + (d.impressions || 0), 0);
 
     // Calculate averages
     const avgCTR = impressions > 0 ? (clicks / impressions) * 100 : 0;
     const avgPosition =
       gscData.length > 0
-        ? gscData.reduce((sum: number, d: any) => sum + (d.avgPosition || 0), 0) / gscData.length
+        ? gscData.reduce((sum, d) => sum + (d.avgPosition || 0), 0) / gscData.length
         : 0;
-    const conversionRate = sessions > 0 ? (leads / sessions) * 100 : 0;
 
     return {
       sessions,
+      users,
+      engagementDuration,
       clicks,
       impressions,
       ctr: avgCTR,
       avgPosition,
-      leads,
-      revenue,
-      conversionRate,
     };
   },
 });
@@ -158,78 +158,113 @@ export const getDashboardKPIs = query({
       return ((curr - prev) / prev) * 100;
     };
 
-    // Extract metrics from latest snapshots (or 0 if no data)
-    const sessions = latestGA4?.sessions ?? 0;
-    const pageViews = latestGA4?.pageViews ?? 0;
-    const bounceRate = latestGA4?.bounceRate ?? 0;
-    const avgSessionDuration = latestGA4?.avgSessionDuration ?? 0;
-    const newUsers = latestGA4?.newUsers ?? 0;
-    const engagedSessions = latestGA4?.engagedSessions ?? 0;
-    const eventCount = latestGA4?.eventCount ?? 0;
-    const conversions = latestGA4?.conversions ?? 0;
-    const leads = latestGA4?.leads ?? 0;
-    const revenue = latestGA4?.revenue ?? 0;
+    // Extract metrics from latest snapshots (or null if no data)
+    const hasGA4Data = latestGA4 !== null;
+    const hasGSCData = latestGSC !== null;
 
-    const clicks = latestGSC?.clicks ?? 0;
-    const impressions = latestGSC?.impressions ?? 0;
-    const ctr = latestGSC?.ctr ?? 0;
-    const avgPosition = latestGSC?.avgPosition ?? 0;
+    const sessions = hasGA4Data ? (latestGA4.sessions ?? 0) : null;
+    const users = hasGA4Data ? (latestGA4.users ?? 0) : null;
+    const engagementDuration = hasGA4Data ? (latestGA4.engagementDuration ?? 0) : null;
+    const pageViews = hasGA4Data ? (latestGA4.pageViews ?? 0) : null;
+    const bounceRate = hasGA4Data ? (latestGA4.bounceRate ?? 0) : null;
+    const avgSessionDuration = hasGA4Data ? (latestGA4.avgSessionDuration ?? 0) : null;
+    const newUsers = hasGA4Data ? (latestGA4.newUsers ?? 0) : null;
+    const engagedSessions = hasGA4Data ? (latestGA4.engagedSessions ?? 0) : null;
+    const eventCount = hasGA4Data ? (latestGA4.eventCount ?? 0) : null;
+    const conversions = hasGA4Data ? (latestGA4.conversions ?? 0) : null;
 
-    const conversionRate = sessions > 0 ? (leads / sessions) * 100 : 0;
+    const clicks = hasGSCData ? (latestGSC.clicks ?? 0) : null;
+    const impressions = hasGSCData ? (latestGSC.impressions ?? 0) : null;
+    const ctr = hasGSCData ? (latestGSC.ctr ?? 0) : null;
+    const avgPosition = hasGSCData ? (latestGSC.avgPosition ?? 0) : null;
 
     return {
       sessions: {
         value: sessions,
-        change: calculateChange(sessions, prevGA4?.sessions ?? 0),
+        change:
+          sessions !== null && prevGA4 ? calculateChange(sessions, prevGA4.sessions ?? 0) : null,
       },
-      clicks: { value: clicks, change: calculateChange(clicks, prevGSC?.clicks ?? 0) },
-      ctr: { value: ctr, change: calculateChange(ctr, prevGSC?.ctr ?? 0) },
+      users: {
+        value: users,
+        change: users !== null && prevGA4 ? calculateChange(users, prevGA4.users ?? 0) : null,
+      },
+      engagementDuration: {
+        value: engagementDuration,
+        change:
+          engagementDuration !== null && prevGA4
+            ? calculateChange(engagementDuration, prevGA4.engagementDuration ?? 0)
+            : null,
+      },
+      clicks: {
+        value: clicks,
+        change: clicks !== null && prevGSC ? calculateChange(clicks, prevGSC.clicks ?? 0) : null,
+      },
+      ctr: {
+        value: ctr,
+        change: ctr !== null && prevGSC ? calculateChange(ctr, prevGSC.ctr ?? 0) : null,
+      },
       avgPosition: {
         value: avgPosition,
-        change: calculateChange(avgPosition, prevGSC?.avgPosition ?? 0),
-      },
-      leads: { value: leads, change: calculateChange(leads, prevGA4?.leads ?? 0) },
-      revenue: {
-        value: revenue,
-        change: calculateChange(revenue, prevGA4?.revenue ?? 0),
-      },
-      conversionRate: {
-        value: conversionRate,
-        change: 0,
+        change:
+          avgPosition !== null && prevGSC
+            ? calculateChange(avgPosition, prevGSC.avgPosition ?? 0)
+            : null,
       },
       // GA4 expanded
       pageViews: {
         value: pageViews,
-        change: calculateChange(pageViews, prevGA4?.pageViews ?? 0),
+        change:
+          pageViews !== null && prevGA4 ? calculateChange(pageViews, prevGA4.pageViews ?? 0) : null,
       },
       newUsers: {
         value: newUsers,
-        change: calculateChange(newUsers, prevGA4?.newUsers ?? 0),
+        change:
+          newUsers !== null && prevGA4 ? calculateChange(newUsers, prevGA4.newUsers ?? 0) : null,
       },
       bounceRate: {
         value: bounceRate,
-        change: calculateChange(bounceRate, prevGA4?.bounceRate ?? 0),
+        change:
+          bounceRate !== null && prevGA4
+            ? calculateChange(bounceRate, prevGA4.bounceRate ?? 0)
+            : null,
       },
       avgSessionDuration: {
         value: avgSessionDuration,
-        change: calculateChange(avgSessionDuration, prevGA4?.avgSessionDuration ?? 0),
+        change:
+          avgSessionDuration !== null && prevGA4
+            ? calculateChange(avgSessionDuration, prevGA4.avgSessionDuration ?? 0)
+            : null,
       },
       impressions: {
         value: impressions,
-        change: calculateChange(impressions, prevGSC?.impressions ?? 0),
+        change:
+          impressions !== null && prevGSC
+            ? calculateChange(impressions, prevGSC.impressions ?? 0)
+            : null,
       },
       engagedSessions: {
         value: engagedSessions,
-        change: calculateChange(engagedSessions, prevGA4?.engagedSessions ?? 0),
+        change:
+          engagedSessions !== null && prevGA4
+            ? calculateChange(engagedSessions, prevGA4.engagedSessions ?? 0)
+            : null,
       },
       eventCount: {
         value: eventCount,
-        change: calculateChange(eventCount, prevGA4?.eventCount ?? 0),
+        change:
+          eventCount !== null && prevGA4
+            ? calculateChange(eventCount, prevGA4.eventCount ?? 0)
+            : null,
       },
       conversions: {
         value: conversions,
-        change: calculateChange(conversions, prevGA4?.conversions ?? 0),
+        change:
+          conversions !== null && prevGA4
+            ? calculateChange(conversions, prevGA4.conversions ?? 0)
+            : null,
       },
+      hasGA4Data,
+      hasGSCData,
       lastSyncDate: latestGA4?.date ?? latestGSC?.date ?? null,
     };
   },

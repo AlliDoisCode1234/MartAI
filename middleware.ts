@@ -61,7 +61,7 @@ export function middleware(request: NextRequest) {
   }
 
   // ==========================================================================
-  // Security Headers
+  //                                                                                    Security Headers
   // ==========================================================================
   const response = NextResponse.next();
 

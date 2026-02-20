@@ -3,6 +3,19 @@ import { internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
 import { THRESHOLDS } from '../config/thresholds';
+import {
+  parseGA4Response,
+  normalizeGA4Metrics,
+  aggregateGSCRows,
+  normalizeGSCMetrics,
+  normalizeKeywordRow,
+} from './analyticsTransforms';
+import type {
+  RawGA4Response,
+  RawGSCResponse,
+  NormalizedGA4Metrics,
+  NormalizedGSCMetrics,
+} from './analyticsTransforms';
 
 export const syncProjectData = internalAction({
   args: {
@@ -28,8 +41,8 @@ export const syncProjectData = internalAction({
       projectId,
     });
 
-    let ga4Data = null;
-    let gscData = null;
+    let ga4Data: NormalizedGA4Metrics | null = null;
+    let gscData: NormalizedGSCMetrics | null = null;
 
     // 2. Fetch GA4 Data (expanded metrics)
     if (ga4Connection) {
@@ -42,26 +55,14 @@ export const syncProjectData = internalAction({
           refreshToken: ga4Connection.refreshToken,
           startDate,
           endDate,
-        })) as { rows?: Array<{ metricValues: Array<{ value: string }> }> };
+        })) as RawGA4Response;
 
-        // Parse GA4 Response structure
-        // Metrics order: sessions, totalUsers, userEngagementDuration, screenPageViews, bounceRate, averageSessionDuration, newUsers, engagedSessions, eventCount, conversions
-        if (raw.rows && raw.rows.length > 0) {
-          const row = raw.rows[0];
-          const getValue = (index: number) => parseFloat(row.metricValues[index]?.value || '0');
-          ga4Data = {
-            sessions: getValue(0),
-            users: getValue(1),
-            engagementDuration: getValue(2),
-            pageViews: getValue(3),
-            bounceRate: getValue(4),
-            avgSessionDuration: getValue(5),
-            newUsers: getValue(6),
-            engagedSessions: getValue(7),
-            eventCount: getValue(8),
-            conversions: getValue(9),
-          };
+        // Parse and normalize GA4 response using pure transform functions
+        const parsed = parseGA4Response(raw);
+        if (parsed) {
+          ga4Data = normalizeGA4Metrics(parsed);
         }
+
         await ctx.runMutation(api.integrations.ga4Connections.updateLastSync, {
           connectionId: ga4Connection._id,
         });
@@ -70,7 +71,7 @@ export const syncProjectData = internalAction({
       }
     }
 
-    // 3. Fetch GSC Data (now returns keyword-level data)
+    // 3. Fetch GSC Data (keyword-level data)
     if (gscConnection) {
       try {
         const raw = (await ctx.runAction(internal.integrations.google.fetchGSCMetrics, {
@@ -80,76 +81,50 @@ export const syncProjectData = internalAction({
           refreshToken: gscConnection.refreshToken,
           startDate,
           endDate,
-        })) as {
-          rows?: Array<{
-            keys?: string[];
-            clicks?: number;
-            impressions?: number;
-            ctr?: number;
-            position?: number;
-          }>;
-        };
+        })) as RawGSCResponse;
 
-        // Parse GSC Response - now with keyword (query) data
         console.log(
           `[GSC Sync] Raw API response for ${projectId}: ${raw.rows?.length ?? 0} keyword rows returned`
         );
-        if (raw.rows && raw.rows.length > 0) {
-          // Aggregate totals for analytics data
-          let totalClicks = 0;
-          let totalImpressions = 0;
-          let avgPosition = 0;
 
-          // Store each keyword snapshot
-          for (const row of raw.rows) {
-            const keyword = row.keys?.[0] || 'unknown';
-            const clicks = row.clicks || 0;
-            const impressions = row.impressions || 0;
-            const ctr = row.ctr || 0;
-            const position = row.position || 0;
+        // Aggregate and normalize GSC rows using pure transform functions
+        const aggregated = aggregateGSCRows(raw);
+        if (aggregated) {
+          gscData = normalizeGSCMetrics(aggregated);
 
-            totalClicks += clicks;
-            totalImpressions += impressions;
-            avgPosition += position;
+          // Store each keyword snapshot (normalized CTR as percentage)
+          if (raw.rows) {
+            for (const row of raw.rows) {
+              const normalized = normalizeKeywordRow(row);
+              await ctx.runMutation(internal.analytics.gscKeywords.storeKeywordSnapshot, {
+                projectId,
+                syncDate: syncDateKey,
+                keyword: normalized.keyword,
+                clicks: normalized.clicks,
+                impressions: normalized.impressions,
+                ctr: normalized.ctr, // now 0-100 percentage
+                position: normalized.position,
+              });
 
-            // Store keyword snapshot for history (use syncDateKey for day-level dedup)
-            await ctx.runMutation(internal.analytics.gscKeywords.storeKeywordSnapshot, {
-              projectId,
-              syncDate: syncDateKey,
-              keyword,
-              clicks,
-              impressions,
-              ctr,
-              position,
-            });
-
-            // Bridge GSC keyword into keyword library (upsert)
-            await ctx.runMutation(internal.analytics.keywordEnrichment.upsertGSCKeyword, {
-              projectId,
-              keyword,
-              position,
-              clicks,
-              impressions,
-              ctr,
-            });
+              // Bridge GSC keyword into keyword library (upsert)
+              await ctx.runMutation(internal.analytics.keywordEnrichment.upsertGSCKeyword, {
+                projectId,
+                keyword: normalized.keyword,
+                position: normalized.position,
+                clicks: normalized.clicks,
+                impressions: normalized.impressions,
+                ctr: normalized.ctr, // now 0-100 percentage
+              });
+            }
           }
 
-          // Calculate averages
-          avgPosition = raw.rows.length > 0 ? avgPosition / raw.rows.length : 0;
-
           console.log(
-            `[GSC Sync] Stored ${raw.rows.length} keyword snapshots. Totals: ${totalClicks} clicks, ${totalImpressions} impressions, avg position ${avgPosition.toFixed(1)}`
+            `[GSC Sync] Stored ${raw.rows?.length ?? 0} keyword snapshots. Totals: ${gscData.clicks} clicks, ${gscData.impressions} impressions, avg position ${gscData.avgPosition.toFixed(1)}`
           );
-
-          gscData = {
-            clicks: totalClicks,
-            impressions: totalImpressions,
-            ctr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0,
-            position: avgPosition,
-          };
         } else {
           console.warn(`[GSC Sync] No keyword rows returned from GSC API for ${projectId}`);
         }
+
         await ctx.runMutation(api.integrations.gscConnections.updateLastSync, {
           connectionId: gscConnection._id,
         });
@@ -165,15 +140,16 @@ export const syncProjectData = internalAction({
         date: syncDateKey,
         source: 'ga4',
         sessions: ga4Data.sessions,
+        users: ga4Data.users,
+        engagementDuration: ga4Data.engagementDuration,
         pageViews: ga4Data.pageViews,
-        bounceRate: ga4Data.bounceRate,
+        bounceRate: ga4Data.bounceRate, // now 0-100 percentage
         avgSessionDuration: ga4Data.avgSessionDuration,
         newUsers: ga4Data.newUsers,
         engagedSessions: ga4Data.engagedSessions,
         eventCount: ga4Data.eventCount,
         conversions: ga4Data.conversions,
-        leads: 0,
-        revenue: 0,
+        // NOTE: leads and revenue removed — we don't fabricate metrics
       });
 
       // Insight: Low Traffic (using centralized threshold)
@@ -189,6 +165,7 @@ export const syncProjectData = internalAction({
       }
 
       // Insight: High Bounce Rate (using centralized threshold)
+      // bounceRate is now 0-100 percentage, threshold is also percentage
       if (ga4Data.bounceRate > THRESHOLDS.insights.highBounceRate) {
         await ctx.runMutation(api.analytics.analytics.storeInsight, {
           projectId,
@@ -208,11 +185,12 @@ export const syncProjectData = internalAction({
         source: 'gsc',
         clicks: gscData.clicks,
         impressions: gscData.impressions,
-        ctr: gscData.ctr,
-        avgPosition: gscData.position,
+        ctr: gscData.ctr, // now 0-100 percentage
+        avgPosition: gscData.avgPosition,
       });
 
       // Insight: High Impressions, Low CTR (using centralized thresholds)
+      // CTR is now 0-100 percentage, threshold should also be percentage
       if (
         gscData.impressions > THRESHOLDS.insights.highImpressionsThreshold &&
         gscData.ctr < THRESHOLDS.insights.lowCTR

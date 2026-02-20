@@ -1,18 +1,26 @@
 /**
  * Dynamic Robots.txt
  *
- * Blocks crawlers on staging, allows on production.
+ * Blocks crawlers on staging/localhost, allows on production.
+ * Uses multiple signals to detect environment — never blocks by default.
  */
 
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-  const isStaging = siteUrl.includes('staging');
-  const isLocalhost = siteUrl.includes('localhost');
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? '';
+  const vercelEnv = process.env.VERCEL_ENV ?? '';
 
-  // Block all crawlers on staging and localhost
-  if (isStaging || isLocalhost) {
+  // Positive production detection — multiple signals
+  const isProduction =
+    vercelEnv === 'production' || siteUrl.includes('phoo.ai') || siteUrl.includes('martai.app');
+
+  // Only block crawlers when we are SURE it's not production
+  const isStaging = siteUrl.includes('staging') || vercelEnv === 'preview';
+  const isLocalhost = siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1');
+  const shouldBlock = !isProduction && (isStaging || isLocalhost);
+
+  if (shouldBlock) {
     return {
       rules: {
         userAgent: '*',
@@ -21,7 +29,9 @@ export default function robots(): MetadataRoute.Robots {
     };
   }
 
-  // Allow crawlers on production
+  // Production — allow crawlers everywhere except private routes
+  const productionUrl = siteUrl || 'https://phoo.ai';
+
   return {
     rules: [
       {
@@ -30,6 +40,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/admin/', '/settings/', '/studio/'],
       },
     ],
-    sitemap: `${siteUrl}/sitemap.xml`,
+    sitemap: `${productionUrl}/sitemap.xml`,
   };
 }

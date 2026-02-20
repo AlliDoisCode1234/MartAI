@@ -130,6 +130,7 @@ export async function GET(req: NextRequest) {
 
     // Step 3: List GSC sites and save connection server-side
     let gscSaved = false;
+    let gscSiteCount = 0;
     try {
       console.log('[GoogleOAuth][LegacyCallback] Step 3: Listing GSC sites...');
       const sites = await convex.action(api.integrations.google.listGSCSites, {
@@ -137,15 +138,24 @@ export async function GET(req: NextRequest) {
       });
 
       console.log('[GoogleOAuth][LegacyCallback] GSC sites found:', sites.length);
+      gscSiteCount = sites.length;
 
       if (sites.length > 0) {
+        // Pick the best default: siteOwner first, then first available
         const site =
           sites.find((s: { permissionLevel: string }) => s.permissionLevel === 'siteOwner') ||
           sites[0];
         console.log('[GoogleOAuth][LegacyCallback] GSC selected site:', {
           siteUrl: site.siteUrl,
           permissionLevel: site.permissionLevel,
+          totalSitesAvailable: sites.length,
         });
+
+        // Store ALL available sites for the property picker UI
+        const availableSites = sites.map((s: { siteUrl: string; permissionLevel: string }) => ({
+          siteUrl: s.siteUrl,
+          permissionLevel: s.permissionLevel,
+        }));
 
         console.log('[GoogleOAuth][LegacyCallback] Saving GSC connection via mutation...');
         await convex.mutation(api.integrations.gscConnections.upsertGSCConnection, {
@@ -153,9 +163,14 @@ export async function GET(req: NextRequest) {
           siteUrl: site.siteUrl,
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
+          availableSites,
         });
         gscSaved = true;
-        console.log('[GoogleOAuth][LegacyCallback] GSC connection SAVED');
+        console.log(
+          '[GoogleOAuth][LegacyCallback] GSC connection SAVED with',
+          availableSites.length,
+          'available sites'
+        );
       } else {
         console.warn('[GoogleOAuth][LegacyCallback] No GSC sites found for this account');
       }
@@ -198,7 +213,13 @@ export async function GET(req: NextRequest) {
       redirectUrl.searchParams.set('setup', 'ga4');
       redirectUrl.searchParams.set('success', 'true');
       if (ga4Saved) redirectUrl.searchParams.set('ga4', 'saved');
-      if (gscSaved) redirectUrl.searchParams.set('gsc', 'saved');
+      if (gscSaved) {
+        redirectUrl.searchParams.set('gsc', 'saved');
+        // Signal to UI that multiple sites are available for selection
+        if (gscSiteCount > 1) {
+          redirectUrl.searchParams.set('gsc_sites', String(gscSiteCount));
+        }
+      }
       console.log(
         '[GoogleOAuth][LegacyCallback] SUCCESS — redirecting to:',
         redirectUrl.toString()
