@@ -29,7 +29,6 @@ import {
   Flex,
   useToast,
   Badge,
-  ButtonGroup,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useConvexAuth, useQuery, useAction } from 'convex/react';
@@ -58,7 +57,6 @@ export default function DashboardPage() {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery(api.users.current);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
   const {
     projectId,
@@ -307,7 +305,7 @@ export default function DashboardPage() {
                   py={0.5}
                   borderRadius="full"
                 >
-                  Last {timeRange === '7d' ? '7 days' : timeRange === '30d' ? '30 days' : '90 days'}
+                  Last 30 days
                 </Badge>
                 <Heading
                   size={{ base: 'xl', md: '2xl' }}
@@ -347,23 +345,6 @@ export default function DashboardPage() {
                 </HStack>
               </VStack>
               <HStack spacing={3} flexWrap="wrap">
-                <ButtonGroup size="xs" isAttached variant="outline">
-                  {(['7d', '30d', '90d'] as const).map((range) => (
-                    <Button
-                      key={range}
-                      onClick={() => setTimeRange(range)}
-                      bg={timeRange === range ? 'rgba(249, 159, 42, 0.2)' : 'transparent'}
-                      color={timeRange === range ? '#F99F2A' : 'gray.500'}
-                      borderColor={
-                        timeRange === range ? 'rgba(249, 159, 42, 0.5)' : 'whiteAlpha.200'
-                      }
-                      _hover={{ bg: 'rgba(249, 159, 42, 0.1)', color: '#F99F2A' }}
-                      fontWeight={timeRange === range ? 'bold' : 'normal'}
-                    >
-                      {range}
-                    </Button>
-                  ))}
-                </ButtonGroup>
                 <Link href="/studio">
                   <Button
                     size="lg"
@@ -424,26 +405,13 @@ export default function DashboardPage() {
                   <FiZap color="#F99F2A" size={24} />
                 </Box>
                 <VStack align="start" spacing={1} flex={1}>
-                  {!hasContent ? (
-                    <>
-                      <Heading size="sm" color="white">
-                        Phoo is crafting your first article
-                      </Heading>
-                      <Text color="gray.400" fontSize="sm">
-                        Your AI-generated content will appear here in a few minutes. Meanwhile,
-                        connect Google Analytics for real-time insights.
-                      </Text>
-                    </>
-                  ) : (
-                    <>
-                      <Heading size="sm" color="white">
-                        Connect your data sources
-                      </Heading>
-                      <Text color="gray.400" fontSize="sm">
-                        Link Google Analytics and Search Console to unlock real-time SEO metrics.
-                      </Text>
-                    </>
-                  )}
+                  <Heading size="sm" color="white">
+                    Phoo is crafting your first article
+                  </Heading>
+                  <Text color="gray.400" fontSize="sm">
+                    Your AI-generated content will appear here in a few minutes. Meanwhile, connect
+                    Google Analytics for real-time insights.
+                  </Text>
                 </VStack>
                 <HStack spacing={3}>
                   {!hasGA4 && (
@@ -475,6 +443,73 @@ export default function DashboardPage() {
                       Add Keywords
                     </Button>
                   </Link>
+                </HStack>
+              </Flex>
+            </MotionCard>
+          )}
+
+          {/* Connect Data Sources Banner — has content but no analytics */}
+          {hasContent && !hasKPIData && (
+            <MotionCard
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              bg="linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(249, 159, 42, 0.15) 100%)"
+              borderWidth="1px"
+              borderColor="rgba(139, 92, 246, 0.3)"
+              borderRadius="xl"
+              p={{ base: 5, md: 6 }}
+            >
+              <Flex align="center" gap={4} flexWrap="wrap">
+                <Box
+                  bg="rgba(139, 92, 246, 0.2)"
+                  borderRadius="full"
+                  p={3}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <FiBarChart2 color="#8B5CF6" size={24} />
+                </Box>
+                <VStack align="start" spacing={1} flex={1}>
+                  <Heading size="sm" color="white">
+                    Connect your data sources
+                  </Heading>
+                  <Text color="gray.400" fontSize="sm">
+                    Link Google Analytics and Search Console to unlock real-time SEO metrics.
+                  </Text>
+                </VStack>
+                <HStack spacing={3}>
+                  {!hasGA4 && (
+                    <Link href="/settings">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        borderColor="rgba(139, 92, 246, 0.5)"
+                        color="#8B5CF6"
+                        _hover={{
+                          bg: 'rgba(139, 92, 246, 0.1)',
+                        }}
+                      >
+                        Connect GA4
+                      </Button>
+                    </Link>
+                  )}
+                  {!hasGSC && (
+                    <Link href="/settings">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        borderColor="rgba(139, 92, 246, 0.5)"
+                        color="#8B5CF6"
+                        _hover={{
+                          bg: 'rgba(139, 92, 246, 0.1)',
+                        }}
+                      >
+                        Connect GSC
+                      </Button>
+                    </Link>
+                  )}
                 </HStack>
               </Flex>
             </MotionCard>

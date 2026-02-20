@@ -210,6 +210,46 @@ export const generateContentTitle = action({
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error('Unauthorized');
 
+    // Rate limit: Fetch user tier and enforce AI analysis limits
+    const user = await ctx.runQuery(internal.users.getUser, { userId });
+    if (!user) throw new Error('User not found');
+
+    let tier: 'free' | 'starter' | 'growth' | 'pro' | 'admin' = 'free';
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      tier = 'admin';
+    } else {
+      const membership = user.membershipTier || 'free';
+      switch (membership) {
+        case 'solo':
+        case 'starter':
+          tier = 'starter';
+          break;
+        case 'growth':
+        case 'team':
+          tier = 'growth';
+          break;
+        case 'pro':
+        case 'enterprise':
+          tier = 'pro';
+          break;
+        default:
+          tier = 'free';
+      }
+    }
+
+    const limitKey = `aiAnalysis_${tier}` as const;
+    try {
+      await rateLimits.limit(ctx, limitKey, { key: userId, throws: true });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes('Rate limited') || msg.includes('rate limit')) {
+        throw new Error(
+          `Title generation rate limit exceeded for your ${tier} plan. Please wait and try again.`
+        );
+      }
+      throw error;
+    }
+
     // Get Writer Persona for brand-aware titles
     const persona = await ctx.runMutation(
       internal.ai.writerPersonas.index.getOrCreatePersonaInternal,

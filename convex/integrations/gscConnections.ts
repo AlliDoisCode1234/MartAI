@@ -1,5 +1,6 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from '../lib/rbac';
 import { encryptCredential, decryptCredential } from '../lib/encryption';
 
 // Create or update GSC connection
@@ -141,6 +142,9 @@ export const switchGSCSite = mutation({
     siteUrl: v.string(),
   },
   handler: async (ctx, args) => {
+    // Security: Require project editor access
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
     const connection = await ctx.db
       .query('gscConnections')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
@@ -150,12 +154,16 @@ export const switchGSCSite = mutation({
       throw new Error('No GSC connection found for this project');
     }
 
-    // Verify the requested site is in the available list
-    if (connection.availableSites) {
-      const isValid = connection.availableSites.some((site) => site.siteUrl === args.siteUrl);
-      if (!isValid) {
-        throw new Error('Selected site is not available in your Google account');
-      }
+    // Verify the requested site is in the available list (mandatory — never skip)
+    if (!connection.availableSites || connection.availableSites.length === 0) {
+      throw new Error(
+        'No available sites list for this connection. Please reconnect Google Search Console.'
+      );
+    }
+
+    const isValid = connection.availableSites.some((site) => site.siteUrl === args.siteUrl);
+    if (!isValid) {
+      throw new Error('Selected site is not available in your Google account');
     }
 
     await ctx.db.patch(connection._id, {
@@ -163,7 +171,7 @@ export const switchGSCSite = mutation({
       updatedAt: Date.now(),
     });
 
-    console.log(`[GSC] Switched project ${args.projectId} to site: ${args.siteUrl}`);
+    console.log('[GSC] Site switched for project', args.projectId);
     return { success: true, siteUrl: args.siteUrl };
   },
 });

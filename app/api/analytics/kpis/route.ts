@@ -10,9 +10,8 @@ interface KPIData {
   clicks: number;
   ctr: number;
   avgPosition: number;
-  leads: number;
-  revenue: number;
-  conversionRate: number;
+  users: number;
+  engagementDuration: number;
 }
 
 interface KPIWithChange {
@@ -81,20 +80,15 @@ export async function GET(request: NextRequest) {
         change: calculateChange(currentKPIs.avgPosition, previousKPIs.avgPosition),
         previous: previousKPIs.avgPosition,
       },
-      leads: {
-        value: currentKPIs.leads,
-        change: calculateChange(currentKPIs.leads, previousKPIs.leads),
-        previous: previousKPIs.leads,
+      users: {
+        value: currentKPIs.users,
+        change: calculateChange(currentKPIs.users, previousKPIs.users),
+        previous: previousKPIs.users,
       },
-      revenue: {
-        value: currentKPIs.revenue,
-        change: calculateChange(currentKPIs.revenue, previousKPIs.revenue),
-        previous: previousKPIs.revenue,
-      },
-      conversionRate: {
-        value: currentKPIs.conversionRate,
-        change: calculateChange(currentKPIs.conversionRate, previousKPIs.conversionRate),
-        previous: previousKPIs.conversionRate,
+      engagementDuration: {
+        value: currentKPIs.engagementDuration,
+        change: calculateChange(currentKPIs.engagementDuration, previousKPIs.engagementDuration),
+        previous: previousKPIs.engagementDuration,
       },
     };
 

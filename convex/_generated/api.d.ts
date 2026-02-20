@@ -37,6 +37,7 @@ import type * as ai_writerPersonas_learning from "../ai/writerPersonas/learning.
 import type * as analytics_adhoc from "../analytics/adhoc.js";
 import type * as analytics_aggregations from "../analytics/aggregations.js";
 import type * as analytics_analytics from "../analytics/analytics.js";
+import type * as analytics_analyticsTransforms from "../analytics/analyticsTransforms.js";
 import type * as analytics_competitors from "../analytics/competitors.js";
 import type * as analytics_eventTracking from "../analytics/eventTracking.js";
 import type * as analytics_events from "../analytics/events.js";
@@ -201,6 +202,7 @@ declare const fullApi: ApiFromModules<{
   "analytics/adhoc": typeof analytics_adhoc;
   "analytics/aggregations": typeof analytics_aggregations;
   "analytics/analytics": typeof analytics_analytics;
+  "analytics/analyticsTransforms": typeof analytics_analyticsTransforms;
   "analytics/competitors": typeof analytics_competitors;
   "analytics/eventTracking": typeof analytics_eventTracking;
   "analytics/events": typeof analytics_events;

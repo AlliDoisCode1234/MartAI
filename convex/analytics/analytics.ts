@@ -11,13 +11,15 @@ export const storeAnalyticsData = mutation({
     sessions: v.optional(v.number()),
     clicks: v.optional(v.number()),
     impressions: v.optional(v.number()),
-    ctr: v.optional(v.number()),
+    ctr: v.optional(v.number()), // 0-100 percentage
     avgPosition: v.optional(v.number()),
     leads: v.optional(v.number()),
     revenue: v.optional(v.number()),
     // Expanded GA4 metrics
+    users: v.optional(v.number()),
+    engagementDuration: v.optional(v.number()),
     pageViews: v.optional(v.number()),
-    bounceRate: v.optional(v.number()),
+    bounceRate: v.optional(v.number()), // 0-100 percentage
     avgSessionDuration: v.optional(v.number()),
     newUsers: v.optional(v.number()),
     engagedSessions: v.optional(v.number()),
@@ -95,33 +97,31 @@ export const getKPIs = query({
 
     const data = allData.filter((d) => d.date >= args.startDate && d.date <= args.endDate);
 
-    const ga4Data = data.filter((d: any) => d.source === 'ga4');
-    const gscData = data.filter((d: any) => d.source === 'gsc');
+    const ga4Data = data.filter((d) => d.source === 'ga4');
+    const gscData = data.filter((d) => d.source === 'gsc');
 
     // Calculate totals
-    const sessions = ga4Data.reduce((sum: number, d: any) => sum + (d.sessions || 0), 0);
-    const clicks = gscData.reduce((sum: number, d: any) => sum + (d.clicks || 0), 0);
-    const impressions = gscData.reduce((sum: number, d: any) => sum + (d.impressions || 0), 0);
-    const leads = ga4Data.reduce((sum: number, d: any) => sum + (d.leads || 0), 0);
-    const revenue = ga4Data.reduce((sum: number, d: any) => sum + (d.revenue || 0), 0);
+    const sessions = ga4Data.reduce((sum, d) => sum + (d.sessions || 0), 0);
+    const users = ga4Data.reduce((sum, d) => sum + (d.users || 0), 0);
+    const engagementDuration = ga4Data.reduce((sum, d) => sum + (d.engagementDuration || 0), 0);
+    const clicks = gscData.reduce((sum, d) => sum + (d.clicks || 0), 0);
+    const impressions = gscData.reduce((sum, d) => sum + (d.impressions || 0), 0);
 
     // Calculate averages
     const avgCTR = impressions > 0 ? (clicks / impressions) * 100 : 0;
     const avgPosition =
       gscData.length > 0
-        ? gscData.reduce((sum: number, d: any) => sum + (d.avgPosition || 0), 0) / gscData.length
+        ? gscData.reduce((sum, d) => sum + (d.avgPosition || 0), 0) / gscData.length
         : 0;
-    const conversionRate = sessions > 0 ? (leads / sessions) * 100 : 0;
 
     return {
       sessions,
+      users,
+      engagementDuration,
       clicks,
       impressions,
       ctr: avgCTR,
       avgPosition,
-      leads,
-      revenue,
-      conversionRate,
     };
   },
 });
@@ -163,6 +163,8 @@ export const getDashboardKPIs = query({
     const hasGSCData = latestGSC !== null;
 
     const sessions = hasGA4Data ? (latestGA4.sessions ?? 0) : null;
+    const users = hasGA4Data ? (latestGA4.users ?? 0) : null;
+    const engagementDuration = hasGA4Data ? (latestGA4.engagementDuration ?? 0) : null;
     const pageViews = hasGA4Data ? (latestGA4.pageViews ?? 0) : null;
     const bounceRate = hasGA4Data ? (latestGA4.bounceRate ?? 0) : null;
     const avgSessionDuration = hasGA4Data ? (latestGA4.avgSessionDuration ?? 0) : null;
@@ -170,22 +172,28 @@ export const getDashboardKPIs = query({
     const engagedSessions = hasGA4Data ? (latestGA4.engagedSessions ?? 0) : null;
     const eventCount = hasGA4Data ? (latestGA4.eventCount ?? 0) : null;
     const conversions = hasGA4Data ? (latestGA4.conversions ?? 0) : null;
-    const leads = hasGA4Data ? (latestGA4.leads ?? 0) : null;
-    const revenue = hasGA4Data ? (latestGA4.revenue ?? 0) : null;
 
     const clicks = hasGSCData ? (latestGSC.clicks ?? 0) : null;
     const impressions = hasGSCData ? (latestGSC.impressions ?? 0) : null;
     const ctr = hasGSCData ? (latestGSC.ctr ?? 0) : null;
     const avgPosition = hasGSCData ? (latestGSC.avgPosition ?? 0) : null;
 
-    const conversionRate =
-      sessions !== null && sessions > 0 && leads !== null ? (leads / sessions) * 100 : null;
-
     return {
       sessions: {
         value: sessions,
         change:
           sessions !== null && prevGA4 ? calculateChange(sessions, prevGA4.sessions ?? 0) : null,
+      },
+      users: {
+        value: users,
+        change: users !== null && prevGA4 ? calculateChange(users, prevGA4.users ?? 0) : null,
+      },
+      engagementDuration: {
+        value: engagementDuration,
+        change:
+          engagementDuration !== null && prevGA4
+            ? calculateChange(engagementDuration, prevGA4.engagementDuration ?? 0)
+            : null,
       },
       clicks: {
         value: clicks,
@@ -201,18 +209,6 @@ export const getDashboardKPIs = query({
           avgPosition !== null && prevGSC
             ? calculateChange(avgPosition, prevGSC.avgPosition ?? 0)
             : null,
-      },
-      leads: {
-        value: leads,
-        change: leads !== null && prevGA4 ? calculateChange(leads, prevGA4.leads ?? 0) : null,
-      },
-      revenue: {
-        value: revenue,
-        change: revenue !== null && prevGA4 ? calculateChange(revenue, prevGA4.revenue ?? 0) : null,
-      },
-      conversionRate: {
-        value: conversionRate,
-        change: null,
       },
       // GA4 expanded
       pageViews: {
