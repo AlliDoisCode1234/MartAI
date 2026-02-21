@@ -20,6 +20,7 @@ import { StudioSidebar } from './StudioSidebar';
 import { AuthProvider } from '@/src/providers/AuthProvider';
 import { ProjectProvider } from '@/src/providers/ProjectProvider';
 import { AppBreadcrumb } from '@/src/components/Navigation/AppBreadcrumb';
+import { STUDIO_COLORS, STUDIO_GRADIENTS, STUDIO_LAYOUT } from '@/lib/constants/studioTokens';
 
 interface Props {
   children: React.ReactNode;
@@ -29,12 +30,12 @@ export function StudioLayout({ children }: Props) {
   return (
     <AuthProvider darkMode allowOnboarding={false} loadingMessage="Loading Content Studio...">
       <ProjectProvider darkMode requiredForRender>
-        <Flex minH="100vh" bg="#0D0D0D">
+        <Flex minH="100vh" bg={STUDIO_COLORS.pageBg}>
           <StudioSidebar />
           <Box
             flex={1}
-            bg="linear-gradient(180deg, #0D0D0D 0%, #1A1A1A 100%)"
-            p={{ base: 4, md: 8 }}
+            bg={STUDIO_GRADIENTS.pageBg}
+            p={STUDIO_LAYOUT.contentPadding}
             overflowY="auto"
           >
             <VStack align="stretch" spacing={4}>

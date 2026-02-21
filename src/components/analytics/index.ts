@@ -17,5 +17,4 @@ export { AnalyticsSetupWizard } from './AnalyticsSetupWizard';
 export { AnalyticsSkeleton } from './AnalyticsSkeleton';
 export { IntegrationPromptBanner } from './IntegrationPromptBanner';
 export { KPICard } from './KPICard';
-export { LeadsGeneratedChart } from './LeadsGeneratedChart';
 export { TrafficGrowthChart } from './TrafficGrowthChart';

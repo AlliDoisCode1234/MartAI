@@ -22,7 +22,7 @@ import { type FC } from 'react';
 import { Box, HStack, VStack, Text, Icon } from '@chakra-ui/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiHome, FiSearch, FiEdit3, FiBarChart2, FiMessageCircle } from 'react-icons/fi';
+import { FiHome, FiEdit3, FiBarChart2, FiMessageCircle } from 'react-icons/fi';
 
 interface TabItem {
   label: string;
@@ -32,7 +32,6 @@ interface TabItem {
 
 const TAB_ITEMS: TabItem[] = [
   { label: 'Home', path: '/dashboard', icon: FiHome },
-  { label: 'Keywords', path: '/keywords', icon: FiSearch },
   { label: 'Studio', path: '/studio', icon: FiEdit3 },
   { label: 'Insights', path: '/studio/insights', icon: FiBarChart2 },
   { label: 'Ask Phoo', path: '/assistant', icon: FiMessageCircle },

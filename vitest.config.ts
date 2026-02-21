@@ -4,7 +4,7 @@ import path from 'path';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['__tests__/**/*.test.ts', 'convex/**/*.test.ts'],
+    include: ['__tests__/**/*.test.ts', 'convex/**/*.test.ts', 'lib/**/*.test.ts'],
     globals: true,
     server: {
       deps: {

@@ -22,7 +22,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { UserDropdown } from './UserDropdown';
 import { MobileNav } from './MobileNav';
-import { FiArrowLeft, FiMessageCircle, FiMenu, FiHome, FiSearch, FiEdit3 } from 'react-icons/fi';
+import { FiArrowLeft, FiMessageCircle, FiMenu, FiHome, FiEdit3 } from 'react-icons/fi';
 import { Icon } from '@chakra-ui/react';
 
 interface NavItem {
@@ -40,14 +40,12 @@ const publicNavItems: NavItem[] = [
 // User navigation (logged in)
 const userNavItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: FiHome },
-  { label: 'Keywords', path: '/keywords', icon: FiSearch },
   { label: 'Content Studio', path: '/studio', icon: FiEdit3 },
 ];
 
 // Admin navigation (same as user - Admin portal accessible only via UserDropdown)
 const adminNavItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: FiHome },
-  { label: 'Keywords', path: '/keywords', icon: FiSearch },
   { label: 'Content Studio', path: '/studio', icon: FiEdit3 },
 ];
 
@@ -86,7 +84,6 @@ export const Navigation: FC = () => {
   if (isStudioContext && isAuthenticated) {
     const studioNavItems = [
       { label: 'Library', path: '/studio/library' },
-      { label: 'Strategy', path: '/studio/strategy' },
       { label: 'Calendar', path: '/studio/calendar' },
       { label: 'Create', path: '/studio/create' },
       { label: 'Insights', path: '/studio/insights' },
