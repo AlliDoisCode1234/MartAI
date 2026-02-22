@@ -142,8 +142,14 @@ export const MobileNav: FC<Props> = ({
                       bg: itemHoverBg,
                       color: itemHoverColor,
                     }}
+                    _focusVisible={{
+                      outline: '2px solid',
+                      outlineColor: activeColor,
+                      outlineOffset: '2px',
+                    }}
                     transition="all 0.15s ease"
                     minH="48px"
+                    aria-current={isActive ? 'page' : undefined}
                   >
                     {item.icon && <Icon as={item.icon} boxSize={5} />}
                     <Text fontSize="sm" fontWeight={isActive ? 'semibold' : 'medium'}>

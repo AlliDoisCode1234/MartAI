@@ -10,7 +10,8 @@
  * Inspiration: CoSchedule + Clearscope hybrid.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Grid,
@@ -120,10 +121,21 @@ interface DayCellProps {
 }
 
 function DayCell({ date, isCurrentMonth, pieces }: DayCellProps) {
+  const router = useRouter();
   const today = isToday(date);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleQuickCreate = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      router.push(`/studio/create?scheduledDate=${date.getTime()}`);
+    },
+    [router, date]
+  );
 
   return (
     <Box
+      position="relative"
       bg={today ? 'rgba(255, 157, 0, 0.1)' : 'rgba(255, 255, 255, 0.02)'}
       border={today ? '1px solid rgba(255, 157, 0, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)'}
       borderRadius="8px"
@@ -131,10 +143,33 @@ function DayCell({ date, isCurrentMonth, pieces }: DayCellProps) {
       minH="120px"
       opacity={isCurrentMonth ? 1 : 0.4}
       transition="all 0.15s ease"
+      cursor={isCurrentMonth ? 'pointer' : 'default'}
+      onMouseEnter={() => isCurrentMonth && setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={isCurrentMonth ? handleQuickCreate : undefined}
       _hover={{
         bg: isCurrentMonth ? 'rgba(255, 255, 255, 0.05)' : undefined,
+        borderColor: isCurrentMonth && !today ? 'rgba(255, 157, 0, 0.2)' : undefined,
       }}
     >
+      {/* Quick-create icon on hover */}
+      {isHovered && isCurrentMonth && (
+        <Icon
+          as={FiPlus}
+          position="absolute"
+          top={2}
+          right={2}
+          boxSize={4}
+          color="gray.500"
+          bg="rgba(255, 157, 0, 0.15)"
+          borderRadius="4px"
+          p="2px"
+          transition="all 0.15s ease"
+          _hover={{ color: '#FF9D00', bg: 'rgba(255, 157, 0, 0.3)' }}
+          onClick={handleQuickCreate}
+        />
+      )}
+
       {/* Date Number */}
       <Text
         fontSize="sm"

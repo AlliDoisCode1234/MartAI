@@ -239,29 +239,7 @@ export default function ContentEditorPage() {
     };
   }, []);
 
-  const handleApprove = async () => {
-    if (!contentPiece) return;
-    try {
-      await updateMutation({
-        contentPieceId: contentPiece._id,
-        status: 'approved',
-      });
-      toast({
-        title: 'Content approved',
-        description: 'Ready for publishing or scheduling',
-        status: 'success',
-        duration: 3000,
-      });
-    } catch (e) {
-      toast({
-        title: 'Approval failed',
-        status: 'error',
-        duration: 3000,
-      });
-    }
-  };
-
-  const handlePublish = async () => {
+  const handleMarkPublished = async () => {
     if (!contentPiece) return;
     try {
       await updateMutation({
@@ -269,7 +247,8 @@ export default function ContentEditorPage() {
         status: 'published',
       });
       toast({
-        title: 'Content published',
+        title: 'Content marked as published',
+        description: 'Visible in your published library',
         status: 'success',
         duration: 3000,
       });
@@ -556,18 +535,6 @@ export default function ContentEditorPage() {
             >
               Save
             </Button>
-            {contentPiece.status === 'draft' && (
-              <Button
-                variant="outline"
-                borderColor="#FF9D00"
-                color="#FF9D00"
-                leftIcon={<Icon as={FiCheck} />}
-                _hover={{ bg: 'rgba(255, 157, 0, 0.1)' }}
-                onClick={handleApprove}
-              >
-                Approve
-              </Button>
-            )}
             {contentPiece.status === 'scheduled' ? (
               <Button
                 variant="outline"
@@ -578,43 +545,54 @@ export default function ContentEditorPage() {
               >
                 Unschedule
               </Button>
-            ) : (
-              (contentPiece.status === 'approved' || contentPiece.status === 'draft') && (
-                <>
+            ) : contentPiece.status !== 'published' ? (
+              <>
+                <Button
+                  variant="outline"
+                  borderColor="#8B5CF6"
+                  color="#8B5CF6"
+                  leftIcon={<Icon as={FiCalendar} />}
+                  _hover={{ bg: 'rgba(139, 92, 246, 0.1)' }}
+                  onClick={onOpen}
+                >
+                  Schedule
+                </Button>
+                {hasWordPress ? (
                   <Button
-                    variant="outline"
-                    borderColor="#8B5CF6"
-                    color="#8B5CF6"
-                    leftIcon={<Icon as={FiCalendar} />}
-                    _hover={{ bg: 'rgba(139, 92, 246, 0.1)' }}
-                    onClick={onOpen}
+                    bg="linear-gradient(135deg, #21759b, #1a5a7a)"
+                    color="white"
+                    leftIcon={<Icon as={FaWordpress} />}
+                    _hover={{ opacity: 0.9 }}
+                    onClick={onWpModalOpen}
                   >
-                    Schedule
+                    Publish
                   </Button>
+                ) : (
                   <Button
                     bg="linear-gradient(135deg, #22C55E, #16A34A)"
                     color="white"
                     leftIcon={<Icon as={FiCheck} />}
                     _hover={{ opacity: 0.9 }}
-                    onClick={handlePublish}
-                    title="Mark as ready internally"
+                    onClick={handleMarkPublished}
                   >
-                    Mark Ready
+                    Mark Published
                   </Button>
-                </>
+                )}
+              </>
+            ) : (
+              /* Already published: allow re-push to CMS if connected */
+              hasWordPress && (
+                <Button
+                  variant="outline"
+                  borderColor="#21759b"
+                  color="#21759b"
+                  leftIcon={<Icon as={FaWordpress} />}
+                  _hover={{ bg: 'rgba(33, 117, 155, 0.1)' }}
+                  onClick={onWpModalOpen}
+                >
+                  Re-publish to CMS
+                </Button>
               )
-            )}
-            {/* WordPress publish - always available when connected (independent of internal status) */}
-            {hasWordPress && contentPiece?.content && (
-              <Button
-                bg="linear-gradient(135deg, #21759b, #1a5a7a)"
-                color="white"
-                leftIcon={<Icon as={FaWordpress} />}
-                _hover={{ opacity: 0.9 }}
-                onClick={onWpModalOpen}
-              >
-                Publish to WordPress
-              </Button>
             )}
           </HStack>
         </HStack>

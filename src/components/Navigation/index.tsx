@@ -85,6 +85,7 @@ export const Navigation: FC = () => {
     const studioNavItems = [
       { label: 'Library', path: '/studio/library' },
       { label: 'Calendar', path: '/studio/calendar' },
+      { label: 'Keywords', path: '/studio/keywords' },
       { label: 'Create', path: '/studio/create' },
       { label: 'Insights', path: '/studio/insights' },
       { label: 'Settings', path: '/studio/settings' },
@@ -92,6 +93,8 @@ export const Navigation: FC = () => {
     return (
       <>
         <Box
+          as="nav"
+          aria-label="Content Studio"
           bg="rgba(13, 13, 13, 0.98)"
           borderBottom="1px solid rgba(255, 255, 255, 0.08)"
           position="sticky"
@@ -205,6 +208,8 @@ export const Navigation: FC = () => {
     return (
       <>
         <Box
+          as="nav"
+          aria-label="Admin Portal"
           bg="rgba(13, 13, 13, 0.98)"
           borderBottom="1px solid rgba(255, 255, 255, 0.08)"
           position="sticky"
@@ -308,6 +313,8 @@ export const Navigation: FC = () => {
   return (
     <>
       <Box
+        as="nav"
+        aria-label="Main navigation"
         bg="white"
         shadow="sm"
         borderBottom="1px"
@@ -337,10 +344,16 @@ export const Navigation: FC = () => {
                       color={isActive ? 'brand.orange' : 'gray.700'}
                       fontWeight={isActive ? 'bold' : 'medium'}
                       _hover={{ color: 'brand.orange' }}
+                      _focusVisible={{
+                        outline: '2px solid',
+                        outlineColor: 'brand.orange',
+                        outlineOffset: '2px',
+                      }}
                       cursor="pointer"
                       transition="all 0.2s"
                       display={{ base: 'none', md: 'inline' }}
                       position="relative"
+                      aria-current={isActive ? 'page' : undefined}
                       _after={
                         isActive
                           ? {

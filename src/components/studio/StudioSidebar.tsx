@@ -17,7 +17,7 @@ import { usePathname } from 'next/navigation';
 import {
   FiFileText,
   FiBook,
-  FiSearch,
+  FiCalendar,
   FiPlusCircle,
   FiSettings,
   FiLogOut,
@@ -32,10 +32,10 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/studio', label: 'Library', icon: FiFileText },
+  { href: '/studio/library', label: 'Library', icon: FiFileText },
   { href: '/studio/insights', label: 'Insights', icon: FiBarChart2 },
   { href: '/studio/keywords', label: 'Keywords', icon: FiBook },
-  { href: '/studio/calendar', label: 'Calendar', icon: FiSearch },
+  { href: '/studio/calendar', label: 'Calendar', icon: FiCalendar },
   { href: '/studio/create', label: 'Create', icon: FiPlusCircle },
   { href: '/studio/settings', label: 'Settings', icon: FiSettings },
 ];
@@ -107,7 +107,13 @@ export function StudioSidebar({ collapsed = false }: Props) {
                     bg: 'rgba(255, 255, 255, 0.05)',
                     color: 'white',
                   }}
+                  _focusVisible={{
+                    outline: '2px solid',
+                    outlineColor: STUDIO_COLORS.amber,
+                    outlineOffset: '2px',
+                  }}
                   transition="all 0.2s ease"
+                  aria-current={isActive ? 'page' : undefined}
                 >
                   <Icon
                     as={item.icon}
