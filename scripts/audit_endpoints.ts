@@ -1,10 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 
-// Define the absolute paths
-const convexDir = path.resolve('c:/Users/josia/Desktop/Anti_MartAI/MartAI/convex');
-const testsDir = path.resolve('c:/Users/josia/Desktop/Anti_MartAI/MartAI/__tests__');
-const apiDecFile = path.resolve(convexDir, '_generated/api.d.ts');
+// Define dynamic paths relative to the project root (where the script is typically executed)
+// or relative to the script location itself to avoid hardcoding PII paths.
+const projectRoot = path.resolve(process.cwd());
+const convexDir = path.join(projectRoot, 'convex');
+const testsDir = path.join(projectRoot, '__tests__');
+const apiDecFile = path.join(convexDir, '_generated/api.d.ts');
 
 async function audit() {
   console.log('--- Starting Swarm Audit ---');
