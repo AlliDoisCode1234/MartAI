@@ -28,7 +28,7 @@ describe('Phoo System Prompts', () => {
   describe('FAQ Mode (Guest Users)', () => {
     it('restricts to Phoo product and SEO topics only', () => {
       expect(PHOO_FAQ_INSTRUCTIONS).toContain('ONLY discuss the Phoo product');
-      expect(PHOO_FAQ_INSTRUCTIONS).toContain('SEO in general');
+      expect(PHOO_FAQ_INSTRUCTIONS).toContain('SEO, and GEO');
     });
 
     it('blocks work requests explicitly', () => {

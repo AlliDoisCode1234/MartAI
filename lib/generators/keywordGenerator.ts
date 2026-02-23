@@ -5,8 +5,8 @@ import { withRetry } from '../utils';
 
 export interface KeywordSuggestion {
   keyword: string;
-  searchVolume?: number;
-  difficulty?: number;
+  searchVolume?: number; // Strictly reserved for GA4/GSC syncing, NEVER populated by AI
+  difficulty?: number; // Strictly reserved for external tool sync, NEVER populated by AI
   cpc?: number;
   intent: 'informational' | 'commercial' | 'transactional' | 'navigational';
   priority: 'high' | 'medium' | 'low';
@@ -33,40 +33,30 @@ export async function generateKeywords(
         intent: 'commercial',
         priority: 'high',
         reasoning: 'Primary service keyword (Mock Data)',
-        searchVolume: 1000,
-        difficulty: 45,
       },
       {
         keyword: `best ${industry} for ${targetAudience}`,
         intent: 'commercial',
         priority: 'high',
         reasoning: 'High intent long-tail keyword (Mock Data)',
-        searchVolume: 500,
-        difficulty: 30,
       },
       {
         keyword: `${industry} trends 2025`,
         intent: 'informational',
         priority: 'medium',
         reasoning: 'Trending topic for authority (Mock Data)',
-        searchVolume: 2000,
-        difficulty: 60,
       },
       {
         keyword: `how to choose ${industry}`,
         intent: 'informational',
         priority: 'medium',
         reasoning: 'Educational content for top of funnel (Mock Data)',
-        searchVolume: 800,
-        difficulty: 25,
       },
       {
         keyword: `${industry} pricing`,
         intent: 'transactional',
         priority: 'high',
         reasoning: 'Bottom of funnel intent (Mock Data)',
-        searchVolume: 300,
-        difficulty: 50,
       },
     ];
   }
@@ -115,22 +105,12 @@ Focus on keywords that would help improve their website's visibility and drive q
                     .array(z.string())
                     .optional()
                     .describe('Related keyword variations'),
-                  estimatedVolume: z
-                    .number()
-                    .optional()
-                    .describe('Estimated monthly search volume'),
-                  estimatedDifficulty: z
-                    .number()
-                    .optional()
-                    .describe('Estimated keyword difficulty 0-100'),
                 })
               ),
             }),
             execute: async ({ keywords }) => {
               return keywords.map((kw) => ({
                 keyword: kw.keyword,
-                searchVolume: kw.estimatedVolume,
-                difficulty: kw.estimatedDifficulty,
                 intent: kw.intent,
                 priority: kw.priority,
                 reasoning: kw.reasoning,

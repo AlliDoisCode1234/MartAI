@@ -44,18 +44,18 @@ describe('Article Generation Workflow', () => {
       const userId = await seedUser(t);
       const projectId = await seedProject(t, userId);
 
-      // Create subscription with Solo limits
+      // Create subscription with Starter limits
       await t.run(async (ctx) => {
         await ctx.db.insert('subscriptions', {
           userId,
-          planTier: 'solo',
+          planTier: 'starter',
           status: 'active',
-          priceMonthly: 59,
+          priceMonthly: 197,
           features: {
             maxUrls: 1,
-            maxKeywordIdeas: 250,
-            maxAiReports: 4,
-            maxContentPieces: 4,
+            maxKeywordIdeas: 500,
+            maxAiReports: 10,
+            maxContentPieces: 15,
             maxTeamMembers: 1,
           },
           startsAt: Date.now(),
@@ -75,12 +75,12 @@ describe('Article Generation Workflow', () => {
           urlsAnalyzed: 0,
           keywordIdeasGenerated: 0,
           aiReportsGenerated: 0,
-          contentPiecesPlanned: 4, // Already at limit!
+          contentPiecesPlanned: 15, // Already at limit!
           updatedAt: Date.now(),
         });
       });
 
-      // When: Attempting 5th article
+      // When: Attempting 16th article
       // Then: Should fail with limit reached error
       await expect(
         t.mutation(api.subscriptions.subscriptions.recordUsage, {
@@ -92,22 +92,22 @@ describe('Article Generation Workflow', () => {
     });
 
     it('should allow generation when within quota', async () => {
-      // Given: A user with Growth plan (12 articles/month) with 5 used
+      // Given: A user with Engine plan (50 articles/month) with 43 used
       const userId = await seedUser(t);
       const projectId = await seedProject(t, userId);
 
       await t.run(async (ctx) => {
         await ctx.db.insert('subscriptions', {
           userId,
-          planTier: 'growth',
+          planTier: 'engine',
           status: 'active',
-          priceMonthly: 149,
+          priceMonthly: 397,
           features: {
             maxUrls: 3,
-            maxKeywordIdeas: 1000,
-            maxAiReports: 12,
-            maxContentPieces: 12,
-            maxTeamMembers: 3,
+            maxKeywordIdeas: 2000,
+            maxAiReports: 30,
+            maxContentPieces: 50,
+            maxTeamMembers: 5,
           },
           startsAt: Date.now(),
           createdAt: Date.now(),
@@ -125,12 +125,12 @@ describe('Article Generation Workflow', () => {
           urlsAnalyzed: 1,
           keywordIdeasGenerated: 100,
           aiReportsGenerated: 3,
-          contentPiecesPlanned: 5, // 5 of 12 used
+          contentPiecesPlanned: 43, // 43 of 50 used
           updatedAt: Date.now(),
         });
       });
 
-      // When: Attempting 6th article
+      // When: Attempting 44th article
       const result = await t.mutation(api.subscriptions.subscriptions.recordUsage, {
         userId,
         metric: 'contentPieces',
@@ -139,7 +139,7 @@ describe('Article Generation Workflow', () => {
 
       // Then: Should succeed and return remaining count
       expect(result.success).toBe(true);
-      expect(result.remaining).toBe(6); // 12 - 6 = 6 remaining
+      expect(result.remaining).toBe(6); // 50 - 44 = 6 remaining
     });
   });
 
@@ -167,9 +167,9 @@ describe('Article Generation Workflow', () => {
 
   describe('Tier Limits by Plan', () => {
     const planLimits = [
-      { plan: 'solo', maxContentPieces: 4, price: 59 },
-      { plan: 'growth', maxContentPieces: 12, price: 149 },
-      { plan: 'team', maxContentPieces: 30, price: 299 },
+      { plan: 'starter', maxContentPieces: 15, price: 197 },
+      { plan: 'engine', maxContentPieces: 50, price: 397 },
+      { plan: 'agency', maxContentPieces: 100, price: 697 },
     ];
 
     it.each(planLimits)(
@@ -185,11 +185,11 @@ describe('Article Generation Workflow', () => {
             status: 'active',
             priceMonthly: price,
             features: {
-              maxUrls: plan === 'solo' ? 1 : plan === 'growth' ? 3 : 10,
-              maxKeywordIdeas: plan === 'solo' ? 250 : plan === 'growth' ? 1000 : 2500,
-              maxAiReports: plan === 'solo' ? 4 : plan === 'growth' ? 12 : 30,
+              maxUrls: plan === 'starter' ? 1 : plan === 'engine' ? 3 : 10,
+              maxKeywordIdeas: plan === 'starter' ? 500 : plan === 'engine' ? 2000 : 5000,
+              maxAiReports: plan === 'starter' ? 10 : plan === 'engine' ? 30 : 100,
               maxContentPieces,
-              maxTeamMembers: plan === 'solo' ? 1 : plan === 'growth' ? 3 : 10,
+              maxTeamMembers: plan === 'starter' ? 1 : plan === 'engine' ? 5 : 25,
             },
             startsAt: Date.now(),
             createdAt: Date.now(),
@@ -235,15 +235,15 @@ describe('Article Generation Workflow', () => {
         for (const userId of users) {
           await ctx.db.insert('subscriptions', {
             userId,
-            planTier: 'growth',
+            planTier: 'engine',
             status: 'active',
-            priceMonthly: 149,
+            priceMonthly: 397,
             features: {
               maxUrls: 3,
-              maxKeywordIdeas: 1000,
-              maxAiReports: 12,
-              maxContentPieces: 12,
-              maxTeamMembers: 3,
+              maxKeywordIdeas: 2000,
+              maxAiReports: 30,
+              maxContentPieces: 50,
+              maxTeamMembers: 5,
             },
             startsAt: Date.now(),
             createdAt: Date.now(),
@@ -267,7 +267,7 @@ describe('Article Generation Workflow', () => {
       expect(results).toHaveLength(3);
       results.forEach((result) => {
         expect(result.success).toBe(true);
-        expect(result.remaining).toBe(11); // 12 - 1
+        expect(result.remaining).toBe(49); // 50 - 1
       });
     });
   });
