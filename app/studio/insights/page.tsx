@@ -184,7 +184,11 @@ export default function InsightsPage() {
     wordCount: p.wordCount as number | undefined,
     keywords: p.keywords as string[] | undefined,
     contentType: p.contentType as string | undefined,
-    internalLinks: p.internalLinks as number | undefined,
+    internalLinks: Array.isArray(p.internalLinks)
+      ? p.internalLinks.length
+      : typeof p.internalLinks === 'number'
+        ? p.internalLinks
+        : undefined,
     h2Outline: p.h2Outline as string[] | undefined,
     updatedAt: p.updatedAt as number,
   }));

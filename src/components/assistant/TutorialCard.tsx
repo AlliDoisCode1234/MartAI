@@ -82,7 +82,7 @@ export const POST_ONBOARDING_STEPS: TutorialStep[] = [
     title: 'Track Your Progress',
     description: 'See your SEO performance and Phoo Rating insights.',
     icon: FiTrendingUp,
-    action: { label: 'View Dashboard', href: '/dashboard' },
+    action: { label: 'View Dashboard', href: '/studio' },
     gradient: 'linear(to-br, teal.400, green.400)',
   },
 ];
@@ -94,7 +94,7 @@ export const WHATS_NEXT_STEPS: TutorialStep[] = [
     title: 'Check Quick Wins',
     description: "Keywords where you're close to page 1. Small effort, big gains!",
     icon: FiZap,
-    action: { label: 'View Quick Wins', href: '/dashboard' },
+    action: { label: 'View Quick Wins', href: '/studio' },
     gradient: 'linear(to-br, yellow.400, orange.400)',
   },
   {
@@ -102,7 +102,7 @@ export const WHATS_NEXT_STEPS: TutorialStep[] = [
     title: 'Improve Your PR Score',
     description: "Your Phoo Rating shows overall SEO health. Let's boost it!",
     icon: FiTrendingUp,
-    action: { label: 'View Dashboard', href: '/dashboard' },
+    action: { label: 'View Dashboard', href: '/studio' },
     gradient: 'linear(to-br, teal.400, green.400)',
   },
   {
@@ -110,7 +110,7 @@ export const WHATS_NEXT_STEPS: TutorialStep[] = [
     title: 'Review Content Gaps',
     description: "High-value keywords you're not ranking for yet.",
     icon: FiTarget,
-    action: { label: 'View Insights', href: '/dashboard' },
+    action: { label: 'View Insights', href: '/studio' },
     gradient: 'linear(to-br, pink.400, red.400)',
   },
 ];

@@ -114,7 +114,7 @@ export default function AuthCallbackPage() {
     }
 
     console.log('[AuthCallback] User found, redirecting to dashboard');
-    router.replace('/dashboard');
+    router.replace('/studio');
   }, [authLoading, isAuthenticated, user, router, waitAttempts]);
 
   return (

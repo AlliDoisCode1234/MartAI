@@ -19,9 +19,11 @@ import {
   FiBook,
   FiCalendar,
   FiPlusCircle,
-  FiSettings,
+  FiTarget,
   FiLogOut,
   FiBarChart2,
+  FiHome,
+  FiMessageCircle,
 } from 'react-icons/fi';
 import { STUDIO_COLORS, STUDIO_GRADIENTS } from '@/lib/constants/studioTokens';
 
@@ -32,17 +34,20 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { href: '/studio', label: 'Dashboard', icon: FiHome },
   { href: '/studio/library', label: 'Library', icon: FiFileText },
   { href: '/studio/insights', label: 'Insights', icon: FiBarChart2 },
   { href: '/studio/keywords', label: 'Keywords', icon: FiBook },
   { href: '/studio/calendar', label: 'Calendar', icon: FiCalendar },
   { href: '/studio/create', label: 'Create', icon: FiPlusCircle },
-  { href: '/studio/settings', label: 'Settings', icon: FiSettings },
+  { href: '/studio/brand-profile', label: 'Brand Profile', icon: FiTarget },
 ];
 
 interface Props {
   collapsed?: boolean;
 }
+
+import { UserDropdown } from '../Navigation/UserDropdown';
 
 export function StudioSidebar({ collapsed = false }: Props) {
   const pathname = usePathname();
@@ -52,10 +57,9 @@ export function StudioSidebar({ collapsed = false }: Props) {
       as="nav"
       w={collapsed ? '64px' : '200px'}
       minH="100vh"
-      bg={STUDIO_COLORS.sidebarBg}
+      bg="white"
       borderRight="1px solid"
-      borderColor={STUDIO_COLORS.subtleBorder}
-      backdropFilter="blur(20px)"
+      borderColor="gray.200"
       py={6}
       transition="width 0.2s ease"
       display={{ base: 'none', md: 'flex' }}
@@ -63,15 +67,17 @@ export function StudioSidebar({ collapsed = false }: Props) {
     >
       {/* Logo/Brand */}
       <Box px={4} mb={8}>
-        <Text
-          fontSize={collapsed ? 'sm' : 'lg'}
-          fontWeight="bold"
-          bgGradient="linear(to-r, #FF9D00, #FF6B00)"
-          bgClip="text"
-          textAlign={collapsed ? 'center' : 'left'}
-        >
-          {collapsed ? 'CS' : 'Content Studio'}
-        </Text>
+        <Link href="/studio" style={{ textDecoration: 'none', display: 'block' }}>
+          <Text
+            fontSize={collapsed ? 'sm' : 'lg'}
+            fontWeight="bold"
+            bgGradient="linear(to-r, #FF9D00, #FF6B00)"
+            bgClip="text"
+            textAlign={collapsed ? 'center' : 'left'}
+          >
+            {collapsed ? 'CS' : 'Content Studio'}
+          </Text>
+        </Link>
       </Box>
 
       {/* Navigation */}
@@ -97,29 +103,26 @@ export function StudioSidebar({ collapsed = false }: Props) {
                   borderRadius="12px"
                   cursor="pointer"
                   position="relative"
-                  bg={isActive ? STUDIO_GRADIENTS.sidebarActive : 'transparent'}
-                  color={isActive ? STUDIO_COLORS.amber : 'gray.400'}
+                  bg={isActive ? 'orange.50' : 'transparent'}
+                  color={isActive ? 'brand.orange' : 'gray.600'}
                   borderLeft={
-                    isActive ? `2px solid ${STUDIO_COLORS.amber}` : '2px solid transparent'
+                    isActive
+                      ? `3px solid var(--chakra-colors-brand-orange)`
+                      : '3px solid transparent'
                   }
-                  boxShadow={isActive ? `0 0 20px rgba(255, 157, 0, 0.15)` : 'none'}
                   _hover={{
-                    bg: 'rgba(255, 255, 255, 0.05)',
-                    color: 'white',
+                    bg: 'orange.50',
+                    color: 'gray.900',
                   }}
                   _focusVisible={{
                     outline: '2px solid',
-                    outlineColor: STUDIO_COLORS.amber,
+                    outlineColor: 'brand.orange',
                     outlineOffset: '2px',
                   }}
                   transition="all 0.2s ease"
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon
-                    as={item.icon}
-                    boxSize={5}
-                    filter={isActive ? 'drop-shadow(0 0 8px rgba(255, 157, 0, 0.5))' : 'none'}
-                  />
+                  <Icon as={item.icon} boxSize={5} />
                   {!collapsed && (
                     <Text fontSize="sm" fontWeight={isActive ? 'semibold' : 'medium'}>
                       {item.label}
@@ -132,11 +135,16 @@ export function StudioSidebar({ collapsed = false }: Props) {
         })}
       </VStack>
 
-      {/* Exit Link */}
-      <Box px={2} pt={4}>
-        <Divider borderColor={STUDIO_COLORS.subtleBorder} mb={4} />
-        <Tooltip label="Exit to Dashboard" placement="right" isDisabled={!collapsed} hasArrow>
-          <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+      {/* Ask Phoo & Profile */}
+      <Box px={2} pt={4} pb={4}>
+        <Divider borderColor="gray.200" mb={4} />
+
+        {/* Ask Phoo Link */}
+        <Tooltip label="Ask Phoo" placement="right" isDisabled={!collapsed} hasArrow>
+          <Link
+            href="/assistant"
+            style={{ textDecoration: 'none', display: 'block', marginBottom: '8px' }}
+          >
             <Flex
               align="center"
               gap={3}
@@ -144,22 +152,42 @@ export function StudioSidebar({ collapsed = false }: Props) {
               py={3}
               borderRadius="12px"
               cursor="pointer"
-              color="gray.500"
+              color="gray.600"
               _hover={{
-                bg: 'rgba(255, 255, 255, 0.05)',
-                color: 'gray.300',
+                bg: 'orange.50',
+                color: 'brand.orange',
               }}
               transition="all 0.2s ease"
             >
-              <Icon as={FiLogOut} boxSize={5} />
+              <Icon as={FiMessageCircle} boxSize={5} />
               {!collapsed && (
                 <Text fontSize="sm" fontWeight="medium">
-                  Exit Studio
+                  Ask Phoo
                 </Text>
               )}
             </Flex>
           </Link>
         </Tooltip>
+
+        {/* User Profile Hook */}
+        <Box px={collapsed ? 0 : 2} mt={2}>
+          <Flex align="center" gap={3} justifyContent={collapsed ? 'center' : 'flex-start'} py={1}>
+            <UserDropdown />
+            {!collapsed && (
+              <Box>
+                <Text
+                  fontSize="xs"
+                  fontWeight="semibold"
+                  color="gray.500"
+                  textTransform="uppercase"
+                  letterSpacing="wider"
+                >
+                  Account
+                </Text>
+              </Box>
+            )}
+          </Flex>
+        </Box>
       </Box>
     </Box>
   );

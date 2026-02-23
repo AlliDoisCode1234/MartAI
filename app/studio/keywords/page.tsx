@@ -82,7 +82,7 @@ export default function StudioKeywordsPage() {
   const router = useRouter();
   const toast = useToast();
 
-  const data = useQuery(
+  const enrichedKeywordsData = useQuery(
     api.seo.keywordsData.getKeywordsEnriched,
     projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
@@ -123,9 +123,9 @@ export default function StudioKeywordsPage() {
   };
 
   const processedKeywords = useMemo(() => {
-    if (!data) return [];
+    if (!enrichedKeywordsData) return [];
 
-    let filtered: EnrichedKeyword[] = data.keywords as EnrichedKeyword[];
+    let filtered: EnrichedKeyword[] = enrichedKeywordsData.keywords as EnrichedKeyword[];
 
     if (statusFilter !== 'all') {
       filtered = filtered.filter((kw) => kw.status === statusFilter);
@@ -176,7 +176,7 @@ export default function StudioKeywordsPage() {
     }
 
     return sorted;
-  }, [data, statusFilter, clusterFilter, quickWinFilter, search, sortBy]);
+  }, [enrichedKeywordsData, statusFilter, clusterFilter, quickWinFilter, search, sortBy]);
 
   const totalPages = Math.ceil(processedKeywords.length / ITEMS_PER_PAGE);
   const safePage = Math.min(currentPage, Math.max(1, totalPages));
@@ -195,7 +195,7 @@ export default function StudioKeywordsPage() {
   const getTabIndex = () => TAB_KEYS.indexOf(activeTab as (typeof TAB_KEYS)[number]);
   const handleTabChange = (index: number) => setActiveTab(TAB_KEYS[index]);
 
-  if (projectLoading || data === undefined) {
+  if (projectLoading || enrichedKeywordsData === undefined) {
     return (
       <StudioLayout>
         <VStack spacing={4} align="stretch">
@@ -206,7 +206,7 @@ export default function StudioKeywordsPage() {
     );
   }
 
-  const isEmpty = !data || data.keywords.length === 0;
+  const isEmpty = !enrichedKeywordsData || enrichedKeywordsData.keywords.length === 0;
 
   return (
     <StudioLayout>
@@ -269,11 +269,11 @@ export default function StudioKeywordsPage() {
           ) : (
             <VStack spacing={6} align="stretch">
               <KeywordStatCards
-                foundation={data.stats.foundation}
-                authority={data.stats.authority}
-                revenueReady={data.stats.revenueReady}
-                total={data.stats.total}
-                quickWins={data.stats.quickWins}
+                foundation={enrichedKeywordsData.stats.foundation}
+                authority={enrichedKeywordsData.stats.authority}
+                revenueReady={enrichedKeywordsData.stats.revenueReady}
+                total={enrichedKeywordsData.stats.total}
+                quickWins={enrichedKeywordsData.stats.quickWins}
               />
 
               <KeywordFilters
@@ -287,8 +287,8 @@ export default function StudioKeywordsPage() {
                 onQuickWinChange={handleFilterChange(setQuickWinFilter)}
                 search={search}
                 onSearchChange={handleFilterChange(setSearch)}
-                clusterNames={data.clusterNames}
-                quickWinCount={data.stats.quickWins}
+                clusterNames={enrichedKeywordsData.clusterNames}
+                quickWinCount={enrichedKeywordsData.stats.quickWins}
               />
 
               <KeywordTable

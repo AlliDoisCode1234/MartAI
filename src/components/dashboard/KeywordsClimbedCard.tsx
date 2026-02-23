@@ -134,7 +134,7 @@ export function KeywordsClimbedCard({ keywords, suggestedKeywords, totalCount, h
           <Text color="gray.400" fontSize="xs">
             {totalCount} Total Keywords Tracked
           </Text>
-          <Link href="/keywords">
+          <Link href="/studio/keywords">
             <HStack spacing={1} cursor="pointer" _hover={{ color: '#F99F2A' }}>
               <Text color="gray.400" fontSize="xs" _hover={{ color: '#F99F2A' }}>
                 See All

@@ -31,8 +31,7 @@ interface TabItem {
 }
 
 const TAB_ITEMS: TabItem[] = [
-  { label: 'Home', path: '/dashboard', icon: FiHome },
-  { label: 'Studio', path: '/studio', icon: FiEdit3 },
+  { label: 'Home', path: '/studio', icon: FiHome },
   { label: 'Insights', path: '/studio/insights', icon: FiBarChart2 },
   { label: 'Ask Phoo', path: '/assistant', icon: FiMessageCircle },
 ];
@@ -59,7 +58,7 @@ export const BottomTabBar: FC = () => {
         {TAB_ITEMS.map((tab) => {
           const isActive =
             pathname === tab.path ||
-            (tab.path !== '/dashboard' && pathname?.startsWith(tab.path + '/'));
+            (tab.path !== '/studio' && pathname?.startsWith(tab.path + '/'));
 
           return (
             <Link key={tab.path} href={tab.path} style={{ textDecoration: 'none', flex: 1 }}>

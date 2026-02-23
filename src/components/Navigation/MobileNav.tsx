@@ -187,11 +187,11 @@ export const MobileNav: FC<Props> = ({
             </>
           )}
 
-          {user && (
+          {user && brandLabel !== 'Content Studio' && (
             <>
               <Divider borderColor={borderColor} my={4} />
 
-              <Link href="/dashboard" style={{ textDecoration: 'none' }} onClick={onClose}>
+              <Link href="/studio" style={{ textDecoration: 'none' }} onClick={onClose}>
                 <HStack
                   px={6}
                   py={3}
@@ -203,7 +203,7 @@ export const MobileNav: FC<Props> = ({
                 >
                   <Icon as={FiArrowLeft} boxSize={5} />
                   <Text fontSize="sm" fontWeight="medium">
-                    Back to Dashboard
+                    Back to Studio
                   </Text>
                 </HStack>
               </Link>

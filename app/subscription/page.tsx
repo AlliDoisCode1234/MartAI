@@ -200,7 +200,7 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     if (isActiveBetaUser) {
-      router.replace('/dashboard');
+      router.replace('/studio');
     }
   }, [isActiveBetaUser, router]);
 

@@ -25,6 +25,7 @@ import {
   SimpleGrid,
   Badge,
   Select,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -33,6 +34,7 @@ import { CalendarCard } from '@/src/components/studio/CalendarCard';
 import { FiChevronLeft, FiChevronRight, FiPlus, FiCalendar } from 'react-icons/fi';
 import Link from 'next/link';
 import { Id } from '@/convex/_generated/dataModel';
+import { QuickCreateModal } from '@/src/components/studio/calendar/QuickCreateModal';
 
 // ============================================================================
 // Types
@@ -118,19 +120,19 @@ interface DayCellProps {
   date: Date;
   isCurrentMonth: boolean;
   pieces: ContentPiece[];
+  onDayClick?: (date: Date) => void;
 }
 
-function DayCell({ date, isCurrentMonth, pieces }: DayCellProps) {
-  const router = useRouter();
+function DayCell({ date, isCurrentMonth, pieces, onDayClick }: DayCellProps) {
   const today = isToday(date);
   const [isHovered, setIsHovered] = useState(false);
 
   const handleQuickCreate = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      router.push(`/studio/create?scheduledDate=${date.getTime()}`);
+      onDayClick?.(date);
     },
-    [router, date]
+    [onDayClick, date]
   );
 
   return (
@@ -146,7 +148,7 @@ function DayCell({ date, isCurrentMonth, pieces }: DayCellProps) {
       cursor={isCurrentMonth ? 'pointer' : 'default'}
       onMouseEnter={() => isCurrentMonth && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={isCurrentMonth ? handleQuickCreate : undefined}
+      onClick={isCurrentMonth && onDayClick ? () => onDayClick(date) : undefined}
       _hover={{
         bg: isCurrentMonth ? 'rgba(255, 255, 255, 0.05)' : undefined,
         borderColor: isCurrentMonth && !today ? 'rgba(255, 157, 0, 0.2)' : undefined,
@@ -200,6 +202,8 @@ function DayCell({ date, isCurrentMonth, pieces }: DayCellProps) {
 // ============================================================================
 
 export default function CalendarPage() {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
 
@@ -259,6 +263,11 @@ export default function CalendarPage() {
   const p0Count = (scheduledContent ?? []).filter(
     (p: { priority?: string }) => p.priority === 'P0'
   ).length;
+
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date);
+    onOpen();
+  };
 
   return (
     <StudioLayout>
@@ -438,6 +447,13 @@ export default function CalendarPage() {
           </HStack>
         </HStack>
       </VStack>
+
+      <QuickCreateModal
+        isOpen={isOpen}
+        onClose={onClose}
+        selectedDate={selectedDate}
+        projectId={projectId}
+      />
     </StudioLayout>
   );
 }

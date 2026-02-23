@@ -86,14 +86,18 @@ export default function CreateContentPage() {
   const preselectedType = searchParams.get('type') as ContentType | null;
   const fromStrategy = searchParams.get('fromStrategy') === 'true';
   const scheduledDateParam = searchParams.get('scheduledDate');
-  const scheduledDate = scheduledDateParam ? new Date(Number(scheduledDateParam)) : null;
+  const parsedDate = scheduledDateParam ? new Date(Number(scheduledDateParam)) : null;
+  const scheduledDate = parsedDate && !isNaN(parsedDate.getTime()) ? parsedDate : null;
+
+  const initialKeyword = searchParams.get('keyword') || '';
+  const initialTitle = searchParams.get('title') || '';
 
   const [step, setStep] = useState<'type' | 'details' | 'generating' | 'auto-generating'>(
     preselectedType ? 'details' : 'type'
   );
   const [selectedType, setSelectedType] = useState<ContentType | null>(preselectedType);
-  const [title, setTitle] = useState('');
-  const [keywords, setKeywords] = useState('');
+  const [title, setTitle] = useState(initialTitle);
+  const [keywords, setKeywords] = useState(initialKeyword);
   const [progress, setProgress] = useState(0);
   const [autoProgress, setAutoProgress] = useState(0);
   const [showComeBack, setShowComeBack] = useState(false);
@@ -203,7 +207,8 @@ export default function CreateContentPage() {
             contentPieceId,
             publishDate: scheduledDate.getTime(),
           });
-        } catch {
+        } catch (err) {
+          console.error('Failed to auto-schedule content:', err);
           // Non-critical: content created but scheduling may fail if date is past
         }
       }

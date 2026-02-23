@@ -59,7 +59,7 @@ export function AdminGuard({ children, requiredRole = 'admin' }: AdminGuardProps
     if (!allowedRoles.includes(userRole)) {
       setAuthorized(false);
       // Regular users go to member portal
-      router.replace('/dashboard');
+      router.replace('/studio');
       return;
     }
 

@@ -75,7 +75,7 @@ export const EMAIL_TEMPLATES: Record<EmailTrigger, EmailTemplate> = {
     martMessage:
       "Great progress! You've unlocked new features. Let me show you what you can do now.",
     ctaLabel: 'Explore New Features',
-    ctaUrl: '/dashboard',
+    ctaUrl: '/studio',
   },
 
   [EMAIL_TRIGGERS.FIRST_KEYWORDS]: {
@@ -125,7 +125,7 @@ export const EMAIL_TEMPLATES: Record<EmailTrigger, EmailTemplate> = {
     martMessage:
       "It's been a week since I saw you! Your keyword opportunities are still here. Ready to continue?",
     ctaLabel: 'Jump Back In',
-    ctaUrl: '/dashboard',
+    ctaUrl: '/studio',
   },
 
   [EMAIL_TRIGGERS.INACTIVE_14_DAYS]: {
@@ -135,7 +135,7 @@ export const EMAIL_TEMPLATES: Record<EmailTrigger, EmailTemplate> = {
     martMessage:
       "Just a friendly nudge - consistent content is key to SEO success. I've got fresh keyword data waiting for you!",
     ctaLabel: 'See What You Missed',
-    ctaUrl: '/dashboard',
+    ctaUrl: '/studio',
   },
 
   [EMAIL_TRIGGERS.INCOMPLETE_BRIEF]: {

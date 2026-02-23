@@ -109,6 +109,7 @@ export default function ContentEditorPage() {
   const savedIndicatorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasHydratedRef = useRef(false);
   const isSavingRef = useRef(false);
+  const latestContentRef = useRef('');
 
   // WordPress publishing
   const { isOpen: isWpModalOpen, onOpen: onWpModalOpen, onClose: onWpModalClose } = useDisclosure();
@@ -154,7 +155,10 @@ export default function ContentEditorPage() {
   );
 
   useEffect(() => {
-    if (!content) return;
+    if (!content) {
+      setLiveScore(null);
+      return;
+    }
     if (scoreTimerRef.current) clearTimeout(scoreTimerRef.current);
     scoreTimerRef.current = setTimeout(() => {
       const result = scoreContentRealTime({
@@ -171,7 +175,12 @@ export default function ContentEditorPage() {
   // ── Auto-Save (2s debounce) ──────────────────────────────────────
   const performSave = useCallback(
     async (contentToSave: string, silent = false) => {
-      if (!contentPiece || isSavingRef.current) return;
+      if (!contentPiece) return;
+      if (isSavingRef.current) {
+        if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = setTimeout(() => performSave(contentToSave, silent), 1000);
+        return;
+      }
       isSavingRef.current = true;
       const saving = !silent;
       if (saving) setIsSaving(true);
@@ -182,7 +191,9 @@ export default function ContentEditorPage() {
           content: contentToSave,
           wordCount: countWords(contentToSave),
         });
-        setHasChanges(false);
+        if (latestContentRef.current === contentToSave) {
+          setHasChanges(false);
+        }
         setSaveStatus('saved');
         // Clear "saved" indicator after 3s
         if (savedIndicatorTimerRef.current) clearTimeout(savedIndicatorTimerRef.current);
@@ -207,6 +218,7 @@ export default function ContentEditorPage() {
 
   const handleContentChange = (value: string) => {
     setContent(value);
+    latestContentRef.current = value;
     setHasChanges(true);
     setSaveStatus('idle');
     // Schedule auto-save
@@ -343,7 +355,7 @@ export default function ContentEditorPage() {
     } catch (e: unknown) {
       toast({
         title: 'Schedule failed',
-        description: e instanceof Error ? e.message : 'Unknown error',
+        description: 'An error occurred while scheduling. Please try again.',
         status: 'error',
         duration: 3000,
       });

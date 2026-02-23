@@ -111,7 +111,7 @@ export function PRScoreWidget({ score, loading }: Props) {
             <MotionText
               fontSize="5xl"
               fontWeight="bold"
-              bgGradient="linear(to-r, green.400, blue.400, purple.400)"
+              bgGradient="linear(to-r, green.400, orange.400, red.400)"
               bgClip="text"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}

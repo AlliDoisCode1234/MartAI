@@ -14,17 +14,17 @@
 
 export const STUDIO_COLORS = {
   // Backgrounds
-  pageBg: '#0D0D0D',
-  pageBgEnd: '#1A1025',
-  cardBg: 'rgba(25, 18, 35, 0.8)',
-  cardBgSolid: '#191225',
-  cardBgHover: 'rgba(35, 25, 50, 0.9)',
-  sidebarBg: 'rgba(13, 10, 20, 0.95)',
+  pageBg: '#0f172a',
+  pageBgEnd: '#1e1b4b',
+  cardBg: 'rgba(255, 255, 255, 0.03)',
+  cardBgSolid: '#1e1b4b',
+  cardBgHover: 'rgba(255, 255, 255, 0.05)',
+  sidebarBg: 'rgba(26, 12, 0, 0.95)', // kept for reference, but sidebar is light now
 
   // Borders
-  cardBorder: 'rgba(255, 157, 0, 0.12)',
+  cardBorder: 'rgba(255, 255, 255, 0.1)',
   subtleBorder: 'rgba(255, 255, 255, 0.08)',
-  activeBorder: 'rgba(255, 157, 0, 0.3)',
+  activeBorder: 'rgba(255, 255, 255, 0.2)',
 
   // Accents
   amber: '#FF9D00',
@@ -56,10 +56,10 @@ export const STUDIO_GRADIENTS = {
   pageBg: `linear-gradient(180deg, ${STUDIO_COLORS.pageBg} 0%, ${STUDIO_COLORS.pageBgEnd} 100%)`,
 
   // Hero KPI card backgrounds (each card has a unique tinted gradient)
-  hero1: 'linear-gradient(135deg, #1a1035 0%, #2d1b4e 100%)', // Purple-tinted
-  hero2: 'linear-gradient(135deg, #1a2035 0%, #1b2d4e 100%)', // Blue-tinted
-  hero3: 'linear-gradient(135deg, #1a3520 0%, #1b4e2d 100%)', // Green-tinted
-  hero4: 'linear-gradient(135deg, #351a10 0%, #4e2b1b 100%)', // Amber-tinted
+  hero1: 'linear-gradient(135deg, #2b1305 0%, #4e1b05 100%)', // Orange-tinted
+  hero2: 'linear-gradient(135deg, #351a10 0%, #4e2b1b 100%)', // Amber-tinted
+  hero3: 'linear-gradient(135deg, #1f2b10 0%, #2f4e1b 100%)', // Green-tinted
+  hero4: 'linear-gradient(135deg, #2b1021 0%, #4e1b3a 100%)', // Coral/Pink-tinted
 
   // Accent gradients
   amber: `linear-gradient(135deg, ${STUDIO_COLORS.amber}, ${STUDIO_COLORS.amberDark})`,
@@ -87,7 +87,7 @@ export const STUDIO_CARD_HOVER = {
   bg: STUDIO_COLORS.cardBgHover,
   borderColor: STUDIO_COLORS.activeBorder,
   transform: 'translateY(-1px)',
-  boxShadow: '0 8px 32px rgba(255, 157, 0, 0.08)',
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
 } as const;
 
 // ============================================================================

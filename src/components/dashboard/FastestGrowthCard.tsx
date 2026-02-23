@@ -118,7 +118,7 @@ export function FastestGrowthCard({ firstPageReadyCount, contentRefreshCount }: 
               </Text>
             )}
 
-            <Link href="/studio/strategy">
+            <Link href="/studio/create">
               <Button
                 size="sm"
                 bg="linear-gradient(135deg, #e53e3e 0%, #F99F2A 100%)"
@@ -133,7 +133,7 @@ export function FastestGrowthCard({ firstPageReadyCount, contentRefreshCount }: 
                 fontWeight="semibold"
                 fontSize="sm"
               >
-                View SEO Action Plan
+                Create Content
               </Button>
             </Link>
           </VStack>

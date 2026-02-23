@@ -39,15 +39,16 @@ const publicNavItems: NavItem[] = [
 
 // User navigation (logged in)
 const userNavItems: NavItem[] = [
-  { label: 'Dashboard', path: '/dashboard', icon: FiHome },
-  { label: 'Content Studio', path: '/studio', icon: FiEdit3 },
+  { label: 'Library', path: '/studio/library' },
+  { label: 'Calendar', path: '/studio/calendar' },
+  { label: 'Keywords', path: '/studio/keywords' },
+  { label: 'Create', path: '/studio/create' },
+  { label: 'Insights', path: '/studio/insights' },
+  { label: 'Brand Profile', path: '/studio/brand-profile' },
 ];
 
 // Admin navigation (same as user - Admin portal accessible only via UserDropdown)
-const adminNavItems: NavItem[] = [
-  { label: 'Dashboard', path: '/dashboard', icon: FiHome },
-  { label: 'Content Studio', path: '/studio', icon: FiEdit3 },
-];
+const adminNavItems: NavItem[] = [];
 
 export const Navigation: FC = () => {
   const pathname = usePathname();
@@ -82,25 +83,18 @@ export const Navigation: FC = () => {
 
   // STUDIO CONTEXT: Minimal dark top bar
   if (isStudioContext && isAuthenticated) {
-    const studioNavItems = [
-      { label: 'Library', path: '/studio/library' },
-      { label: 'Calendar', path: '/studio/calendar' },
-      { label: 'Keywords', path: '/studio/keywords' },
-      { label: 'Create', path: '/studio/create' },
-      { label: 'Insights', path: '/studio/insights' },
-      { label: 'Settings', path: '/studio/settings' },
-    ];
     return (
       <>
         <Box
           as="nav"
-          aria-label="Content Studio"
-          bg="rgba(13, 13, 13, 0.98)"
-          borderBottom="1px solid rgba(255, 255, 255, 0.08)"
+          aria-label="Content Studio (Mobile)"
+          bg="white"
+          borderBottom="1px solid"
+          borderColor="gray.200"
           position="sticky"
           top={0}
           zIndex={1000}
-          backdropFilter="blur(10px)"
+          display={{ base: 'block', md: 'none' }}
         >
           <Box maxW="container.xl" mx="auto" px={{ base: 4, md: 8 }}>
             <HStack justify="space-between" h={14}>
@@ -110,38 +104,20 @@ export const Navigation: FC = () => {
                   aria-label="Open studio navigation"
                   icon={<Icon as={FiMenu} />}
                   variant="ghost"
-                  color="gray.400"
-                  _hover={{ color: 'white', bg: 'whiteAlpha.100' }}
+                  color="gray.600"
+                  _hover={{ color: 'brand.orange', bg: 'orange.50' }}
                   size="sm"
                   display={{ base: 'flex', md: 'none' }}
                   onClick={onOpenMobileNav}
                   minW="44px"
                   minH="44px"
                 />
-                {/* Desktop: Exit link */}
-                <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                  <HStack
-                    spacing={2}
-                    color="gray.400"
-                    _hover={{ color: 'white' }}
-                    transition="color 0.2s"
-                    display={{ base: 'none', md: 'flex' }}
-                  >
-                    <Icon as={FiArrowLeft} boxSize={4} />
-                    <Text fontSize="sm" fontWeight="medium">
-                      Exit
-                    </Text>
-                  </HStack>
+                {/* Desktop: Removed redundant Exit link */}
+                <Link href="/studio" style={{ textDecoration: 'none' }}>
+                  <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold" color="brand.orange">
+                    Phoo
+                  </Text>
                 </Link>
-                <Box
-                  h={4}
-                  w="1px"
-                  bg="rgba(255, 255, 255, 0.1)"
-                  display={{ base: 'none', md: 'block' }}
-                />
-                <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold" color="brand.orange">
-                  Content Studio
-                </Text>
               </HStack>
 
               {/* Ask Phoo + User menu */}
@@ -150,8 +126,8 @@ export const Navigation: FC = () => {
                   <Button
                     size="sm"
                     variant="ghost"
-                    color="gray.400"
-                    _hover={{ color: 'white', bg: 'whiteAlpha.100' }}
+                    color="gray.600"
+                    _hover={{ color: 'brand.orange', bg: 'orange.50' }}
                     leftIcon={<Icon as={FiMessageCircle} />}
                     display={{ base: 'none', md: 'flex' }}
                   >
@@ -161,8 +137,8 @@ export const Navigation: FC = () => {
                     aria-label="Ask Phoo"
                     icon={<Icon as={FiMessageCircle} />}
                     variant="ghost"
-                    color="gray.400"
-                    _hover={{ color: 'white', bg: 'whiteAlpha.100' }}
+                    color="gray.600"
+                    _hover={{ color: 'brand.orange', bg: 'orange.50' }}
                     size="sm"
                     display={{ base: 'flex', md: 'none' }}
                     minW="44px"
@@ -177,9 +153,10 @@ export const Navigation: FC = () => {
         <MobileNav
           isOpen={isMobileNavOpen}
           onClose={onCloseMobileNav}
-          navItems={studioNavItems}
-          brandLabel="Content Studio"
+          navItems={userNavItems}
+          brandLabel="Phoo"
           brandColor="brand.orange"
+          variant="light"
           user={
             user
               ? {
@@ -210,7 +187,7 @@ export const Navigation: FC = () => {
         <Box
           as="nav"
           aria-label="Admin Portal"
-          bg="rgba(13, 13, 13, 0.98)"
+          bg="rgba(26, 12, 0, 0.98)"
           borderBottom="1px solid rgba(255, 255, 255, 0.08)"
           position="sticky"
           top={0}
@@ -234,7 +211,7 @@ export const Navigation: FC = () => {
                   minH="44px"
                 />
                 {/* Desktop: Exit link */}
-                <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                <Link href="/studio" style={{ textDecoration: 'none' }}>
                   <HStack
                     spacing={2}
                     color="gray.400"
@@ -326,7 +303,7 @@ export const Navigation: FC = () => {
         <Box maxW="container.xl" mx="auto" px={{ base: 4, md: 8 }}>
           <HStack justify="space-between" h={16}>
             {/* Left: Logo */}
-            <Link href={isAuthenticated ? '/dashboard' : '/'} style={{ textDecoration: 'none' }}>
+            <Link href={isAuthenticated ? '/studio' : '/'} style={{ textDecoration: 'none' }}>
               <Text fontSize="xl" fontWeight="bold" color="brand.orange">
                 Phoo
               </Text>

@@ -153,7 +153,7 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        bg="linear-gradient(135deg, rgba(249, 159, 42, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)"
+        bg="linear-gradient(135deg, rgba(249, 159, 42, 0.08) 0%, rgba(255, 107, 0, 0.08) 100%)"
         border="1px solid rgba(249, 159, 42, 0.2)"
       >
         <HStack
@@ -236,14 +236,14 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
             label="Search Clicks"
             value={formatNumber(gscStats.totalClicks)}
             icon={FiMousePointer}
-            color="#60a5fa"
+            color="#FF9D00"
             sublabel="Total clicks from Google"
           />
           <StatCard
             label="Search Views"
             value={formatNumber(gscStats.totalImpressions)}
             icon={FiEye}
-            color="#a78bfa"
+            color="#FF6B00"
             sublabel="Impressions in search"
           />
           <StatCard
@@ -281,12 +281,12 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
                       {kw.keyword}
                     </Td>
                     <Td py={2} isNumeric>
-                      <Text color="blue.400" fontSize="xs">
+                      <Text color="orange.400" fontSize="xs">
                         {kw.clicks} clicks
                       </Text>
                     </Td>
                     <Td py={2} isNumeric>
-                      <Text color="purple.400" fontSize="xs">
+                      <Text color="red.400" fontSize="xs">
                         {formatNumber(kw.impressions)} views
                       </Text>
                     </Td>

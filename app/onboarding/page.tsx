@@ -202,7 +202,7 @@ export default function OnboardingPage() {
       // Complete onboarding and redirect to dashboard
       completeOnboarding()
         .then(() => {
-          router.push('/dashboard');
+          router.push('/studio');
         })
         .catch(console.error);
     } else if (success === 'false') {
@@ -264,7 +264,7 @@ export default function OnboardingPage() {
   // Redirect completed users to dashboard
   useEffect(() => {
     if (!authLoading && user?.onboardingStatus === 'completed') {
-      router.replace('/dashboard');
+      router.replace('/studio');
     }
   }, [authLoading, user?.onboardingStatus, router]);
 
@@ -514,7 +514,7 @@ export default function OnboardingPage() {
     await completeOnboarding();
 
     // Go directly to dashboard - content generation happens in background
-    router.push('/dashboard');
+    router.push('/studio');
   };
 
   // Main render (guards already handled above)

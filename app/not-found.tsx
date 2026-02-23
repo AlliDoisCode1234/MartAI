@@ -55,7 +55,7 @@ export default function NotFound() {
             colorScheme="brand"
             variant="solid"
             leftIcon={<ArrowBackIcon />}
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/studio')}
             px={8}
             py={6}
             fontSize="lg"
