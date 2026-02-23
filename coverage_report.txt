@@ -1,0 +1,128 @@
+
+ RUN  v4.0.16 C:/Users/josia/Desktop/Anti_MartAI/MartAI
+      Coverage enabled with v8
+
+ ✓ __tests__/integration/wordpress.integration.test.ts (22 tests) 24ms
+stdout | convex/lib/services/intelligence.test.ts > IntelligenceService > ingest > should call rag.add mutation
+[IntelligenceService] Ingested test-source
+
+stdout | convex/lib/services/intelligence.test.ts > IntelligenceService > retrieve > should call rag.search and format results
+[IntelligenceService] Retrieved 56 chars of context for query: "test query"
+
+ ✓ convex/contentGeneration.test.ts (17 tests) 36ms
+stdout | convex/lib/services/intelligence.test.ts > IntelligenceService > generate > should generate text without reflection
+[IntelligenceService] Generating (Trace: test-uuid)...
+
+stdout | convex/lib/services/intelligence.test.ts > IntelligenceService > generate > should perform reflection loop when useReflection is true
+[IntelligenceService] Generating (Trace: test-uuid)...
+
+stdout | convex/lib/services/intelligence.test.ts > IntelligenceService > generate > should perform reflection loop when useReflection is true
+[IntelligenceService] Critiquing (Trace: test-uuid)...
+
+stdout | convex/lib/services/intelligence.test.ts > IntelligenceService > generate > should perform reflection loop when useReflection is true
+[IntelligenceService] Refining (Trace: test-uuid)...
+
+stdout | convex/lib/services/intelligence.test.ts > IntelligenceService > generate > should perform reflection loop when useReflection is true
+[IntelligenceService] Trace test-uuid Complete. Critique: Critique: Improve X...
+
+stdout | convex/lib/services/intelligence.test.ts > IntelligenceService > generate > should skip refinement if critique says "No changes needed"
+[IntelligenceService] Generating (Trace: test-uuid)...
+
+stdout | convex/lib/services/intelligence.test.ts > IntelligenceService > generate > should skip refinement if critique says "No changes needed"
+[IntelligenceService] Critiquing (Trace: test-uuid)...
+
+stdout | convex/lib/services/intelligence.test.ts > IntelligenceService > generate > should skip refinement if critique says "No changes needed"
+[IntelligenceService] Trace test-uuid Complete - No refinement needed.
+
+ ✓ convex/lib/services/intelligence.test.ts (8 tests | 1 skipped) 35ms
+ ❯ convex/phoo/agent/chat.integration.test.ts (19 tests | 1 failed) 19ms
+       × restricts to Phoo product and SEO topics only 12ms
+       ✓ blocks work requests explicitly 0ms
+       ✓ includes pricing information 0ms
+       ✓ includes call-to-action requirement 0ms
+       ✓ specifies approved topics 0ms
+       ✓ maintains SEO scope restriction 0ms
+       ✓ includes refusal examples for off-topic questions 0ms
+       ✓ explains Phoo Rating components 0ms
+       ✓ includes score ranges with descriptions 0ms
+       ✓ provides improvement guidance 0ms
+       ✓ FAQ mode is stricter than authenticated mode 0ms
+       ✓ only authenticated mode mentions tools and detailed features 0ms
+     ✓ guest users (no userId) should use phooFaqAgent 0ms
+     ✓ authenticated users (with userId) should use phooAgent 0ms
+     ✓ guest users should not receive tools 1ms
+     ✓ authenticated users should receive phooTools 0ms
+       ✓ work requests should redirect to signup 0ms
+       ✓ SEO questions should receive relevant help 0ms
+       ✓ off-topic questions should be redirected 0ms
+ ✓ __tests__/convex/security/rbac.test.ts (9 tests) 31ms
+ ✓ convex/autoGeneration.integration.test.ts (65 tests) 47ms
+ ✓ __tests__/integration/wix-client.test.ts (19 tests) 97ms
+ ✓ __tests__/integration/invitations.integration.test.ts (13 tests) 33ms
+ ✓ __tests__/convex/security/subscriptions.test.ts (22 tests) 37ms
+ ✓ __tests__/convex/keywords/keywords.test.ts (15 tests) 37ms
+ ✓ __tests__/convex/security/apiKeys.test.ts (19 tests) 41ms
+ ✓ __tests__/integration/gsc.integration.test.ts (13 tests) 41ms
+ ✓ __tests__/convex/phoo/phooRating.test.ts (24 tests) 40ms
+ ✓ __tests__/integration/shopify-client.test.ts (25 tests) 116ms
+ ✓ __tests__/integration/keywords.integration.test.ts (17 tests) 40ms
+ ✓ __tests__/convex/clusters/clusters.test.ts (21 tests) 47ms
+ ✓ __tests__/convex/ai/writerPersonas.test.ts (6 tests) 134ms
+ ✓ __tests__/integration/wordpress-client.test.ts (44 tests) 173ms
+stdout | __tests__/convex/security/impersonation.test.ts > Admin Impersonation > cleanupExpiredSessions > should mark expired sessions as expired
+[ImpersonationCleanup] Marked 1 expired sessions
+
+ ✓ convex/contentPieces.integration.test.ts (14 tests) 159ms
+ ✓ convex/auth/passwordRateLimit.test.ts (4 tests) 194ms
+ ✓ convex/waitlist.test.ts (9 tests) 110ms
+ ✓ __tests__/convex/content/contentStudio.test.ts (76 tests) 12ms
+stdout | handler (C:\Users\josia\Desktop\Anti_MartAI\MartAI\convex\integrations\hubspot.ts:527:15)
+[HubSpot] Skipping waitlist sync - no API key configured
+[HubSpot] Skipping waitlist sync - no API key configured
+
+stdout | convex/pagination.integration.test.ts > Admin RBAC: Security Enforcement > should allow super_admin to updateUserRole
+[AdminRoleChange] User 10000;users role changed to admin
+
+ ✓ __tests__/convex/security/impersonation.test.ts (11 tests) 226ms
+ ✓ convex/canonical/canonical.integration.test.ts (13 tests) 222ms
+stdout | convex/pagination.integration.test.ts > Admin RBAC: Security Enforcement > should filter by account status in listUsers
+[AdminStatusChange] User 10000;users status changed to suspended
+
+ ✓ __tests__/lib/writerPersonas.test.ts (20 tests) 22ms
+ ✓ convex/pagination.integration.test.ts (12 tests) 264ms
+ ✓ convex/integrations/cms-capability.integration.test.ts (6 tests) 282ms
+ ✓ convex/platformConnections.integration.test.ts (12 tests) 307ms
+ ✓ convex/integrations/__tests__/serviceAccount.test.ts (16 tests) 5ms
+ ✓ __tests__/flows/calendarFlow.test.ts (6 tests) 6ms
+ ✓ convex/contentPieces.test.ts (14 tests) 15ms
+ ✓ __tests__/lib/qualityEngine.test.ts (37 tests) 14ms
+ ✓ __tests__/integration/contentGeneration.integration.test.ts (22 tests) 304ms
+ ✓ lib/constants/studioTokens.test.ts (23 tests) 9ms
+ ✓ lib/insightsTransforms.test.ts (44 tests) 7ms
+ ✓ __tests__/unit/cmsCapabilities.test.ts (24 tests) 7ms
+ ✓ convex/analytics/analyticsTransforms.test.ts (23 tests) 6ms
+ ✓ __tests__/lib/scoring.test.ts (22 tests) 7ms
+ ✓ __tests__/integration/shopify.integration.test.ts (14 tests) 7ms
+ ✓ lib/seoScoring.test.ts (20 tests) 7ms
+ ✓ __tests__/api-security.test.ts (19 tests) 5ms
+ ✓ __tests__/unit/exporters.test.ts (27 tests) 8ms
+ ✓ convex/integrations/hubspotMapper.test.ts (15 tests) 7ms
+ ✓ __tests__/utils/priorityDisplay.test.ts (10 tests) 5ms
+ ✓ __tests__/integration/wix.integration.test.ts (9 tests) 4ms
+ ✓ __tests__/hooks/usePhooRating.test.ts (5 tests) 3ms
+ ✓ __tests__/convex/m1-flow.test.ts (15 tests | 1 skipped) 6ms
+ ✓ __tests__/integration/subscriptions.integration.test.ts (20 tests) 690ms
+     ✓ PLAN_LIMITS exports expected tiers  672ms
+ ✓ __tests__/convex/articleWorkflow.integration.test.ts (8 tests) 729ms
+       ✓ should block generation when user has no active subscription  702ms
+ ✓ convex/onboarding.integration.test.ts (15 tests) 848ms
+     ✓ should create project for user WITH GSC data available  689ms
+ ✓ convex/admin.integration.test.ts (23 tests) 903ms
+     ✓ should reject admin from getSubscriptionMetrics  547ms
+
+ Test Files  1 failed | 50 passed (51)
+      Tests  1 failed | 983 passed | 2 skipped (986)
+     Errors  6 errors
+   Start at  01:48:12
+   Duration  1.90s (transform 8.41s, setup 0ms, import 15.86s, tests 6.43s, environment 6ms)
+

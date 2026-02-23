@@ -23,19 +23,19 @@ import type { Id } from '../../convex/_generated/dataModel';
 
 const FIXTURES = {
   planLimits: {
-    solo: {
+    starter: {
       maxUrls: 1,
-      maxKeywordIdeas: 250,
-      maxAiReports: 4,
-      maxContentPieces: 4,
+      maxKeywordIdeas: 500,
+      maxAiReports: 10,
+      maxContentPieces: 15,
       maxTeamMembers: 1,
     },
-    growth: {
+    engine: {
       maxUrls: 3,
-      maxKeywordIdeas: 1000,
-      maxAiReports: 12,
-      maxContentPieces: 12,
-      maxTeamMembers: 3,
+      maxKeywordIdeas: 2000,
+      maxAiReports: 30,
+      maxContentPieces: 50,
+      maxTeamMembers: 5,
     },
     enterprise: {
       maxUrls: 999999,
@@ -46,8 +46,8 @@ const FIXTURES = {
     },
   },
   prices: {
-    solo: 59,
-    growth: 149,
+    starter: 197,
+    engine: 397,
     enterprise: 0, // Contact sales
   },
 };
@@ -60,25 +60,25 @@ describe('Plan Configuration', () => {
   test('PLAN_LIMITS exports expected tiers', async () => {
     const { PLAN_LIMITS } = await import('../../convex/subscriptions/subscriptions');
 
-    expect(PLAN_LIMITS.solo).toBeDefined();
-    expect(PLAN_LIMITS.growth).toBeDefined();
+    expect(PLAN_LIMITS.starter).toBeDefined();
+    expect(PLAN_LIMITS.engine).toBeDefined();
     expect(PLAN_LIMITS.enterprise).toBeDefined();
   });
 
-  test('solo plan has correct limits', async () => {
+  test('starter plan has correct limits', async () => {
     const { PLAN_LIMITS } = await import('../../convex/subscriptions/subscriptions');
 
-    expect(PLAN_LIMITS.solo.priceMonthly).toBe(59);
-    expect(PLAN_LIMITS.solo.features.maxUrls).toBe(1);
-    expect(PLAN_LIMITS.solo.features.maxKeywordIdeas).toBe(250);
+    expect(PLAN_LIMITS.starter.priceMonthly).toBe(197);
+    expect(PLAN_LIMITS.starter.features.maxUrls).toBe(1);
+    expect(PLAN_LIMITS.starter.features.maxKeywordIdeas).toBe(500);
   });
 
-  test('growth plan has correct limits', async () => {
+  test('engine plan has correct limits', async () => {
     const { PLAN_LIMITS } = await import('../../convex/subscriptions/subscriptions');
 
-    expect(PLAN_LIMITS.growth.priceMonthly).toBe(149);
-    expect(PLAN_LIMITS.growth.features.maxUrls).toBe(3);
-    expect(PLAN_LIMITS.growth.features.maxKeywordIdeas).toBe(1000);
+    expect(PLAN_LIMITS.engine.priceMonthly).toBe(397);
+    expect(PLAN_LIMITS.engine.features.maxUrls).toBe(3);
+    expect(PLAN_LIMITS.engine.features.maxKeywordIdeas).toBe(2000);
   });
 
   test('enterprise has unlimited urls', async () => {
@@ -90,16 +90,16 @@ describe('Plan Configuration', () => {
   test('planConfig function returns config for valid tier', async () => {
     const { planConfig } = await import('../../convex/subscriptions/subscriptions');
 
-    const soloConfig = planConfig('solo');
-    expect(soloConfig).toBeDefined();
-    expect(soloConfig?.priceMonthly).toBe(59);
+    const starterConfig = planConfig('starter');
+    expect(starterConfig).toBeDefined();
+    expect(starterConfig?.priceMonthly).toBe(197);
   });
 
   test('planConfig handles case insensitivity', async () => {
     const { planConfig } = await import('../../convex/subscriptions/subscriptions');
 
-    const config = planConfig('GROWTH');
-    expect(config?.priceMonthly).toBe(149);
+    const config = planConfig('ENGINE');
+    expect(config?.priceMonthly).toBe(397);
   });
 
   test('planConfig returns null for invalid tier', async () => {
@@ -127,10 +127,10 @@ describe('Subscription Data Layer', () => {
     const subscriptionId = await t.run(async (ctx) => {
       return ctx.db.insert('subscriptions', {
         userId,
-        planTier: 'solo',
+        planTier: 'starter',
         status: 'active',
-        priceMonthly: 59,
-        features: FIXTURES.planLimits.solo,
+        priceMonthly: 197,
+        features: FIXTURES.planLimits.starter,
         billingCycle: 'monthly',
         startsAt: Date.now(),
         createdAt: Date.now(),
@@ -141,7 +141,7 @@ describe('Subscription Data Layer', () => {
     expect(subscriptionId).toBeDefined();
 
     const subscription = await t.run(async (ctx) => ctx.db.get(subscriptionId));
-    expect(subscription?.planTier).toBe('solo');
+    expect(subscription?.planTier).toBe('starter');
     expect(subscription?.status).toBe('active');
   });
 
@@ -149,10 +149,10 @@ describe('Subscription Data Layer', () => {
     await t.run(async (ctx) => {
       return ctx.db.insert('subscriptions', {
         userId,
-        planTier: 'growth',
+        planTier: 'engine',
         status: 'active',
-        priceMonthly: 149,
-        features: FIXTURES.planLimits.growth,
+        priceMonthly: 397,
+        features: FIXTURES.planLimits.engine,
         startsAt: Date.now(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -166,36 +166,36 @@ describe('Subscription Data Layer', () => {
         .first();
     });
 
-    expect(subscription?.planTier).toBe('growth');
+    expect(subscription?.planTier).toBe('engine');
   });
 
   test('updates subscription plan tier', async () => {
     const subscriptionId = await t.run(async (ctx) => {
       return ctx.db.insert('subscriptions', {
         userId,
-        planTier: 'solo',
+        planTier: 'starter',
         status: 'active',
-        priceMonthly: 59,
-        features: FIXTURES.planLimits.solo,
+        priceMonthly: 197,
+        features: FIXTURES.planLimits.starter,
         startsAt: Date.now(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
     });
 
-    // Upgrade to growth
+    // Upgrade to engine
     await t.run(async (ctx) => {
       await ctx.db.patch(subscriptionId, {
-        planTier: 'growth',
-        priceMonthly: 149,
-        features: FIXTURES.planLimits.growth,
+        planTier: 'engine',
+        priceMonthly: 397,
+        features: FIXTURES.planLimits.engine,
         updatedAt: Date.now(),
       });
     });
 
     const updated = await t.run(async (ctx) => ctx.db.get(subscriptionId));
-    expect(updated?.planTier).toBe('growth');
-    expect(updated?.priceMonthly).toBe(149);
+    expect(updated?.planTier).toBe('engine');
+    expect(updated?.priceMonthly).toBe(397);
   });
 });
 
@@ -216,10 +216,10 @@ describe('Subscription Status Transitions', () => {
     const subscriptionId = await t.run(async (ctx) => {
       return ctx.db.insert('subscriptions', {
         userId,
-        planTier: 'solo',
+        planTier: 'starter',
         status: 'active',
-        priceMonthly: 59,
-        features: FIXTURES.planLimits.solo,
+        priceMonthly: 197,
+        features: FIXTURES.planLimits.starter,
         startsAt: Date.now(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -234,10 +234,10 @@ describe('Subscription Status Transitions', () => {
     const subscriptionId = await t.run(async (ctx) => {
       return ctx.db.insert('subscriptions', {
         userId,
-        planTier: 'solo',
+        planTier: 'starter',
         status: 'active',
-        priceMonthly: 59,
-        features: FIXTURES.planLimits.solo,
+        priceMonthly: 197,
+        features: FIXTURES.planLimits.starter,
         startsAt: Date.now(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -260,10 +260,10 @@ describe('Subscription Status Transitions', () => {
     const subscriptionId = await t.run(async (ctx) => {
       return ctx.db.insert('subscriptions', {
         userId,
-        planTier: 'solo',
+        planTier: 'starter',
         status: 'grace_period',
-        priceMonthly: 59,
-        features: FIXTURES.planLimits.solo,
+        priceMonthly: 197,
+        features: FIXTURES.planLimits.starter,
         startsAt: Date.now(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -286,10 +286,10 @@ describe('Subscription Status Transitions', () => {
     const subscriptionId = await t.run(async (ctx) => {
       return ctx.db.insert('subscriptions', {
         userId,
-        planTier: 'solo',
+        planTier: 'starter',
         status: 'grace_period',
-        priceMonthly: 59,
-        features: FIXTURES.planLimits.solo,
+        priceMonthly: 197,
+        features: FIXTURES.planLimits.starter,
         startsAt: Date.now(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -312,10 +312,10 @@ describe('Subscription Status Transitions', () => {
     const subscriptionId = await t.run(async (ctx) => {
       return ctx.db.insert('subscriptions', {
         userId,
-        planTier: 'growth',
+        planTier: 'engine',
         status: 'active',
-        priceMonthly: 149,
-        features: FIXTURES.planLimits.growth,
+        priceMonthly: 397,
+        features: FIXTURES.planLimits.engine,
         startsAt: Date.now(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -443,10 +443,10 @@ describe('Subscription Edge Cases', () => {
     await t.run(async (ctx) => {
       return ctx.db.insert('subscriptions', {
         userId,
-        planTier: 'solo',
+        planTier: 'starter',
         status: 'active',
-        priceMonthly: 59,
-        features: FIXTURES.planLimits.solo,
+        priceMonthly: 197,
+        features: FIXTURES.planLimits.starter,
         startsAt: Date.now(),
         createdAt: Date.now(),
         updatedAt: Date.now(),

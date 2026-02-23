@@ -46,8 +46,8 @@ export const submitRequest = mutation({
         updatedAt: now,
       });
 
-      // Fire-and-forget HubSpot sync
-      ctx.scheduler.runAfter(0, api.integrations.hubspot.syncApiAccessRequest, {
+      // Fire-and-forget HubSpot sync (must still be awaited to commit the schedule to DB)
+      await ctx.scheduler.runAfter(0, api.integrations.hubspot.syncApiAccessRequest, {
         requestId: existing._id,
       });
 
@@ -67,8 +67,8 @@ export const submitRequest = mutation({
       updatedAt: now,
     });
 
-    // Fire-and-forget HubSpot sync
-    ctx.scheduler.runAfter(0, api.integrations.hubspot.syncApiAccessRequest, {
+    // Fire-and-forget HubSpot sync (must still be awaited to commit the schedule to DB)
+    await ctx.scheduler.runAfter(0, api.integrations.hubspot.syncApiAccessRequest, {
       requestId,
     });
 
@@ -166,7 +166,7 @@ export const approveRequest = mutation({
     // TODO: Send approval email notification
 
     // Fire-and-forget HubSpot sync (update status)
-    ctx.scheduler.runAfter(0, api.integrations.hubspot.syncApiAccessRequest, {
+    await ctx.scheduler.runAfter(0, api.integrations.hubspot.syncApiAccessRequest, {
       requestId: args.requestId,
     });
 
@@ -197,7 +197,7 @@ export const rejectRequest = mutation({
     });
 
     // Fire-and-forget HubSpot sync
-    ctx.scheduler.runAfter(0, api.integrations.hubspot.syncApiAccessRequest, {
+    await ctx.scheduler.runAfter(0, api.integrations.hubspot.syncApiAccessRequest, {
       requestId: args.requestId,
     });
 
