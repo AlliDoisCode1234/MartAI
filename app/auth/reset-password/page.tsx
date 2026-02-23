@@ -110,7 +110,7 @@ function ResetPasswordContent() {
 
         // Redirect to dashboard after short delay
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push('/studio');
         }, 2000);
       }
     } catch (err) {

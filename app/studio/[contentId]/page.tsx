@@ -41,7 +41,6 @@ import { IntegrationsPanel } from '@/src/components/content';
 import {
   FiArrowLeft,
   FiSave,
-  FiSend,
   FiRefreshCw,
   FiCheck,
   FiCalendar,
@@ -54,7 +53,15 @@ import { FaWordpress } from 'react-icons/fa';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Id } from '@/convex/_generated/dataModel';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import {
+  scoreContentRealTime,
+  countWords,
+  countH2s,
+  countLinks,
+  countKeywordOccurrences,
+} from '@/lib/seoScoring';
+import type { SEOScoreResult } from '@/lib/seoScoring';
 
 export default function ContentEditorPage() {
   const params = useParams();
@@ -73,7 +80,7 @@ export default function ContentEditorPage() {
     api.integrations.platformConnections.listConnections,
     contentPiece?.projectId ? { projectId: contentPiece.projectId } : 'skip'
   );
-  const hasCmsConnection = connections && connections.length > 0;
+  const hasCmsConnection = (connections?.length ?? 0) > 0; // Reserved for future CMS gate
 
   const updateMutation = useMutation(api.contentPieces.update);
   const scheduleMutation = useMutation(api.contentPieces.schedule);
@@ -82,10 +89,27 @@ export default function ContentEditorPage() {
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('09:00');
   const [isScheduling, setIsScheduling] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [liveScore, setLiveScore] = useState<SEOScoreResult | null>(null);
+
+  // Timer constants (ms)
+  const SCORE_DEBOUNCE_MS = 300;
+  const AUTO_SAVE_DEBOUNCE_MS = 2000;
+  const SAVED_INDICATOR_MS = 3000;
+  const TARGET_WORD_COUNT = 1200;
+  const TARGET_KEYWORD_MENTIONS = 8;
+
+  // Refs for debounce timers
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scoreTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedIndicatorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasHydratedRef = useRef(false);
+  const isSavingRef = useRef(false);
+  const latestContentRef = useRef('');
 
   // WordPress publishing
   const { isOpen: isWpModalOpen, onOpen: onWpModalOpen, onClose: onWpModalClose } = useDisclosure();
@@ -110,66 +134,124 @@ export default function ContentEditorPage() {
     api.publishing.wordpressActions.publishContentPieceToWordPress
   );
 
-  // Sync content from query
+  // Sync content from query — initial load ONLY
+  // After hydration, local state owns content to prevent auto-save race condition.
+  // See: Sprint 1 Remediation LDD, Fix #1
   useEffect(() => {
-    if (contentPiece?.content) {
+    if (contentPiece?.content && !hasHydratedRef.current) {
       setContent(contentPiece.content);
+      hasHydratedRef.current = true;
     }
   }, [contentPiece?.content]);
 
+  // ── Real-Time SEO Scoring (300ms debounce) ───────────────────────
+  const scoringInput = useMemo(
+    () => ({
+      outline: contentPiece?.h2Outline || [],
+      keywords: contentPiece?.keywords || [],
+      targetWordCount: TARGET_WORD_COUNT,
+    }),
+    [contentPiece?.h2Outline, contentPiece?.keywords]
+  );
+
+  useEffect(() => {
+    if (!content) {
+      setLiveScore(null);
+      return;
+    }
+    if (scoreTimerRef.current) clearTimeout(scoreTimerRef.current);
+    scoreTimerRef.current = setTimeout(() => {
+      const result = scoreContentRealTime({
+        content,
+        ...scoringInput,
+      });
+      setLiveScore(result);
+    }, SCORE_DEBOUNCE_MS);
+    return () => {
+      if (scoreTimerRef.current) clearTimeout(scoreTimerRef.current);
+    };
+  }, [content, scoringInput]);
+
+  // ── Auto-Save (2s debounce) ──────────────────────────────────────
+  const performSave = useCallback(
+    async (contentToSave: string, silent = false) => {
+      if (!contentPiece) return;
+      if (isSavingRef.current) {
+        if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = setTimeout(() => performSave(contentToSave, silent), 1000);
+        return;
+      }
+      isSavingRef.current = true;
+      const saving = !silent;
+      if (saving) setIsSaving(true);
+      setSaveStatus('saving');
+      try {
+        await updateMutation({
+          contentPieceId: contentPiece._id,
+          content: contentToSave,
+          wordCount: countWords(contentToSave),
+        });
+        if (latestContentRef.current === contentToSave) {
+          setHasChanges(false);
+        }
+        setSaveStatus('saved');
+        // Clear "saved" indicator after 3s
+        if (savedIndicatorTimerRef.current) clearTimeout(savedIndicatorTimerRef.current);
+        savedIndicatorTimerRef.current = setTimeout(
+          () => setSaveStatus('idle'),
+          SAVED_INDICATOR_MS
+        );
+        if (!silent) {
+          toast({ title: 'Content saved', status: 'success', duration: 2000 });
+        }
+      } catch (e) {
+        setSaveStatus('idle');
+        if (!silent) {
+          toast({ title: 'Save failed', status: 'error', duration: 3000 });
+        }
+      }
+      isSavingRef.current = false;
+      if (saving) setIsSaving(false);
+    },
+    [contentPiece, updateMutation, toast]
+  );
+
   const handleContentChange = (value: string) => {
     setContent(value);
+    latestContentRef.current = value;
     setHasChanges(true);
+    setSaveStatus('idle');
+    // Schedule auto-save
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      performSave(value, true); // silent auto-save
+    }, AUTO_SAVE_DEBOUNCE_MS);
   };
 
-  const handleSave = async () => {
-    if (!contentPiece) return;
-    setIsSaving(true);
-    try {
-      await updateMutation({
-        contentPieceId: contentPiece._id,
-        content,
-        wordCount: content.split(/\s+/).filter((w) => w.length > 0).length,
-      });
-      setHasChanges(false);
-      toast({
-        title: 'Content saved',
-        status: 'success',
-        duration: 2000,
-      });
-    } catch (e) {
-      toast({
-        title: 'Save failed',
-        status: 'error',
-        duration: 3000,
-      });
-    }
-    setIsSaving(false);
-  };
+  // Manual save
+  const handleSave = () => performSave(content, false);
 
-  const handleApprove = async () => {
-    if (!contentPiece) return;
-    try {
-      await updateMutation({
-        contentPieceId: contentPiece._id,
-        status: 'approved',
-      });
-      toast({
-        title: 'Content approved',
-        description: 'Ready for publishing or scheduling',
-        status: 'success',
-        duration: 3000,
-      });
-    } catch (e) {
-      toast({
-        title: 'Approval failed',
-        status: 'error',
-        duration: 3000,
-      });
-    }
-  };
+  // ── Unsaved Changes Protection ───────────────────────────────────
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasChanges]);
 
-  const handlePublish = async () => {
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      if (scoreTimerRef.current) clearTimeout(scoreTimerRef.current);
+      if (savedIndicatorTimerRef.current) clearTimeout(savedIndicatorTimerRef.current);
+    };
+  }, []);
+
+  const handleMarkPublished = async () => {
     if (!contentPiece) return;
     try {
       await updateMutation({
@@ -177,7 +259,8 @@ export default function ContentEditorPage() {
         status: 'published',
       });
       toast({
-        title: 'Content published',
+        title: 'Content marked as published',
+        description: 'Visible in your published library',
         status: 'success',
         duration: 3000,
       });
@@ -269,10 +352,10 @@ export default function ContentEditorPage() {
         duration: 4000,
       });
       onClose();
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         title: 'Schedule failed',
-        description: e?.message || 'Unknown error',
+        description: 'An error occurred while scheduling. Please try again.',
         status: 'error',
         duration: 3000,
       });
@@ -369,10 +452,13 @@ export default function ContentEditorPage() {
     );
   }
 
-  // Calculate metrics from content
-  const wordCount = content.split(/\s+/).filter((w) => w.length > 0).length;
-  const h2Count = (content.match(/^## /gm) || []).length;
-  const linkCount = (content.match(/\[.*?\]\(.*?\)/g) || []).length;
+  // Calculate metrics from content (using shared utilities)
+  const wordCount = countWords(content);
+  const h2Count = countH2s(content);
+  const linkCount = countLinks(content);
+
+  // Effective SEO score: live score (real-time) or stored score (fallback)
+  const effectiveSeoScore = liveScore?.score ?? contentPiece.seoScore ?? 0;
 
   return (
     <StudioLayout>
@@ -425,7 +511,21 @@ export default function ContentEditorPage() {
               </HStack>
               <Text color="gray.500" fontSize="sm">
                 {wordCount.toLocaleString()} words
-                {hasChanges && ' • Unsaved changes'}
+                {saveStatus === 'saving' && (
+                  <Text as="span" color="#FF9D00" ml={1}>
+                    • Saving...
+                  </Text>
+                )}
+                {saveStatus === 'saved' && (
+                  <Text as="span" color="#22C55E" ml={1}>
+                    • Saved
+                  </Text>
+                )}
+                {hasChanges && saveStatus === 'idle' && (
+                  <Text as="span" color="gray.400" ml={1}>
+                    • Unsaved changes
+                  </Text>
+                )}
                 {contentPiece.publishDate && contentPiece.status === 'scheduled' && (
                   <>
                     {' • '}
@@ -447,18 +547,6 @@ export default function ContentEditorPage() {
             >
               Save
             </Button>
-            {contentPiece.status === 'draft' && (
-              <Button
-                variant="outline"
-                borderColor="#FF9D00"
-                color="#FF9D00"
-                leftIcon={<Icon as={FiCheck} />}
-                _hover={{ bg: 'rgba(255, 157, 0, 0.1)' }}
-                onClick={handleApprove}
-              >
-                Approve
-              </Button>
-            )}
             {contentPiece.status === 'scheduled' ? (
               <Button
                 variant="outline"
@@ -469,43 +557,54 @@ export default function ContentEditorPage() {
               >
                 Unschedule
               </Button>
-            ) : (
-              (contentPiece.status === 'approved' || contentPiece.status === 'draft') && (
-                <>
+            ) : contentPiece.status !== 'published' ? (
+              <>
+                <Button
+                  variant="outline"
+                  borderColor="#8B5CF6"
+                  color="#8B5CF6"
+                  leftIcon={<Icon as={FiCalendar} />}
+                  _hover={{ bg: 'rgba(139, 92, 246, 0.1)' }}
+                  onClick={onOpen}
+                >
+                  Schedule
+                </Button>
+                {hasWordPress ? (
                   <Button
-                    variant="outline"
-                    borderColor="#8B5CF6"
-                    color="#8B5CF6"
-                    leftIcon={<Icon as={FiCalendar} />}
-                    _hover={{ bg: 'rgba(139, 92, 246, 0.1)' }}
-                    onClick={onOpen}
+                    bg="linear-gradient(135deg, #21759b, #1a5a7a)"
+                    color="white"
+                    leftIcon={<Icon as={FaWordpress} />}
+                    _hover={{ opacity: 0.9 }}
+                    onClick={onWpModalOpen}
                   >
-                    Schedule
+                    Publish
                   </Button>
+                ) : (
                   <Button
                     bg="linear-gradient(135deg, #22C55E, #16A34A)"
                     color="white"
                     leftIcon={<Icon as={FiCheck} />}
                     _hover={{ opacity: 0.9 }}
-                    onClick={handlePublish}
-                    title="Mark as ready internally"
+                    onClick={handleMarkPublished}
                   >
-                    Mark Ready
+                    Mark Published
                   </Button>
-                </>
+                )}
+              </>
+            ) : (
+              /* Already published: allow re-push to CMS if connected */
+              hasWordPress && (
+                <Button
+                  variant="outline"
+                  borderColor="#21759b"
+                  color="#21759b"
+                  leftIcon={<Icon as={FaWordpress} />}
+                  _hover={{ bg: 'rgba(33, 117, 155, 0.1)' }}
+                  onClick={onWpModalOpen}
+                >
+                  Re-publish to CMS
+                </Button>
               )
-            )}
-            {/* WordPress publish - always available when connected (independent of internal status) */}
-            {hasWordPress && contentPiece?.content && (
-              <Button
-                bg="linear-gradient(135deg, #21759b, #1a5a7a)"
-                color="white"
-                leftIcon={<Icon as={FaWordpress} />}
-                _hover={{ opacity: 0.9 }}
-                onClick={onWpModalOpen}
-              >
-                Publish to WordPress
-              </Button>
             )}
           </HStack>
         </HStack>
@@ -585,16 +684,16 @@ export default function ContentEditorPage() {
 
           {/* Sidebar */}
           <VStack align="stretch" spacing={4} w="280px">
-            {/* SEO Score Panel */}
+            {/* SEO Score Panel — live-updated as user types */}
             <SEOScorePanel
-              seoScore={contentPiece.seoScore ?? 0}
+              seoScore={effectiveSeoScore}
               wordCount={wordCount}
-              targetWordCount={1200}
+              targetWordCount={TARGET_WORD_COUNT}
               h2Count={h2Count}
-              keywordCount={10}
-              targetKeywords={12}
+              keywordCount={countKeywordOccurrences(content, contentPiece.keywords)}
+              targetKeywords={TARGET_KEYWORD_MENTIONS}
               internalLinkCount={linkCount}
-              qualityMetrics={contentPiece.qualityMetrics}
+              qualityMetrics={liveScore?.metrics ?? contentPiece.qualityMetrics}
             />
 
             {/* Integrations Panel */}

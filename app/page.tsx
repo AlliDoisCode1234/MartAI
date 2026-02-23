@@ -58,7 +58,7 @@ export default function Home() {
     if (user === undefined) return;
 
     if (user && user.onboardingStatus === 'completed') {
-      router.replace('/dashboard');
+      router.replace('/studio');
     } else {
       // Incomplete or no user record → onboarding directly (no dashboard bounce)
       router.replace('/onboarding');

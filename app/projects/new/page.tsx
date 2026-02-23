@@ -113,9 +113,9 @@ export default function NewProjectPage() {
       <Container maxW="container.md">
         <VStack spacing={8} align="stretch">
           <MotionBox initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-            <Link href="/dashboard">
+            <Link href="/studio">
               <Button variant="ghost" leftIcon={<FiArrowLeft />} mb={4}>
-                Back to Home
+                Back to Studio
               </Button>
             </Link>
             <Heading size="xl" fontWeight="bold" color="gray.800">

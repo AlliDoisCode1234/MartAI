@@ -39,7 +39,7 @@ export function LandingHeader() {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Logo routes to dashboard for authenticated users, marketing page otherwise
-  const logoHref = isAuthenticated ? '/dashboard' : '/';
+  const logoHref = isAuthenticated ? '/studio' : '/';
 
   const handleAskPhooClick = () => {
     if (isAuthenticated) {

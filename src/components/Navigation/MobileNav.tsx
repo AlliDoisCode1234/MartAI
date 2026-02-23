@@ -142,8 +142,14 @@ export const MobileNav: FC<Props> = ({
                       bg: itemHoverBg,
                       color: itemHoverColor,
                     }}
+                    _focusVisible={{
+                      outline: '2px solid',
+                      outlineColor: activeColor,
+                      outlineOffset: '2px',
+                    }}
                     transition="all 0.15s ease"
                     minH="48px"
+                    aria-current={isActive ? 'page' : undefined}
                   >
                     {item.icon && <Icon as={item.icon} boxSize={5} />}
                     <Text fontSize="sm" fontWeight={isActive ? 'semibold' : 'medium'}>
@@ -181,11 +187,11 @@ export const MobileNav: FC<Props> = ({
             </>
           )}
 
-          {user && (
+          {user && brandLabel !== 'Content Studio' && (
             <>
               <Divider borderColor={borderColor} my={4} />
 
-              <Link href="/dashboard" style={{ textDecoration: 'none' }} onClick={onClose}>
+              <Link href="/studio" style={{ textDecoration: 'none' }} onClick={onClose}>
                 <HStack
                   px={6}
                   py={3}
@@ -197,7 +203,7 @@ export const MobileNav: FC<Props> = ({
                 >
                   <Icon as={FiArrowLeft} boxSize={5} />
                   <Text fontSize="sm" fontWeight="medium">
-                    Back to Dashboard
+                    Back to Studio
                   </Text>
                 </HStack>
               </Link>

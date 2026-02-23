@@ -89,7 +89,7 @@ export function AppBreadcrumb({ labels = {}, hideHome = false }: Props) {
         <BreadcrumbItem>
           <BreadcrumbLink
             as={Link}
-            href="/dashboard"
+            href="/studio"
             display="flex"
             alignItems="center"
             _hover={{ color: 'brand.orange' }}

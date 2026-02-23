@@ -44,7 +44,7 @@ function getStatusColor(status: string): string {
     case 'published':
       return '#34d399';
     case 'approved':
-      return '#60a5fa';
+      return '#FF9D00';
     case 'scheduled':
       return '#F99F2A';
     default:
@@ -79,7 +79,7 @@ export function TopPerformingContentCard({ content }: Props) {
     >
       <VStack align="stretch" spacing={4} h="100%">
         <HStack spacing={2}>
-          <Icon as={FiTrendingUp} color="#60a5fa" boxSize={4} />
+          <Icon as={FiTrendingUp} color="#FF9D00" boxSize={4} />
           <Text color="white" fontWeight="semibold" fontSize="sm">
             Top Performing Content
           </Text>
@@ -127,7 +127,7 @@ export function TopPerformingContentCard({ content }: Props) {
                     </Text>
                     <Badge
                       size="sm"
-                      colorScheme={item.status === 'published' ? 'green' : 'blue'}
+                      colorScheme={item.status === 'published' ? 'green' : 'orange'}
                       fontSize="9px"
                       px={1.5}
                     >

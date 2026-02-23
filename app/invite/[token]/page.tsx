@@ -78,7 +78,7 @@ export default function InviteAcceptPage() {
       await acceptInvite({ token });
       setSuccess(true);
       // Redirect to dashboard immediately
-      router.push('/dashboard');
+      router.push('/studio');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to accept invitation');
       setAccepting(false);

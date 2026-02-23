@@ -54,6 +54,7 @@ import {
 } from 'react-icons/fi';
 import { useProject } from '@/lib/hooks';
 import { AddToClusterModal } from '@/src/components/keywords/AddToClusterModal';
+import { StudioLayout } from '@/src/components/studio';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -165,7 +166,7 @@ export default function KeywordDetailPage() {
   // Loading state
   if (enriched === undefined) {
     return (
-      <Box minH="calc(100vh - 64px)" bg="var(--phoo-bg-primary)">
+      <StudioLayout>
         <Container maxW="container.xl" py={{ base: 6, md: 10 }}>
           <VStack spacing={6} align="stretch">
             <Skeleton
@@ -202,20 +203,19 @@ export default function KeywordDetailPage() {
             />
           </VStack>
         </Container>
-      </Box>
+      </StudioLayout>
     );
   }
 
-  // Not found
   if (enriched === null) {
     return (
-      <Box minH="calc(100vh - 64px)" bg="var(--phoo-bg-primary)">
+      <StudioLayout>
         <Container maxW="container.md" py={12}>
           <VStack spacing={4}>
             <Heading color="var(--phoo-text-primary)">Keyword Not Found</Heading>
             <Button
               as={NextLink}
-              href="/keywords"
+              href="/studio/keywords"
               variant="ghost"
               color="var(--phoo-warning)"
               leftIcon={<FiArrowLeft />}
@@ -224,7 +224,7 @@ export default function KeywordDetailPage() {
             </Button>
           </VStack>
         </Container>
-      </Box>
+      </StudioLayout>
     );
   }
 
@@ -319,7 +319,7 @@ export default function KeywordDetailPage() {
   };
 
   return (
-    <Box minH="calc(100vh - 64px)" bg="var(--phoo-bg-primary)">
+    <StudioLayout>
       {/* Top gradient wash */}
       <Box
         position="absolute"
@@ -337,7 +337,7 @@ export default function KeywordDetailPage() {
           <VStack align="start" spacing={3}>
             <Button
               as={NextLink}
-              href="/keywords"
+              href="/studio/keywords"
               variant="ghost"
               color="var(--phoo-text-muted)"
               _hover={{ color: 'var(--phoo-text-primary)', bg: 'var(--phoo-bg-hover)' }}
@@ -1362,6 +1362,6 @@ export default function KeywordDetailPage() {
           keywordText={keyword.keyword}
         />
       )}
-    </Box>
+    </StudioLayout>
   );
 }

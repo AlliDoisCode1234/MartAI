@@ -152,7 +152,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         status: 'info',
       });
       impersonateModal.onClose();
-      router.push('/dashboard');
+      router.push('/studio');
     } catch {
       toast({ title: 'Failed to start impersonation', status: 'error' });
     } finally {

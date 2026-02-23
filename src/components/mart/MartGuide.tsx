@@ -32,7 +32,7 @@ const MotionBox = motion(Box);
 
 // Mart's messages per page
 const MART_MESSAGES: Record<string, { greeting: string; tip: string; action?: string }> = {
-  '/dashboard': {
+  '/studio': {
     greeting: "Welcome back! Let's check your progress.",
     tip: 'Your dashboard shows keyword opportunities and content status.',
     action: 'View Keywords',
@@ -101,7 +101,7 @@ export function MartGuide({
     }
   }, [phase, previousPhase]);
 
-  const message = MART_MESSAGES[currentPath] || MART_MESSAGES['/dashboard'];
+  const message = MART_MESSAGES[currentPath] || MART_MESSAGES['/studio'];
   const celebration = CELEBRATIONS[phase];
 
   const handleDismiss = () => {

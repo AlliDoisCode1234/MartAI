@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * Studio Settings Page - Content Preferences
+ * Brand Profile Page - Content Preferences
  *
  * Component Hierarchy:
- * App → StudioLayout → SettingsPage
+ * App → StudioLayout → BrandProfilePage
  *
  * Configure content preferences, brand voice, and publishing defaults.
  */
@@ -39,7 +39,7 @@ import {
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { StudioLayout } from '@/src/components/studio';
-import { FiSettings, FiEdit3, FiGlobe, FiLink, FiBell, FiSave, FiHelpCircle } from 'react-icons/fi';
+import { FiTarget, FiEdit3, FiGlobe, FiLink, FiBell, FiSave, FiHelpCircle } from 'react-icons/fi';
 import { BRAND } from '@/lib/constants/brand';
 
 const MotionCard = motion(Card);
@@ -67,7 +67,7 @@ const inputStyles = {
 };
 
 interface SettingSectionProps {
-  icon: typeof FiSettings;
+  icon: typeof FiTarget;
   title: string;
   description: string;
   children: React.ReactNode;
@@ -103,7 +103,7 @@ function SettingSection({ icon, title, description, children, delay = 0 }: Setti
   );
 }
 
-export default function SettingsPage() {
+export default function BrandProfilePage() {
   const toast = useToast();
   const [saving, setSaving] = useState(false);
 
@@ -146,6 +146,7 @@ export default function SettingsPage() {
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateSetting = (key: string, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
@@ -157,12 +158,12 @@ export default function SettingsPage() {
         <HStack justify="space-between">
           <Box>
             <HStack mb={2}>
-              <Icon as={FiSettings} color="orange.400" boxSize={6} />
+              <Icon as={FiTarget} color="orange.400" boxSize={6} />
               <Heading size="lg" color="white">
-                Studio Settings
+                Brand Profile & Defaults
               </Heading>
             </HStack>
-            <Text color="gray.400">Configure your content preferences and publishing defaults</Text>
+            <Text color="gray.400">Configure your brand voice and AI content defaults</Text>
           </Box>
           <Button
             bg="linear-gradient(135deg, #FF9D00 0%, #FF6B00 100%)"

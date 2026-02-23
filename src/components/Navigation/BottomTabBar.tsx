@@ -22,7 +22,7 @@ import { type FC } from 'react';
 import { Box, HStack, VStack, Text, Icon } from '@chakra-ui/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiHome, FiSearch, FiEdit3, FiBarChart2, FiMessageCircle } from 'react-icons/fi';
+import { FiHome, FiEdit3, FiBarChart2, FiMessageCircle } from 'react-icons/fi';
 
 interface TabItem {
   label: string;
@@ -31,9 +31,7 @@ interface TabItem {
 }
 
 const TAB_ITEMS: TabItem[] = [
-  { label: 'Home', path: '/dashboard', icon: FiHome },
-  { label: 'Keywords', path: '/keywords', icon: FiSearch },
-  { label: 'Studio', path: '/studio', icon: FiEdit3 },
+  { label: 'Home', path: '/studio', icon: FiHome },
   { label: 'Insights', path: '/studio/insights', icon: FiBarChart2 },
   { label: 'Ask Phoo', path: '/assistant', icon: FiMessageCircle },
 ];
@@ -43,6 +41,8 @@ export const BottomTabBar: FC = () => {
 
   return (
     <Box
+      as="nav"
+      aria-label="Primary navigation"
       display={{ base: 'block', md: 'none' }}
       position="fixed"
       bottom={0}
@@ -54,20 +54,11 @@ export const BottomTabBar: FC = () => {
       borderTop="1px solid rgba(255, 255, 255, 0.08)"
       pb="env(safe-area-inset-bottom)"
     >
-      <HStack
-        justify="space-around"
-        align="center"
-        h="56px"
-        px={2}
-        maxW="container.sm"
-        mx="auto"
-        role="tablist"
-        aria-label="Primary navigation"
-      >
+      <HStack justify="space-around" align="center" h="56px" px={2} maxW="container.sm" mx="auto">
         {TAB_ITEMS.map((tab) => {
           const isActive =
             pathname === tab.path ||
-            (tab.path !== '/dashboard' && pathname?.startsWith(tab.path + '/'));
+            (tab.path !== '/studio' && pathname?.startsWith(tab.path + '/'));
 
           return (
             <Link key={tab.path} href={tab.path} style={{ textDecoration: 'none', flex: 1 }}>
@@ -80,8 +71,12 @@ export const BottomTabBar: FC = () => {
                 color={isActive ? '#FF9D00' : 'gray.500'}
                 transition="all 0.15s ease"
                 _hover={{ color: isActive ? '#FF9D00' : 'gray.300' }}
-                role="tab"
-                aria-selected={isActive}
+                _focusVisible={{
+                  outline: '2px solid #FF9D00',
+                  outlineOffset: '2px',
+                  borderRadius: '8px',
+                }}
+                aria-current={isActive ? 'page' : undefined}
               >
                 <Icon
                   as={tab.icon}
@@ -89,7 +84,7 @@ export const BottomTabBar: FC = () => {
                   filter={isActive ? 'drop-shadow(0 0 6px rgba(255, 157, 0, 0.5))' : 'none'}
                 />
                 <Text
-                  fontSize="10px"
+                  fontSize="11px"
                   fontWeight={isActive ? 'bold' : 'medium'}
                   lineHeight="1"
                   letterSpacing="0.02em"
