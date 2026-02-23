@@ -39,6 +39,8 @@ describe('Canonical Data Layer', () => {
         await ctx.db.insert('contentPieces', {
           projectId,
           title: 'Draft Piece',
+          contentType: 'blog',
+          keywords: ['test kw 1'],
           status: 'draft',
           createdAt: Date.now(),
           updatedAt: Date.now(),
@@ -46,6 +48,8 @@ describe('Canonical Data Layer', () => {
         await ctx.db.insert('contentPieces', {
           projectId,
           title: 'Published Piece',
+          contentType: 'blog',
+          keywords: ['test kw 2'],
           status: 'published',
           createdAt: Date.now(),
           updatedAt: Date.now(),
