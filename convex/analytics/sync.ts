@@ -273,9 +273,9 @@ export const syncProjectData = internalAction({
       console.error('Brief suggestion failed:', e);
     }
 
-    // 10. Calculate MartAI Rating (MR) - the hero metric
+    // 10. Calculate Phoo Rating — the unified hero metric
     try {
-      await ctx.runAction(internal.analytics.martaiRating.calculateMartAIRating, {
+      await ctx.runAction(internal.analytics.martaiRating.calculatePhooRating, {
         projectId,
       });
     } catch (e) {

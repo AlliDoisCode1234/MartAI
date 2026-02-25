@@ -13,6 +13,7 @@ import type * as admin_cleanup from "../admin/cleanup.js";
 import type * as admin_clearAllUserData from "../admin/clearAllUserData.js";
 import type * as admin_costs from "../admin/costs.js";
 import type * as admin_dashboard from "../admin/dashboard.js";
+import type * as admin_enterpriseCheckout from "../admin/enterpriseCheckout.js";
 import type * as admin_impersonation from "../admin/impersonation.js";
 import type * as admin_provisioning from "../admin/provisioning.js";
 import type * as admin_users from "../admin/users.js";
@@ -178,6 +179,7 @@ declare const fullApi: ApiFromModules<{
   "admin/clearAllUserData": typeof admin_clearAllUserData;
   "admin/costs": typeof admin_costs;
   "admin/dashboard": typeof admin_dashboard;
+  "admin/enterpriseCheckout": typeof admin_enterpriseCheckout;
   "admin/impersonation": typeof admin_impersonation;
   "admin/provisioning": typeof admin_provisioning;
   "admin/users": typeof admin_users;

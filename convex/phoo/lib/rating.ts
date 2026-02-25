@@ -1,8 +1,13 @@
 /**
  * Phoo Rating System
  *
+ * @deprecated Use `api.canonical.rating.getCanonicalRating` instead.
+ * This file is superseded by the unified Phoo Rating in `analytics/martaiRating.ts`
+ * which blends GA4/GSC IL signals with platform signals and caches results.
+ * This on-demand computation is kept for backward compatibility with the Phoo Agent tool.
+ *
  * Component Hierarchy:
- * convex/phoo/lib/rating.ts (this file)
+ * convex/phoo/lib/rating.ts (this file — DEPRECATED)
  *
  * Calculates the Phoo Rating (0-100) based on ACTUAL ANALYTICS DATA:
  * - SEO Audit scores (technical, on-page, content, backlinks)

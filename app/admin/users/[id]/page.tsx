@@ -33,6 +33,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { FiUserCheck } from 'react-icons/fi';
 import { useImpersonation } from '@/lib/hooks/useImpersonation';
 import { useMe } from '@/lib/useMe';
+import { EnterpriseBillingCard } from '@/src/components/admin/EnterpriseBillingCard';
 
 // Admin components
 import {
@@ -223,6 +224,14 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           <SubscriptionCard subscription={user.subscription} />
           <HealthScoreCard health={health as HealthData | null} />
         </SimpleGrid>
+
+        {/* Enterprise Billing - Sales Admin widget */}
+        <EnterpriseBillingCard
+          userId={userId}
+          userEmail={user.email || ''}
+          userName={user.name || undefined}
+          currentPlan={user.subscription?.planTier}
+        />
 
         <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
           <StatCard
