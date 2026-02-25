@@ -15,15 +15,12 @@
  * Handles authentication and project selection at the layout level.
  */
 
-import { Box, Flex, VStack, IconButton, Icon, Tooltip } from '@chakra-ui/react';
+import { Box, Flex, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
-import Link from 'next/link';
-import { FiMessageCircle } from 'react-icons/fi';
 import { StudioSidebar } from './StudioSidebar';
 import { AuthProvider } from '@/src/providers/AuthProvider';
 import { ProjectProvider } from '@/src/providers/ProjectProvider';
-import { AppBreadcrumb } from '@/src/components/Navigation/AppBreadcrumb';
-import { STUDIO_COLORS, STUDIO_GRADIENTS, STUDIO_LAYOUT } from '@/lib/constants/studioTokens';
+import { STUDIO_LAYOUT } from '@/lib/constants/studioTokens';
 
 interface Props {
   children: React.ReactNode;

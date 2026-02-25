@@ -20,14 +20,12 @@ import {
   FiCalendar,
   FiPlusCircle,
   FiTarget,
-  FiLogOut,
   FiBarChart2,
   FiHome,
-  FiMessageCircle,
   FiChevronLeft,
   FiChevronRight,
 } from 'react-icons/fi';
-import { STUDIO_COLORS, STUDIO_GRADIENTS } from '@/lib/constants/studioTokens';
+import { STUDIO_COLORS } from '@/lib/constants/studioTokens';
 import { useAuth } from '@/lib/useAuth';
 import { getUserDisplayName } from '@/lib/funNames';
 

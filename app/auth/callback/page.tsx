@@ -80,7 +80,9 @@ export default function AuthCallbackPage() {
       // After max attempts, redirect to login with error indicator
       console.log('[AuthCallback] Auth timeout, redirecting to login');
       logout()
-        .catch(console.error)
+        .catch(() => {
+          /* sign-out may fail if session is already dead */
+        })
         .finally(() => {
           router.replace('/auth/login?error=auth_timeout');
         });
@@ -131,11 +133,11 @@ export default function AuthCallbackPage() {
         sessionStorage.removeItem('authReturnTo');
         // Only allow relative paths — block protocol-relative URLs and absolute URLs
         if (savedReturnTo.startsWith('/') && !savedReturnTo.startsWith('//')) {
-          console.log('[AuthCallback] Redirecting to saved returnTo:', savedReturnTo);
+          console.log('[AuthCallback] Redirecting to saved returnTo');
           router.replace(savedReturnTo);
           return;
         } else {
-          console.warn('[AuthCallback] Blocked suspicious returnTo:', savedReturnTo);
+          console.warn('[AuthCallback] Blocked suspicious returnTo value');
         }
       }
     } catch {

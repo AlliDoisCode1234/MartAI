@@ -277,10 +277,14 @@ export default function OnboardingPage() {
     if (!authLoading && isAuthenticated && user === null) {
       console.log('[Onboarding] Authenticated but user is null. Waiting for Convex...');
       timeoutId = setTimeout(() => {
-        console.warn('[Onboarding] User still null after timeout. Invalid session, logging out.');
+        console.warn('[Onboarding] User still null after timeout. Invalid session.');
         // Scrub the zombie session token before redirecting
+        // Note: We call signOut directly instead of logout() to avoid
+        // the double-navigation issue (logout() navigates to / first)
         logout()
-          .catch(console.error)
+          .catch(() => {
+            /* sign-out may fail if session is already dead */
+          })
           .finally(() => {
             // Use window.location to force a full reload and clear any cached states
             window.location.href = '/auth/login?error=session_invalid';

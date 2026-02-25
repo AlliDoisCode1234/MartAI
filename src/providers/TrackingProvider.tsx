@@ -24,9 +24,9 @@ type Props = {
 };
 
 export function TrackingProvider({ children }: Props) {
-  const { trackPageView } = useTracking();
-  const pathname = usePathname();
   const [hasConsent, setHasConsent] = useState(false);
+  const { trackPageView } = useTracking({ enabled: hasConsent });
+  const pathname = usePathname();
 
   // Check initial consent and listen for changes
   useEffect(() => {

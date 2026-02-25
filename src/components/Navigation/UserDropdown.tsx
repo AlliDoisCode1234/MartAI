@@ -54,7 +54,7 @@ export const UserDropdown: FC = () => {
           </>
         )}
         <MenuDivider />
-        <MenuItem icon={<Icon as={FiLogOut} />} onClick={logout} color="red.500">
+        <MenuItem icon={<Icon as={FiLogOut} />} onClick={() => logout()} color="red.500">
           Logout
         </MenuItem>
       </MenuList>
