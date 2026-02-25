@@ -180,7 +180,13 @@ export function getAuthHeaders(): HeadersInit {
   }
 
   // Add CSRF token if available (for state-changing operations)
-  const csrfToken = sessionStorage.getItem('csrf-token');
+  let csrfToken: string | null = null;
+  try {
+    csrfToken = sessionStorage.getItem('csrf-token');
+  } catch {
+    // Ignore Storage errors in Safari
+  }
+
   if (csrfToken) {
     headers['X-CSRF-Token'] = csrfToken;
   }
@@ -215,7 +221,11 @@ export async function fetchCsrfToken(): Promise<string | null> {
       const data = await response.json();
       const csrfToken = data.csrfToken;
       if (csrfToken) {
-        sessionStorage.setItem('csrf-token', csrfToken);
+        try {
+          sessionStorage.setItem('csrf-token', csrfToken);
+        } catch {
+          // Ignore Storage errors in Safari private browsing
+        }
         return csrfToken;
       }
     }

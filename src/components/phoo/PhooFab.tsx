@@ -60,7 +60,7 @@ export default function PhooFab({ onOpenDrawer }: Props) {
           exit={{ scale: 0, opacity: 0 }}
           position="fixed"
           bottom={{ base: '72px', md: 4 }}
-          left={4}
+          right={4}
           zIndex={1000}
         >
           <Tooltip label="Open Phoo" hasArrow>
@@ -90,7 +90,7 @@ export default function PhooFab({ onOpenDrawer }: Props) {
           exit={{ scale: 0, opacity: 0 }}
           position="fixed"
           bottom={{ base: '72px', md: 4 }}
-          left={4}
+          right={4}
           zIndex={1000}
         >
           <Box

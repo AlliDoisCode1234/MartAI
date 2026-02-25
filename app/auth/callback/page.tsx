@@ -18,6 +18,7 @@ import { Box, VStack, Text } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { useAuth } from '@/lib/useAuth';
 
 // Subtle pulse animation for the loader
 const pulse = keyframes`
@@ -41,11 +42,14 @@ const dotPulse = keyframes`
 export default function AuthCallbackPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
+  const { logout } = useAuth();
   const user = useQuery(api.users.me);
 
   // Track how long we've waited for auth state to settle
   const [waitAttempts, setWaitAttempts] = useState(0);
+  const [userNullRetries, setUserNullRetries] = useState(0);
   const MAX_WAIT_ATTEMPTS = 5; // 5 seconds max wait
+  const MAX_USER_NULL_RETRIES = 2; // 2 extra seconds for DB sync
 
   useEffect(() => {
     // Debug logging
@@ -75,7 +79,11 @@ export default function AuthCallbackPage() {
 
       // After max attempts, redirect to login with error indicator
       console.log('[AuthCallback] Auth timeout, redirecting to login');
-      router.replace('/auth/login?error=auth_timeout');
+      logout()
+        .catch(console.error)
+        .finally(() => {
+          router.replace('/auth/login?error=auth_timeout');
+        });
       return;
     }
 
@@ -91,8 +99,19 @@ export default function AuthCallbackPage() {
     }
 
     // User authenticated but no user record found - treat as new user needing onboarding
+    // Give it a short delay to allow Convex DB to catch up (race condition)
     if (user === null) {
-      console.log('[AuthCallback] No user record, redirecting to onboarding');
+      if (userNullRetries < MAX_USER_NULL_RETRIES) {
+        console.log(
+          `[AuthCallback] No user record yet, waiting (retry ${userNullRetries + 1}/${MAX_USER_NULL_RETRIES})...`
+        );
+        const timer = setTimeout(() => {
+          setUserNullRetries((prev) => prev + 1);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+
+      console.log('[AuthCallback] No user record after wait, passing to onboarding');
       router.replace('/onboarding');
       return;
     }
@@ -105,17 +124,28 @@ export default function AuthCallbackPage() {
     }
 
     // Check for a saved returnTo from the login page (e.g. pricing checkout flow)
-    const savedReturnTo = sessionStorage.getItem('authReturnTo');
-    if (savedReturnTo) {
-      sessionStorage.removeItem('authReturnTo');
-      console.log('[AuthCallback] Redirecting to saved returnTo:', savedReturnTo);
-      router.replace(savedReturnTo);
-      return;
+    // Security: Validate returnTo is a relative path to prevent Open Redirect attacks
+    try {
+      const savedReturnTo = sessionStorage.getItem('authReturnTo');
+      if (savedReturnTo) {
+        sessionStorage.removeItem('authReturnTo');
+        // Only allow relative paths — block protocol-relative URLs and absolute URLs
+        if (savedReturnTo.startsWith('/') && !savedReturnTo.startsWith('//')) {
+          console.log('[AuthCallback] Redirecting to saved returnTo:', savedReturnTo);
+          router.replace(savedReturnTo);
+          return;
+        } else {
+          console.warn('[AuthCallback] Blocked suspicious returnTo:', savedReturnTo);
+        }
+      }
+    } catch {
+      // sessionStorage may throw in Safari private browsing
+      console.warn('[AuthCallback] sessionStorage unavailable');
     }
 
     console.log('[AuthCallback] User found, redirecting to dashboard');
     router.replace('/studio');
-  }, [authLoading, isAuthenticated, user, router, waitAttempts]);
+  }, [authLoading, isAuthenticated, user, router, waitAttempts, userNullRetries, logout]);
 
   return (
     <Box

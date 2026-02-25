@@ -41,7 +41,10 @@ import { FiMail, FiLock } from 'react-icons/fi';
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get('returnTo') || '/studio';
+  const rawReturnTo = searchParams.get('returnTo') || '/studio';
+  // Security: Only allow relative paths to prevent Open Redirect
+  const returnTo =
+    rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//') ? rawReturnTo : '/studio';
   const isCheckoutIntent = searchParams.get('intent') === 'checkout';
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
@@ -141,7 +144,11 @@ export default function LoginPage() {
     try {
       // Persist returnTo so the callback page can redirect back after OAuth
       if (returnTo !== '/studio') {
-        sessionStorage.setItem('authReturnTo', returnTo);
+        try {
+          sessionStorage.setItem('authReturnTo', returnTo);
+        } catch {
+          // sessionStorage unavailable in Safari private browsing
+        }
       }
       console.log('[GoogleLogin] Calling signIn("google")...');
       const result = await signIn('google', { redirectTo: '/auth/callback' });

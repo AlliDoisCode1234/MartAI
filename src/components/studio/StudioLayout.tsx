@@ -15,7 +15,10 @@
  * Handles authentication and project selection at the layout level.
  */
 
-import { Box, Flex, VStack } from '@chakra-ui/react';
+import { Box, Flex, VStack, IconButton, Icon, Tooltip } from '@chakra-ui/react';
+import { useState } from 'react';
+import Link from 'next/link';
+import { FiMessageCircle } from 'react-icons/fi';
 import { StudioSidebar } from './StudioSidebar';
 import { AuthProvider } from '@/src/providers/AuthProvider';
 import { ProjectProvider } from '@/src/providers/ProjectProvider';
@@ -27,11 +30,13 @@ interface Props {
 }
 
 export function StudioLayout({ children }: Props) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   return (
     <AuthProvider darkMode allowOnboarding={false} loadingMessage="Loading Content Studio...">
       <ProjectProvider darkMode requiredForRender>
         <Flex
-          minH="100vh"
+          h="100vh"
           bg="linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)"
           position="relative"
           overflow="hidden"
@@ -60,26 +65,17 @@ export function StudioLayout({ children }: Props) {
             zIndex={0}
           />
 
-          <StudioSidebar />
+          <StudioSidebar collapsed={isCollapsed} onToggle={() => setIsCollapsed(!isCollapsed)} />
           <Box
             flex={1}
+            h="100vh"
             p={STUDIO_LAYOUT.contentPadding}
             overflowY="auto"
+            overflowX="hidden"
             position="relative"
             zIndex={1}
           >
             <VStack align="stretch" spacing={4}>
-              {/* Breadcrumb with dark mode styling */}
-              <Box
-                display={{ base: 'none', md: 'block' }}
-                sx={{
-                  '& nav': { color: 'gray.400' },
-                  '& a': { color: 'gray.400', _hover: { color: 'orange.400' } },
-                  '& span[aria-current]': { color: 'gray.200' },
-                }}
-              >
-                <AppBreadcrumb />
-              </Box>
               {children}
             </VStack>
           </Box>

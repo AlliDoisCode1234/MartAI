@@ -11,7 +11,18 @@
  */
 
 import React from 'react';
-import { Box, HStack, VStack, Text, Badge, Button, Icon, Link, Skeleton } from '@chakra-ui/react';
+import {
+  Box,
+  HStack,
+  VStack,
+  Flex,
+  Text,
+  Badge,
+  Button,
+  Icon,
+  Link,
+  Skeleton,
+} from '@chakra-ui/react';
 import { FiCheck, FiExternalLink, FiSettings, FiZap } from 'react-icons/fi';
 import { SiWordpress, SiShopify, SiWix } from 'react-icons/si';
 
@@ -105,25 +116,25 @@ export function IntegrationStatusCard({
     if (isConnected) {
       return (
         <Box p={3} borderWidth="1px" borderRadius="lg" borderColor="green.200" bg="green.50">
-          <HStack justify="space-between">
-            <HStack spacing={2}>
+          <Flex wrap="wrap" justify="space-between" align="center" gap={3}>
+            <Flex wrap="wrap" align="center" gap={2}>
               <Icon as={PlatformIcon} boxSize={5} color={config.color} />
               <Text fontWeight="medium" fontSize="sm">
                 {config.name}
               </Text>
               <Badge colorScheme="green" size="sm">
-                <HStack spacing={1}>
+                <Flex align="center" gap={1}>
                   <Icon as={FiCheck} boxSize={3} />
                   <Text>Connected</Text>
-                </HStack>
+                </Flex>
               </Badge>
               {lastSynced && (
-                <Text fontSize="xs" color="gray.500">
+                <Text fontSize="xs" color="gray.500" whiteSpace="nowrap">
                   {formatTimeSince(lastSynced)}
                 </Text>
               )}
-            </HStack>
-            <HStack spacing={2}>
+            </Flex>
+            <Flex wrap="wrap" align="center" gap={2}>
               {onPublish && (
                 <Button size="xs" colorScheme="green" leftIcon={<FiZap />} onClick={onPublish}>
                   Publish
@@ -134,8 +145,8 @@ export function IntegrationStatusCard({
                   Manage
                 </Button>
               )}
-            </HStack>
-          </HStack>
+            </Flex>
+          </Flex>
         </Box>
       );
     }
