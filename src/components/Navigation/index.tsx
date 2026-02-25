@@ -52,12 +52,17 @@ const adminNavItems: NavItem[] = [];
 
 export const Navigation: FC = () => {
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const {
     isOpen: isMobileNavOpen,
     onOpen: onOpenMobileNav,
     onClose: onCloseMobileNav,
   } = useDisclosure();
+
+  // Wait for auth to resolve to prevent flashes of incorrect navigation
+  if (loading) {
+    return null;
+  }
 
   // Hide navigation completely on onboarding and auth pages
   const hiddenRoutes = ['/onboarding', '/auth/signup', '/auth/login'];
@@ -75,7 +80,8 @@ export const Navigation: FC = () => {
   let navItems: NavItem[] = publicNavItems;
   if (isAuthenticated && user) {
     const isAdmin = user.role === 'admin' || user.role === 'super_admin';
-    navItems = isAdmin ? adminNavItems : userNavItems;
+    // For non-studio pages (like settings, profile), just show a back link instead of the full studio menu
+    navItems = isAdmin ? adminNavItems : [{ label: 'Back to Studio', path: '/studio' }];
   }
 
   // Navigation items are never locked for authenticated users
@@ -153,7 +159,7 @@ export const Navigation: FC = () => {
         <MobileNav
           isOpen={isMobileNavOpen}
           onClose={onCloseMobileNav}
-          navItems={userNavItems}
+          navItems={userNavItems} // Mobile studio nav always gets the full studio menu
           brandLabel="Phoo"
           brandColor="brand.orange"
           variant="light"

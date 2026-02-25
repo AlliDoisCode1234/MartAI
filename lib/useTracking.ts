@@ -8,12 +8,17 @@ import { api } from '@/convex/_generated/api';
 function getSessionId(): string {
   if (typeof window === 'undefined') return '';
 
-  let sessionId = sessionStorage.getItem('martai_session_id');
-  if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    sessionStorage.setItem('martai_session_id', sessionId);
+  try {
+    let sessionId = sessionStorage.getItem('martai_session_id');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem('martai_session_id', sessionId);
+    }
+    return sessionId;
+  } catch {
+    // sessionStorage unavailable (Safari private browsing)
+    return crypto.randomUUID();
   }
-  return sessionId;
 }
 
 // Get simplified user agent info
@@ -45,13 +50,14 @@ type TrackingEvent = {
  * Hook for tracking analytics events
  *
  * Features:
- * - Auto-tracks clicks on elements with data-track-id
+ * - Auto-tracks clicks on elements with data-track-id (when enabled)
  * - Debounces rapid clicks (300ms)
  * - Includes sessionId, url, referrer, userAgent
+ * - Respects cookie consent: all tracking is gated by the `enabled` flag
  *
  * Usage:
  * ```tsx
- * const { track, trackPageView } = useTracking();
+ * const { track, trackPageView } = useTracking({ enabled: hasConsent });
  *
  * // Manual tracking
  * track('button_click', 'signup_cta', { source: 'homepage' });
@@ -60,7 +66,8 @@ type TrackingEvent = {
  * <Button data-track-id="signup_submit">Sign Up</Button>
  * ```
  */
-export function useTracking() {
+export function useTracking(options: { enabled?: boolean } = {}) {
+  const { enabled = true } = options;
   const trackEventMutation = useMutation(api.analytics.events.trackEvent);
   const lastClickTime = useRef<number>(0);
   const lastTrackId = useRef<string | null>(null);
@@ -68,6 +75,7 @@ export function useTracking() {
   const track = useCallback(
     (event: string, trackId?: string, properties?: Record<string, unknown>) => {
       if (typeof window === 'undefined') return;
+      if (!enabled) return;
 
       trackEventMutation({
         sessionId: getSessionId(),
@@ -77,12 +85,11 @@ export function useTracking() {
         url: window.location.pathname,
         referrer: document.referrer || undefined,
         userAgent: getUserAgentSummary(),
-      }).catch((err) => {
+      }).catch(() => {
         // Silent fail - don't break the app if tracking fails
-        console.debug('[Analytics] Track failed:', err);
       });
     },
-    [trackEventMutation]
+    [trackEventMutation, enabled]
   );
 
   const trackPageView = useCallback(
@@ -93,8 +100,10 @@ export function useTracking() {
   );
 
   // Auto-track clicks on data-track-id elements with debounce
+  // Only register listener when tracking is enabled (consent granted)
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!enabled) return;
 
     const handleClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest('[data-track-id]');
@@ -117,7 +126,7 @@ export function useTracking() {
 
     document.addEventListener('click', handleClick, { capture: true });
     return () => document.removeEventListener('click', handleClick, { capture: true });
-  }, [track]);
+  }, [track, enabled]);
 
   return { track, trackPageView };
 }

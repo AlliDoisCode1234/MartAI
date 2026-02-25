@@ -102,8 +102,14 @@ export function useProject(
     }
 
     // Check localStorage for stored project
-    const storedId =
-      typeof window !== 'undefined' ? localStorage.getItem('currentProjectId') : null;
+    let storedId: string | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        storedId = localStorage.getItem('currentProjectId');
+      } catch {
+        // Ignore Storage errors in Safari private browsing
+      }
+    }
 
     // Validate stored ID exists in user's projects
     const matchedProject = storedId
@@ -116,7 +122,11 @@ export function useProject(
     if (selectedId !== autoSelectedId) {
       setAutoSelectedId(selectedId);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('currentProjectId', selectedId);
+        try {
+          localStorage.setItem('currentProjectId', selectedId);
+        } catch {
+          // Ignore Storage errors
+        }
       }
     }
   }, [autoSelect, userProjects, autoSelectedId]);
@@ -128,7 +138,11 @@ export function useProject(
   const setCurrentProject = useCallback(
     (newProjectId: string) => {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('currentProjectId', newProjectId);
+        try {
+          localStorage.setItem('currentProjectId', newProjectId);
+        } catch {
+          // Ignore Storage errors
+        }
       }
       if (autoSelect) {
         setAutoSelectedId(newProjectId);

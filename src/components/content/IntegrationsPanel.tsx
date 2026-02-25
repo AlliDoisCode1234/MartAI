@@ -11,7 +11,7 @@
 'use client';
 
 import React from 'react';
-import { Box, VStack, HStack, Text, Icon, Button, Skeleton } from '@chakra-ui/react';
+import { Box, VStack, HStack, Flex, Text, Icon, Button, Skeleton } from '@chakra-ui/react';
 import { FiZap, FiSettings } from 'react-icons/fi';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -58,14 +58,14 @@ export function IntegrationsPanel({ projectId, onPublish }: Props) {
 
   return (
     <Box p={4} borderWidth="1px" borderRadius="lg" bg="white">
-      <HStack justify="space-between" mb={3}>
-        <HStack>
+      <Flex justify="space-between" align="center" mb={3} wrap="wrap" gap={2}>
+        <HStack wrap="wrap">
           <Icon as={FiZap} color="orange.500" />
           <Text fontWeight="semibold" fontSize="sm">
             Publish Integrations
           </Text>
           {connectedCount > 0 && (
-            <Text fontSize="xs" color="gray.500">
+            <Text fontSize="xs" color="gray.500" whiteSpace="nowrap">
               ({connectedCount} connected)
             </Text>
           )}
@@ -75,7 +75,7 @@ export function IntegrationsPanel({ projectId, onPublish }: Props) {
             Manage
           </Button>
         </Link>
-      </HStack>
+      </Flex>
 
       {hasAnyConnection ? (
         <VStack spacing={2} align="stretch">

@@ -16,6 +16,7 @@ import { Container, VStack, Box, useToast } from '@chakra-ui/react';
 import { AnimatePresence } from 'framer-motion';
 import { useMutation, useAction, useConvex, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { useAuth } from '@/lib/useAuth';
 import { MartLoader } from '@/src/components/assistant';
 
@@ -36,7 +37,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
-  const { isAuthenticated, user, loading: authLoading } = useAuth();
+  const { isAuthenticated, user, loading: authLoading, logout } = useAuth();
   const convex = useConvex();
 
   // State
@@ -180,8 +181,12 @@ export default function OnboardingPage() {
       setGa4Connected(true);
 
       // Restore projectId from session storage
-      const storedProjectId = sessionStorage.getItem('onboarding_projectId');
-      if (storedProjectId) setProjectId(storedProjectId);
+      try {
+        const storedProjectId = sessionStorage.getItem('onboarding_projectId');
+        if (storedProjectId) setProjectId(storedProjectId);
+      } catch {
+        // Ignore in Safari private browsing
+      }
 
       // Update onboarding steps in DB
       updateMultipleSteps({
@@ -212,8 +217,12 @@ export default function OnboardingPage() {
       setStep(4); // Stay on step 4
 
       // Restore projectId from session storage
-      const storedProjectId = sessionStorage.getItem('onboarding_projectId');
-      if (storedProjectId) setProjectId(storedProjectId);
+      try {
+        const storedProjectId = sessionStorage.getItem('onboarding_projectId');
+        if (storedProjectId) setProjectId(storedProjectId);
+      } catch {
+        // Ignore in Safari private browsing
+      }
 
       // Clear URL params but keep step
       window.history.replaceState({}, '', `/onboarding?step=4`);
@@ -246,20 +255,47 @@ export default function OnboardingPage() {
   // IMPORTANT: Only check auth state here, NOT user data.
   // user === undefined means the query is still loading, not that no user exists.
   // SKIP when returning from OAuth/payment flows — Convex auth needs time to reconnect.
-  const isOAuthReturn = !!(searchParams?.get("success") || searchParams?.get("setup") || searchParams?.get("payment") || searchParams?.get("ga4") || searchParams?.get("gsc"));
+  const isOAuthReturn = !!(
+    searchParams?.get('success') ||
+    searchParams?.get('setup') ||
+    searchParams?.get('payment') ||
+    searchParams?.get('ga4') ||
+    searchParams?.get('gsc')
+  );
   useEffect(() => {
     if (isOAuthReturn) return; // Don't redirect during OAuth callback processing
     if (!authLoading && !isAuthenticated) {
-      router.replace("/auth/login");
+      router.replace('/auth/login');
     }
   }, [authLoading, isAuthenticated, router, isOAuthReturn]);
 
   // Edge case: authenticated but no user record in DB
+  // Add a 3-second grace period to handle the race condition where Convex is still writing the user document
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     if (!authLoading && isAuthenticated && user === null) {
-      router.replace('/auth/login');
+      console.log('[Onboarding] Authenticated but user is null. Waiting for Convex...');
+      timeoutId = setTimeout(() => {
+        console.warn('[Onboarding] User still null after timeout. Invalid session.');
+        // Scrub the zombie session token before redirecting
+        // Note: We call signOut directly instead of logout() to avoid
+        // the double-navigation issue (logout() navigates to / first)
+        logout()
+          .catch(() => {
+            /* sign-out may fail if session is already dead */
+          })
+          .finally(() => {
+            // Use window.location to force a full reload and clear any cached states
+            window.location.href = '/auth/login?error=session_invalid';
+          });
+      }, 3000);
     }
-  }, [authLoading, isAuthenticated, user, router]);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [authLoading, isAuthenticated, user, logout]);
 
   // Redirect completed users to dashboard
   useEffect(() => {
@@ -381,7 +417,11 @@ export default function OnboardingPage() {
         });
         if (newProjectId) {
           setProjectId(newProjectId);
-          localStorage.setItem('currentProjectId', newProjectId);
+          try {
+            localStorage.setItem('currentProjectId', newProjectId);
+          } catch {
+            // Ignore in Safari private browsing
+          }
           // Batch both steps in ONE write to avoid write conflicts
           await updateMultipleSteps({
             steps: [
@@ -396,26 +436,26 @@ export default function OnboardingPage() {
             try {
               // Set status to generating
               await convex.mutation(api.projects.projects.updateProject, {
-                projectId: newProjectId as any,
+                projectId: newProjectId as Id<'projects'>,
                 generationStatus: 'generating',
               });
 
               console.log('[ONBOARDING DEBUG] Starting background generation...');
               console.log('[ONBOARDING DEBUG] Calling generateKeywordsFromUrl...');
               const kwResult = await generateKeywordsFromUrl({
-                projectId: newProjectId as any,
+                projectId: newProjectId as Id<'projects'>,
                 limit: 30,
               });
               console.log('[ONBOARDING DEBUG] generateKeywordsFromUrl SUCCESS:', kwResult);
 
               console.log('[ONBOARDING DEBUG] Calling generateClusters...');
-              await generateClusters({ projectId: newProjectId as any });
+              await generateClusters({ projectId: newProjectId as Id<'projects'> });
               console.log('[ONBOARDING DEBUG] generateClusters completed');
 
               // Generate content calendar using the working system
               console.log('[ONBOARDING DEBUG] Calling generateContentCalendar...');
               const calendarResult = await generateContentCalendar({
-                projectId: newProjectId as any,
+                projectId: newProjectId as Id<'projects'>,
                 useGa4Gsc: false, // GA4/GSC not connected yet at this step
               });
               console.log(
@@ -424,12 +464,12 @@ export default function OnboardingPage() {
 
               // Generate MR score
               console.log('[ONBOARDING DEBUG] Calling generatePreliminaryScore...');
-              await generatePreliminaryScore({ projectId: newProjectId as any });
+              await generatePreliminaryScore({ projectId: newProjectId as Id<'projects'> });
               console.log('[ONBOARDING DEBUG] All background generation complete!');
 
               // Set status to complete
               await convex.mutation(api.projects.projects.updateProject, {
-                projectId: newProjectId as any,
+                projectId: newProjectId as Id<'projects'>,
                 generationStatus: 'complete',
               });
             } catch (bgError) {
@@ -437,7 +477,7 @@ export default function OnboardingPage() {
               // Set status to error
               await convex
                 .mutation(api.projects.projects.updateProject, {
-                  projectId: newProjectId as any,
+                  projectId: newProjectId as Id<'projects'>,
                   generationStatus: 'error',
                 })
                 .catch(console.error);
@@ -467,7 +507,7 @@ export default function OnboardingPage() {
     try {
       // Generate auth URL with returnTo so callback redirects back to onboarding
       const authUrl = await generateAuthUrl({
-        projectId: projectId as any,
+        projectId: projectId as Id<'projects'>,
         returnTo: '/onboarding?step=4',
       });
 
@@ -477,9 +517,13 @@ export default function OnboardingPage() {
       }
 
       // Save all state before redirect to prevent "Leave site?" warning
-      sessionStorage.setItem('onboarding_projectId', projectId);
-      sessionStorage.setItem('onboarding_step', '4');
-      sessionStorage.setItem('onboarding_formData', JSON.stringify(formData));
+      try {
+        sessionStorage.setItem('onboarding_projectId', projectId);
+        sessionStorage.setItem('onboarding_step', '4');
+        sessionStorage.setItem('onboarding_formData', JSON.stringify(formData));
+      } catch {
+        // Ignore in Safari private browsing
+      }
 
       // Full page redirect - user will return to /onboarding?step=4&success=true after OAuth
       window.location.href = authUrl;
@@ -498,7 +542,7 @@ export default function OnboardingPage() {
         try {
           console.log('[ONBOARDING] Generating zero-click content calendar...');
           const calendarResult = await generateContentCalendar({
-            projectId: projectId as any,
+            projectId: projectId as Id<'projects'>,
             useGa4Gsc: ga4Connected,
           });
           console.log(

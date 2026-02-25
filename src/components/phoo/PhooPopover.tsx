@@ -55,7 +55,7 @@ export default function PhooPopover({
         transition={{ duration: 0.2, ease: 'easeOut' }}
         position="fixed"
         bottom={isMinimized ? 4 : 6}
-        left={isMinimized ? 4 : 6}
+        right={isMinimized ? 4 : 6}
         zIndex={1100}
         w={isMinimized ? 'auto' : { base: 'calc(100vw - 48px)', sm: '400px' }}
         maxW="400px"

@@ -95,8 +95,11 @@ export function KeywordsClimbedCard({ keywords, suggestedKeywords, totalCount, h
           ))}
 
           {/* Suggested keyword CTAs — dashed border, amber accent */}
-          {suggestions.map((sk) => (
-            <Link key={sk.keyword} href={`/studio?keyword=${encodeURIComponent(sk.keyword)}`}>
+          {suggestions.map((sk, i) => (
+            <Link
+              key={`${sk.keyword}-${i}`}
+              href={`/studio?keyword=${encodeURIComponent(sk.keyword)}`}
+            >
               <HStack
                 justify="space-between"
                 py={1.5}

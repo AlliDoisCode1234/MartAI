@@ -77,29 +77,32 @@ export default function DashboardPage() {
 
   const kpis = useQuery(
     api.analytics.analytics.getDashboardKPIs,
-    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+    projectId && isAuthenticated ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
 
-  const stats = useQuery(api.contentPieces.getStats, projectId ? { projectId } : 'skip');
+  const stats = useQuery(
+    api.contentPieces.getStats,
+    projectId && isAuthenticated ? { projectId } : 'skip'
+  );
 
   const gscStats = useQuery(
     api.analytics.gscKeywords.getGSCDashboardStats,
-    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+    projectId && isAuthenticated ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
 
   const growthHistory = useQuery(
     api.analytics.analytics.getGrowthHistory,
-    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+    projectId && isAuthenticated ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
 
   const enrichedKeywordsData = useQuery(
     api.seo.keywordsData.getKeywordsEnriched,
-    projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
+    projectId && isAuthenticated ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
 
   const recentContent = useQuery(
     api.contentPieces.listByProject,
-    projectId ? { projectId: projectId as Id<'projects'>, limit: 10 } : 'skip'
+    projectId && isAuthenticated ? { projectId: projectId as Id<'projects'>, limit: 10 } : 'skip'
   );
 
   const syncProject = useAction(api.analytics.scheduler.syncProject);
@@ -262,16 +265,16 @@ export default function DashboardPage() {
           {/* ── Tier 1: The Executive Briefing ─────────────────── */}
           <Box>
             <DashboardStatRow
-              sessions={kpis?.sessions.value ?? 0}
-              pageViews={kpis?.pageviews.value ?? 0}
-              avgSessionDuration={kpis?.avgSessionDuration.value ?? 0}
-              bounceRate={kpis?.bounceRate.value ?? 0}
+              sessions={kpis?.sessions?.value ?? 0}
+              pageViews={kpis?.pageviews?.value ?? 0}
+              avgSessionDuration={kpis?.avgSessionDuration?.value ?? 0}
+              bounceRate={kpis?.bounceRate?.value ?? 0}
               avgPosition={gscStats?.avgPosition ?? 0}
               impressions={gscStats?.impressions ?? 0}
               visibilityScore={kpis?.visibilityScore ?? 0}
               visibilityChange={kpis?.visibilityScoreChange ?? 0}
-              sessionsChange={kpis?.sessions.change ?? 0}
-              pageViewsChange={kpis?.pageviews.change ?? 0}
+              sessionsChange={kpis?.sessions?.change ?? 0}
+              pageViewsChange={kpis?.pageviews?.change ?? 0}
               hasData={hasKPIData}
             />
           </Box>
@@ -349,7 +352,7 @@ export default function DashboardPage() {
           {/* ── Tier 3: Growth ─────────────────────────────────── */}
           <Box>
             <CumulativeGrowthChart
-              totalClicks={kpis?.clicks.value ?? 0}
+              totalClicks={kpis?.clicks?.value ?? 0}
               keywordsInTop10={gscStats?.keywordCount ?? 0}
               hasData={hasKPIData}
               // @ts-ignore
