@@ -1,31 +1,24 @@
 /**
- * Canonical Rating Query
+ * Canonical Rating Query — SINGLE SOURCE OF TRUTH
  *
  * Component Hierarchy:
  * convex/canonical/rating.ts (this file)
  * └── Used by: useProject, Dashboard, Ask Phoo, PhooRatingCard
  *
- * SINGLE SOURCE OF TRUTH for project health rating.
- * Wraps the comprehensive getPhooRating calculation and provides
- * a consistent, canonical interface for all consumers.
+ * Reads cached Phoo Rating from `projectScores` table.
+ * Scores are computed every 6h by the sync cron via calculatePhooRating.
  *
- * NOTE: This delegates to phoo/lib/rating.ts for the actual calculation.
- * The mrScore system (martaiRatingQueries.ts) is DEPRECATED.
- *
- * @see implementation_plan.md - Section 2.1.2
+ * REPLACES: On-demand computation (was too expensive, hit many tables per load)
+ * REPLACES: mrScore system (deprecated)
+ * REPLACES: phoo/lib/rating.ts direct calls (deprecated)
  */
 
 import { query } from '../_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from '../lib/rbac';
 
-/**
- * Rating status labels
- */
 export type RatingStatus = 'Needs Work' | 'Fair' | 'Good' | 'Great' | 'Excellent';
 
-/**
- * Breakdown of rating components
- */
 export interface RatingBreakdown {
   component: string;
   score: number;
@@ -34,9 +27,6 @@ export interface RatingBreakdown {
   details: string;
 }
 
-/**
- * Canonical rating result
- */
 export interface CanonicalRating {
   rating: number;
   status: RatingStatus;
@@ -47,202 +37,166 @@ export interface CanonicalRating {
   lastUpdated: number;
 }
 
-/**
- * Rating thresholds matching phoo/lib/rating.ts
- */
-const RATING_THRESHOLDS = {
-  NEEDS_WORK: { min: 0, max: 30, label: 'Needs Work' as RatingStatus, color: 'red' },
-  FAIR: { min: 30, max: 50, label: 'Fair' as RatingStatus, color: 'orange' },
-  GOOD: { min: 50, max: 70, label: 'Good' as RatingStatus, color: 'yellow' },
-  GREAT: { min: 70, max: 85, label: 'Great' as RatingStatus, color: 'green' },
-  EXCELLENT: { min: 85, max: 100, label: 'Excellent' as RatingStatus, color: 'teal' },
-} as const;
-
-/**
- * Get status and color from rating value
- */
 function getStatusFromRating(rating: number): { status: RatingStatus; color: string } {
-  if (rating >= RATING_THRESHOLDS.EXCELLENT.min)
-    return { status: RATING_THRESHOLDS.EXCELLENT.label, color: RATING_THRESHOLDS.EXCELLENT.color };
-  if (rating >= RATING_THRESHOLDS.GREAT.min)
-    return { status: RATING_THRESHOLDS.GREAT.label, color: RATING_THRESHOLDS.GREAT.color };
-  if (rating >= RATING_THRESHOLDS.GOOD.min)
-    return { status: RATING_THRESHOLDS.GOOD.label, color: RATING_THRESHOLDS.GOOD.color };
-  if (rating >= RATING_THRESHOLDS.FAIR.min)
-    return { status: RATING_THRESHOLDS.FAIR.label, color: RATING_THRESHOLDS.FAIR.color };
-  return { status: RATING_THRESHOLDS.NEEDS_WORK.label, color: RATING_THRESHOLDS.NEEDS_WORK.color };
+  if (rating >= 85) return { status: 'Excellent', color: 'teal' };
+  if (rating >= 70) return { status: 'Great', color: 'green' };
+  if (rating >= 50) return { status: 'Good', color: 'yellow' };
+  if (rating >= 30) return { status: 'Fair', color: 'orange' };
+  return { status: 'Needs Work', color: 'red' };
 }
 
 /**
- * Component weights for rating calculation
+ * Component weight configuration (mirrors martaiRating.ts)
  */
-const COMPONENT_WEIGHTS = {
-  seoAudit: 0.25,
-  keywords: 0.2,
-  clusters: 0.15,
-  content: 0.25,
-  geoReadiness: 0.15,
+const WEIGHTS = {
+  visibility: 0.25,
+  trafficHealth: 0.15,
+  ctrPerformance: 0.1,
+  engagementQuality: 0.05,
+  seoAudit: 0.15,
+  keywordStrategy: 0.1,
+  contentExecution: 0.1,
+  geoReadiness: 0.1,
 } as const;
 
+const COMPONENT_LABELS: Record<string, string> = {
+  visibility: 'Search Visibility',
+  trafficHealth: 'Traffic Health',
+  ctrPerformance: 'CTR Performance',
+  engagementQuality: 'Engagement Quality',
+  seoAudit: 'SEO Audit',
+  keywordStrategy: 'Keyword Strategy',
+  contentExecution: 'Content Execution',
+  geoReadiness: 'GEO Readiness',
+};
+
+const COMPONENT_OPPORTUNITIES: Record<string, string> = {
+  visibility: 'Improve your search rankings by targeting long-tail keywords.',
+  trafficHealth: 'Boost organic traffic by publishing more optimized content.',
+  ctrPerformance: 'Improve click-through rate with better meta titles and descriptions.',
+  engagementQuality: 'Reduce bounce rate by improving page speed and content relevance.',
+  seoAudit: 'Run an SEO audit to identify and fix technical issues.',
+  keywordStrategy: 'Expand keyword research with search volume and difficulty data.',
+  contentExecution: 'Create and publish more content pieces from your briefs.',
+  geoReadiness: 'Add sitemap.xml, structured data, and robots.txt to your site.',
+};
+
 /**
- * Get canonical rating for a project
+ * Get canonical Phoo Rating for a project.
  *
  * Use this query EVERYWHERE rating is needed for data consistency.
- * Replaces: mrScore in useProject, getPhooRating direct calls
  */
 export const getCanonicalRating = query({
   args: {
     projectId: v.id('projects'),
   },
   handler: async (ctx, { projectId }): Promise<CanonicalRating> => {
-    const breakdown: RatingBreakdown[] = [];
-    const insights: string[] = [];
+    // Soft RBAC guard: return default rating on failure instead of crashing UI suspension
+    try {
+      await requireProjectAccess(ctx, projectId, 'viewer');
+    } catch {
+      return createDefaultRating();
+    }
 
-    // 1. SEO Audit Component (25% weight)
-    const seoAudit = await ctx.db
-      .query('seoAudits')
-      .withIndex('by_project', (q) => q.eq('projectId', projectId))
+    // Read the latest cached score from projectScores
+    const latestScore = await ctx.db
+      .query('projectScores')
+      .withIndex('by_project_date', (q) => q.eq('projectId', projectId))
       .order('desc')
       .first();
 
-    let seoScore = 0;
-    if (seoAudit) {
-      // Calculate SEO score from nested audit components
-      const technicalScore = seoAudit.technicalSeo?.score ?? 0;
-      const onPageScore = seoAudit.onPageSeo?.score ?? 0;
-      const contentScore = seoAudit.contentQuality?.score ?? 0;
-      seoScore = Math.round((technicalScore + onPageScore + contentScore) / 3);
-      insights.push(`SEO audit shows ${seoScore}% health`);
-    } else {
-      insights.push('No SEO audit found - run an audit to improve your score');
+    // No score yet — return default
+    if (!latestScore) {
+      return createDefaultRating();
     }
 
-    breakdown.push({
-      component: 'SEO Audit',
-      score: seoScore,
-      weight: COMPONENT_WEIGHTS.seoAudit,
-      weighted: Math.round(seoScore * COMPONENT_WEIGHTS.seoAudit),
-      details: seoAudit
-        ? `Technical: ${seoAudit.technicalSeo?.score ?? 0}%, On-Page: ${seoAudit.onPageSeo?.score ?? 0}%`
-        : 'No audit',
-    });
+    // Build breakdown from cached component scores
+    const components = {
+      visibility: latestScore.visibility ?? 0,
+      trafficHealth: latestScore.trafficHealth ?? 0,
+      ctrPerformance: latestScore.ctrPerformance ?? 0,
+      engagementQuality: latestScore.engagementQuality ?? 0,
+      seoAudit: latestScore.seoAudit ?? 0,
+      keywordStrategy: latestScore.keywordStrategy ?? 0,
+      contentExecution: latestScore.contentExecution ?? 0,
+      geoReadiness: latestScore.geoReadiness ?? 0,
+    };
 
-    // 2. Keywords Component (20% weight)
-    const keywords = await ctx.db
-      .query('keywords')
-      .withIndex('by_project', (q) => q.eq('projectId', projectId))
-      .collect();
+    const breakdown: RatingBreakdown[] = Object.entries(components).map(([key, score]) => ({
+      component: COMPONENT_LABELS[key] || key,
+      score,
+      weight: WEIGHTS[key as keyof typeof WEIGHTS] ?? 0,
+      weighted: Math.round(score * (WEIGHTS[key as keyof typeof WEIGHTS] ?? 0)),
+      details: `${score}/100`,
+    }));
 
-    // Score based on keyword quantity and quality
-    let keywordScore = 0;
-    const keywordCount = keywords.length;
-    if (keywordCount >= 50) keywordScore = 100;
-    else if (keywordCount >= 25) keywordScore = 75;
-    else if (keywordCount >= 10) keywordScore = 50;
-    else if (keywordCount >= 5) keywordScore = 30;
-    else if (keywordCount > 0) keywordScore = 15;
+    const { status, color } = getStatusFromRating(latestScore.overall);
 
-    insights.push(`Tracking ${keywordCount} keywords`);
+    // Build insights from low-scoring components
+    const insights: string[] = [];
+    const sortedByImpact = Object.entries(components)
+      .map(([key, score]) => ({
+        key,
+        score,
+        weight: WEIGHTS[key as keyof typeof WEIGHTS] ?? 0,
+        impact: (WEIGHTS[key as keyof typeof WEIGHTS] ?? 0) * (100 - score),
+      }))
+      .sort((a, b) => b.impact - a.impact);
 
-    breakdown.push({
-      component: 'Keywords',
-      score: keywordScore,
-      weight: COMPONENT_WEIGHTS.keywords,
-      weighted: Math.round(keywordScore * COMPONENT_WEIGHTS.keywords),
-      details: `${keywordCount} keywords tracked`,
-    });
-
-    // 3. Clusters Component (15% weight)
-    const clusters = await ctx.db
-      .query('keywordClusters')
-      .withIndex('by_project', (q) => q.eq('projectId', projectId))
-      .collect();
-
-    let clusterScore = 0;
-    const clusterCount = clusters.length;
-    if (clusterCount >= 10) clusterScore = 100;
-    else if (clusterCount >= 5) clusterScore = 70;
-    else if (clusterCount >= 3) clusterScore = 50;
-    else if (clusterCount > 0) clusterScore = 25;
-
-    insights.push(`${clusterCount} topic clusters defined`);
-
-    breakdown.push({
-      component: 'Topic Clusters',
-      score: clusterScore,
-      weight: COMPONENT_WEIGHTS.clusters,
-      weighted: Math.round(clusterScore * COMPONENT_WEIGHTS.clusters),
-      details: `${clusterCount} clusters`,
-    });
-
-    // 4. Content Component (25% weight)
-    const contentPieces = await ctx.db
-      .query('contentPieces')
-      .withIndex('by_project', (q) => q.eq('projectId', projectId))
-      .collect();
-
-    let contentScore = 0;
-    const contentCount = contentPieces.length;
-    const publishedCount = contentPieces.filter((p) => p.status === 'published').length;
-
-    if (publishedCount >= 20) contentScore = 100;
-    else if (publishedCount >= 10) contentScore = 75;
-    else if (publishedCount >= 5) contentScore = 50;
-    else if (contentCount >= 5) contentScore = 35;
-    else if (contentCount > 0) contentScore = 20;
-
-    insights.push(`${publishedCount} pieces published of ${contentCount} total`);
-
-    breakdown.push({
-      component: 'Content',
-      score: contentScore,
-      weight: COMPONENT_WEIGHTS.content,
-      weighted: Math.round(contentScore * COMPONENT_WEIGHTS.content),
-      details: `${publishedCount} published, ${contentCount} total`,
-    });
-
-    // 5. GEO Readiness Component (15% weight)
-    const calendar = await ctx.db
-      .query('contentCalendars')
-      .withIndex('by_project', (q) => q.eq('projectId', projectId))
-      .first();
-
-    let geoScore = 0;
-    if (calendar) {
-      geoScore = 50;
-      insights.push('Content calendar created');
-    } else {
-      insights.push('No content calendar - create one to improve GEO');
+    for (const comp of sortedByImpact.slice(0, 3)) {
+      if (comp.score < 50) {
+        insights.push(`${COMPONENT_LABELS[comp.key]} is at ${comp.score}% — room to improve`);
+      }
     }
 
-    breakdown.push({
-      component: 'GEO Readiness',
-      score: geoScore,
-      weight: COMPONENT_WEIGHTS.geoReadiness,
-      weighted: Math.round(geoScore * COMPONENT_WEIGHTS.geoReadiness),
-      details: calendar ? 'Calendar active' : 'No calendar',
-    });
+    if (insights.length === 0) {
+      insights.push('Your SEO strategy is looking strong across all dimensions.');
+    }
 
-    // Calculate overall rating
-    const rating = breakdown.reduce((sum, b) => sum + b.weighted, 0);
-    const { status, color } = getStatusFromRating(rating);
-
-    // Determine top opportunity
-    const sortedBreakdown = [...breakdown].sort((a, b) => a.score - b.score);
-    const weakest = sortedBreakdown[0];
+    // Top opportunity from weakest high-weight component
+    const topComp = sortedByImpact[0];
     const topOpportunity =
-      weakest.score < 50
-        ? `Focus on improving ${weakest.component} (currently ${weakest.score}%)`
+      topComp && topComp.score < 70
+        ? COMPONENT_OPPORTUNITIES[topComp.key] || 'Keep up the great work!'
         : 'Keep up the great work!';
 
     return {
-      rating,
+      rating: latestScore.overall,
       status,
       color,
       breakdown,
       insights,
       topOpportunity,
-      lastUpdated: Date.now(),
+      lastUpdated: latestScore.date,
     };
   },
 });
+
+function createDefaultRating(): CanonicalRating {
+  const components = [
+    'visibility',
+    'trafficHealth',
+    'ctrPerformance',
+    'engagementQuality',
+    'seoAudit',
+    'keywordStrategy',
+    'contentExecution',
+    'geoReadiness',
+  ];
+
+  return {
+    rating: 0,
+    status: 'Needs Work',
+    color: 'red',
+    breakdown: components.map((key) => ({
+      component: COMPONENT_LABELS[key] || key,
+      score: 0,
+      weight: WEIGHTS[key as keyof typeof WEIGHTS] ?? 0,
+      weighted: 0,
+      details: 'No data yet',
+    })),
+    insights: ['Connect GA4 and Google Search Console to start tracking your SEO health.'],
+    topOpportunity: 'Start by running an SEO audit on your website.',
+    lastUpdated: 0,
+  };
+}

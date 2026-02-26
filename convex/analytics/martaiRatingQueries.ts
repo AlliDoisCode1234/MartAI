@@ -1,15 +1,20 @@
 /**
- * MartAI Rating - Queries and Mutations
+ * Phoo Rating — Queries and Mutations
  *
- * These are the database operations for MR scoring.
+ * Component Hierarchy:
+ * convex/analytics/martaiRatingQueries.ts (this file)
+ * └── Used by: martaiRating.ts (calculator), canonical/rating.ts (SSOT reader)
+ *
+ * Database operations for Phoo Rating scoring.
  * Queries/mutations can't use 'use node', so they're in this separate file.
  */
 
 import { internalQuery, internalMutation, query, mutation } from '../_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from '../lib/rbac';
 
 /**
- * Store a score in the database
+ * Store a unified Phoo Rating score
  */
 export const storeScore = internalMutation({
   args: {
@@ -17,12 +22,17 @@ export const storeScore = internalMutation({
     date: v.number(),
     overall: v.number(),
     tier: v.string(),
+    // External signals
     visibility: v.number(),
     trafficHealth: v.number(),
     ctrPerformance: v.number(),
     engagementQuality: v.number(),
-    quickWinPotential: v.number(),
-    contentVelocity: v.number(),
+    // Platform signals
+    seoAudit: v.optional(v.number()),
+    keywordStrategy: v.optional(v.number()),
+    contentExecution: v.optional(v.number()),
+    geoReadiness: v.optional(v.number()),
+    // Raw metrics
     rawMetrics: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
@@ -38,6 +48,9 @@ export const getLatestScore = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
+    // RBAC: verify user has at least viewer access
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
+
     return await ctx.db
       .query('projectScores')
       .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
@@ -55,6 +68,9 @@ export const getScoreHistory = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // RBAC: verify user has at least viewer access
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
+
     return await ctx.db
       .query('projectScores')
       .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
@@ -81,64 +97,119 @@ export const countBriefsThisMonth = internalQuery({
   },
 });
 
+// ─── Helper queries for unified Phoo Rating ──────────────────────────────────
+
 /**
- * Generate preliminary MR score for early-stage projects (no GA4/GSC yet)
- * This gives users immediate feedback after onboarding based on their keywords/clusters
+ * Get latest SEO audit for a project
+ */
+export const getLatestSEOAudit = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('seoAudits')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .order('desc')
+      .first();
+  },
+});
+
+/**
+ * Get keyword statistics for scoring
+ */
+export const getKeywordStats = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const keywords = await ctx.db
+      .query('keywords')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .collect();
+
+    return {
+      total: keywords.length,
+      withVolume: keywords.filter((k) => k.searchVolume && k.searchVolume > 0).length,
+      highPriority: keywords.filter((k) => k.priority === 'high').length,
+      approved: keywords.filter((k) => k.status === 'approved' || k.status === 'implemented')
+        .length,
+    };
+  },
+});
+
+/**
+ * Get content execution statistics for scoring
+ */
+export const getContentStats = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const contentPieces = await ctx.db
+      .query('contentPieces')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .collect();
+
+    const clusters = await ctx.db
+      .query('keywordClusters')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .collect();
+
+    const calendar = await ctx.db
+      .query('contentCalendars')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+
+    return {
+      totalPieces: contentPieces.length,
+      published: contentPieces.filter((p) => p.status === 'published').length,
+      clusters: clusters.length,
+      hasCalendar: !!calendar,
+    };
+  },
+});
+
+/**
+ * Generate preliminary score for early-stage projects (no GA4/GSC yet)
+ * Gives users immediate feedback after onboarding
  */
 export const generatePreliminaryScore = mutation({
   args: {
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
-    // Check if score already exists
+    // RBAC: mutating a rating calculation requires editor access
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
+    // Don't overwrite existing scores
     const existingScore = await ctx.db
       .query('projectScores')
       .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
       .first();
 
-    if (existingScore) {
-      // Don't overwrite existing scores
-      return existingScore;
-    }
+    if (existingScore) return existingScore;
 
-    // Get keyword count
+    // Simple keyword/cluster-based preliminary score
     const keywords = await ctx.db
       .query('keywords')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .collect();
-    const keywordCount = keywords.length;
 
-    // Get cluster count
     const clusters = await ctx.db
       .query('keywordClusters')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .collect();
-    const clusterCount = clusters.length;
 
-    // Simple preliminary score based on what we have
-    // Keywords: 10+ = 40pts, 5+ = 25pts, 1+ = 15pts, 0 = 5pts
     let keywordScore = 5;
-    if (keywordCount >= 10) keywordScore = 40;
-    else if (keywordCount >= 5) keywordScore = 25;
-    else if (keywordCount >= 1) keywordScore = 15;
+    if (keywords.length >= 10) keywordScore = 40;
+    else if (keywords.length >= 5) keywordScore = 25;
+    else if (keywords.length >= 1) keywordScore = 15;
 
-    // Clusters: 3+ = 30pts, 1+ = 15pts, 0 = 5pts
     let clusterScore = 5;
-    if (clusterCount >= 3) clusterScore = 30;
-    else if (clusterCount >= 1) clusterScore = 15;
+    if (clusters.length >= 3) clusterScore = 30;
+    else if (clusters.length >= 1) clusterScore = 15;
 
-    // Base score for having a project = 10pts
-    const baseScore = 10;
+    const overall = Math.min(keywordScore + clusterScore + 10, 80);
 
-    // Total preliminary score (max ~80 without GA4/GSC, encouraging integration)
-    const overall = Math.min(keywordScore + clusterScore + baseScore, 80);
-
-    // Determine tier
     let tier = 'needs_work';
     if (overall >= 60) tier = 'good';
     else if (overall >= 40) tier = 'fair';
 
-    // Store preliminary score
     const scoreId = await ctx.db.insert('projectScores', {
       projectId: args.projectId,
       date: Date.now(),
@@ -148,16 +219,13 @@ export const generatePreliminaryScore = mutation({
       trafficHealth: 0,
       ctrPerformance: 0,
       engagementQuality: 0,
-      quickWinPotential: keywordScore,
-      contentVelocity: clusterScore,
-      rawMetrics: {
-        quickWinCount: keywordCount,
-        briefsThisMonth: clusterCount,
-      },
+      seoAudit: 0,
+      keywordStrategy: keywordScore,
+      contentExecution: clusterScore,
+      geoReadiness: 0,
     });
 
-    console.log(`[MR] Preliminary score for ${args.projectId}: ${overall} (${tier})`);
-
+    console.log(`[PhooRating] Preliminary score for ${args.projectId}: ${overall} (${tier})`);
     return { _id: scoreId, overall, tier };
   },
 });

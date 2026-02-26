@@ -835,25 +835,32 @@ export default defineSchema({
     .index('by_project', ['projectId'])
     .index('by_type', ['type']),
 
-  // MartAI Rating (MR) Historical Scores
+  // Phoo Rating — Unified SEO Health Score (0-100)
+  // 8 components: 55% external (GA4/GSC IL) + 45% platform signals
   projectScores: defineTable({
     projectId: v.id('projects'),
     date: v.number(),
-    // Overall MR score (0-100)
+    // Overall Phoo Rating (0-100)
     overall: v.number(),
-    // Tier: 'needs_work' | 'fair' | 'good' | 'really_good' | 'excellent' | 'super' | 'top_performer'
+    // Tier: 'needs_work' | 'fair' | 'good' | 'great' | 'excellent'
     tier: v.string(),
-    // Component scores (0-100 each)
-    visibility: v.number(),
-    trafficHealth: v.number(),
-    ctrPerformance: v.number(),
-    engagementQuality: v.number(),
-    quickWinPotential: v.number(),
-    contentVelocity: v.number(),
+    // ── External signal components (55% weight) ──
+    visibility: v.number(), // 25% — GSC avg position + quick wins
+    trafficHealth: v.number(), // 15% — GA4 session trends
+    ctrPerformance: v.number(), // 10% — GSC CTR
+    engagementQuality: v.number(), //  5% — GA4 bounce rate
+    // ── Platform signal components (45% weight) ──
+    seoAudit: v.optional(v.number()), // 15% — seoAudits table
+    keywordStrategy: v.optional(v.number()), // 10% — keywords table
+    contentExecution: v.optional(v.number()), // 10% — contentPieces + clusters + calendar
+    geoReadiness: v.optional(v.number()), // 10% — live site checks
+    // Legacy fields (kept for backward compatibility)
+    quickWinPotential: v.optional(v.number()),
+    contentVelocity: v.optional(v.number()),
     // Raw metrics for debugging + dashboard KPI snapshots
     rawMetrics: v.optional(
       v.object({
-        // MR scoring inputs
+        // Scoring inputs
         avgPosition: v.optional(v.number()),
         sessionsChange: v.optional(v.number()),
         ctr: v.optional(v.number()),
@@ -871,6 +878,18 @@ export default defineSchema({
         eventCount: v.optional(v.number()),
         conversions: v.optional(v.number()),
         keywordCount: v.optional(v.number()),
+        // GEO readiness details
+        hasSitemap: v.optional(v.boolean()),
+        hasRobotsTxt: v.optional(v.boolean()),
+        hasJsonLd: v.optional(v.boolean()),
+        hasLlmsTxt: v.optional(v.boolean()),
+        schemaTypesFound: v.optional(v.array(v.string())),
+        // Platform signal inputs
+        seoAuditScore: v.optional(v.number()),
+        keywordCount_total: v.optional(v.number()),
+        clusterCount: v.optional(v.number()),
+        contentPieceCount: v.optional(v.number()),
+        publishedCount: v.optional(v.number()),
       })
     ),
   })
