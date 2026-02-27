@@ -57,11 +57,15 @@ export const syncProjectData = internalAction({
           endDate,
         })) as RawGA4Response;
 
+        console.log(
+          `[GA4 Sync] Project ${projectId} Property ${ga4Connection.propertyId} fetched raw data. Row count: ${raw.rows?.length ?? 0}`
+        );
+        console.log(`[GA4 Sync] RAW PAYLOAD DUMP:`, JSON.stringify(raw));
+
         // Parse and normalize GA4 response using pure transform functions
         const parsed = parseGA4Response(raw);
-        if (parsed) {
-          ga4Data = normalizeGA4Metrics(parsed);
-        }
+        ga4Data = normalizeGA4Metrics(parsed);
+        console.log(`[GA4 Sync] Normalized data:`, JSON.stringify(ga4Data));
 
         await ctx.runMutation(api.integrations.ga4Connections.updateLastSync, {
           connectionId: ga4Connection._id,

@@ -21,14 +21,16 @@ import {
   Skeleton,
   Link,
   Icon,
+  useDisclosure,
 } from '@chakra-ui/react';
-import { FiExternalLink, FiTrash2, FiCheck } from 'react-icons/fi';
-import { SiGoogleanalytics, SiGooglesearchconsole } from 'react-icons/si';
+import { FiExternalLink, FiTrash2, FiCheck, FiZap } from 'react-icons/fi';
+import { SiGoogleanalytics, SiGooglesearchconsole, SiGoogletagmanager } from 'react-icons/si';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { useSearchParams } from 'next/navigation';
 import { ServiceAccountUpload } from '../integrations/ServiceAccountUpload';
+import { GtmAutomationModal } from './GtmAutomationModal';
 
 interface Props {
   projectId: Id<'projects'>;
@@ -38,9 +40,12 @@ interface Props {
 const GA4_COLOR = '#E37400';
 const GSC_COLOR = '#458CF5';
 
+const GTM_COLOR = '#246FDB';
+
 export function GoogleConnect({ projectId }: Props) {
   const toast = useToast();
   const searchParams = useSearchParams();
+  const { isOpen: isGtmOpen, onOpen: onGtmOpen, onClose: onGtmClose } = useDisclosure();
 
   const [isConnecting, setIsConnecting] = useState(false);
 
@@ -49,6 +54,9 @@ export function GoogleConnect({ projectId }: Props) {
     projectId,
   });
   const gscConnection = useQuery(api.integrations.gscConnections.getGSCConnection, {
+    projectId,
+  });
+  const gtmConnection = useQuery(api.integrations.gtmAutomation.getGTMConnection, {
     projectId,
   });
 
@@ -128,7 +136,7 @@ export function GoogleConnect({ projectId }: Props) {
   const handleDisconnectGA4 = async () => {
     if (!ga4Connection) return;
     try {
-      await deleteGA4Connection({ projectId });
+      await deleteGA4Connection({ connectionId: ga4Connection._id });
       toast({
         title: 'Disconnected',
         description: 'Google Analytics 4 connection removed',
@@ -148,7 +156,7 @@ export function GoogleConnect({ projectId }: Props) {
   const handleDisconnectGSC = async () => {
     if (!gscConnection) return;
     try {
-      await deleteGSCConnection({ projectId });
+      await deleteGSCConnection({ connectionId: gscConnection._id });
       toast({
         title: 'Disconnected',
         description: 'Search Console connection removed',
@@ -166,7 +174,7 @@ export function GoogleConnect({ projectId }: Props) {
   };
 
   // Loading state
-  if (ga4Connection === undefined || gscConnection === undefined) {
+  if (ga4Connection === undefined || gscConnection === undefined || gtmConnection === undefined) {
     return (
       <VStack spacing={4} align="stretch">
         <Box p={4} borderWidth="1px" borderRadius="lg" borderColor="gray.200">
@@ -189,6 +197,7 @@ export function GoogleConnect({ projectId }: Props) {
 
   const ga4Connected = !!ga4Connection;
   const gscConnected = !!gscConnection;
+  const gtmConnected = !!gtmConnection;
 
   return (
     <VStack spacing={4} align="stretch">
@@ -309,6 +318,70 @@ export function GoogleConnect({ projectId }: Props) {
         )}
       </Box>
 
+      {/* Google Tag Manager Card */}
+      <Box
+        p={4}
+        borderWidth="1px"
+        borderRadius="lg"
+        borderColor={gtmConnected ? 'green.200' : 'gray.200'}
+        bg={gtmConnected ? 'green.50' : 'white'}
+      >
+        <HStack justify="space-between">
+          <HStack spacing={3}>
+            <Icon as={SiGoogletagmanager} boxSize={6} color={GTM_COLOR} />
+            <Text fontWeight="bold">Google Tag Manager</Text>
+            {gtmConnected ? (
+              <Badge colorScheme="green" display="flex" alignItems="center" gap={1}>
+                <FiCheck size={12} />
+                Automated
+              </Badge>
+            ) : (
+              <Badge colorScheme="gray">Not Configured</Badge>
+            )}
+          </HStack>
+          {gtmConnected ? (
+            <IconButton
+              aria-label="Disconnect"
+              icon={<FiTrash2 />}
+              size="sm"
+              variant="ghost"
+              colorScheme="red"
+              onClick={() => {
+                toast({
+                  title: 'Manual Action Required',
+                  description:
+                    'To disconnect an automated GTM container, please remove it directly from your Google Tag Manager dashboard.',
+                  status: 'info',
+                  duration: 6000,
+                });
+              }}
+            />
+          ) : (
+            <Button
+              size="sm"
+              colorScheme="orange"
+              variant="outline"
+              leftIcon={<FiZap />}
+              onClick={onGtmOpen}
+            >
+              Automate Setup
+            </Button>
+          )}
+        </HStack>
+        {gtmConnected && gtmConnection && (
+          <VStack align="start" spacing={1} mt={2}>
+            <HStack>
+              <Text fontSize="sm" color="gray.600">
+                Container ID:
+              </Text>
+              <Text fontSize="sm" fontWeight="medium">
+                {gtmConnection.containerPublicId}
+              </Text>
+            </HStack>
+          </VStack>
+        )}
+      </Box>
+
       {/* Info text */}
       {!ga4Connected && !gscConnected && (
         <VStack align="start" spacing={1}>
@@ -342,6 +415,8 @@ export function GoogleConnect({ projectId }: Props) {
           }}
         />
       )}
+
+      <GtmAutomationModal isOpen={isGtmOpen} onClose={onGtmClose} projectId={projectId} />
     </VStack>
   );
 }

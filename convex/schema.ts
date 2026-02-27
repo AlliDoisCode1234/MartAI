@@ -631,6 +631,20 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index('by_project', ['projectId']),
 
+  // GTM Connections
+  gtmConnections: defineTable({
+    projectId: v.id('projects'),
+    accountId: v.string(),
+    containerId: v.string(),
+    containerPublicId: v.string(), // E.g., 'GTM-XXXXXXX'
+    workspaceId: v.string(),
+    accessToken: v.optional(v.string()),
+    refreshToken: v.optional(v.string()),
+    lastSync: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_project', ['projectId']),
+
   // Keyword Clusters
   keywordClusters: defineTable({
     projectId: v.id('projects'),

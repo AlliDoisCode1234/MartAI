@@ -39,6 +39,7 @@ type Props = {
   sessionsChange: number;
   pageViewsChange: number;
   hasData: boolean;
+  hasGA4?: boolean;
 };
 
 function formatDuration(seconds: number): string {
@@ -66,6 +67,7 @@ export function DashboardStatRow({
   sessionsChange,
   pageViewsChange,
   hasData,
+  hasGA4,
 }: Props) {
   const stats: StatItem[] = [
     {
@@ -73,7 +75,11 @@ export function DashboardStatRow({
       value: hasData ? sessions.toLocaleString() : '--',
       change: hasData ? `${pageViews.toLocaleString()} views` : '',
       changeColor: '#34d399',
-      subtitle: hasData ? `Sessions (Last 30d)` : 'Connect Google to see data',
+      subtitle: hasData
+        ? `Sessions (Last 30d)`
+        : hasGA4
+          ? 'Waiting for traffic data...'
+          : 'Connect Google to see data',
       icon: FiUsers,
       iconColor: '#F99F2A',
       iconBg: 'rgba(249, 159, 42, 0.15)',
@@ -83,7 +89,11 @@ export function DashboardStatRow({
       value: hasData ? pageViews.toLocaleString() : '--',
       change: hasData ? formatChange(pageViewsChange) : '',
       changeColor: pageViewsChange >= 0 ? '#34d399' : '#f87171',
-      subtitle: hasData ? 'Total Page Views' : 'Sync data to populate',
+      subtitle: hasData
+        ? 'Total Page Views'
+        : hasGA4
+          ? 'Waiting for traffic data...'
+          : 'Sync data to populate',
       icon: FiEye,
       iconColor: '#818cf8',
       iconBg: 'rgba(129, 140, 248, 0.15)',
@@ -93,7 +103,11 @@ export function DashboardStatRow({
       value: hasData ? formatDuration(avgSessionDuration) : '--',
       change: hasData && bounceRate > 0 ? `${(bounceRate * 100).toFixed(0)}% bounce` : '',
       changeColor: bounceRate < 0.5 ? '#34d399' : '#f87171',
-      subtitle: hasData ? 'Session Duration' : 'Connect Google to see data',
+      subtitle: hasData
+        ? 'Session Duration'
+        : hasGA4
+          ? 'Waiting for traffic data...'
+          : 'Connect Google to see data',
       icon: FiClock,
       iconColor: '#34d399',
       iconBg: 'rgba(52, 211, 153, 0.15)',
