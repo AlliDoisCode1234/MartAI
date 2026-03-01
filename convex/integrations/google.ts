@@ -265,7 +265,7 @@ export const fetchGA4Metrics = internalAction({
       const newTokens = await refreshAccessToken(args.refreshToken);
       token = newTokens.access_token;
       // Update DB with new token
-      await ctx.runMutation(api.integrations.ga4Connections.updateTokens, {
+      await ctx.runMutation(internal.integrations.ga4Connections.updateTokens, {
         connectionId: args.connectionId,
         accessToken: token,
         refreshToken: newTokens.refresh_token,
@@ -333,7 +333,7 @@ export const fetchGSCMetrics = internalAction({
       const newTokens = await refreshAccessToken(args.refreshToken);
       token = newTokens.access_token;
       // Update DB with new token
-      await ctx.runMutation(api.integrations.gscConnections.updateTokens, {
+      await ctx.runMutation(internal.integrations.gscConnections.updateTokens, {
         connectionId: args.connectionId,
         accessToken: token,
         refreshToken: newTokens.refresh_token,

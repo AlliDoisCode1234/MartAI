@@ -29,6 +29,20 @@ export const cleanOrphanedAuth = internalMutation({
       await ctx.db.delete(session._id);
     }
 
+    // Audit log entry
+    await ctx.db.insert('auditLogs', {
+      action: 'auth.cleanOrphanedAuth',
+      actorType: 'system',
+      actorId: 'dashboard-manual',
+      targetId: args.orphanedUserId,
+      outcome: 'success',
+      metadata: {
+        deletedAccounts: accounts.length,
+        deletedSessions: sessions.length,
+      },
+      createdAt: Date.now(),
+    });
+
     return {
       deletedAccounts: accounts.length,
       deletedSessions: sessions.length,

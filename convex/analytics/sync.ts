@@ -34,12 +34,18 @@ export const syncProjectData = internalAction({
       .split('T')[0];
 
     // 1. Fetch Connections
-    const ga4Connection = await ctx.runQuery(api.integrations.ga4Connections.getGA4Connection, {
-      projectId,
-    });
-    const gscConnection = await ctx.runQuery(api.integrations.gscConnections.getGSCConnection, {
-      projectId,
-    });
+    const ga4Connection = await ctx.runQuery(
+      internal.integrations.ga4Connections.getGA4ConnectionInternal,
+      {
+        projectId,
+      }
+    );
+    const gscConnection = await ctx.runQuery(
+      internal.integrations.gscConnections.getGSCConnectionInternal,
+      {
+        projectId,
+      }
+    );
 
     let ga4Data: NormalizedGA4Metrics | null = null;
     let gscData: NormalizedGSCMetrics | null = null;
@@ -60,12 +66,13 @@ export const syncProjectData = internalAction({
         console.log(
           `[GA4 Sync] Project ${projectId} Property ${ga4Connection.propertyId} fetched raw data. Row count: ${raw.rows?.length ?? 0}`
         );
-        console.log(`[GA4 Sync] RAW PAYLOAD DUMP:`, JSON.stringify(raw));
 
         // Parse and normalize GA4 response using pure transform functions
         const parsed = parseGA4Response(raw);
         ga4Data = normalizeGA4Metrics(parsed);
-        console.log(`[GA4 Sync] Normalized data:`, JSON.stringify(ga4Data));
+        console.log(
+          `[GA4 Sync] Normalized: sessions=${ga4Data.sessions}, pageViews=${ga4Data.pageViews}, bounceRate=${ga4Data.bounceRate.toFixed(1)}%`
+        );
 
         await ctx.runMutation(api.integrations.ga4Connections.updateLastSync, {
           connectionId: ga4Connection._id,

@@ -1,80 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/authMiddleware';
-import { getGA4Data } from '@/lib/googleAuth';
-import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
 
-// Import api dynamically
-let api: any = null;
-if (typeof window === 'undefined') {
-  try {
-    api = require('@/convex/_generated/api')?.api;
-  } catch {
-    api = null;
-  }
-}
-
+/**
+ * @deprecated This API route is no longer used.
+ * GA4 data fetching is now handled server-side by Convex actions (syncProjectData).
+ * Token access has been removed from public queries for security.
+ */
 export async function GET(request: NextRequest) {
-  try {
-    await requireAuth(request);
-    const searchParams = request.nextUrl.searchParams;
-    const projectId = searchParams.get('projectId');
-    const startDate = searchParams.get('startDate') || '30daysAgo';
-    const endDate = searchParams.get('endDate') || 'today';
-
-    if (!projectId) {
-      return NextResponse.json({ error: 'projectId is required' }, { status: 400 });
-    }
-
-    if (!api) {
-      return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
-    }
-
-    const connection = await callConvexQuery(api.integrations.ga4Connections.getGA4Connection, {
-      projectId: projectId as any,
-    });
-
-    if (!connection || !connection.accessToken) {
-      return NextResponse.json({ error: 'GA4 not connected' }, { status: 404 });
-    }
-
-    // Get GA4 data
-    const data = await getGA4Data(
-      connection.accessToken,
-      connection.refreshToken,
-      connection.propertyId,
-      startDate,
-      endDate,
-      async (newTokens: any) => {
-        if (api) {
-          try {
-            await callConvexMutation(api.integrations.ga4Connections.upsertGA4Connection, {
-              projectId: projectId as any,
-              propertyId: connection.propertyId,
-              propertyName: connection.propertyName ?? 'Unknown',
-              accessToken: newTokens.access_token,
-              refreshToken: newTokens.refresh_token || connection.refreshToken,
-            });
-          } catch (error) {
-            console.warn('Failed to update GA4 tokens:', error);
-          }
-        }
-      }
-    );
-
-    // Update last sync
-    if (api) {
-      try {
-        await callConvexMutation(api.integrations.ga4Connections.updateLastSync, {
-          connectionId: connection._id,
-        });
-      } catch (error) {
-        console.warn('Failed to update last sync:', error);
-      }
-    }
-
-    return NextResponse.json({ data });
-  } catch (error) {
-    console.error('Get GA4 data error:', error);
-    return NextResponse.json({ error: 'Failed to get GA4 data' }, { status: 500 });
-  }
+  return NextResponse.json(
+    { error: 'This endpoint has been deprecated. Use Convex actions instead.' },
+    { status: 410 }
+  );
 }

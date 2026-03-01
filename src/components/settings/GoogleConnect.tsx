@@ -136,7 +136,7 @@ export function GoogleConnect({ projectId }: Props) {
   const handleDisconnectGA4 = async () => {
     if (!ga4Connection) return;
     try {
-      await deleteGA4Connection({ connectionId: ga4Connection._id });
+      await deleteGA4Connection({ projectId, connectionId: ga4Connection._id });
       toast({
         title: 'Disconnected',
         description: 'Google Analytics 4 connection removed',
@@ -156,7 +156,7 @@ export function GoogleConnect({ projectId }: Props) {
   const handleDisconnectGSC = async () => {
     if (!gscConnection) return;
     try {
-      await deleteGSCConnection({ connectionId: gscConnection._id });
+      await deleteGSCConnection({ projectId, connectionId: gscConnection._id });
       toast({
         title: 'Disconnected',
         description: 'Search Console connection removed',

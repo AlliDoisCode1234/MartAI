@@ -81,6 +81,7 @@ import type * as integrations_ga4Connections from "../integrations/ga4Connection
 import type * as integrations_google from "../integrations/google.js";
 import type * as integrations_gsc from "../integrations/gsc.js";
 import type * as integrations_gscConnections from "../integrations/gscConnections.js";
+import type * as integrations_gtmAutomation from "../integrations/gtmAutomation.js";
 import type * as integrations_hubspot from "../integrations/hubspot.js";
 import type * as integrations_hubspotMapper from "../integrations/hubspotMapper.js";
 import type * as integrations_integrations from "../integrations/integrations.js";
@@ -253,6 +254,7 @@ declare const fullApi: ApiFromModules<{
   "integrations/google": typeof integrations_google;
   "integrations/gsc": typeof integrations_gsc;
   "integrations/gscConnections": typeof integrations_gscConnections;
+  "integrations/gtmAutomation": typeof integrations_gtmAutomation;
   "integrations/hubspot": typeof integrations_hubspot;
   "integrations/hubspotMapper": typeof integrations_hubspotMapper;
   "integrations/integrations": typeof integrations_integrations;

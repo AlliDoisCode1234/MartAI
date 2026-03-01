@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * Component Hierarchy:
+ * App > Settings > GoogleConnect > GtmAutomationModal
+ */
+
 import React, { useState } from 'react';
 import {
   Modal,
@@ -19,10 +24,14 @@ import {
   ListItem,
   ListIcon,
   Box,
+  Input,
+  FormControl,
+  FormLabel,
+  FormHelperText,
 } from '@chakra-ui/react';
 import { FiCheckCircle, FiAlertCircle, FiZap } from 'react-icons/fi';
 import { useAction, useQuery } from 'convex/react';
-import { api, internal } from '../../../convex/_generated/api';
+import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 
 interface Props {
@@ -34,24 +43,35 @@ interface Props {
 export function GtmAutomationModal({ isOpen, onClose, projectId }: Props) {
   const toast = useToast();
   const [isProvisioning, setIsProvisioning] = useState(false);
+  const [measurementId, setMeasurementId] = useState('');
+  const isMeasurementIdValid = /^G-[A-Z0-9]+$/.test(measurementId);
 
   // We need to fetch the project to get the domain
-  const project = useQuery(api.projects.getProject, { projectId });
+  const project = useQuery(api.projects.projects.getProjectById, { projectId });
 
-  // We need to fetch the GA4 connection to get the measurement ID and tokens
+  // We need to fetch the GA4 connection to verify it exists
   const ga4Connection = useQuery(api.integrations.ga4Connections.getGA4Connection, {
     projectId,
   });
 
   const provisionContainer = useAction(
-    internal.integrations.gtmAutomation.provisionTenantContainer as any
+    api.integrations.gtmAutomation.provisionTenantContainerPublic
   );
 
   const handleAutomate = async () => {
-    if (!ga4Connection?.accessToken) {
+    if (!ga4Connection) {
       toast({
         title: 'Authentication Required',
         description: 'Please reconnect your Google account to grant Tag Manager permissions.',
+        status: 'error',
+      });
+      return;
+    }
+
+    if (!isMeasurementIdValid) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please provide a valid GA4 Measurement ID (e.g., G-XXXXXXX).',
         status: 'error',
       });
       return;
@@ -70,10 +90,7 @@ export function GtmAutomationModal({ isOpen, onClose, projectId }: Props) {
     try {
       const result = await provisionContainer({
         projectId,
-        domain: new URL(project.websiteUrl).hostname,
-        ga4MeasurementId: 'G-XXXXXXX', // TODO: Fetch from GA4 API or user input if unavailable
-        accessToken: ga4Connection.accessToken,
-        refreshToken: ga4Connection.refreshToken,
+        ga4MeasurementId: measurementId,
       });
 
       if (result.success) {
@@ -88,10 +105,9 @@ export function GtmAutomationModal({ isOpen, onClose, projectId }: Props) {
         throw new Error(result.error || 'Failed to provision container');
       }
     } catch (e: unknown) {
-      const err = e as Error;
       toast({
         title: 'Automation Failed',
-        description: err.message || String(err),
+        description: 'Something went wrong. Please try again or contact support.',
         status: 'error',
         duration: 8000,
       });
@@ -141,6 +157,28 @@ export function GtmAutomationModal({ isOpen, onClose, projectId }: Props) {
                   We will immediately <strong>Publish</strong> this container live.
                 </ListItem>
               </List>
+            </Box>
+
+            <Box>
+              <FormControl isInvalid={measurementId.length > 0 && !isMeasurementIdValid}>
+                <FormLabel fontSize="sm" fontWeight="semibold" color="gray.700">
+                  GA4 Measurement ID
+                </FormLabel>
+                <Input
+                  placeholder="G-XXXXXXX"
+                  value={measurementId}
+                  onChange={(e) => setMeasurementId(e.target.value.trim().toUpperCase())}
+                />
+                {!isMeasurementIdValid && measurementId.length > 0 ? (
+                  <Text color="red.500" fontSize="xs" mt={1}>
+                    Must start with G- followed by alphanumeric characters.
+                  </Text>
+                ) : (
+                  <FormHelperText fontSize="xs">
+                    This ID will be used to configure your new GTM container.
+                  </FormHelperText>
+                )}
+              </FormControl>
             </Box>
           </VStack>
         </ModalBody>
