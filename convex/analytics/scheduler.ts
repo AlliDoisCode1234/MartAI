@@ -20,9 +20,9 @@ export const syncProject = action({
   handler: async (ctx, args): Promise<SyncResult> => {
     console.log(`[Analytics Scheduler] Syncing single project: ${args.projectId}`);
     try {
-      const data: unknown = await ctx.runAction(internal.analytics.sync.syncProjectData, {
+      const data = (await ctx.runAction(internal.analytics.sync.syncProjectData, {
         projectId: args.projectId,
-      });
+      })) as unknown;
       console.log(`[Analytics Scheduler] Single project sync complete: ${args.projectId}`);
       return { projectId: args.projectId, status: 'success', data };
     } catch (error) {
@@ -40,23 +40,37 @@ export const syncAllProjects = action({
   args: {},
   handler: async (
     ctx
-  ): Promise<Array<{ projectId: any; status: string; data?: any; error?: string }>> => {
+  ): Promise<Array<{ projectId: string; status: string; data?: unknown; error?: string }>> => {
     const projects = await ctx.runQuery(internal.analytics.queries.getAllProjectsInternal);
 
-    console.log(`[Analytics Scheduler] Syncing ${projects.length} projects...`);
+    console.log(`[Analytics Scheduler] Scheduling syncs for ${projects.length} projects...`);
 
     const results = [];
+    let delayMs = 0;
+    const baseDelayMs = 2000;
+    const MAX_DELAY_MS = 5 * 60 * 1000; // 5 minute ceiling
 
     for (const project of projects) {
       try {
-        const data = await ctx.runAction(internal.analytics.sync.syncProjectData, {
+        const jitter = Math.floor(Math.random() * 500);
+        const boundedDelay = Math.min(delayMs + jitter, MAX_DELAY_MS);
+
+        await ctx.scheduler.runAfter(boundedDelay, internal.analytics.sync.syncProjectData, {
           projectId: project._id,
         });
 
-        results.push({ projectId: project._id, status: 'success', data });
-        console.log(`[Analytics Scheduler] Synced Project ${project.name} (${project._id})`);
+        results.push({ projectId: project._id, status: 'scheduled', delayMs: boundedDelay });
+        console.log(
+          `[Analytics Scheduler] Queued Project ${project.name} (${project._id}) in ${boundedDelay}ms`
+        );
+
+        // Increment the delay for the next project to spread out the API load
+        delayMs += baseDelayMs;
       } catch (error) {
-        console.error(`[Analytics Scheduler] Failed to sync project ${project._id}:`, error);
+        console.error(
+          `[Analytics Scheduler] Failed to schedule sync for project ${project._id}:`,
+          error
+        );
         results.push({ projectId: project._id, status: 'error', error: String(error) });
       }
     }

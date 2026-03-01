@@ -2,7 +2,7 @@
 
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
-import { api } from '../_generated/api';
+import { api, internal } from '../_generated/api';
 import { auth } from '../auth';
 import { rateLimits, getRateLimitKey, type MembershipTier } from '../rateLimits';
 import { ConvexError } from 'convex/values';
@@ -159,9 +159,12 @@ export const generateClusters = action({
     }));
 
     if (args.importFromGSC ?? false) {
-      const connection = await ctx.runQuery(api.integrations.gscConnections.getGSCConnection, {
-        projectId: args.projectId,
-      });
+      const connection = await ctx.runQuery(
+        internal.integrations.gscConnections.getGSCConnectionInternal,
+        {
+          projectId: args.projectId,
+        }
+      );
 
       if (!connection?.accessToken || !connection?.siteUrl) {
         throw new Error(

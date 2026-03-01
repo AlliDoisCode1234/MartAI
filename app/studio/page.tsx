@@ -276,6 +276,7 @@ export default function DashboardPage() {
               sessionsChange={kpis?.sessions?.change ?? 0}
               pageViewsChange={kpis?.pageviews?.change ?? 0}
               hasData={hasKPIData}
+              hasGA4={hasGA4}
             />
           </Box>
 
@@ -357,6 +358,7 @@ export default function DashboardPage() {
               hasData={hasKPIData}
               // @ts-ignore
               growthData={growthHistory ?? []}
+              hasGA4={hasGA4}
             />
           </Box>
         </VStack>

@@ -67,3 +67,7 @@ docs/.internal/
 
 # LDDs and design docs (kept locally)
 docs/
+
+# Temp logs / ad-hoc scripts
+*_tmp.txt
+*_tmp.log

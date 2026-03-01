@@ -38,6 +38,7 @@ type Props = {
   keywordsInTop10: number;
   hasData: boolean;
   growthData: GrowthDataPoint[];
+  hasGA4?: boolean;
 };
 
 /**
@@ -120,6 +121,7 @@ export function CumulativeGrowthChart({
   keywordsInTop10,
   hasData,
   growthData,
+  hasGA4,
 }: Props) {
   const chartData = buildTimelineData(growthData);
   const hasChartData = chartData.some((d) => d.sessions > 0 || d.clicks > 0);
@@ -244,10 +246,14 @@ export function CumulativeGrowthChart({
             <VStack h="100%" justify="center" spacing={2}>
               <Icon as={FiTrendingUp} color="gray.600" boxSize={10} />
               <Text color="gray.500" fontSize="sm">
-                Growth chart will populate as data syncs
+                {hasGA4
+                  ? 'Waiting for traffic data...'
+                  : 'Growth chart will populate as data syncs'}
               </Text>
               <Text color="gray.600" fontSize="xs">
-                Click &quot;Sync Data&quot; to start tracking
+                {hasGA4
+                  ? 'Your chart will appear when Google detects visitor sessions'
+                  : 'Click "Sync Data" to start tracking'}
               </Text>
             </VStack>
           )}

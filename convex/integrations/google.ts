@@ -2,6 +2,7 @@
 import { action, internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
+import { fetchWithExponentialBackoff } from '../lib/apiResilience';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -10,6 +11,7 @@ const SCOPES = [
   'https://www.googleapis.com/auth/analytics.readonly',
   'https://www.googleapis.com/auth/analytics.edit', // Required for Admin API (list properties)
   'https://www.googleapis.com/auth/webmasters.readonly',
+  'https://www.googleapis.com/auth/tagmanager.edit.containers', // GTM Automation
   'openid',
   'email',
   'profile',
@@ -263,7 +265,7 @@ export const fetchGA4Metrics = internalAction({
       const newTokens = await refreshAccessToken(args.refreshToken);
       token = newTokens.access_token;
       // Update DB with new token
-      await ctx.runMutation(api.integrations.ga4Connections.updateTokens, {
+      await ctx.runMutation(internal.integrations.ga4Connections.updateTokens, {
         connectionId: args.connectionId,
         accessToken: token,
         refreshToken: newTokens.refresh_token,
@@ -287,7 +289,7 @@ async function runGA4Report(
   endDate: string
 ) {
   const url = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
-  return fetch(url, {
+  return fetchWithExponentialBackoff(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -331,7 +333,7 @@ export const fetchGSCMetrics = internalAction({
       const newTokens = await refreshAccessToken(args.refreshToken);
       token = newTokens.access_token;
       // Update DB with new token
-      await ctx.runMutation(api.integrations.gscConnections.updateTokens, {
+      await ctx.runMutation(internal.integrations.gscConnections.updateTokens, {
         connectionId: args.connectionId,
         accessToken: token,
         refreshToken: newTokens.refresh_token,
@@ -357,7 +359,7 @@ async function runGSCQuery(
   const encodedSite = encodeURIComponent(siteUrl);
   const url = `https://www.googleapis.com/webmasters/v3/sites/${encodedSite}/searchAnalytics/query`;
 
-  return fetch(url, {
+  return fetchWithExponentialBackoff(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,

@@ -631,6 +631,20 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index('by_project', ['projectId']),
 
+  // GTM Connections
+  gtmConnections: defineTable({
+    projectId: v.id('projects'),
+    accountId: v.string(),
+    containerId: v.string(),
+    containerPublicId: v.string(), // E.g., 'GTM-XXXXXXX'
+    workspaceId: v.string(),
+    accessToken: v.optional(v.string()),
+    refreshToken: v.optional(v.string()),
+    lastSync: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_project', ['projectId']),
+
   // Keyword Clusters
   keywordClusters: defineTable({
     projectId: v.id('projects'),
@@ -1824,4 +1838,16 @@ export default defineSchema({
     .index('by_status', ['status'])
     .index('by_published', ['publishedAt'])
     .index('by_featured', ['featured']),
+
+  auditLogs: defineTable({
+    action: v.string(), // e.g. 'auth.cleanOrphanedAuth'
+    actorType: v.union(v.literal('system'), v.literal('admin')),
+    actorId: v.optional(v.string()), // user ID or 'system'
+    targetId: v.optional(v.string()), // affected entity ID
+    outcome: v.union(v.literal('success'), v.literal('failure')),
+    metadata: v.optional(v.any()), // structured details
+    createdAt: v.number(),
+  })
+    .index('by_action', ['action'])
+    .index('by_created', ['createdAt']),
 });

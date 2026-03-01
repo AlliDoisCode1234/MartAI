@@ -29,10 +29,13 @@ export const fetchKeywordData = action({
     }),
   },
   handler: async (ctx, args) => {
-    // 1. Get GSC Connection with tokens
-    const connection = await ctx.runQuery(api.integrations.gscConnections.getGSCConnection, {
-      projectId: args.projectId,
-    });
+    // 1. Get GSC Connection with tokens (server-side only)
+    const connection = await ctx.runQuery(
+      internal.integrations.gscConnections.getGSCConnectionInternal,
+      {
+        projectId: args.projectId,
+      }
+    );
 
     if (!connection) {
       throw new Error('GSC not connected');

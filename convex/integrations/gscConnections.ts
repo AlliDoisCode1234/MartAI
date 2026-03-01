@@ -1,4 +1,4 @@
-import { mutation, query } from '../_generated/server';
+import { mutation, query, internalQuery, internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
 import { requireProjectAccess } from '../lib/rbac';
 import { encryptCredential, decryptCredential } from '../lib/encryption';
@@ -69,8 +69,32 @@ export const upsertGSCConnection = mutation({
   },
 });
 
-// Get GSC connection by project (with decrypted tokens)
+// Get GSC connection by project (without tokens, for client)
 export const getGSCConnection = query({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const connection = await ctx.db
+      .query('gscConnections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+
+    if (!connection) return null;
+
+    // Limited projection — NO tokens
+    return {
+      _id: connection._id,
+      projectId: connection.projectId,
+      siteUrl: connection.siteUrl,
+      availableSites: connection.availableSites,
+      lastSync: connection.lastSync,
+      createdAt: connection.createdAt,
+      updatedAt: connection.updatedAt,
+    };
+  },
+});
+
+// Get GSC connection by project (with decrypted tokens, for server)
+export const getGSCConnectionInternal = internalQuery({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     const connection = await ctx.db
@@ -107,14 +131,17 @@ export const updateLastSync = mutation({
 // Delete GSC connection
 export const deleteGSCConnection = mutation({
   args: {
+    projectId: v.id('projects'),
     connectionId: v.id('gscConnections'),
   },
   handler: async (ctx, args) => {
+    // Security: require editor access to delete connections
+    await requireProjectAccess(ctx, args.projectId, 'editor');
     await ctx.db.delete(args.connectionId);
   },
 });
 
-export const updateTokens = mutation({
+export const updateTokens = internalMutation({
   args: {
     connectionId: v.id('gscConnections'),
     accessToken: v.string(),

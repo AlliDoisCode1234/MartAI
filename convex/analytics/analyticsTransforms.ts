@@ -112,14 +112,31 @@ const GA4_METRIC_ORDER = [
 
 /**
  * Parse raw GA4 API response into typed metrics.
- * Returns null if response has no data.
+ * If response has no data, returns explicit zeroes.
+ * Throws explicit error on schema mismatch.
  */
-export function parseGA4Response(raw: RawGA4Response): ParsedGA4Metrics | null {
-  if (!raw.rows || raw.rows.length === 0) return null;
+export function parseGA4Response(raw: RawGA4Response): ParsedGA4Metrics {
+  if (!raw.rows || raw.rows.length === 0) {
+    // Explicit 0 traffic period
+    return {
+      sessions: 0,
+      users: 0,
+      engagementDuration: 0,
+      pageViews: 0,
+      bounceRate: 0,
+      avgSessionDuration: 0,
+      newUsers: 0,
+      engagedSessions: 0,
+      eventCount: 0,
+      conversions: 0,
+    };
+  }
 
   const row = raw.rows[0];
   if (!row.metricValues || row.metricValues.length < GA4_METRIC_ORDER.length) {
-    return null;
+    throw new Error(
+      `GA4 Schema Mismatch: Expected ${GA4_METRIC_ORDER.length} metrics, received ${row.metricValues?.length ?? 0}`
+    );
   }
 
   const getValue = (index: number): number => parseFloat(row.metricValues[index]?.value || '0');

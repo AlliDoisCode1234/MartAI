@@ -1,6 +1,7 @@
-import { mutation, query } from '../_generated/server';
+import { mutation, query, internalQuery, internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
 import { encryptCredential, decryptCredential } from '../lib/encryption';
+import { requireProjectAccess } from '../lib/rbac';
 
 // Create or update GA4 connection
 export const upsertGA4Connection = mutation({
@@ -59,8 +60,31 @@ export const upsertGA4Connection = mutation({
   },
 });
 
-// Get GA4 connection by project (with decrypted tokens)
+// Get GA4 connection by project (without tokens, for client)
 export const getGA4Connection = query({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const connection = await ctx.db
+      .query('ga4Connections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+
+    if (!connection) return null;
+
+    return {
+      _id: connection._id,
+      projectId: connection.projectId,
+      propertyId: connection.propertyId,
+      propertyName: connection.propertyName,
+      lastSync: connection.lastSync,
+      createdAt: connection.createdAt,
+      updatedAt: connection.updatedAt,
+    };
+  },
+});
+
+// Get GA4 connection by project (with decrypted tokens, for server)
+export const getGA4ConnectionInternal = internalQuery({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     const connection = await ctx.db
@@ -99,14 +123,17 @@ export const updateLastSync = mutation({
 // Delete GA4 connection
 export const deleteGA4Connection = mutation({
   args: {
+    projectId: v.id('projects'),
     connectionId: v.id('ga4Connections'),
   },
   handler: async (ctx, args) => {
+    // Security: require editor access to delete connections
+    await requireProjectAccess(ctx, args.projectId, 'editor');
     await ctx.db.delete(args.connectionId);
   },
 });
 
-export const updateTokens = mutation({
+export const updateTokens = internalMutation({
   args: {
     connectionId: v.id('ga4Connections'),
     accessToken: v.string(),
