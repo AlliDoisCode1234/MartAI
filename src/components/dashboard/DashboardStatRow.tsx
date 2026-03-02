@@ -11,7 +11,7 @@
 
 import { Grid, Box, HStack, VStack, Text, Icon } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { FiUsers, FiEye, FiClock, FiTarget } from 'react-icons/fi';
+import { FiUsers, FiEye, FiClock, FiTarget, FiZap } from 'react-icons/fi';
 
 const MotionBox = motion(Box);
 
@@ -29,6 +29,7 @@ type StatItem = {
 
 type Props = {
   sessions: number;
+  users: number;
   pageViews: number;
   avgSessionDuration: number;
   bounceRate: number;
@@ -38,6 +39,8 @@ type Props = {
   visibilityChange: number;
   sessionsChange: number;
   pageViewsChange: number;
+  totalLeads: number;
+  leadConversionRate: number;
   hasData: boolean;
   hasGA4?: boolean;
 };
@@ -57,6 +60,7 @@ function formatChange(change: number): string {
 
 export function DashboardStatRow({
   sessions,
+  users,
   pageViews,
   avgSessionDuration,
   bounceRate,
@@ -66,17 +70,33 @@ export function DashboardStatRow({
   visibilityChange,
   sessionsChange,
   pageViewsChange,
+  totalLeads,
+  leadConversionRate,
   hasData,
   hasGA4,
 }: Props) {
   const stats: StatItem[] = [
     {
+      label: 'Leads Generated',
+      value: hasData ? totalLeads.toLocaleString() : '--',
+      change: hasData && leadConversionRate > 0 ? `${leadConversionRate}% conv.` : '',
+      changeColor: '#22C55E',
+      subtitle: hasData
+        ? 'Content-attributed leads'
+        : hasGA4
+          ? 'Waiting for lead data...'
+          : 'Connect GA4 to track leads',
+      icon: FiZap,
+      iconColor: '#22C55E',
+      iconBg: 'rgba(34, 197, 94, 0.15)',
+    },
+    {
       label: 'Site Traffic',
-      value: hasData ? sessions.toLocaleString() : '--',
+      value: hasData ? users.toLocaleString() : '--',
       change: hasData ? `${pageViews.toLocaleString()} views` : '',
       changeColor: '#34d399',
       subtitle: hasData
-        ? `Sessions (Last 30d)`
+        ? `Total Users (Last 30d)`
         : hasGA4
           ? 'Waiting for traffic data...'
           : 'Connect Google to see data',
@@ -85,12 +105,12 @@ export function DashboardStatRow({
       iconBg: 'rgba(249, 159, 42, 0.15)',
     },
     {
-      label: 'Page Views',
-      value: hasData ? pageViews.toLocaleString() : '--',
-      change: hasData ? formatChange(pageViewsChange) : '',
-      changeColor: pageViewsChange >= 0 ? '#34d399' : '#f87171',
+      label: 'Sessions',
+      value: hasData ? sessions.toLocaleString() : '--',
+      change: hasData ? formatChange(sessionsChange) : '',
+      changeColor: sessionsChange >= 0 ? '#34d399' : '#f87171',
       subtitle: hasData
-        ? 'Total Page Views'
+        ? 'Total Sessions'
         : hasGA4
           ? 'Waiting for traffic data...'
           : 'Sync data to populate',
@@ -136,7 +156,15 @@ export function DashboardStatRow({
   ];
 
   return (
-    <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap={4}>
+    <Grid
+      templateColumns={{
+        base: '1fr',
+        sm: 'repeat(2, 1fr)',
+        lg: 'repeat(3, 1fr)',
+        xl: 'repeat(5, 1fr)',
+      }}
+      gap={4}
+    >
       {stats.map((stat, i) => (
         <MotionBox
           key={stat.label}
