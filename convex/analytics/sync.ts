@@ -10,6 +10,7 @@ import {
   normalizeGSCMetrics,
   normalizeKeywordRow,
   normalizePagePath,
+  normalizeDecimalToPercent,
 } from './analyticsTransforms';
 import type {
   RawGA4Response,
@@ -125,26 +126,36 @@ export const syncProjectData = internalAction({
           }),
         ]);
 
-        // Build traffic lookup: normalized pagePath → { pageViews, avgTimeOnPage, bounceRate }
+        // Aggregate traffic by normalized path (sum on collision, weighted averages)
         const trafficMap = new Map<
           string,
-          { pageViews: number; avgTimeOnPage: number; bounceRate: number }
+          { pageViews: number; timeWeighted: number; bounceWeighted: number }
         >();
         for (const t of pageTraffic) {
           const normalized = normalizePagePath(t.pagePath);
-          trafficMap.set(normalized, {
-            pageViews: t.pageViews,
-            avgTimeOnPage: t.avgTimeOnPage,
-            bounceRate: t.bounceRate,
-          });
+          const existing = trafficMap.get(normalized) || {
+            pageViews: 0,
+            timeWeighted: 0,
+            bounceWeighted: 0,
+          };
+          existing.pageViews += t.pageViews;
+          existing.timeWeighted += t.avgTimeOnPage * t.pageViews;
+          // Normalize bounceRate from GA4's 0-1 decimal to 0-100 percentage
+          existing.bounceWeighted += normalizeDecimalToPercent(t.bounceRate) * t.pageViews;
+          trafficMap.set(normalized, existing);
         }
 
-        // Merge: collect all unique NORMALIZED page paths from both sources
-        // Using normalized keys prevents duplicate mutations when raw paths
-        // like '/About/' and '/about' collapse to the same normalized path.
+        // Aggregate leads by normalized path (sum on collision)
+        const leadsMap = new Map<string, number>();
+        for (const l of leadsByPage) {
+          const normalized = normalizePagePath(l.pagePath);
+          leadsMap.set(normalized, (leadsMap.get(normalized) ?? 0) + (l.eventCount ?? 0));
+        }
+
+        // Collect all unique normalized paths
         const allNormalizedPaths = new Set([
-          ...leadsByPage.map((l: { pagePath: string }) => normalizePagePath(l.pagePath)),
-          ...pageTraffic.map((t: { pagePath: string }) => normalizePagePath(t.pagePath)),
+          ...Array.from(trafficMap.keys()),
+          ...Array.from(leadsMap.keys()),
         ]);
 
         // Load published pieces for URL matching
@@ -153,12 +164,29 @@ export const syncProjectData = internalAction({
           { projectId }
         );
 
+        // Build rows array for bulk upsert
+        const rows: Array<{
+          contentPieceId?: string;
+          pagePath: string;
+          publishedUrl?: string;
+          leadCount: number;
+          pageViews?: number;
+          avgTimeOnPage?: number;
+          bounceRate?: number;
+        }> = [];
         let matchedCount = 0;
+
         for (const normalizedPath of allNormalizedPaths) {
-          const leadEntry = leadsByPage.find((l: { pagePath: string }) => {
-            return normalizePagePath(l.pagePath) === normalizedPath;
-          });
+          const leadCount = leadsMap.get(normalizedPath) ?? 0;
           const traffic = trafficMap.get(normalizedPath);
+
+          // Derive weighted averages from aggregated sums
+          const avgTimeOnPage =
+            traffic && traffic.pageViews > 0 ? traffic.timeWeighted / traffic.pageViews : undefined;
+          const bounceRate =
+            traffic && traffic.pageViews > 0
+              ? traffic.bounceWeighted / traffic.pageViews
+              : undefined;
 
           // Match to content piece (using normalizePagePath for consistency)
           const matchedPiece = publishedPieces.find((p: { publishedUrl?: string }) => {
@@ -172,21 +200,29 @@ export const syncProjectData = internalAction({
 
           if (matchedPiece) matchedCount++;
 
-          await ctx.runMutation(internal.analytics.contentMetrics.upsertContentMetric, {
-            projectId,
+          rows.push({
             contentPieceId: matchedPiece?._id,
             pagePath: normalizedPath,
             publishedUrl: matchedPiece?.publishedUrl,
-            leadCount: leadEntry?.eventCount ?? 0,
+            leadCount,
             pageViews: traffic?.pageViews,
-            avgTimeOnPage: traffic?.avgTimeOnPage,
-            bounceRate: traffic?.bounceRate,
+            avgTimeOnPage,
+            bounceRate,
+          });
+        }
+
+        // Bulk upsert in chunks of 200 to avoid action timeouts
+        const CHUNK_SIZE = 200;
+        for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+          await ctx.runMutation(internal.analytics.contentMetrics.bulkUpsertContentMetrics, {
+            projectId,
             syncDate: syncDateKey,
+            rows: rows.slice(i, i + CHUNK_SIZE),
           });
         }
 
         console.log(
-          `[Content Metrics] Project ${projectId}: ${allNormalizedPaths.size} pages synced, ${matchedCount} matched to content pieces, ${leadsByPage.length} with leads`
+          `[Content Metrics] Project ${projectId}: ${allNormalizedPaths.size} pages synced in ${Math.ceil(rows.length / CHUNK_SIZE)} chunks, ${matchedCount} matched to content pieces`
         );
       } catch (e) {
         console.error(`Content metrics sync failed for project ${projectId}:`, e);

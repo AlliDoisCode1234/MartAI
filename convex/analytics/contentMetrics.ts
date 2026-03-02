@@ -23,7 +23,7 @@ export const upsertContentMetric = internalMutation({
     leadCount: v.number(),
     pageViews: v.optional(v.number()),
     avgTimeOnPage: v.optional(v.number()),
-    bounceRate: v.optional(v.number()),
+    bounceRate: v.optional(v.number()), // stored as 0-100 percentage
     syncDate: v.number(),
   },
   handler: async (ctx, args) => {
@@ -61,6 +61,67 @@ export const upsertContentMetric = internalMutation({
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+    }
+  },
+});
+
+/**
+ * Bulk upsert content metrics — processes a batch of rows in a single mutation.
+ * Called from sync pipeline with chunks of ~200 rows to avoid action timeouts.
+ */
+export const bulkUpsertContentMetrics = internalMutation({
+  args: {
+    projectId: v.id('projects'),
+    syncDate: v.number(),
+    rows: v.array(
+      v.object({
+        contentPieceId: v.optional(v.id('contentPieces')),
+        pagePath: v.string(),
+        publishedUrl: v.optional(v.string()),
+        leadCount: v.number(),
+        pageViews: v.optional(v.number()),
+        avgTimeOnPage: v.optional(v.number()),
+        bounceRate: v.optional(v.number()), // stored as 0-100 percentage
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    for (const row of args.rows) {
+      const existing = await ctx.db
+        .query('contentMetrics')
+        .withIndex('by_project_page_sync', (q) =>
+          q
+            .eq('projectId', args.projectId)
+            .eq('pagePath', row.pagePath)
+            .eq('syncDate', args.syncDate)
+        )
+        .first();
+
+      if (existing) {
+        await ctx.db.patch(existing._id, {
+          contentPieceId: row.contentPieceId,
+          publishedUrl: row.publishedUrl,
+          leadCount: row.leadCount,
+          pageViews: row.pageViews,
+          avgTimeOnPage: row.avgTimeOnPage,
+          bounceRate: row.bounceRate,
+          updatedAt: Date.now(),
+        });
+      } else {
+        await ctx.db.insert('contentMetrics', {
+          projectId: args.projectId,
+          contentPieceId: row.contentPieceId,
+          pagePath: row.pagePath,
+          publishedUrl: row.publishedUrl,
+          leadCount: row.leadCount,
+          pageViews: row.pageViews,
+          avgTimeOnPage: row.avgTimeOnPage,
+          bounceRate: row.bounceRate,
+          syncDate: args.syncDate,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      }
     }
   },
 });
@@ -227,10 +288,11 @@ export const getProjectMetricsSummary = query({
   handler: async (ctx, args) => {
     await requireProjectAccess(ctx, args.projectId, 'viewer');
 
-    // Get latest analytics data
-    const analyticsData = await ctx.db
+    // Source sessions from GA4 specifically (GSC rows have no sessions field)
+    const ga4Data = await ctx.db
       .query('analyticsData')
-      .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
+      .withIndex('by_project_date_source', (q) => q.eq('projectId', args.projectId))
+      .filter((q) => q.eq(q.field('source'), 'ga4'))
       .order('desc')
       .first();
 
@@ -263,8 +325,8 @@ export const getProjectMetricsSummary = query({
     const totalLeads = metrics.reduce((sum, m) => sum + m.leadCount, 0);
     const totalPageViews = metrics.reduce((sum, m) => sum + (m.pageViews ?? 0), 0);
 
-    // Lead conversion rate: leads / sessions
-    const sessions = analyticsData?.sessions ?? 0;
+    // Lead conversion rate: leads / sessions (GA4-sourced only)
+    const sessions = ga4Data?.sessions ?? 0;
     const leadConversionRate = sessions > 0 ? (totalLeads / sessions) * 100 : 0;
 
     // Content velocity: published pieces / months active
@@ -317,11 +379,11 @@ export const pruneStaleSnapshots = internalMutation({
     const RETENTION_MS = THRESHOLDS.sync.snapshotRetentionDays * 24 * 60 * 60 * 1000;
     const cutoff = Date.now() - RETENTION_MS;
 
-    // Query stale rows using the project_date index (syncDate < cutoff)
+    // Use index range for efficient pruning (avoids scanning non-stale rows)
     const staleRows = await ctx.db
       .query('contentMetrics')
-      .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
-      .filter((q) => q.lt(q.field('syncDate'), cutoff))
+      .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId).lt('syncDate', cutoff))
+      .order('asc') // Oldest-first for predictable progress
       .take(500); // Batch limit per invocation
 
     for (const row of staleRows) {

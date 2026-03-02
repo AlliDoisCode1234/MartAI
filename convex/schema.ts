@@ -1864,7 +1864,7 @@ export default defineSchema({
     leadCount: v.number(),
     pageViews: v.optional(v.number()),
     avgTimeOnPage: v.optional(v.number()),
-    bounceRate: v.optional(v.number()),
+    bounceRate: v.optional(v.number()), // stored as 0-100 percentage (normalized from GA4's 0-1 decimal)
     syncDate: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
