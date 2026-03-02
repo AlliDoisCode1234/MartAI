@@ -41,7 +41,8 @@ type Props = {
   pageViewsChange: number;
   totalLeads: number;
   leadConversionRate: number;
-  hasData: boolean;
+  hasGA4Data: boolean;
+  hasGSCData: boolean;
   hasGA4?: boolean;
 };
 
@@ -72,17 +73,19 @@ export function DashboardStatRow({
   pageViewsChange,
   totalLeads,
   leadConversionRate,
-  hasData,
+  hasGA4Data,
+  hasGSCData,
   hasGA4,
 }: Props) {
+  const hasData = hasGA4Data || hasGSCData;
   const stats: StatItem[] = [
     {
       label: 'Leads Generated',
-      value: hasData ? totalLeads.toLocaleString() : '--',
-      change: hasData && leadConversionRate > 0 ? `${leadConversionRate}% conv.` : '',
+      value: hasGA4Data ? totalLeads.toLocaleString() : '--',
+      change: hasGA4Data && leadConversionRate > 0 ? `${leadConversionRate}% conv.` : '',
       changeColor: '#22C55E',
-      subtitle: hasData
-        ? 'Content-attributed leads'
+      subtitle: hasGA4Data
+        ? 'Organic content-attributed leads'
         : hasGA4
           ? 'Waiting for lead data...'
           : 'Connect GA4 to track leads',
@@ -92,11 +95,11 @@ export function DashboardStatRow({
     },
     {
       label: 'Site Traffic',
-      value: hasData ? users.toLocaleString() : '--',
-      change: hasData ? `${pageViews.toLocaleString()} views` : '',
+      value: hasGA4Data ? users.toLocaleString() : '--',
+      change: hasGA4Data ? `${pageViews.toLocaleString()} views` : '',
       changeColor: '#34d399',
-      subtitle: hasData
-        ? `Total Users (Last 30d)`
+      subtitle: hasGA4Data
+        ? 'Organic Users (Last 30d)'
         : hasGA4
           ? 'Waiting for traffic data...'
           : 'Connect Google to see data',
@@ -106,11 +109,11 @@ export function DashboardStatRow({
     },
     {
       label: 'Sessions',
-      value: hasData ? sessions.toLocaleString() : '--',
-      change: hasData ? formatChange(sessionsChange) : '',
+      value: hasGA4Data ? sessions.toLocaleString() : '--',
+      change: hasGA4Data ? formatChange(sessionsChange) : '',
       changeColor: sessionsChange >= 0 ? '#34d399' : '#f87171',
-      subtitle: hasData
-        ? 'Total Sessions'
+      subtitle: hasGA4Data
+        ? 'Organic Sessions'
         : hasGA4
           ? 'Waiting for traffic data...'
           : 'Sync data to populate',
@@ -120,10 +123,10 @@ export function DashboardStatRow({
     },
     {
       label: 'Avg Session',
-      value: hasData ? formatDuration(avgSessionDuration) : '--',
-      change: hasData && bounceRate > 0 ? `${(bounceRate * 100).toFixed(0)}% bounce` : '',
-      changeColor: bounceRate < 0.5 ? '#34d399' : '#f87171',
-      subtitle: hasData
+      value: hasGA4Data ? formatDuration(avgSessionDuration) : '--',
+      change: hasGA4Data && bounceRate > 0 ? `${bounceRate.toFixed(0)}% bounce` : '',
+      changeColor: bounceRate < 50 ? '#34d399' : '#f87171',
+      subtitle: hasGA4Data
         ? 'Session Duration'
         : hasGA4
           ? 'Waiting for traffic data...'
@@ -135,19 +138,19 @@ export function DashboardStatRow({
     {
       label: 'Phoo Rating',
       value:
-        hasData && avgPosition > 0
+        hasGSCData && avgPosition > 0
           ? avgPosition.toFixed(1)
           : visibilityScore > 0
             ? visibilityScore
             : '--',
       change:
-        hasData && impressions > 0
-          ? `${impressions} impressions`
+        hasGSCData && impressions > 0
+          ? `${impressions.toLocaleString()} impressions`
           : visibilityChange > 0
             ? `+${visibilityChange}`
             : '',
       changeColor: '#F99F2A',
-      subtitle: hasData && avgPosition > 0 ? 'Avg Search Position' : 'Your visibility score',
+      subtitle: hasGSCData && avgPosition > 0 ? 'Avg Organic Position' : 'Your visibility score',
       icon: FiTarget,
       iconColor: '#F99F2A',
       iconBg: 'rgba(249, 159, 42, 0.15)',

@@ -182,7 +182,7 @@ export const getContentPerformance = query({
       .withIndex('by_project_date', (q) =>
         q.eq('projectId', args.projectId).eq('syncDate', latestSyncDate)
       )
-      .take(10000);
+      .collect();
 
     // Build a lookup map: contentPieceId → aggregated metrics
     const metricsMap = new Map<
@@ -311,12 +311,13 @@ export const getProjectMetricsSummary = query({
     const latestSyncDate = latestMetric?.syncDate ?? 0;
 
     // Get content metrics for latest sync only
+    // Using .collect() is safe here — index narrows to one (projectId, syncDate) slice
     const metrics = await ctx.db
       .query('contentMetrics')
       .withIndex('by_project_date', (q) =>
         q.eq('projectId', args.projectId).eq('syncDate', latestSyncDate)
       )
-      .take(10000);
+      .collect();
 
     const published = pieces.filter((p) => p.status === 'published');
     const drafts = pieces.filter((p) => p.status === 'draft');

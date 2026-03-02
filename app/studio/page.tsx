@@ -180,7 +180,9 @@ export default function DashboardPage() {
     return <DashboardSkeleton />;
   if (!project) return <WelcomeEmptyState />;
 
-  const hasKPIData = !!kpis && (kpis.hasGA4Data || kpis.hasGSCData);
+  const hasGA4Data = !!kpis && kpis.hasGA4Data;
+  const hasGSCData = !!kpis && kpis.hasGSCData;
+  const hasKPIData = hasGA4Data || hasGSCData;
 
   // @ts-ignore
   const quickWins = (enrichedKeywordsData.keywords || [])
@@ -272,7 +274,7 @@ export default function DashboardPage() {
             <DashboardStatRow
               sessions={kpis?.sessions?.value ?? 0}
               users={kpis?.users?.value ?? 0}
-              pageViews={kpis?.pageviews?.value ?? 0}
+              pageViews={kpis?.pageViews?.value ?? 0}
               avgSessionDuration={kpis?.avgSessionDuration?.value ?? 0}
               bounceRate={kpis?.bounceRate?.value ?? 0}
               avgPosition={gscStats?.avgPosition ?? 0}
@@ -280,10 +282,11 @@ export default function DashboardPage() {
               visibilityScore={kpis?.visibilityScore ?? 0}
               visibilityChange={kpis?.visibilityScoreChange ?? 0}
               sessionsChange={kpis?.sessions?.change ?? 0}
-              pageViewsChange={kpis?.pageviews?.change ?? 0}
+              pageViewsChange={kpis?.pageViews?.change ?? 0}
               totalLeads={contentMetricsSummary?.totalLeads ?? 0}
               leadConversionRate={contentMetricsSummary?.leadConversionRate ?? 0}
-              hasData={hasKPIData}
+              hasGA4Data={hasGA4Data}
+              hasGSCData={hasGSCData}
               hasGA4={hasGA4}
             />
           </Box>
