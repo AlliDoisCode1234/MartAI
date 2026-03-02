@@ -1850,4 +1850,23 @@ export default defineSchema({
   })
     .index('by_action', ['action'])
     .index('by_created', ['createdAt']),
+
+  /**
+   * Content Lead Attribution — maps GA4 generate_lead events to content pieces
+   * Populated by the sync pipeline (Phase 3 of GTM Lead Tracking)
+   */
+  contentLeads: defineTable({
+    projectId: v.id('projects'),
+    contentPieceId: v.optional(v.id('contentPieces')),
+    pagePath: v.string(),
+    publishedUrl: v.optional(v.string()),
+    leadCount: v.number(),
+    syncDate: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_project', ['projectId'])
+    .index('by_content_piece', ['contentPieceId'])
+    .index('by_project_date', ['projectId', 'syncDate'])
+    .index('by_project_page', ['projectId', 'pagePath']),
 });

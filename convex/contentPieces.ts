@@ -4,7 +4,7 @@
  * Mutations and queries for the Content Studio.
  */
 
-import { mutation, query } from './_generated/server';
+import { mutation, query, internalQuery } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import { v } from 'convex/values';
 import { auth } from './auth';
@@ -532,5 +532,35 @@ export const unschedule = mutation({
     });
 
     return { success: true };
+  },
+});
+
+// ============================================================================
+// Internal Queries (server-side only, no auth check)
+// ============================================================================
+
+/**
+ * Get published content pieces with URLs for lead attribution matching.
+ * Used by sync.ts step 2.6 (Content Lead Attribution).
+ */
+export const getPublishedPiecesWithUrls = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const pieces = await ctx.db
+      .query('contentPieces')
+      .withIndex('by_project_status', (q) =>
+        q.eq('projectId', args.projectId).eq('status', 'published')
+      )
+      .collect();
+
+    // Return only pieces with publishedUrl — minimal projection for URL matching
+    return pieces
+      .filter((p) => p.publishedUrl)
+      .map((p) => ({
+        _id: p._id,
+        title: p.title,
+        publishedUrl: p.publishedUrl,
+        contentType: p.contentType,
+      }));
   },
 });

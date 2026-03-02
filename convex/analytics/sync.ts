@@ -49,6 +49,7 @@ export const syncProjectData = internalAction({
 
     let ga4Data: NormalizedGA4Metrics | null = null;
     let gscData: NormalizedGSCMetrics | null = null;
+    let leadCount = 0;
 
     // 2. Fetch GA4 Data (expanded metrics)
     if (ga4Connection) {
@@ -79,6 +80,90 @@ export const syncProjectData = internalAction({
         });
       } catch (e) {
         console.error(`GA4 Sync Failed for project ${projectId}:`, e);
+      }
+
+      // 2.5. Fetch GA4 Lead Count (filtered by generate_lead event)
+      try {
+        const leadData = await ctx.runAction(internal.integrations.google.fetchGA4LeadCount, {
+          connectionId: ga4Connection._id,
+          projectId,
+          propertyId: ga4Connection.propertyId,
+          accessToken: ga4Connection.accessToken,
+          refreshToken: ga4Connection.refreshToken,
+          startDate,
+          endDate,
+        });
+        leadCount = leadData.leads;
+        console.log(`[Lead Sync] Project ${projectId}: ${leadCount} generate_lead events found`);
+      } catch (e) {
+        console.error(`GA4 Lead Count Sync Failed for project ${projectId}:`, e);
+        // Non-fatal: continue sync without lead data
+      }
+
+      // 2.6. Content Lead Attribution (Phase 3 — map leads to content pieces)
+      try {
+        const leadsByPage = await ctx.runAction(internal.integrations.google.fetchGA4LeadsByPage, {
+          connectionId: ga4Connection._id,
+          projectId,
+          propertyId: ga4Connection.propertyId,
+          accessToken: ga4Connection.accessToken,
+          refreshToken: ga4Connection.refreshToken,
+          startDate,
+          endDate,
+        });
+
+        if (leadsByPage.length > 0) {
+          // Load all published contentPieces for URL matching
+          const publishedPieces = await ctx.runQuery(
+            internal.contentPieces.getPublishedPiecesWithUrls,
+            { projectId }
+          );
+
+          for (const { pagePath, eventCount } of leadsByPage) {
+            // Normalize pagePath for matching: strip trailing slash, lowercase
+            const normalizedPath = pagePath.replace(/\/$/, '').toLowerCase() || '/';
+
+            // Match GA4 pagePath to contentPiece publishedUrl
+            const matchedPiece = publishedPieces.find((p: { publishedUrl?: string }) => {
+              if (!p.publishedUrl) return false;
+              try {
+                const piecePath = new URL(p.publishedUrl).pathname.replace(/\/$/, '').toLowerCase();
+                return piecePath === normalizedPath;
+              } catch {
+                return false;
+              }
+            });
+
+            await ctx.runMutation(internal.analytics.contentLeads.upsertContentLead, {
+              projectId,
+              contentPieceId: matchedPiece?._id,
+              pagePath,
+              publishedUrl: matchedPiece?.publishedUrl,
+              leadCount: eventCount,
+              syncDate: syncDateKey,
+            });
+          }
+
+          console.log(
+            `[Content Attribution] Project ${projectId}: ${leadsByPage.length} pages with leads, ${
+              leadsByPage.filter(({ pagePath }: { pagePath: string }) =>
+                publishedPieces.some((p: { publishedUrl?: string }) => {
+                  if (!p.publishedUrl) return false;
+                  try {
+                    return (
+                      new URL(p.publishedUrl).pathname.replace(/\/$/, '').toLowerCase() ===
+                      pagePath.replace(/\/$/, '').toLowerCase()
+                    );
+                  } catch {
+                    return false;
+                  }
+                })
+              ).length
+            } matched to content pieces`
+          );
+        }
+      } catch (e) {
+        console.error(`Content lead attribution failed for project ${projectId}:`, e);
       }
     }
 
@@ -160,7 +245,7 @@ export const syncProjectData = internalAction({
         engagedSessions: ga4Data.engagedSessions,
         eventCount: ga4Data.eventCount,
         conversions: ga4Data.conversions,
-        // NOTE: leads and revenue removed — we don't fabricate metrics
+        leads: leadCount, // Sourced from real GA4 generate_lead events
       });
 
       // Insight: Low Traffic (using centralized threshold)

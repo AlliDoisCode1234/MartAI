@@ -58,7 +58,7 @@ export const KPI_CONFIG: KpiConfig[] = [
     bgGradient: 'linear(135deg, #48BB78 0%, #68D391 100%)',
     borderColor: 'green.300',
     icon: '🎯',
-    description: 'Conversions',
+    description: 'Form Submissions',
   },
   {
     key: 'revenue',

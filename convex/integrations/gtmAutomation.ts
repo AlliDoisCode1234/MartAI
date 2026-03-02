@@ -1,4 +1,10 @@
-import { internalAction, query, action, internalMutation } from '../_generated/server';
+import {
+  internalAction,
+  query,
+  action,
+  internalMutation,
+  internalQuery,
+} from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
 import { fetchWithExponentialBackoff } from '../lib/apiResilience';
@@ -63,8 +69,13 @@ const GTM_API_BASE = 'https://tagmanager.googleapis.com/tagmanager/v2/accounts';
  * 1. Checks for existing GTM Accounts. If none, creates one.
  * 2. Creates a Container for the domain.
  * 3. Finds the Default Workspace.
- * 4. Injects GA4 Config Tag + All Pages Trigger.
- * 5. Publishes the Container.
+ * 4. Creates All Pages trigger + GA4 Config Tag.
+ * 5. Enables form built-in variables.
+ * 5.5. Creates Form Submission trigger.
+ * 5.6. Creates Custom Event fallback trigger (for AJAX/third-party forms).
+ * 5.7. Creates GA4 generate_lead Event Tag.
+ * 6. Publishes the Container.
+ * 7. Stores the connection in Convex.
  */
 export const provisionTenantContainer = internalAction({
   args: {
@@ -187,6 +198,109 @@ export const provisionTenantContainer = internalAction({
         throw new Error('GTM_TAG_ERROR');
       }
 
+      // 5. Enable form-related built-in variables
+      console.log(`[GTM] Enabling form built-in variables...`);
+      const builtInVarRes = await fetchWithExponentialBackoff(
+        `${workspacePath}/built_in_variables?type=formId&type=formClasses&type=formText&type=formUrl`,
+        { method: 'POST', headers }
+      );
+      if (!builtInVarRes.ok) {
+        // Non-fatal: log but continue — lead tracking still works without variable enrichment
+        const body = await builtInVarRes.text();
+        console.warn(`[GTM] Failed to enable built-in variables (${builtInVarRes.status}):`, body);
+      }
+
+      // 5.5. Create Form Submission trigger
+      console.log(`[GTM] Creating Form Submission trigger...`);
+      const formTriggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: 'Form Submission - All Forms (Phoo Automated)',
+          type: 'formSubmission',
+          waitForTags: { type: 'BOOLEAN', value: 'true' },
+          checkValidation: { type: 'BOOLEAN', value: 'true' },
+          waitForTagsTimeout: { type: 'TEMPLATE', value: '2000' },
+        }),
+      });
+      if (!formTriggerRes.ok) {
+        const body = await formTriggerRes.text();
+        console.error(`[GTM] Failed to create form trigger (${formTriggerRes.status}):`, body);
+        throw new Error('GTM_FORM_TRIGGER_ERROR');
+      }
+      const formTriggerData = await formTriggerRes.json();
+      const formTriggerId = formTriggerData.triggerId;
+
+      // 5.6. Create Custom Event fallback trigger (for AJAX/third-party forms like JotForm, Typeform)
+      console.log(`[GTM] Creating Custom Event fallback trigger...`);
+      const customEventTriggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: 'Custom Event - generate_lead (Phoo Automated)',
+          type: 'customEvent',
+          customEventFilter: [
+            {
+              type: 'EQUALS',
+              parameter: [
+                { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+                { type: 'TEMPLATE', key: 'arg1', value: 'generate_lead' },
+              ],
+            },
+          ],
+        }),
+      });
+      if (!customEventTriggerRes.ok) {
+        const body = await customEventTriggerRes.text();
+        console.error(
+          `[GTM] Failed to create custom event trigger (${customEventTriggerRes.status}):`,
+          body
+        );
+        throw new Error('GTM_CUSTOM_EVENT_TRIGGER_ERROR');
+      }
+      const customEventTriggerData = await customEventTriggerRes.json();
+      const customEventTriggerId = customEventTriggerData.triggerId;
+
+      // 5.7. Create GA4 generate_lead Event Tag (fires on both form submission AND custom event)
+      console.log(`[GTM] Creating GA4 generate_lead Event Tag...`);
+      const leadTagRes = await fetchWithExponentialBackoff(`${workspacePath}/tags`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: 'GA4 Event - Generate Lead (Phoo Automated)',
+          type: 'gaawe',
+          parameter: [
+            { type: 'TEMPLATE', key: 'eventName', value: 'generate_lead' },
+            {
+              type: 'TEMPLATE',
+              key: 'measurementIdOverride',
+              value: args.ga4MeasurementId,
+            },
+            {
+              type: 'LIST',
+              key: 'eventParameters',
+              list: [
+                {
+                  type: 'MAP',
+                  map: [
+                    { type: 'TEMPLATE', key: 'name', value: 'form_id' },
+                    { type: 'TEMPLATE', key: 'value', value: '{{Form ID}}' },
+                  ],
+                },
+              ],
+            },
+          ],
+          firingTriggerId: [formTriggerId, customEventTriggerId],
+        }),
+      });
+      if (!leadTagRes.ok) {
+        const body = await leadTagRes.text();
+        console.error(`[GTM] Failed to create generate_lead tag (${leadTagRes.status}):`, body);
+        throw new Error('GTM_LEAD_TAG_ERROR');
+      }
+
+      console.log(`[GTM] Lead tracking tags and triggers created successfully`);
+
       // 6. Publish Version
       console.log(`[GTM] Publishing container workspace...`);
       const publishRes = await fetchWithExponentialBackoff(`${workspacePath}/versions`, {
@@ -296,5 +410,220 @@ export const getGTMConnection = query({
       createdAt: connection.createdAt,
       updatedAt: connection.updatedAt,
     };
+  },
+});
+
+/**
+ * Upgrade an existing GTM container to include lead tracking tags.
+ * Idempotent — checks for existing "Generate Lead" tag before creating.
+ */
+export const upgradeExistingContainer = internalAction({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args): Promise<{ success: boolean; skipped?: boolean; error?: string }> => {
+    const connection = await ctx.runQuery(
+      internal.integrations.gtmAutomation.getGTMConnectionInternal,
+      { projectId: args.projectId }
+    );
+
+    if (!connection) {
+      return { success: false, error: 'No GTM connection found for this project.' };
+    }
+
+    const accessToken = await decryptCredential(connection.accessToken);
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    };
+
+    const workspacePath = `${GTM_API_BASE}/${connection.accountId}/containers/${connection.containerId}/workspaces/${connection.workspaceId}`;
+
+    try {
+      // Check if the generate_lead tag already exists (idempotency)
+      const tagsRes = await fetchWithExponentialBackoff(`${workspacePath}/tags`, { headers });
+      if (!tagsRes.ok) {
+        throw new Error(`Failed to list tags: ${tagsRes.status}`);
+      }
+      const tagsData = await tagsRes.json();
+      const existingLeadTag = (tagsData.tag || []).find(
+        (t: { name: string }) => t.name === 'GA4 Event - Generate Lead (Phoo Automated)'
+      );
+
+      if (existingLeadTag) {
+        console.log(
+          `[GTM Upgrade] Lead tag already exists for project ${args.projectId}. Skipping.`
+        );
+        return { success: true, skipped: true };
+      }
+
+      // Enable form built-in variables (safe to re-enable)
+      await fetchWithExponentialBackoff(
+        `${workspacePath}/built_in_variables?type=formId&type=formClasses&type=formText&type=formUrl`,
+        { method: 'POST', headers }
+      );
+
+      // Create Form Submission trigger
+      const formTriggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: 'Form Submission - All Forms (Phoo Automated)',
+          type: 'formSubmission',
+          waitForTags: { type: 'BOOLEAN', value: 'true' },
+          checkValidation: { type: 'BOOLEAN', value: 'true' },
+          waitForTagsTimeout: { type: 'TEMPLATE', value: '2000' },
+        }),
+      });
+      if (!formTriggerRes.ok) throw new Error('Failed to create form trigger');
+      const formTriggerId = (await formTriggerRes.json()).triggerId;
+
+      // Create Custom Event fallback trigger
+      const customTriggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: 'Custom Event - generate_lead (Phoo Automated)',
+          type: 'customEvent',
+          customEventFilter: [
+            {
+              type: 'EQUALS',
+              parameter: [
+                { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+                { type: 'TEMPLATE', key: 'arg1', value: 'generate_lead' },
+              ],
+            },
+          ],
+        }),
+      });
+      if (!customTriggerRes.ok) throw new Error('Failed to create custom event trigger');
+      const customTriggerId = (await customTriggerRes.json()).triggerId;
+
+      // Retrieve GA4 Config tag to get measurement ID
+      const ga4ConfigTag = (tagsData.tag || []).find((t: { type: string }) => t.type === 'gaawc');
+      const measurementId =
+        ga4ConfigTag?.parameter?.find((p: { key: string }) => p.key === 'measurementId')?.value ||
+        '';
+
+      if (!measurementId) {
+        console.warn(`[GTM Upgrade] No GA4 measurement ID found for project ${args.projectId}`);
+      }
+
+      // Create GA4 generate_lead Event Tag
+      const leadTagRes = await fetchWithExponentialBackoff(`${workspacePath}/tags`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: 'GA4 Event - Generate Lead (Phoo Automated)',
+          type: 'gaawe',
+          parameter: [
+            { type: 'TEMPLATE', key: 'eventName', value: 'generate_lead' },
+            { type: 'TEMPLATE', key: 'measurementIdOverride', value: measurementId },
+            {
+              type: 'LIST',
+              key: 'eventParameters',
+              list: [
+                {
+                  type: 'MAP',
+                  map: [
+                    { type: 'TEMPLATE', key: 'name', value: 'form_id' },
+                    { type: 'TEMPLATE', key: 'value', value: '{{Form ID}}' },
+                  ],
+                },
+              ],
+            },
+          ],
+          firingTriggerId: [formTriggerId, customTriggerId],
+        }),
+      });
+      if (!leadTagRes.ok) throw new Error('Failed to create generate_lead tag');
+
+      // Publish new version
+      const publishRes = await fetchWithExponentialBackoff(`${workspacePath}/versions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: 'Lead Tracking Upgrade (Phoo.ai)',
+        }),
+      });
+      if (!publishRes.ok) {
+        console.warn(`[GTM Upgrade] Failed to publish — changes saved as draft`);
+      }
+
+      console.log(`[GTM Upgrade] Successfully upgraded container for project ${args.projectId}`);
+      return { success: true };
+    } catch (e: unknown) {
+      console.error(`[GTM Upgrade] Error for project ${args.projectId}:`, e);
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : 'Unknown upgrade error',
+      };
+    }
+  },
+});
+
+/**
+ * Batch upgrade all existing GTM containers to include lead tracking.
+ * Admin-only migration action.
+ */
+export const upgradeAllContainers = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const connections = await ctx.runQuery(
+      internal.integrations.gtmAutomation.listAllGTMConnections
+    );
+
+    const results: Array<{
+      projectId: string;
+      success: boolean;
+      skipped?: boolean;
+      error?: string;
+    }> = [];
+
+    for (const conn of connections) {
+      try {
+        const result = await ctx.runAction(
+          internal.integrations.gtmAutomation.upgradeExistingContainer,
+          { projectId: conn.projectId }
+        );
+        results.push({ projectId: conn.projectId as string, ...result });
+      } catch (e: unknown) {
+        results.push({
+          projectId: conn.projectId as string,
+          success: false,
+          error: e instanceof Error ? e.message : 'Unknown error',
+        });
+      }
+    }
+
+    const upgraded = results.filter((r) => r.success && !r.skipped).length;
+    const skipped = results.filter((r) => r.skipped).length;
+    const failed = results.filter((r) => !r.success).length;
+
+    console.log(
+      `[GTM Upgrade] Batch complete: ${upgraded} upgraded, ${skipped} skipped, ${failed} failed`
+    );
+    return { results, summary: { upgraded, skipped, failed } };
+  },
+});
+
+/**
+ * Internal query to get GTM connection with encrypted tokens (server-side only).
+ */
+export const getGTMConnectionInternal = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('gtmConnections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+  },
+});
+
+/**
+ * Internal query to list all GTM connections for batch operations.
+ */
+export const listAllGTMConnections = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query('gtmConnections').collect();
   },
 });
