@@ -234,3 +234,22 @@ export function normalizeKeywordRow(row: RawGSCRow): NormalizedKeywordSnapshot {
     position: row.position || 0,
   };
 }
+
+// ─── Path Normalization ─────────────────────────────────────────────────────────
+
+/**
+ * Normalize a URL page path for consistent persistence and lookup.
+ * Strips trailing slash and lowercases. Returns '/' for empty/root paths.
+ */
+export function normalizePagePath(pagePath: string): string {
+  return pagePath.replace(/\/$/, '').toLowerCase() || '/';
+}
+
+/**
+ * Normalize a 0-1 decimal to 0-100 percentage.
+ * Values > 1 are assumed already normalized and passed through.
+ * Used for page-level bounceRate from GA4 (returned as 0-1 decimal).
+ */
+export function normalizeDecimalToPercent(value: number): number {
+  return value <= 1 ? value * 100 : value;
+}

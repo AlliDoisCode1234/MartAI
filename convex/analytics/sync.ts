@@ -9,6 +9,8 @@ import {
   aggregateGSCRows,
   normalizeGSCMetrics,
   normalizeKeywordRow,
+  normalizePagePath,
+  normalizeDecimalToPercent,
 } from './analyticsTransforms';
 import type {
   RawGA4Response,
@@ -49,6 +51,7 @@ export const syncProjectData = internalAction({
 
     let ga4Data: NormalizedGA4Metrics | null = null;
     let gscData: NormalizedGSCMetrics | null = null;
+    let leadCount = 0;
 
     // 2. Fetch GA4 Data (expanded metrics)
     if (ga4Connection) {
@@ -79,6 +82,150 @@ export const syncProjectData = internalAction({
         });
       } catch (e) {
         console.error(`GA4 Sync Failed for project ${projectId}:`, e);
+      }
+
+      // 2.5. Fetch GA4 Lead Count (filtered by generate_lead event)
+      try {
+        const leadData = await ctx.runAction(internal.integrations.google.fetchGA4LeadCount, {
+          connectionId: ga4Connection._id,
+          projectId,
+          propertyId: ga4Connection.propertyId,
+          accessToken: ga4Connection.accessToken,
+          refreshToken: ga4Connection.refreshToken,
+          startDate,
+          endDate,
+        });
+        leadCount = leadData.leads;
+        console.log(`[Lead Sync] Project ${projectId}: ${leadCount} generate_lead events found`);
+      } catch (e) {
+        console.error(`GA4 Lead Count Sync Failed for project ${projectId}:`, e);
+        // Non-fatal: continue sync without lead data
+      }
+
+      // 2.6. Content Metrics Attribution (leads + traffic per page)
+      try {
+        // Fetch lead attribution AND page traffic metrics in parallel
+        const [leadsByPage, pageTraffic] = await Promise.all([
+          ctx.runAction(internal.integrations.google.fetchGA4LeadsByPage, {
+            connectionId: ga4Connection._id,
+            projectId,
+            propertyId: ga4Connection.propertyId,
+            accessToken: ga4Connection.accessToken,
+            refreshToken: ga4Connection.refreshToken,
+            startDate,
+            endDate,
+          }),
+          ctx.runAction(internal.integrations.google.fetchGA4PageMetrics, {
+            connectionId: ga4Connection._id,
+            projectId,
+            propertyId: ga4Connection.propertyId,
+            accessToken: ga4Connection.accessToken,
+            refreshToken: ga4Connection.refreshToken,
+            startDate,
+            endDate,
+          }),
+        ]);
+
+        // Aggregate traffic by normalized path (sum on collision, weighted averages)
+        const trafficMap = new Map<
+          string,
+          { pageViews: number; timeWeighted: number; bounceWeighted: number }
+        >();
+        for (const t of pageTraffic) {
+          const normalized = normalizePagePath(t.pagePath);
+          const existing = trafficMap.get(normalized) || {
+            pageViews: 0,
+            timeWeighted: 0,
+            bounceWeighted: 0,
+          };
+          existing.pageViews += t.pageViews;
+          existing.timeWeighted += t.avgTimeOnPage * t.pageViews;
+          // Normalize bounceRate from GA4's 0-1 decimal to 0-100 percentage
+          existing.bounceWeighted += normalizeDecimalToPercent(t.bounceRate) * t.pageViews;
+          trafficMap.set(normalized, existing);
+        }
+
+        // Aggregate leads by normalized path (sum on collision)
+        const leadsMap = new Map<string, number>();
+        for (const l of leadsByPage) {
+          const normalized = normalizePagePath(l.pagePath);
+          leadsMap.set(normalized, (leadsMap.get(normalized) ?? 0) + (l.eventCount ?? 0));
+        }
+
+        // Collect all unique normalized paths
+        const allNormalizedPaths = new Set([
+          ...Array.from(trafficMap.keys()),
+          ...Array.from(leadsMap.keys()),
+        ]);
+
+        // Load published pieces for URL matching
+        const publishedPieces = await ctx.runQuery(
+          internal.contentPieces.getPublishedPiecesWithUrls,
+          { projectId }
+        );
+
+        // Build rows array for bulk upsert
+        const rows: Array<{
+          contentPieceId?: string;
+          pagePath: string;
+          publishedUrl?: string;
+          leadCount: number;
+          pageViews?: number;
+          avgTimeOnPage?: number;
+          bounceRate?: number;
+        }> = [];
+        let matchedCount = 0;
+
+        for (const normalizedPath of allNormalizedPaths) {
+          const leadCount = leadsMap.get(normalizedPath) ?? 0;
+          const traffic = trafficMap.get(normalizedPath);
+
+          // Derive weighted averages from aggregated sums
+          const avgTimeOnPage =
+            traffic && traffic.pageViews > 0 ? traffic.timeWeighted / traffic.pageViews : undefined;
+          const bounceRate =
+            traffic && traffic.pageViews > 0
+              ? traffic.bounceWeighted / traffic.pageViews
+              : undefined;
+
+          // Match to content piece (using normalizePagePath for consistency)
+          const matchedPiece = publishedPieces.find((p: { publishedUrl?: string }) => {
+            if (!p.publishedUrl) return false;
+            try {
+              return normalizePagePath(new URL(p.publishedUrl).pathname) === normalizedPath;
+            } catch {
+              return false;
+            }
+          });
+
+          if (matchedPiece) matchedCount++;
+
+          rows.push({
+            contentPieceId: matchedPiece?._id,
+            pagePath: normalizedPath,
+            publishedUrl: matchedPiece?.publishedUrl,
+            leadCount,
+            pageViews: traffic?.pageViews,
+            avgTimeOnPage,
+            bounceRate,
+          });
+        }
+
+        // Bulk upsert in chunks of 200 to avoid action timeouts
+        const CHUNK_SIZE = 200;
+        for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+          await ctx.runMutation(internal.analytics.contentMetrics.bulkUpsertContentMetrics, {
+            projectId,
+            syncDate: syncDateKey,
+            rows: rows.slice(i, i + CHUNK_SIZE),
+          });
+        }
+
+        console.log(
+          `[Content Metrics] Project ${projectId}: ${allNormalizedPaths.size} pages synced in ${Math.ceil(rows.length / CHUNK_SIZE)} chunks, ${matchedCount} matched to content pieces`
+        );
+      } catch (e) {
+        console.error(`Content metrics sync failed for project ${projectId}:`, e);
       }
     }
 
@@ -160,7 +307,7 @@ export const syncProjectData = internalAction({
         engagedSessions: ga4Data.engagedSessions,
         eventCount: ga4Data.eventCount,
         conversions: ga4Data.conversions,
-        // NOTE: leads and revenue removed — we don't fabricate metrics
+        leads: leadCount, // Sourced from real GA4 generate_lead events
       });
 
       // Insight: Low Traffic (using centralized threshold)
@@ -291,6 +438,15 @@ export const syncProjectData = internalAction({
       });
     } catch (e) {
       console.error('MartAI Rating calculation failed:', e);
+    }
+
+    // 11. Prune stale contentMetrics snapshots (prevent unbounded DB growth)
+    try {
+      await ctx.runMutation(internal.analytics.contentMetrics.pruneStaleSnapshots, {
+        projectId,
+      });
+    } catch (e) {
+      console.error('Snapshot pruning failed:', e);
     }
 
     // RETURNING DATA FOR VERIFICATION

@@ -74,6 +74,8 @@ export const THRESHOLDS = {
     maxKeywordsPerSync: 200,
     /** Pagination limit for library queries */
     libraryPageSize: 50,
+    /** Days to retain contentMetrics snapshots before pruning */
+    snapshotRetentionDays: 90,
   },
 
   /**

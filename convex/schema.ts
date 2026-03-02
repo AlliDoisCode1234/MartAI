@@ -1578,6 +1578,7 @@ export default defineSchema({
     publishDate: v.optional(v.number()),
     scheduledDate: v.optional(v.number()), // Calendar scheduled date
     publishedUrl: v.optional(v.string()),
+    publishedAt: v.optional(v.number()), // Set once on first publish, never mutated
 
     // Legacy fields removed - briefs/drafts tables deprecated
 
@@ -1850,4 +1851,27 @@ export default defineSchema({
   })
     .index('by_action', ['action'])
     .index('by_created', ['createdAt']),
+
+  /**
+   * Content Performance Metrics — per-page lead attribution + traffic data
+   * Populated by the sync pipeline (GTM Lead Tracking + Page Metrics)
+   */
+  contentMetrics: defineTable({
+    projectId: v.id('projects'),
+    contentPieceId: v.optional(v.id('contentPieces')),
+    pagePath: v.string(),
+    publishedUrl: v.optional(v.string()),
+    leadCount: v.number(),
+    pageViews: v.optional(v.number()),
+    avgTimeOnPage: v.optional(v.number()),
+    bounceRate: v.optional(v.number()), // stored as 0-100 percentage (normalized from GA4's 0-1 decimal)
+    syncDate: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_project', ['projectId'])
+    .index('by_content_piece', ['contentPieceId'])
+    .index('by_project_date', ['projectId', 'syncDate'])
+    .index('by_project_page', ['projectId', 'pagePath'])
+    .index('by_project_page_sync', ['projectId', 'pagePath', 'syncDate']),
 });
