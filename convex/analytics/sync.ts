@@ -100,70 +100,93 @@ export const syncProjectData = internalAction({
         // Non-fatal: continue sync without lead data
       }
 
-      // 2.6. Content Lead Attribution (Phase 3 — map leads to content pieces)
+      // 2.6. Content Metrics Attribution (leads + traffic per page)
       try {
-        const leadsByPage = await ctx.runAction(internal.integrations.google.fetchGA4LeadsByPage, {
-          connectionId: ga4Connection._id,
-          projectId,
-          propertyId: ga4Connection.propertyId,
-          accessToken: ga4Connection.accessToken,
-          refreshToken: ga4Connection.refreshToken,
-          startDate,
-          endDate,
-        });
+        // Fetch lead attribution AND page traffic metrics in parallel
+        const [leadsByPage, pageTraffic] = await Promise.all([
+          ctx.runAction(internal.integrations.google.fetchGA4LeadsByPage, {
+            connectionId: ga4Connection._id,
+            projectId,
+            propertyId: ga4Connection.propertyId,
+            accessToken: ga4Connection.accessToken,
+            refreshToken: ga4Connection.refreshToken,
+            startDate,
+            endDate,
+          }),
+          ctx.runAction(internal.integrations.google.fetchGA4PageMetrics, {
+            connectionId: ga4Connection._id,
+            projectId,
+            propertyId: ga4Connection.propertyId,
+            accessToken: ga4Connection.accessToken,
+            refreshToken: ga4Connection.refreshToken,
+            startDate,
+            endDate,
+          }),
+        ]);
 
-        if (leadsByPage.length > 0) {
-          // Load all published contentPieces for URL matching
-          const publishedPieces = await ctx.runQuery(
-            internal.contentPieces.getPublishedPiecesWithUrls,
-            { projectId }
-          );
-
-          for (const { pagePath, eventCount } of leadsByPage) {
-            // Normalize pagePath for matching: strip trailing slash, lowercase
-            const normalizedPath = pagePath.replace(/\/$/, '').toLowerCase() || '/';
-
-            // Match GA4 pagePath to contentPiece publishedUrl
-            const matchedPiece = publishedPieces.find((p: { publishedUrl?: string }) => {
-              if (!p.publishedUrl) return false;
-              try {
-                const piecePath = new URL(p.publishedUrl).pathname.replace(/\/$/, '').toLowerCase();
-                return piecePath === normalizedPath;
-              } catch {
-                return false;
-              }
-            });
-
-            await ctx.runMutation(internal.analytics.contentLeads.upsertContentLead, {
-              projectId,
-              contentPieceId: matchedPiece?._id,
-              pagePath,
-              publishedUrl: matchedPiece?.publishedUrl,
-              leadCount: eventCount,
-              syncDate: syncDateKey,
-            });
-          }
-
-          console.log(
-            `[Content Attribution] Project ${projectId}: ${leadsByPage.length} pages with leads, ${
-              leadsByPage.filter(({ pagePath }: { pagePath: string }) =>
-                publishedPieces.some((p: { publishedUrl?: string }) => {
-                  if (!p.publishedUrl) return false;
-                  try {
-                    return (
-                      new URL(p.publishedUrl).pathname.replace(/\/$/, '').toLowerCase() ===
-                      pagePath.replace(/\/$/, '').toLowerCase()
-                    );
-                  } catch {
-                    return false;
-                  }
-                })
-              ).length
-            } matched to content pieces`
-          );
+        // Build traffic lookup: pagePath → { pageViews, avgTimeOnPage, bounceRate }
+        const trafficMap = new Map<
+          string,
+          { pageViews: number; avgTimeOnPage: number; bounceRate: number }
+        >();
+        for (const t of pageTraffic) {
+          trafficMap.set(t.pagePath, {
+            pageViews: t.pageViews,
+            avgTimeOnPage: t.avgTimeOnPage,
+            bounceRate: t.bounceRate,
+          });
         }
+
+        // Merge: collect all unique page paths from both sources
+        const allPaths = new Set([
+          ...leadsByPage.map((l: { pagePath: string }) => l.pagePath),
+          ...pageTraffic.map((t: { pagePath: string }) => t.pagePath),
+        ]);
+
+        // Load published pieces for URL matching
+        const publishedPieces = await ctx.runQuery(
+          internal.contentPieces.getPublishedPiecesWithUrls,
+          { projectId }
+        );
+
+        let matchedCount = 0;
+        for (const pagePath of allPaths) {
+          const normalizedPath = pagePath.replace(/\/$/, '').toLowerCase() || '/';
+          const leadEntry = leadsByPage.find((l: { pagePath: string }) => l.pagePath === pagePath);
+          const traffic = trafficMap.get(pagePath);
+
+          // Match to content piece
+          const matchedPiece = publishedPieces.find((p: { publishedUrl?: string }) => {
+            if (!p.publishedUrl) return false;
+            try {
+              return (
+                new URL(p.publishedUrl).pathname.replace(/\/$/, '').toLowerCase() === normalizedPath
+              );
+            } catch {
+              return false;
+            }
+          });
+
+          if (matchedPiece) matchedCount++;
+
+          await ctx.runMutation(internal.analytics.contentMetrics.upsertContentMetric, {
+            projectId,
+            contentPieceId: matchedPiece?._id,
+            pagePath,
+            publishedUrl: matchedPiece?.publishedUrl,
+            leadCount: leadEntry?.eventCount ?? 0,
+            pageViews: traffic?.pageViews,
+            avgTimeOnPage: traffic?.avgTimeOnPage,
+            bounceRate: traffic?.bounceRate,
+            syncDate: syncDateKey,
+          });
+        }
+
+        console.log(
+          `[Content Metrics] Project ${projectId}: ${allPaths.size} pages synced, ${matchedCount} matched to content pieces, ${leadsByPage.length} with leads`
+        );
       } catch (e) {
-        console.error(`Content lead attribution failed for project ${projectId}:`, e);
+        console.error(`Content metrics sync failed for project ${projectId}:`, e);
       }
     }
 

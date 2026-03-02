@@ -465,6 +465,100 @@ async function runGA4LeadByPageReport(
 }
 
 /**
+ * GA4 Per-Page Traffic Metrics — pageViews, avgTimeOnPage, bounceRate
+ * NOT filtered by generate_lead (covers all page traffic)
+ */
+export const fetchGA4PageMetrics = internalAction({
+  args: {
+    connectionId: v.id('ga4Connections'),
+    projectId: v.id('projects'),
+    propertyId: v.string(),
+    accessToken: v.string(),
+    refreshToken: v.optional(v.string()),
+    startDate: v.string(),
+    endDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    let token = args.accessToken;
+
+    let response = await runGA4PageMetricsReport(
+      args.propertyId,
+      token,
+      args.startDate,
+      args.endDate
+    );
+
+    if (response.status === 401 && args.refreshToken) {
+      const newTokens = await refreshAccessToken(args.refreshToken);
+      token = newTokens.access_token;
+      await ctx.runMutation(internal.integrations.ga4Connections.updateTokens, {
+        connectionId: args.connectionId,
+        accessToken: token,
+        refreshToken: newTokens.refresh_token,
+      });
+      response = await runGA4PageMetricsReport(
+        args.propertyId,
+        token,
+        args.startDate,
+        args.endDate
+      );
+    }
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`GA4 Page Metrics Report Error: ${err}`);
+    }
+
+    const data = await response.json();
+    const pageMetrics: Array<{
+      pagePath: string;
+      pageViews: number;
+      avgTimeOnPage: number;
+      bounceRate: number;
+    }> = (data.rows || []).map(
+      (row: {
+        dimensionValues: Array<{ value: string }>;
+        metricValues: Array<{ value: string }>;
+      }) => ({
+        pagePath: row.dimensionValues[0]?.value || '/',
+        pageViews: parseInt(row.metricValues[0]?.value || '0', 10),
+        avgTimeOnPage: parseFloat(row.metricValues[1]?.value || '0'),
+        bounceRate: parseFloat(row.metricValues[2]?.value || '0'),
+      })
+    );
+
+    return pageMetrics;
+  },
+});
+
+async function runGA4PageMetricsReport(
+  propertyId: string,
+  accessToken: string,
+  startDate: string,
+  endDate: string
+) {
+  const url = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
+  return fetchWithExponentialBackoff(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: 'pagePath' }],
+      metrics: [
+        { name: 'screenPageViews' },
+        { name: 'averageSessionDuration' },
+        { name: 'bounceRate' },
+      ],
+      orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+      limit: 100,
+    }),
+  });
+}
+
+/**
  * GSC Data Fetcher
  */
 export const fetchGSCMetrics = internalAction({

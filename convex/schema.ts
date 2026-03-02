@@ -1852,15 +1852,18 @@ export default defineSchema({
     .index('by_created', ['createdAt']),
 
   /**
-   * Content Lead Attribution — maps GA4 generate_lead events to content pieces
-   * Populated by the sync pipeline (Phase 3 of GTM Lead Tracking)
+   * Content Performance Metrics — per-page lead attribution + traffic data
+   * Populated by the sync pipeline (GTM Lead Tracking + Page Metrics)
    */
-  contentLeads: defineTable({
+  contentMetrics: defineTable({
     projectId: v.id('projects'),
     contentPieceId: v.optional(v.id('contentPieces')),
     pagePath: v.string(),
     publishedUrl: v.optional(v.string()),
     leadCount: v.number(),
+    pageViews: v.optional(v.number()),
+    avgTimeOnPage: v.optional(v.number()),
+    bounceRate: v.optional(v.number()),
     syncDate: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
