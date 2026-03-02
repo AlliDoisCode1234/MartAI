@@ -234,3 +234,13 @@ export function normalizeKeywordRow(row: RawGSCRow): NormalizedKeywordSnapshot {
     position: row.position || 0,
   };
 }
+
+// ─── Path Normalization ─────────────────────────────────────────────────────────
+
+/**
+ * Normalize a URL page path for consistent persistence and lookup.
+ * Strips trailing slash and lowercases. Returns '/' for empty/root paths.
+ */
+export function normalizePagePath(pagePath: string): string {
+  return pagePath.replace(/\/$/, '').toLowerCase() || '/';
+}

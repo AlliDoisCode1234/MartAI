@@ -253,9 +253,16 @@ export const update = mutation({
     }
 
     const { contentPieceId, ...updates } = args;
-    const filteredUpdates = Object.fromEntries(
+    const filteredUpdates: Record<string, unknown> = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined)
     );
+
+    // Set immutable publishedAt timestamp BEFORE the patch (first publish only)
+    const isFirstPublish =
+      updates.status === 'published' && piece.status !== 'published' && !piece.publishedAt;
+    if (isFirstPublish) {
+      filteredUpdates.publishedAt = Date.now();
+    }
 
     await ctx.db.patch(contentPieceId, {
       ...filteredUpdates,

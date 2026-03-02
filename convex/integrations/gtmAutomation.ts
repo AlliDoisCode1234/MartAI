@@ -461,41 +461,73 @@ export const upgradeExistingContainer = internalAction({
         { method: 'POST', headers }
       );
 
-      // Create Form Submission trigger
-      const formTriggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
-        method: 'POST',
+      // List existing triggers for idempotency
+      const triggersRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
         headers,
-        body: JSON.stringify({
-          name: 'Form Submission - All Forms (Phoo Automated)',
-          type: 'formSubmission',
-          waitForTags: { type: 'BOOLEAN', value: 'true' },
-          checkValidation: { type: 'BOOLEAN', value: 'true' },
-          waitForTagsTimeout: { type: 'TEMPLATE', value: '2000' },
-        }),
       });
-      if (!formTriggerRes.ok) throw new Error('Failed to create form trigger');
-      const formTriggerId = (await formTriggerRes.json()).triggerId;
+      if (!triggersRes.ok) {
+        throw new Error(
+          `Failed to list triggers (status ${triggersRes.status}). Aborting to prevent duplicate creation.`
+        );
+      }
+      const triggersData = await triggersRes.json();
+      const existingTriggers = triggersData.trigger || [];
 
-      // Create Custom Event fallback trigger
-      const customTriggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          name: 'Custom Event - generate_lead (Phoo Automated)',
-          type: 'customEvent',
-          customEventFilter: [
-            {
-              type: 'EQUALS',
-              parameter: [
-                { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
-                { type: 'TEMPLATE', key: 'arg1', value: 'generate_lead' },
-              ],
-            },
-          ],
-        }),
-      });
-      if (!customTriggerRes.ok) throw new Error('Failed to create custom event trigger');
-      const customTriggerId = (await customTriggerRes.json()).triggerId;
+      // Create or find Form Submission trigger
+      const existingFormTrigger = existingTriggers.find(
+        (t: { name: string }) => t.name === 'Form Submission - All Forms (Phoo Automated)'
+      );
+
+      let formTriggerId: string;
+      if (existingFormTrigger) {
+        formTriggerId = existingFormTrigger.triggerId;
+        console.log(`[GTM Upgrade] Form trigger already exists.`);
+      } else {
+        const formTriggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: 'Form Submission - All Forms (Phoo Automated)',
+            type: 'formSubmission',
+            waitForTags: { type: 'BOOLEAN', value: 'true' },
+            checkValidation: { type: 'BOOLEAN', value: 'true' },
+            waitForTagsTimeout: { type: 'TEMPLATE', value: '2000' },
+          }),
+        });
+        if (!formTriggerRes.ok) throw new Error('Failed to create form trigger');
+        formTriggerId = (await formTriggerRes.json()).triggerId;
+      }
+
+      // Create or find Custom Event fallback trigger
+      const existingCustomTrigger = existingTriggers.find(
+        (t: { name: string }) => t.name === 'Custom Event - generate_lead (Phoo Automated)'
+      );
+
+      let customTriggerId: string;
+      if (existingCustomTrigger) {
+        customTriggerId = existingCustomTrigger.triggerId;
+        console.log(`[GTM Upgrade] Custom event trigger already exists.`);
+      } else {
+        const customTriggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: 'Custom Event - generate_lead (Phoo Automated)',
+            type: 'customEvent',
+            customEventFilter: [
+              {
+                type: 'EQUALS',
+                parameter: [
+                  { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+                  { type: 'TEMPLATE', key: 'arg1', value: 'generate_lead' },
+                ],
+              },
+            ],
+          }),
+        });
+        if (!customTriggerRes.ok) throw new Error('Failed to create custom event trigger');
+        customTriggerId = (await customTriggerRes.json()).triggerId;
+      }
 
       // Retrieve GA4 Config tag to get measurement ID
       const ga4ConfigTag = (tagsData.tag || []).find((t: { type: string }) => t.type === 'gaawc');

@@ -553,7 +553,7 @@ async function runGA4PageMetricsReport(
         { name: 'bounceRate' },
       ],
       orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
-      limit: 100,
+      limit: 10000,
     }),
   });
 }

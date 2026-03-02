@@ -9,6 +9,7 @@
 import { internalMutation, internalQuery, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { requireProjectAccess } from '../lib/rbac';
+import { THRESHOLDS } from '../config/thresholds';
 
 /**
  * Upsert a content metric record — idempotent by project + pagePath + syncDate.
@@ -28,12 +29,15 @@ export const upsertContentMetric = internalMutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query('contentMetrics')
-      .withIndex('by_project_page', (q) =>
-        q.eq('projectId', args.projectId).eq('pagePath', args.pagePath)
+      .withIndex('by_project_page_sync', (q) =>
+        q
+          .eq('projectId', args.projectId)
+          .eq('pagePath', args.pagePath)
+          .eq('syncDate', args.syncDate)
       )
       .first();
 
-    if (existing && existing.syncDate === args.syncDate) {
+    if (existing) {
       await ctx.db.patch(existing._id, {
         contentPieceId: args.contentPieceId,
         publishedUrl: args.publishedUrl,
@@ -62,7 +66,9 @@ export const upsertContentMetric = internalMutation({
 });
 
 /**
- * Get all content metrics for a project (latest sync).
+ * Get ALL content metrics for a project (across all sync dates).
+ * WARNING: Returns all historical snapshots. For latest-only data,
+ * use getContentPerformance or getProjectMetricsSummary instead.
  */
 export const getContentMetricsForProject = internalQuery({
   args: { projectId: v.id('projects') },
@@ -102,15 +108,32 @@ export const getContentPerformance = query({
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .collect();
 
+    // Get the latest sync date to avoid double-counting across snapshots
+    const latestMetric = await ctx.db
+      .query('contentMetrics')
+      .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
+      .order('desc')
+      .first();
+    const latestSyncDate = latestMetric?.syncDate ?? 0;
+
     const metrics = await ctx.db
       .query('contentMetrics')
-      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
-      .collect();
+      .withIndex('by_project_date', (q) =>
+        q.eq('projectId', args.projectId).eq('syncDate', latestSyncDate)
+      )
+      .take(10000);
 
     // Build a lookup map: contentPieceId → aggregated metrics
     const metricsMap = new Map<
       string,
-      { leads: number; pageViews: number; avgTimeOnPage: number; bounceRate: number }
+      {
+        leads: number;
+        pageViews: number;
+        weightedTimeSum: number;
+        weightedBounceSum: number;
+        timeWeightTotal: number;
+        bounceWeightTotal: number;
+      }
     >();
 
     for (const m of metrics) {
@@ -119,24 +142,24 @@ export const getContentPerformance = query({
       const existing = metricsMap.get(key) || {
         leads: 0,
         pageViews: 0,
-        avgTimeOnPage: 0,
-        bounceRate: 0,
+        weightedTimeSum: 0,
+        weightedBounceSum: 0,
+        timeWeightTotal: 0,
+        bounceWeightTotal: 0,
       };
       existing.leads += m.leadCount;
       existing.pageViews += m.pageViews ?? 0;
-      // Weighted average for time and bounce rate
-      if (m.avgTimeOnPage) {
-        existing.avgTimeOnPage =
-          (existing.avgTimeOnPage * (existing.pageViews - (m.pageViews ?? 0)) +
-            m.avgTimeOnPage * (m.pageViews ?? 1)) /
-          Math.max(existing.pageViews, 1);
+
+      const weight = m.pageViews ?? 0;
+      if (m.avgTimeOnPage !== undefined) {
+        existing.weightedTimeSum += m.avgTimeOnPage * weight;
+        existing.timeWeightTotal += weight;
       }
-      if (m.bounceRate) {
-        existing.bounceRate =
-          (existing.bounceRate * (existing.pageViews - (m.pageViews ?? 0)) +
-            m.bounceRate * (m.pageViews ?? 1)) /
-          Math.max(existing.pageViews, 1);
+      if (m.bounceRate !== undefined) {
+        existing.weightedBounceSum += m.bounceRate * weight;
+        existing.bounceWeightTotal += weight;
       }
+
       metricsMap.set(key, existing);
     }
 
@@ -149,11 +172,22 @@ export const getContentPerformance = query({
         const pMetrics = metricsMap.get(p._id) || {
           leads: 0,
           pageViews: 0,
-          avgTimeOnPage: 0,
-          bounceRate: 0,
+          weightedTimeSum: 0,
+          weightedBounceSum: 0,
+          timeWeightTotal: 0,
+          bounceWeightTotal: 0,
         };
+
+        const avgTimeOnPage =
+          pMetrics.timeWeightTotal > 0 ? pMetrics.weightedTimeSum / pMetrics.timeWeightTotal : 0;
+        const bounceRate =
+          pMetrics.bounceWeightTotal > 0
+            ? pMetrics.weightedBounceSum / pMetrics.bounceWeightTotal
+            : 0;
+
+        const publishTimestamp = p.publishedAt ?? p.createdAt;
         const daysSincePublished = p.publishedUrl
-          ? Math.floor((now - p.updatedAt) / MS_PER_DAY)
+          ? Math.floor((now - publishTimestamp) / MS_PER_DAY)
           : null;
 
         let maturityStage: 'maturing' | 'growing' | 'established' = 'maturing';
@@ -171,8 +205,8 @@ export const getContentPerformance = query({
           publishedUrl: p.publishedUrl ?? null,
           leads: pMetrics.leads,
           pageViews: pMetrics.pageViews,
-          avgTimeOnPage: Math.round(pMetrics.avgTimeOnPage * 10) / 10,
-          bounceRate: Math.round(pMetrics.bounceRate * 1000) / 1000,
+          avgTimeOnPage: Math.round(avgTimeOnPage * 10) / 10,
+          bounceRate: Math.round(bounceRate * 1000) / 1000,
           daysSincePublished,
           maturityStage,
         };
@@ -206,11 +240,21 @@ export const getProjectMetricsSummary = query({
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .collect();
 
-    // Get content metrics
+    // Get the latest sync date for accurate totals
+    const latestMetric = await ctx.db
+      .query('contentMetrics')
+      .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
+      .order('desc')
+      .first();
+    const latestSyncDate = latestMetric?.syncDate ?? 0;
+
+    // Get content metrics for latest sync only
     const metrics = await ctx.db
       .query('contentMetrics')
-      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
-      .collect();
+      .withIndex('by_project_date', (q) =>
+        q.eq('projectId', args.projectId).eq('syncDate', latestSyncDate)
+      )
+      .take(10000);
 
     const published = pieces.filter((p) => p.status === 'published');
     const drafts = pieces.filter((p) => p.status === 'draft');
@@ -259,5 +303,37 @@ export const getProjectMetricsSummary = query({
       sessions,
       monthsActive,
     };
+  },
+});
+
+/**
+ * Prune stale contentMetrics snapshots older than snapshotRetentionDays.
+ * Prevents unbounded DB growth. Deletes in batches to stay within Convex limits.
+ * Called at the tail of each sync cycle.
+ */
+export const pruneStaleSnapshots = internalMutation({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const RETENTION_MS = THRESHOLDS.sync.snapshotRetentionDays * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - RETENTION_MS;
+
+    // Query stale rows using the project_date index (syncDate < cutoff)
+    const staleRows = await ctx.db
+      .query('contentMetrics')
+      .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
+      .filter((q) => q.lt(q.field('syncDate'), cutoff))
+      .take(500); // Batch limit per invocation
+
+    for (const row of staleRows) {
+      await ctx.db.delete(row._id);
+    }
+
+    if (staleRows.length > 0) {
+      console.log(
+        `[Snapshot Cleanup] Project ${args.projectId}: pruned ${staleRows.length} stale snapshots (cutoff: ${new Date(cutoff).toISOString().split('T')[0]})`
+      );
+    }
+
+    return { pruned: staleRows.length };
   },
 });

@@ -9,6 +9,7 @@ import {
   aggregateGSCRows,
   normalizeGSCMetrics,
   normalizeKeywordRow,
+  normalizePagePath,
 } from './analyticsTransforms';
 import type {
   RawGA4Response,
@@ -124,23 +125,26 @@ export const syncProjectData = internalAction({
           }),
         ]);
 
-        // Build traffic lookup: pagePath → { pageViews, avgTimeOnPage, bounceRate }
+        // Build traffic lookup: normalized pagePath → { pageViews, avgTimeOnPage, bounceRate }
         const trafficMap = new Map<
           string,
           { pageViews: number; avgTimeOnPage: number; bounceRate: number }
         >();
         for (const t of pageTraffic) {
-          trafficMap.set(t.pagePath, {
+          const normalized = normalizePagePath(t.pagePath);
+          trafficMap.set(normalized, {
             pageViews: t.pageViews,
             avgTimeOnPage: t.avgTimeOnPage,
             bounceRate: t.bounceRate,
           });
         }
 
-        // Merge: collect all unique page paths from both sources
-        const allPaths = new Set([
-          ...leadsByPage.map((l: { pagePath: string }) => l.pagePath),
-          ...pageTraffic.map((t: { pagePath: string }) => t.pagePath),
+        // Merge: collect all unique NORMALIZED page paths from both sources
+        // Using normalized keys prevents duplicate mutations when raw paths
+        // like '/About/' and '/about' collapse to the same normalized path.
+        const allNormalizedPaths = new Set([
+          ...leadsByPage.map((l: { pagePath: string }) => normalizePagePath(l.pagePath)),
+          ...pageTraffic.map((t: { pagePath: string }) => normalizePagePath(t.pagePath)),
         ]);
 
         // Load published pieces for URL matching
@@ -150,18 +154,17 @@ export const syncProjectData = internalAction({
         );
 
         let matchedCount = 0;
-        for (const pagePath of allPaths) {
-          const normalizedPath = pagePath.replace(/\/$/, '').toLowerCase() || '/';
-          const leadEntry = leadsByPage.find((l: { pagePath: string }) => l.pagePath === pagePath);
-          const traffic = trafficMap.get(pagePath);
+        for (const normalizedPath of allNormalizedPaths) {
+          const leadEntry = leadsByPage.find((l: { pagePath: string }) => {
+            return normalizePagePath(l.pagePath) === normalizedPath;
+          });
+          const traffic = trafficMap.get(normalizedPath);
 
-          // Match to content piece
+          // Match to content piece (using normalizePagePath for consistency)
           const matchedPiece = publishedPieces.find((p: { publishedUrl?: string }) => {
             if (!p.publishedUrl) return false;
             try {
-              return (
-                new URL(p.publishedUrl).pathname.replace(/\/$/, '').toLowerCase() === normalizedPath
-              );
+              return normalizePagePath(new URL(p.publishedUrl).pathname) === normalizedPath;
             } catch {
               return false;
             }
@@ -172,7 +175,7 @@ export const syncProjectData = internalAction({
           await ctx.runMutation(internal.analytics.contentMetrics.upsertContentMetric, {
             projectId,
             contentPieceId: matchedPiece?._id,
-            pagePath,
+            pagePath: normalizedPath,
             publishedUrl: matchedPiece?.publishedUrl,
             leadCount: leadEntry?.eventCount ?? 0,
             pageViews: traffic?.pageViews,
@@ -183,7 +186,7 @@ export const syncProjectData = internalAction({
         }
 
         console.log(
-          `[Content Metrics] Project ${projectId}: ${allPaths.size} pages synced, ${matchedCount} matched to content pieces, ${leadsByPage.length} with leads`
+          `[Content Metrics] Project ${projectId}: ${allNormalizedPaths.size} pages synced, ${matchedCount} matched to content pieces, ${leadsByPage.length} with leads`
         );
       } catch (e) {
         console.error(`Content metrics sync failed for project ${projectId}:`, e);
@@ -399,6 +402,15 @@ export const syncProjectData = internalAction({
       });
     } catch (e) {
       console.error('MartAI Rating calculation failed:', e);
+    }
+
+    // 11. Prune stale contentMetrics snapshots (prevent unbounded DB growth)
+    try {
+      await ctx.runMutation(internal.analytics.contentMetrics.pruneStaleSnapshots, {
+        projectId,
+      });
+    } catch (e) {
+      console.error('Snapshot pruning failed:', e);
     }
 
     // RETURNING DATA FOR VERIFICATION

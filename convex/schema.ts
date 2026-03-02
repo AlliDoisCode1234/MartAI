@@ -1578,6 +1578,7 @@ export default defineSchema({
     publishDate: v.optional(v.number()),
     scheduledDate: v.optional(v.number()), // Calendar scheduled date
     publishedUrl: v.optional(v.string()),
+    publishedAt: v.optional(v.number()), // Set once on first publish, never mutated
 
     // Legacy fields removed - briefs/drafts tables deprecated
 
@@ -1871,5 +1872,6 @@ export default defineSchema({
     .index('by_project', ['projectId'])
     .index('by_content_piece', ['contentPieceId'])
     .index('by_project_date', ['projectId', 'syncDate'])
-    .index('by_project_page', ['projectId', 'pagePath']),
+    .index('by_project_page', ['projectId', 'pagePath'])
+    .index('by_project_page_sync', ['projectId', 'pagePath', 'syncDate']),
 });
