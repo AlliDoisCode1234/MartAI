@@ -466,35 +466,18 @@ describe('Keywords Pipeline — GSC Enrichment Logic', () => {
     expect(gscPosition).toBeNull();
   });
 
-  it('rankChange = previousPosition - currentPosition (positive = improved)', () => {
+  it('rankChange = currentPosition - previousPosition (negative = improved)', () => {
     const gscPosition = keywordWithGSC.gscPosition!;
     const previousPosition = keywordWithGSC.previousGscPosition!;
-    const rankChange = Math.round(previousPosition - gscPosition);
-    // 12 - 8.5 = 3.5 → 4 (moved UP 4 positions = green arrow)
-    expect(rankChange).toBe(4);
+    const rankChange = Math.round(gscPosition - previousPosition);
+    // 8.5 - 12 = -3.5 → Math.round(-3.5) = -3 (JS rounds half toward +∞)
+    expect(rankChange).toBe(-3);
   });
 
-  it('positive rankChange means IMPROVEMENT (lower position = better)', () => {
-    // In UI: RankChangeCell treats change < 0 as "improved" (confusing!)
-    // Wait — let's verify the actual code:
-    // rankChange = previousGscPosition - gscPosition
-    // If previous=12, current=8.5 → rankChange=3.5 → positive
-    // In RankChangeCell: `const improved = change < 0` ← THIS IS A BUG CHECK
-    // Actually: change in the rendered cell = kw.rankChange from enrichment
-    // getKeywordsEnriched l125: (kw.previousGscPosition ?? gscPosition) - gscPosition
-    // If prev=12, curr=8.5 → 3.5 (positive = moved up = good)
-    // But RankChangeCell line 410: `const improved = change < 0`
-    // This means change < 0 = improved... but our change is positive when improved!
-    // POTENTIAL BUG: Let's verify
-    const rankChange = 4; // moved UP (better)
+  it('negative rankChange = improved (matches UI convention)', () => {
+    const rankChange = -4; // moved UP (better)
     const improved = rankChange < 0; // RankChangeCell logic
-    // This would show RED (not improved) for a keyword that actually improved!
-    // Let's flag this
-    expect(improved).toBe(false);
-    // NOTE: This may be intentional if rankChange is stored as position delta
-    // (higher position number = worse), but the enrichment calculates prev - current
-    // which gives positive when improved.
-    // DECISION: This needs human review — flagging in test output
+    expect(improved).toBe(true); // green arrow for improvement
   });
 });
 
@@ -546,7 +529,7 @@ describe('Keywords Pipeline — Quick Win Heuristic', () => {
 // Test 13: Phoo Score Computation (real function)
 // ============================================================================
 
-import { computeKeywordPhooScore } from '../src/components/keywords/PhooScoreBadge';
+import { computeKeywordPhooScore } from '../src/lib/utils/phooScore';
 
 describe('Phoo Score — computeKeywordPhooScore', () => {
   it('position 1 + high vol + low diff + high CTR → highest score', () => {
