@@ -15,6 +15,7 @@ export const provisionTenantContainerPublic = action({
   args: {
     projectId: v.id('projects'),
     ga4MeasurementId: v.string(),
+    existingContainerPublicId: v.optional(v.string()),
   },
   handler: async (
     ctx,
@@ -40,7 +41,7 @@ export const provisionTenantContainerPublic = action({
     // 4. Extract domain from project URL
     const domain = new URL(project.websiteUrl).hostname;
 
-    // 5. Delegate to internal action
+    // 5. Delegate to internal action (existing or new container)
     const result = await ctx.runAction(
       internal.integrations.gtmAutomation.provisionTenantContainer,
       {
@@ -49,16 +50,98 @@ export const provisionTenantContainerPublic = action({
         ga4MeasurementId: args.ga4MeasurementId,
         accessToken: ga4Connection.accessToken,
         refreshToken: ga4Connection.refreshToken,
+        existingContainerPublicId: args.existingContainerPublicId,
       }
     );
 
     if (!result.success) {
-      // Log detailed error server-side, return generic message
       console.error('[GTM] Provisioning failed:', result.error);
-      return { success: false, error: 'Automation failed. Please try again.' };
+      return { success: false, error: result.error || 'Automation failed. Please try again.' };
     }
 
     return { success: true, containerPublicId: result.containerPublicId };
+  },
+});
+
+/**
+ * List GTM containers available to the authenticated user.
+ * Used by the modal to auto-detect existing containers.
+ */
+export const listUserContainers = action({
+  args: { projectId: v.id('projects') },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    containers: Array<{ name: string; publicId: string; containerId: string; accountId: string }>;
+    error?: string;
+  }> => {
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
+    const ga4Connection = await ctx.runQuery(
+      internal.integrations.ga4Connections.getGA4ConnectionInternal,
+      { projectId: args.projectId }
+    );
+    if (!ga4Connection?.accessToken) {
+      return { success: false, containers: [], error: 'No Google account connected.' };
+    }
+
+    const headers = {
+      Authorization: `Bearer ${ga4Connection.accessToken}`,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      // Fetch GTM accounts
+      const accountsRes = await fetchWithExponentialBackoff(GTM_API_BASE, { headers });
+      if (!accountsRes.ok) {
+        return { success: false, containers: [], error: 'Failed to list GTM accounts.' };
+      }
+      const accountsData = await accountsRes.json();
+      const accounts = accountsData.account || [];
+
+      if (accounts.length === 0) {
+        return { success: true, containers: [] };
+      }
+
+      // Fetch containers from ALL accounts (not just the first)
+      const allContainers: Array<{
+        name: string;
+        publicId: string;
+        containerId: string;
+        accountId: string;
+      }> = [];
+
+      const accountFetches = await Promise.allSettled(
+        accounts.map(async (account: { accountId: string }) => {
+          const containersRes = await fetchWithExponentialBackoff(
+            `${GTM_API_BASE}/${account.accountId}/containers`,
+            { headers }
+          );
+          if (!containersRes.ok) return [];
+          const containersData = await containersRes.json();
+          return (containersData.container || []).map(
+            (c: { name: string; publicId: string; containerId: string }) => ({
+              name: c.name,
+              publicId: c.publicId,
+              containerId: c.containerId,
+              accountId: account.accountId,
+            })
+          );
+        })
+      );
+
+      for (const result of accountFetches) {
+        if (result.status === 'fulfilled') {
+          allContainers.push(...result.value);
+        }
+      }
+
+      return { success: true, containers: allContainers };
+    } catch {
+      return { success: false, containers: [], error: 'Failed to fetch GTM data.' };
+    }
   },
 });
 
@@ -84,19 +167,23 @@ export const provisionTenantContainer = internalAction({
     ga4MeasurementId: v.string(), // E.g. 'G-XXXXXXX'
     accessToken: v.string(),
     refreshToken: v.optional(v.string()), // Used to save to DB
+    existingContainerPublicId: v.optional(v.string()),
   },
   handler: async (
     ctx,
     args
   ): Promise<{ success: boolean; containerPublicId?: string; error?: string }> => {
-    console.log(`[GTM] Starting container provisioning for ${args.domain}`);
+    const isExisting = !!args.existingContainerPublicId;
+    console.log(
+      `[GTM] Starting container ${isExisting ? 'connection' : 'provisioning'} for ${args.domain}`
+    );
     const headers = {
       Authorization: `Bearer ${args.accessToken}`,
       'Content-Type': 'application/json',
     };
 
     try {
-      // 1. Check Accounts or Create Account
+      // 1. Check Accounts
       const accountsRes = await fetchWithExponentialBackoff(GTM_API_BASE, { headers });
       if (!accountsRes.ok) {
         const body = await accountsRes.text();
@@ -118,84 +205,198 @@ export const provisionTenantContainer = internalAction({
         };
       }
 
-      // 2. Create Container
-      const accountPath = `${GTM_API_BASE}/${accountId}`;
-      console.log(`[GTM] Creating container for ${args.domain}`);
-      const containerRes = await fetchWithExponentialBackoff(`${accountPath}/containers`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          name: `${args.domain} (Phoo Automated)`,
-          usageContext: ['web'],
-        }),
-      });
+      let containerId: string;
+      let containerPublicId: string;
+      let workspacePath: string;
+      let workspaceId: string;
 
-      if (!containerRes.ok) {
-        const body = await containerRes.text();
-        console.error(`[GTM] Failed to create container (${containerRes.status}):`, body);
-        throw new Error('GTM_CONTAINER_ERROR');
+      // Idempotency flags for existing container path
+      let hasPhooGa4Tag = false;
+      let hasPhooLeadTag = false;
+      let hasPhooAllPagesTrigger = false;
+      let hasPhooFormTrigger = false;
+      let hasPhooCustomEventTrigger = false;
+      let existingAllPagesTriggerId: string | undefined;
+      let existingFormTriggerId: string | undefined;
+      let existingCustomEventTriggerId: string | undefined;
+
+      if (isExisting) {
+        // ── EXISTING CONTAINER PATH ──────────────────────────────────
+        console.log(`[GTM] Connecting to existing container: ${args.existingContainerPublicId}`);
+
+        // List containers to find the matching one
+        const accountPath = `${GTM_API_BASE}/${accountId}`;
+        const containersRes = await fetchWithExponentialBackoff(`${accountPath}/containers`, {
+          headers,
+        });
+        if (!containersRes.ok) {
+          throw new Error('GTM_CONTAINERS_LIST_ERROR');
+        }
+        const containersData = await containersRes.json();
+        const matchingContainer = (containersData.container || []).find(
+          (c: { publicId: string }) => c.publicId === args.existingContainerPublicId
+        );
+
+        if (!matchingContainer) {
+          return {
+            success: false,
+            error: `Container ${args.existingContainerPublicId} not found in your GTM account.`,
+          };
+        }
+
+        containerId = matchingContainer.containerId;
+        containerPublicId = matchingContainer.publicId;
+
+        // Find workspace
+        const workspacesRes = await fetchWithExponentialBackoff(
+          `${GTM_API_BASE}/${accountId}/containers/${containerId}/workspaces`,
+          { headers }
+        );
+        if (!workspacesRes.ok) throw new Error('GTM_WORKSPACES_ERROR');
+        const workspacesData = await workspacesRes.json();
+        workspacePath = workspacesData.workspace[0].path;
+        workspaceId = workspacesData.workspace[0].workspaceId;
+
+        // Check existing tags and triggers for idempotency
+        const tagsRes = await fetchWithExponentialBackoff(`${workspacePath}/tags`, { headers });
+        if (tagsRes.ok) {
+          const tagsData = await tagsRes.json();
+          const existingTags = tagsData.tag || [];
+          hasPhooGa4Tag = existingTags.some(
+            (t: { name: string }) => t.name === 'GA4 Configuration (Phoo Automated)'
+          );
+          hasPhooLeadTag = existingTags.some(
+            (t: { name: string }) => t.name === 'GA4 Event - Generate Lead (Phoo Automated)'
+          );
+          if (hasPhooGa4Tag) console.log(`[GTM] Phoo GA4 config tag already exists. Skipping.`);
+          if (hasPhooLeadTag) console.log(`[GTM] Phoo lead tag already exists. Skipping.`);
+        }
+
+        const triggersRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
+          headers,
+        });
+        if (triggersRes.ok) {
+          const triggersData = await triggersRes.json();
+          const existingTriggers = triggersData.trigger || [];
+          hasPhooAllPagesTrigger = existingTriggers.some(
+            (t: { name: string }) => t.name === 'All Pages (Phoo Automated)'
+          );
+          hasPhooFormTrigger = existingTriggers.some(
+            (t: { name: string }) => t.name === 'Form Submission - All Forms (Phoo Automated)'
+          );
+          hasPhooCustomEventTrigger = existingTriggers.some(
+            (t: { name: string }) => t.name === 'Custom Event - generate_lead (Phoo Automated)'
+          );
+          // Capture existing trigger IDs for reuse
+          if (hasPhooAllPagesTrigger) {
+            existingAllPagesTriggerId = existingTriggers.find(
+              (t: { name: string }) => t.name === 'All Pages (Phoo Automated)'
+            )?.triggerId;
+          }
+          if (hasPhooFormTrigger) {
+            existingFormTriggerId = existingTriggers.find(
+              (t: { name: string }) => t.name === 'Form Submission - All Forms (Phoo Automated)'
+            )?.triggerId;
+          }
+          if (hasPhooCustomEventTrigger) {
+            existingCustomEventTriggerId = existingTriggers.find(
+              (t: { name: string }) => t.name === 'Custom Event - generate_lead (Phoo Automated)'
+            )?.triggerId;
+          }
+        }
+      } else {
+        // ── NEW CONTAINER PATH (original flow) ──────────────────────
+
+        // 2. Create Container
+        const accountPath = `${GTM_API_BASE}/${accountId}`;
+        console.log(`[GTM] Creating container for ${args.domain}`);
+        const containerRes = await fetchWithExponentialBackoff(`${accountPath}/containers`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: `${args.domain} (Phoo Automated)`,
+            usageContext: ['web'],
+          }),
+        });
+
+        if (!containerRes.ok) {
+          const body = await containerRes.text();
+          console.error(`[GTM] Failed to create container (${containerRes.status}):`, body);
+          throw new Error('GTM_CONTAINER_ERROR');
+        }
+        const containerData = await containerRes.json();
+        containerId = containerData.containerId;
+        containerPublicId = containerData.publicId; // GTM-XXXX
+
+        // 3. Find Default Workspace
+        console.log(`[GTM] Looking up default workspace for container ${containerId}`);
+        const workspacesRes = await fetchWithExponentialBackoff(
+          `${GTM_API_BASE}/${accountId}/containers/${containerId}/workspaces`,
+          { headers }
+        );
+        if (!workspacesRes.ok) {
+          const body = await workspacesRes.text();
+          console.error(`[GTM] Failed to list workspaces (${workspacesRes.status}):`, body);
+          throw new Error('GTM_WORKSPACES_ERROR');
+        }
+
+        const workspacesData = await workspacesRes.json();
+        workspacePath = workspacesData.workspace[0].path;
+        workspaceId = workspacesData.workspace[0].workspaceId;
       }
-      const containerData = await containerRes.json();
-      const containerId = containerData.containerId;
-      const containerPublicId = containerData.publicId; // GTM-XXXX
-      const containerPath = containerData.path;
 
-      // 3. Find Default Workspace
-      console.log(`[GTM] Looking up default workspace for container ${containerId}`);
-      const workspacesRes = await fetchWithExponentialBackoff(
-        `${GTM_API_BASE}/${accountId}/containers/${containerId}/workspaces`,
-        { headers }
-      );
-      if (!workspacesRes.ok) {
-        const body = await workspacesRes.text();
-        console.error(`[GTM] Failed to list workspaces (${workspacesRes.status}):`, body);
-        throw new Error('GTM_WORKSPACES_ERROR');
+      // ── SHARED PATH: Create triggers + tags (idempotent) ────────
+
+      // 4. Create Trigger (All Pages) — skip if already exists
+      let triggerId: string;
+      if (hasPhooAllPagesTrigger && existingAllPagesTriggerId) {
+        console.log(`[GTM] All Pages trigger already exists. Reusing.`);
+        triggerId = existingAllPagesTriggerId;
+      } else {
+        console.log(`[GTM] Creating All Pages trigger...`);
+        const triggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: 'All Pages (Phoo Automated)',
+            type: 'pageview',
+          }),
+        });
+        if (!triggerRes.ok) {
+          const body = await triggerRes.text();
+          console.error(`[GTM] Failed to create trigger (${triggerRes.status}):`, body);
+          throw new Error('GTM_TRIGGER_ERROR');
+        }
+        const triggerData = await triggerRes.json();
+        triggerId = triggerData.triggerId;
       }
 
-      const workspacesData = await workspacesRes.json();
-      const workspacePath = workspacesData.workspace[0].path;
-      const workspaceId = workspacesData.workspace[0].workspaceId;
-
-      // 4. Create Trigger (All Pages)
-      console.log(`[GTM] Creating All Pages trigger...`);
-      const triggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          name: 'All Pages (Phoo Automated)',
-          type: 'pageview',
-        }),
-      });
-      if (!triggerRes.ok) {
-        const body = await triggerRes.text();
-        console.error(`[GTM] Failed to create trigger (${triggerRes.status}):`, body);
-        throw new Error('GTM_TRIGGER_ERROR');
-      }
-      const triggerData = await triggerRes.json();
-      const triggerId = triggerData.triggerId;
-
-      // 5. Create Tag (GA4 Config)
-      console.log(`[GTM] Creating GA4 Configuration Tag...`);
-      const tagRes = await fetchWithExponentialBackoff(`${workspacePath}/tags`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          name: 'GA4 Configuration (Phoo Automated)',
-          type: 'gaawc', // GA4 Web Configuration
-          parameter: [
-            {
-              type: 'template',
-              key: 'measurementId',
-              value: args.ga4MeasurementId,
-            },
-          ],
-          firingTriggerId: [triggerId],
-        }),
-      });
-      if (!tagRes.ok) {
-        const body = await tagRes.text();
-        console.error(`[GTM] Failed to create GA4 tag (${tagRes.status}):`, body);
-        throw new Error('GTM_TAG_ERROR');
+      // 5. Create Tag (GA4 Config) — skip if already exists
+      if (hasPhooGa4Tag) {
+        console.log(`[GTM] GA4 Configuration tag already exists. Skipping.`);
+      } else {
+        console.log(`[GTM] Creating GA4 Configuration Tag...`);
+        const tagRes = await fetchWithExponentialBackoff(`${workspacePath}/tags`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: 'GA4 Configuration (Phoo Automated)',
+            type: 'gaawc', // GA4 Web Configuration
+            parameter: [
+              {
+                type: 'template',
+                key: 'measurementId',
+                value: args.ga4MeasurementId,
+              },
+            ],
+            firingTriggerId: [triggerId],
+          }),
+        });
+        if (!tagRes.ok) {
+          const body = await tagRes.text();
+          console.error(`[GTM] Failed to create GA4 tag (${tagRes.status}):`, body);
+          throw new Error('GTM_TAG_ERROR');
+        }
       }
 
       // 5. Enable form-related built-in variables
@@ -210,93 +411,112 @@ export const provisionTenantContainer = internalAction({
         console.warn(`[GTM] Failed to enable built-in variables (${builtInVarRes.status}):`, body);
       }
 
-      // 5.5. Create Form Submission trigger
-      console.log(`[GTM] Creating Form Submission trigger...`);
-      const formTriggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          name: 'Form Submission - All Forms (Phoo Automated)',
-          type: 'formSubmission',
-          waitForTags: { type: 'BOOLEAN', value: 'true' },
-          checkValidation: { type: 'BOOLEAN', value: 'true' },
-          waitForTagsTimeout: { type: 'TEMPLATE', value: '2000' },
-        }),
-      });
-      if (!formTriggerRes.ok) {
-        const body = await formTriggerRes.text();
-        console.error(`[GTM] Failed to create form trigger (${formTriggerRes.status}):`, body);
-        throw new Error('GTM_FORM_TRIGGER_ERROR');
+      // 5.5. Create Form Submission trigger — skip if exists
+      let formTriggerId: string;
+      if (hasPhooFormTrigger && existingFormTriggerId) {
+        console.log(`[GTM] Form Submission trigger already exists. Reusing.`);
+        formTriggerId = existingFormTriggerId;
+      } else {
+        console.log(`[GTM] Creating Form Submission trigger...`);
+        const formTriggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: 'Form Submission - All Forms (Phoo Automated)',
+            type: 'formSubmission',
+            waitForTags: { type: 'BOOLEAN', value: 'true' },
+            checkValidation: { type: 'BOOLEAN', value: 'true' },
+            waitForTagsTimeout: { type: 'TEMPLATE', value: '2000' },
+          }),
+        });
+        if (!formTriggerRes.ok) {
+          const body = await formTriggerRes.text();
+          console.error(`[GTM] Failed to create form trigger (${formTriggerRes.status}):`, body);
+          throw new Error('GTM_FORM_TRIGGER_ERROR');
+        }
+        const formTriggerData = await formTriggerRes.json();
+        formTriggerId = formTriggerData.triggerId;
       }
-      const formTriggerData = await formTriggerRes.json();
-      const formTriggerId = formTriggerData.triggerId;
 
-      // 5.6. Create Custom Event fallback trigger (for AJAX/third-party forms like JotForm, Typeform)
-      console.log(`[GTM] Creating Custom Event fallback trigger...`);
-      const customEventTriggerRes = await fetchWithExponentialBackoff(`${workspacePath}/triggers`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          name: 'Custom Event - generate_lead (Phoo Automated)',
-          type: 'customEvent',
-          customEventFilter: [
-            {
-              type: 'EQUALS',
-              parameter: [
-                { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
-                { type: 'TEMPLATE', key: 'arg1', value: 'generate_lead' },
-              ],
-            },
-          ],
-        }),
-      });
-      if (!customEventTriggerRes.ok) {
-        const body = await customEventTriggerRes.text();
-        console.error(
-          `[GTM] Failed to create custom event trigger (${customEventTriggerRes.status}):`,
-          body
-        );
-        throw new Error('GTM_CUSTOM_EVENT_TRIGGER_ERROR');
-      }
-      const customEventTriggerData = await customEventTriggerRes.json();
-      const customEventTriggerId = customEventTriggerData.triggerId;
-
-      // 5.7. Create GA4 generate_lead Event Tag (fires on both form submission AND custom event)
-      console.log(`[GTM] Creating GA4 generate_lead Event Tag...`);
-      const leadTagRes = await fetchWithExponentialBackoff(`${workspacePath}/tags`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          name: 'GA4 Event - Generate Lead (Phoo Automated)',
-          type: 'gaawe',
-          parameter: [
-            { type: 'TEMPLATE', key: 'eventName', value: 'generate_lead' },
-            {
-              type: 'TEMPLATE',
-              key: 'measurementIdOverride',
-              value: args.ga4MeasurementId,
-            },
-            {
-              type: 'LIST',
-              key: 'eventParameters',
-              list: [
+      // 5.6. Create Custom Event fallback trigger — skip if exists
+      let customEventTriggerId: string;
+      if (hasPhooCustomEventTrigger && existingCustomEventTriggerId) {
+        console.log(`[GTM] Custom Event trigger already exists. Reusing.`);
+        customEventTriggerId = existingCustomEventTriggerId;
+      } else {
+        console.log(`[GTM] Creating Custom Event fallback trigger...`);
+        const customEventTriggerRes = await fetchWithExponentialBackoff(
+          `${workspacePath}/triggers`,
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              name: 'Custom Event - generate_lead (Phoo Automated)',
+              type: 'customEvent',
+              customEventFilter: [
                 {
-                  type: 'MAP',
-                  map: [
-                    { type: 'TEMPLATE', key: 'name', value: 'form_id' },
-                    { type: 'TEMPLATE', key: 'value', value: '{{Form ID}}' },
+                  type: 'EQUALS',
+                  parameter: [
+                    { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+                    { type: 'TEMPLATE', key: 'arg1', value: 'generate_lead' },
                   ],
                 },
               ],
-            },
-          ],
-          firingTriggerId: [formTriggerId, customEventTriggerId],
-        }),
-      });
-      if (!leadTagRes.ok) {
-        const body = await leadTagRes.text();
-        console.error(`[GTM] Failed to create generate_lead tag (${leadTagRes.status}):`, body);
-        throw new Error('GTM_LEAD_TAG_ERROR');
+            }),
+          }
+        );
+        if (!customEventTriggerRes.ok) {
+          const body = await customEventTriggerRes.text();
+          console.error(
+            `[GTM] Failed to create custom event trigger (${customEventTriggerRes.status}):`,
+            body
+          );
+          throw new Error('GTM_CUSTOM_EVENT_TRIGGER_ERROR');
+        }
+        const customEventTriggerData = await customEventTriggerRes.json();
+        customEventTriggerId = customEventTriggerData.triggerId;
+      }
+
+      // 5.7. Create GA4 generate_lead Event Tag — skip if exists
+      if (hasPhooLeadTag) {
+        console.log(`[GTM] GA4 generate_lead tag already exists. Skipping.`);
+      } else {
+        console.log(`[GTM] Creating GA4 generate_lead Event Tag...`);
+        const leadTagRes = await fetchWithExponentialBackoff(`${workspacePath}/tags`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: 'GA4 Event - Generate Lead (Phoo Automated)',
+            type: 'gaawe',
+            parameter: [
+              { type: 'TEMPLATE', key: 'eventName', value: 'generate_lead' },
+              {
+                type: 'TEMPLATE',
+                key: 'measurementIdOverride',
+                value: args.ga4MeasurementId,
+              },
+              {
+                type: 'LIST',
+                key: 'eventParameters',
+                list: [
+                  {
+                    type: 'MAP',
+                    map: [
+                      { type: 'TEMPLATE', key: 'name', value: 'form_id' },
+                      { type: 'TEMPLATE', key: 'value', value: '{{Form ID}}' },
+                    ],
+                  },
+                ],
+              },
+            ],
+            firingTriggerId: [formTriggerId, customEventTriggerId],
+          }),
+        });
+        if (!leadTagRes.ok) {
+          const body = await leadTagRes.text();
+          console.error(`[GTM] Failed to create generate_lead tag (${leadTagRes.status}):`, body);
+          throw new Error('GTM_LEAD_TAG_ERROR');
+        }
       }
 
       console.log(`[GTM] Lead tracking tags and triggers created successfully`);

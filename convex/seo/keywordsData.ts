@@ -122,7 +122,7 @@ export const getKeywordsEnriched = query({
 
       const rankChange =
         kw.previousGscPosition !== undefined && gscPosition !== null
-          ? Math.round((kw.previousGscPosition ?? gscPosition) - gscPosition)
+          ? Math.round(gscPosition - (kw.previousGscPosition ?? gscPosition))
           : null;
 
       // Quick Win: GSC-based (position 11-20, low effort) OR heuristic (low difficulty + decent volume)

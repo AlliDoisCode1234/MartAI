@@ -125,7 +125,7 @@ export default function DashboardPage() {
   }, [isAuthenticated, authLoading, user, router]);
 
   useEffect(() => {
-    if (searchParams.get('subscription') === 'success') {
+    if (searchParams?.get('subscription') === 'success') {
       toast({
         title: 'Welcome to Phoo!',
         description: 'Your subscription is active. Let\u0027s build something great.',
