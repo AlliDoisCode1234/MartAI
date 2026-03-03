@@ -15,6 +15,7 @@ export const provisionTenantContainerPublic = action({
   args: {
     projectId: v.id('projects'),
     ga4MeasurementId: v.string(),
+    existingContainerPublicId: v.optional(v.string()),
   },
   handler: async (
     ctx,
@@ -40,7 +41,7 @@ export const provisionTenantContainerPublic = action({
     // 4. Extract domain from project URL
     const domain = new URL(project.websiteUrl).hostname;
 
-    // 5. Delegate to internal action
+    // 5. Delegate to internal action (existing or new container)
     const result = await ctx.runAction(
       internal.integrations.gtmAutomation.provisionTenantContainer,
       {
@@ -49,16 +50,84 @@ export const provisionTenantContainerPublic = action({
         ga4MeasurementId: args.ga4MeasurementId,
         accessToken: ga4Connection.accessToken,
         refreshToken: ga4Connection.refreshToken,
+        existingContainerPublicId: args.existingContainerPublicId,
       }
     );
 
     if (!result.success) {
-      // Log detailed error server-side, return generic message
       console.error('[GTM] Provisioning failed:', result.error);
-      return { success: false, error: 'Automation failed. Please try again.' };
+      return { success: false, error: result.error || 'Automation failed. Please try again.' };
     }
 
     return { success: true, containerPublicId: result.containerPublicId };
+  },
+});
+
+/**
+ * List GTM containers available to the authenticated user.
+ * Used by the modal to auto-detect existing containers.
+ */
+export const listUserContainers = action({
+  args: { projectId: v.id('projects') },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    containers: Array<{ name: string; publicId: string; containerId: string; accountId: string }>;
+    error?: string;
+  }> => {
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
+    const ga4Connection = await ctx.runQuery(
+      internal.integrations.ga4Connections.getGA4ConnectionInternal,
+      { projectId: args.projectId }
+    );
+    if (!ga4Connection?.accessToken) {
+      return { success: false, containers: [], error: 'No Google account connected.' };
+    }
+
+    const headers = {
+      Authorization: `Bearer ${ga4Connection.accessToken}`,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      // Fetch GTM accounts
+      const accountsRes = await fetchWithExponentialBackoff(GTM_API_BASE, { headers });
+      if (!accountsRes.ok) {
+        return { success: false, containers: [], error: 'Failed to list GTM accounts.' };
+      }
+      const accountsData = await accountsRes.json();
+      const accounts = accountsData.account || [];
+
+      if (accounts.length === 0) {
+        return { success: true, containers: [] };
+      }
+
+      // Fetch containers from the first account
+      const accountId = accounts[0].accountId;
+      const containersRes = await fetchWithExponentialBackoff(
+        `${GTM_API_BASE}/${accountId}/containers`,
+        { headers }
+      );
+      if (!containersRes.ok) {
+        return { success: false, containers: [], error: 'Failed to list containers.' };
+      }
+      const containersData = await containersRes.json();
+      const containers = (containersData.container || []).map(
+        (c: { name: string; publicId: string; containerId: string }) => ({
+          name: c.name,
+          publicId: c.publicId,
+          containerId: c.containerId,
+          accountId,
+        })
+      );
+
+      return { success: true, containers };
+    } catch {
+      return { success: false, containers: [], error: 'Failed to fetch GTM data.' };
+    }
   },
 });
 
@@ -84,19 +153,23 @@ export const provisionTenantContainer = internalAction({
     ga4MeasurementId: v.string(), // E.g. 'G-XXXXXXX'
     accessToken: v.string(),
     refreshToken: v.optional(v.string()), // Used to save to DB
+    existingContainerPublicId: v.optional(v.string()),
   },
   handler: async (
     ctx,
     args
   ): Promise<{ success: boolean; containerPublicId?: string; error?: string }> => {
-    console.log(`[GTM] Starting container provisioning for ${args.domain}`);
+    const isExisting = !!args.existingContainerPublicId;
+    console.log(
+      `[GTM] Starting container ${isExisting ? 'connection' : 'provisioning'} for ${args.domain}`
+    );
     const headers = {
       Authorization: `Bearer ${args.accessToken}`,
       'Content-Type': 'application/json',
     };
 
     try {
-      // 1. Check Accounts or Create Account
+      // 1. Check Accounts
       const accountsRes = await fetchWithExponentialBackoff(GTM_API_BASE, { headers });
       if (!accountsRes.ok) {
         const body = await accountsRes.text();
@@ -118,43 +191,101 @@ export const provisionTenantContainer = internalAction({
         };
       }
 
-      // 2. Create Container
-      const accountPath = `${GTM_API_BASE}/${accountId}`;
-      console.log(`[GTM] Creating container for ${args.domain}`);
-      const containerRes = await fetchWithExponentialBackoff(`${accountPath}/containers`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          name: `${args.domain} (Phoo Automated)`,
-          usageContext: ['web'],
-        }),
-      });
+      let containerId: string;
+      let containerPublicId: string;
+      let workspacePath: string;
+      let workspaceId: string;
 
-      if (!containerRes.ok) {
-        const body = await containerRes.text();
-        console.error(`[GTM] Failed to create container (${containerRes.status}):`, body);
-        throw new Error('GTM_CONTAINER_ERROR');
+      if (isExisting) {
+        // ── EXISTING CONTAINER PATH ──────────────────────────────────
+        console.log(`[GTM] Connecting to existing container: ${args.existingContainerPublicId}`);
+
+        // List containers to find the matching one
+        const accountPath = `${GTM_API_BASE}/${accountId}`;
+        const containersRes = await fetchWithExponentialBackoff(`${accountPath}/containers`, {
+          headers,
+        });
+        if (!containersRes.ok) {
+          throw new Error('GTM_CONTAINERS_LIST_ERROR');
+        }
+        const containersData = await containersRes.json();
+        const matchingContainer = (containersData.container || []).find(
+          (c: { publicId: string }) => c.publicId === args.existingContainerPublicId
+        );
+
+        if (!matchingContainer) {
+          return {
+            success: false,
+            error: `Container ${args.existingContainerPublicId} not found in your GTM account.`,
+          };
+        }
+
+        containerId = matchingContainer.containerId;
+        containerPublicId = matchingContainer.publicId;
+
+        // Find workspace
+        const workspacesRes = await fetchWithExponentialBackoff(
+          `${GTM_API_BASE}/${accountId}/containers/${containerId}/workspaces`,
+          { headers }
+        );
+        if (!workspacesRes.ok) throw new Error('GTM_WORKSPACES_ERROR');
+        const workspacesData = await workspacesRes.json();
+        workspacePath = workspacesData.workspace[0].path;
+        workspaceId = workspacesData.workspace[0].workspaceId;
+
+        // Check if GA4 config tag already exists (idempotency)
+        const tagsRes = await fetchWithExponentialBackoff(`${workspacePath}/tags`, { headers });
+        if (tagsRes.ok) {
+          const tagsData = await tagsRes.json();
+          const existingPhooTag = (tagsData.tag || []).find(
+            (t: { name: string }) => t.name === 'GA4 Configuration (Phoo Automated)'
+          );
+          if (existingPhooTag) {
+            console.log(`[GTM] Container already has Phoo GA4 tag. Skipping config tag.`);
+          }
+        }
+      } else {
+        // ── NEW CONTAINER PATH (original flow) ──────────────────────
+
+        // 2. Create Container
+        const accountPath = `${GTM_API_BASE}/${accountId}`;
+        console.log(`[GTM] Creating container for ${args.domain}`);
+        const containerRes = await fetchWithExponentialBackoff(`${accountPath}/containers`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: `${args.domain} (Phoo Automated)`,
+            usageContext: ['web'],
+          }),
+        });
+
+        if (!containerRes.ok) {
+          const body = await containerRes.text();
+          console.error(`[GTM] Failed to create container (${containerRes.status}):`, body);
+          throw new Error('GTM_CONTAINER_ERROR');
+        }
+        const containerData = await containerRes.json();
+        containerId = containerData.containerId;
+        containerPublicId = containerData.publicId; // GTM-XXXX
+
+        // 3. Find Default Workspace
+        console.log(`[GTM] Looking up default workspace for container ${containerId}`);
+        const workspacesRes = await fetchWithExponentialBackoff(
+          `${GTM_API_BASE}/${accountId}/containers/${containerId}/workspaces`,
+          { headers }
+        );
+        if (!workspacesRes.ok) {
+          const body = await workspacesRes.text();
+          console.error(`[GTM] Failed to list workspaces (${workspacesRes.status}):`, body);
+          throw new Error('GTM_WORKSPACES_ERROR');
+        }
+
+        const workspacesData = await workspacesRes.json();
+        workspacePath = workspacesData.workspace[0].path;
+        workspaceId = workspacesData.workspace[0].workspaceId;
       }
-      const containerData = await containerRes.json();
-      const containerId = containerData.containerId;
-      const containerPublicId = containerData.publicId; // GTM-XXXX
-      const containerPath = containerData.path;
 
-      // 3. Find Default Workspace
-      console.log(`[GTM] Looking up default workspace for container ${containerId}`);
-      const workspacesRes = await fetchWithExponentialBackoff(
-        `${GTM_API_BASE}/${accountId}/containers/${containerId}/workspaces`,
-        { headers }
-      );
-      if (!workspacesRes.ok) {
-        const body = await workspacesRes.text();
-        console.error(`[GTM] Failed to list workspaces (${workspacesRes.status}):`, body);
-        throw new Error('GTM_WORKSPACES_ERROR');
-      }
-
-      const workspacesData = await workspacesRes.json();
-      const workspacePath = workspacesData.workspace[0].path;
-      const workspaceId = workspacesData.workspace[0].workspaceId;
+      // ── SHARED PATH: Create triggers + tags ─────────────────────
 
       // 4. Create Trigger (All Pages)
       console.log(`[GTM] Creating All Pages trigger...`);

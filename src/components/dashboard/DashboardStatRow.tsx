@@ -15,6 +15,15 @@ import { FiUsers, FiEye, FiClock, FiTarget, FiZap } from 'react-icons/fi';
 
 const MotionBox = motion(Box);
 
+type DataSource = 'GA4' | 'GSC' | 'GTM' | 'Content';
+
+const SOURCE_COLORS: Record<DataSource, { bg: string; text: string }> = {
+  GA4: { bg: 'rgba(249, 159, 42, 0.2)', text: '#F99F2A' },
+  GSC: { bg: 'rgba(96, 165, 250, 0.2)', text: '#60a5fa' },
+  GTM: { bg: 'rgba(34, 197, 94, 0.2)', text: '#22C55E' },
+  Content: { bg: 'rgba(148, 163, 184, 0.2)', text: '#94a3b8' },
+};
+
 type StatItem = {
   label: string;
   value: string | number;
@@ -25,6 +34,7 @@ type StatItem = {
   iconColor: string;
   iconBg: string;
   isHighlighted?: boolean;
+  source: DataSource;
 };
 
 type Props = {
@@ -88,10 +98,11 @@ export function DashboardStatRow({
         ? 'Organic content-attributed leads'
         : hasGA4
           ? 'Waiting for lead data...'
-          : 'Connect GA4 to track leads',
+          : 'Connect GTM to track leads',
       icon: FiZap,
       iconColor: '#22C55E',
       iconBg: 'rgba(34, 197, 94, 0.15)',
+      source: 'GTM',
     },
     {
       label: 'Site Traffic',
@@ -106,6 +117,7 @@ export function DashboardStatRow({
       icon: FiUsers,
       iconColor: '#F99F2A',
       iconBg: 'rgba(249, 159, 42, 0.15)',
+      source: 'GA4',
     },
     {
       label: 'Sessions',
@@ -120,6 +132,7 @@ export function DashboardStatRow({
       icon: FiEye,
       iconColor: '#818cf8',
       iconBg: 'rgba(129, 140, 248, 0.15)',
+      source: 'GA4',
     },
     {
       label: 'Avg Session',
@@ -134,6 +147,7 @@ export function DashboardStatRow({
       icon: FiClock,
       iconColor: '#34d399',
       iconBg: 'rgba(52, 211, 153, 0.15)',
+      source: 'GA4',
     },
     {
       label: 'Phoo Rating',
@@ -155,6 +169,7 @@ export function DashboardStatRow({
       iconColor: '#F99F2A',
       iconBg: 'rgba(249, 159, 42, 0.15)',
       isHighlighted: true,
+      source: 'GSC',
     },
   ];
 
@@ -221,6 +236,18 @@ export function DashboardStatRow({
                 textTransform={stat.isHighlighted ? 'uppercase' : undefined}
               >
                 {stat.label}
+              </Text>
+              <Text
+                fontSize="9px"
+                fontWeight="bold"
+                letterSpacing="wider"
+                px={1.5}
+                py={0.5}
+                borderRadius="full"
+                bg={SOURCE_COLORS[stat.source].bg}
+                color={SOURCE_COLORS[stat.source].text}
+              >
+                {stat.source}
               </Text>
             </HStack>
 
