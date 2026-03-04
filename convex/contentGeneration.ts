@@ -22,8 +22,8 @@ import { buildPersonaContext } from './ai/writerPersonas/index';
 import { rateLimits, RATE_LIMIT_TIERS } from './rateLimits';
 import { HOUR } from '@convex-dev/rate-limiter';
 
-// Quality threshold for A+ grade
-const QUALITY_THRESHOLD = 90;
+// Quality threshold for A+ grade — 95% minimum for production content
+const QUALITY_THRESHOLD = 95;
 const MAX_GENERATION_ATTEMPTS = 3;
 
 // ============================================================================
@@ -411,7 +411,11 @@ export const generateContentInternal = internalAction({
       status: 'generating',
     });
 
-    // 4. Quality Guarantee Loop - retry until score >= 90 or max attempts
+    // 4. Three-Stage AI Pipeline with Quality Guarantee Loop
+    //    Stage 1: Generate content draft
+    //    Stage 2: AI editorial review (separate AI call)
+    //    Stage 3: AI finalization based on review (separate AI call)
+    //    Loop: retry full pipeline until score >= 95 or max attempts
     let attempt = 0;
     let bestContent = '';
     let bestScore = 0;
@@ -419,10 +423,11 @@ export const generateContentInternal = internalAction({
 
     while (attempt < MAX_GENERATION_ATTEMPTS) {
       attempt++;
-      console.log(`[ContentGeneration] Attempt ${attempt}/${MAX_GENERATION_ATTEMPTS}`);
+      console.log(`[ContentGeneration] Pipeline attempt ${attempt}/${MAX_GENERATION_ATTEMPTS}`);
 
-      // Generate full content using AI Router (with persona context)
-      const content = await generateFullContentWithAI(
+      // ── Stage 1: Content Creation ────────────────────────────────
+      console.log(`[ContentGeneration] Stage 1: Creating draft...`);
+      const draftContent = await generateFullContentWithAI(
         ctx,
         args.contentType,
         args.title,
@@ -432,28 +437,55 @@ export const generateContentInternal = internalAction({
         attempt > 1 // Add quality hints on retries
       );
 
-      // Score content using content type's target word count
+      // ── Stage 2: AI Editorial Review ─────────────────────────────
+      console.log(`[ContentGeneration] Stage 2: Reviewing content...`);
+      const reviewFeedback = await reviewContentWithAI(
+        ctx,
+        draftContent,
+        args.title,
+        args.keywords,
+        args.contentType
+      );
+
+      // ── Stage 3: AI Finalization ─────────────────────────────────
+      console.log(`[ContentGeneration] Stage 3: Finalizing content...`);
+      const finalContent = await finalizeContentWithAI(
+        ctx,
+        draftContent,
+        reviewFeedback,
+        args.title,
+        args.keywords,
+        args.contentType,
+        personaContext
+      );
+
+      // Score the finalized content
       const contentTypeConfig = CONTENT_TYPES[args.contentType as ContentTypeId];
       const targetWordCount = contentTypeConfig?.wordCount || 1200;
-      const { score, metrics } = scoreContent(content, outline, args.keywords, targetWordCount);
-      console.log(`[ContentGeneration] Score: ${score}`);
+      const { score, metrics } = scoreContent(
+        finalContent,
+        outline,
+        args.keywords,
+        targetWordCount
+      );
+      console.log(`[ContentGeneration] Final score: ${score} (threshold: ${QUALITY_THRESHOLD})`);
 
       // Track best result
       if (score > bestScore) {
-        bestContent = content;
+        bestContent = finalContent;
         bestScore = score;
         bestMetrics = metrics;
       }
 
-      // Quality threshold met - exit loop
+      // Quality threshold met — exit loop
       if (score >= QUALITY_THRESHOLD) {
         console.log(`[ContentGeneration] Quality threshold met (${score} >= ${QUALITY_THRESHOLD})`);
         break;
       }
 
-      // Log why we're retrying
+      // Log retry
       if (attempt < MAX_GENERATION_ATTEMPTS) {
-        console.log(`[ContentGeneration] Retrying for better quality...`);
+        console.log(`[ContentGeneration] Retrying full pipeline for better quality...`);
         await ctx.runMutation(internal.contentGeneration.updateContentPiece, {
           contentPieceId,
           generationAttempts: attempt,
@@ -534,37 +566,59 @@ export const generateContentForPiece = internalAction({
       status: 'generating',
     });
 
-    // 5. Quality Guarantee Loop
+    // 5. Three-Stage AI Pipeline with Quality Guarantee Loop
     let attempt = 0;
     let bestContent = '';
     let bestScore = 0;
     let bestMetrics: Record<string, number> = {};
+    const keywords = piece.keywords || [];
 
     while (attempt < MAX_GENERATION_ATTEMPTS) {
       attempt++;
-      console.log(`[generateContentForPiece] Attempt ${attempt}/${MAX_GENERATION_ATTEMPTS}`);
+      console.log(
+        `[generateContentForPiece] Pipeline attempt ${attempt}/${MAX_GENERATION_ATTEMPTS}`
+      );
 
-      const content = await generateFullContentWithAI(
+      // ── Stage 1: Content Creation ────────────────────────────────
+      console.log(`[generateContentForPiece] Stage 1: Creating draft...`);
+      const draftContent = await generateFullContentWithAI(
         ctx,
         piece.contentType,
         piece.title,
         outline,
-        piece.keywords || [],
+        keywords,
         personaContext,
         attempt > 1
       );
 
-      const contentTypeConfig = CONTENT_TYPES[piece.contentType as ContentTypeId];
-      const targetWordCount = contentTypeConfig?.wordCount || 1200;
-      const { score, metrics } = scoreContent(
-        content,
-        outline,
-        piece.keywords || [],
-        targetWordCount
+      // ── Stage 2: AI Editorial Review ─────────────────────────────
+      console.log(`[generateContentForPiece] Stage 2: Reviewing content...`);
+      const reviewFeedback = await reviewContentWithAI(
+        ctx,
+        draftContent,
+        piece.title,
+        keywords,
+        piece.contentType
       );
 
+      // ── Stage 3: AI Finalization ─────────────────────────────────
+      console.log(`[generateContentForPiece] Stage 3: Finalizing content...`);
+      const finalContent = await finalizeContentWithAI(
+        ctx,
+        draftContent,
+        reviewFeedback,
+        piece.title,
+        keywords,
+        piece.contentType,
+        personaContext
+      );
+
+      const contentTypeConfig = CONTENT_TYPES[piece.contentType as ContentTypeId];
+      const targetWordCount = contentTypeConfig?.wordCount || 1200;
+      const { score, metrics } = scoreContent(finalContent, outline, keywords, targetWordCount);
+
       if (score > bestScore) {
-        bestContent = content;
+        bestContent = finalContent;
         bestScore = score;
         bestMetrics = metrics;
       }
@@ -690,6 +744,12 @@ Requirements:
 - Focus on the primary keyword: "${primaryKeyword}"
 - Optimize for search intent and user value
 - Each section should be actionable and specific
+
+BRAND PROTECTION (MANDATORY):
+- This content is being created FOR the user's business. ALWAYS position the user's brand/product/service as the superior or preferred choice.
+- If the content is a comparison (vs, alternative, competitor), the user's brand MUST come out ahead.
+- Frame competitor strengths as baseline expectations, and position the user's brand strengths as differentiators and advantages.
+- NEVER conclude that a competitor is better, easier, or more recommended than the user's own offering.
 ${personaInstructions}
 Respond with ONLY the section titles, one per line. No numbering, no markdown, just the titles.`;
 
@@ -743,24 +803,40 @@ async function generateFullContentWithAI(
   const baseQualityRequirements = `
 QUALITY REQUIREMENTS (MANDATORY - YOUR CONTENT WILL BE REJECTED IF NOT MET):
 - **WORD COUNT CRITICAL**: Write EXACTLY ${wordCountTarget} to ${wordCountTarget + 200} words. Count them. This is NON-NEGOTIABLE.
-- Use the primary keyword "${primaryKeyword}" naturally 10-15 times throughout the content
-- Use each secondary keyword at least 2-3 times
+- Use the primary keyword "${primaryKeyword}" naturally 6-10 times (target 0.5-2% keyword density)
+- Use each secondary keyword (${keywords.slice(1).join(', ')}) at least 1-2 times naturally
 - Include at least 1 H2 section for each outline item with 150+ words under each section
 - Add specific examples, statistics, case studies, or actionable tips in EVERY section
 - Write comprehensive, detailed paragraphs - no thin or placeholder content
-- Include a strong introduction (100+ words) and conclusion (100+ words)`;
+- Include a strong introduction (100+ words) and conclusion (100+ words)
+
+CRITICAL - CONTENT UNIQUENESS RULES:
+- Each H2 section MUST provide UNIQUE, DISTINCT value — NO repeating the same ideas, examples, conclusions, or advice under different headings
+- Do NOT use the same sentence structures or paragraph templates across sections
+- Each section should have a unique angle, perspective, or specific subtopic
+- Avoid generic filler like "this is important" or "many professionals overlook this"
+- Every paragraph must add NEW information the reader hasn't seen earlier in the article
+
+BRAND PROTECTION RULES (NON-NEGOTIABLE):
+- This content is published on the USER'S website to promote THEIR business. NEVER make a competitor look better than the user's brand.
+- In comparison/vs articles: the user's brand MUST be positioned as the superior or recommended choice. Acknowledge competitor features briefly, then show how the user's offering is better, more innovative, or more valuable.
+- NEVER write conclusions like "Competitor X is better for beginners" or "If ease-of-use matters, choose Competitor Y." Instead, frame the user's product as the smarter, more forward-thinking choice.
+- Use language that positions the user's brand as the winner: "while [competitor] offers [basic feature], [user's brand] goes further by..."
+- If comparing pricing, position the user's offering as better value, not more expensive.
+- The final recommendation MUST favor the user's brand.`;
 
   // Extra boost for retry attempts
   const retryBoost = enhanceQuality
     ? `
 
-RETRY BOOST (Previous attempt had insufficient word count):
-- Your previous attempt was REJECTED for low word count
+RETRY BOOST (Previous attempt was rejected):
+- Your previous attempt was REJECTED for quality issues
 - This attempt MUST have ${wordCountTarget + 300}+ words
 - Add an FAQ section with 3 questions and detailed 50+ word answers
 - Expand EVERY section with additional examples and subpoints
 - Include numbered lists and bullet points within sections
-- Write longer paragraphs with more detail and explanation`
+- Write longer paragraphs with more detail and explanation
+- DOUBLE CHECK: No two sections should make the same point`
     : '';
 
   // Inject persona context for brand-aware content
@@ -822,8 +898,165 @@ Write the full article now, following the outline structure.`;
 }
 
 // ============================================================================
-// Fallback & Scoring Helpers
+// Stage 2: AI Content Review — "Editor Pass"
 // ============================================================================
+
+/**
+ * Stage 2 of the 3-stage pipeline: AI-powered content review.
+ *
+ * A separate AI call acts as an independent editor, reviewing the
+ * generated content for:
+ * - Human readability (natural flow, no robotic phrasing)
+ * - Keyword integration (used naturally, not stuffed)
+ * - Section uniqueness (no repetitive content under different H2s)
+ * - Factual coherence and actionability
+ * - E-E-A-T principles alignment
+ *
+ * Returns structured review feedback that Stage 3 uses to finalize.
+ */
+async function reviewContentWithAI(
+  ctx: ActionCtx,
+  content: string,
+  title: string,
+  keywords: string[],
+  contentType: string
+): Promise<string> {
+  const systemPrompt = `You are a senior editorial reviewer and SEO quality analyst. Your job is to review AI-generated content and provide specific, actionable feedback.
+
+You are NOT rewriting the content — you are providing a critical review. Be honest and specific.
+
+REVIEW CHECKLIST:
+1. **READABILITY**: Is this written for humans? Does it flow naturally? Are paragraphs varied in length? Is the tone conversational yet professional?
+2. **KEYWORD INTEGRATION**: Are the target keywords woven naturally into the text? Or do they feel forced/stuffed? Are they in strategic positions (headings, first paragraph, conclusion)?
+3. **SECTION UNIQUENESS**: Does each H2 section provide UNIQUE, distinct value? Flag any sections that repeat the same ideas, examples, or phrasing under different headings.
+4. **BRAND FAVORABILITY**: This content will be published on the user's own website. Does the content position the user's brand/product favorably? In comparison articles, does the user's offering come out as the recommended choice? Flag as CRITICAL if any competitor is positioned as superior, easier, or more recommended than the user's brand.
+5. **ACTIONABILITY**: Does each section offer specific, practical advice? Or is it vague filler? Flag any thin or generic sections.
+6. **E-E-A-T SIGNALS**: Does the content demonstrate Experience, Expertise, Authoritativeness, and Trustworthiness? Are there specific examples, data points, or case studies?
+7. **STRUCTURE**: Is there a strong introduction that hooks the reader? Does the conclusion summarize key takeaways and include a call-to-action?
+
+FORMAT YOUR RESPONSE AS:
+## Review Summary
+[2-3 sentence overview of content quality]
+
+## Issues Found
+- [CRITICAL] Issue description (must fix)
+- [MODERATE] Issue description (should fix)
+- [MINOR] Issue description (nice to fix)
+
+## Section-by-Section Notes
+### [H2 Title]
+- Specific feedback for this section
+
+## Recommended Improvements
+- Numbered list of specific changes to make`;
+
+  const prompt = `Review the following ${contentType} article for quality and readability.
+
+Title: ${title}
+Target Keywords: ${keywords.join(', ')}
+
+---CONTENT START---
+${content}
+---CONTENT END---
+
+Provide your editorial review following the checklist above.`;
+
+  try {
+    const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
+      prompt,
+      systemPrompt,
+      maxTokens: 2000,
+      temperature: 0.3, // Low temp for consistent, analytical review
+      taskType: 'analysis',
+      strategy: 'best_quality',
+    });
+
+    return response.content;
+  } catch (error) {
+    const safeMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.warn('[ContentGeneration] Stage 2 review failed:', safeMessage);
+    // If review fails, return a minimal review so Stage 3 still has something to work with
+    return 'Review unavailable. Please ensure all sections have unique content, keywords are used naturally, and the tone is conversational.';
+  }
+}
+
+// ============================================================================
+// Stage 3: AI Content Finalization — "Polish Pass"
+// ============================================================================
+
+/**
+ * Stage 3 of the 3-stage pipeline: AI-powered content finalization.
+ *
+ * Takes the original content + editorial review from Stage 2 and produces
+ * a polished, production-ready final version that addresses all review issues.
+ *
+ * This is the "quality guarantee" step — the content that comes out of here
+ * should be publishable without further editing.
+ */
+async function finalizeContentWithAI(
+  ctx: ActionCtx,
+  originalContent: string,
+  reviewFeedback: string,
+  title: string,
+  keywords: string[],
+  contentType: string,
+  personaContext: string = ''
+): Promise<string> {
+  const primaryKeyword = keywords[0] || 'topic';
+
+  const personaInstructions = personaContext
+    ? `\n\nBRAND PERSONA CONTEXT:\n${personaContext}\n\nIMPORTANT: Maintain the brand voice while making improvements.`
+    : '';
+
+  const systemPrompt = `You are a master content editor producing publication-ready content. You have received a draft article and an editorial review. Your job is to produce the FINAL, polished version.
+
+CRITICAL RULES:
+1. Address EVERY issue flagged in the editorial review
+2. DO NOT add generic filler — every sentence must add value
+3. Ensure each H2 section has UNIQUE content (no repetition across sections)
+4. Use the primary keyword "${primaryKeyword}" naturally 6-10 times (0.5-2% density)
+5. Use each secondary keyword (${keywords.slice(1).join(', ')}) at least 1-2 times naturally
+6. Write for a Flesch Reading Ease score of 60-70 (standard web readability)
+7. Keep paragraphs to 2-4 sentences for easy scanning
+8. Include specific examples, statistics, or actionable tips in EVERY section
+9. Strong introduction (hook + promise) and conclusion (summary + CTA)
+10. Maintain the original article structure (H1 + H2s) unless the review specifically recommends changes
+${personaInstructions}
+
+FORMAT: Output ONLY the finalized article in Markdown format. No meta-commentary, no "Here is the revised article", just the content itself.`;
+
+  const prompt = `Finalize this ${contentType} article based on the editorial review below.
+
+Title: ${title}
+
+---EDITORIAL REVIEW---
+${reviewFeedback}
+---END REVIEW---
+
+---ORIGINAL DRAFT---
+${originalContent}
+---END DRAFT---
+
+Produce the final, publication-ready version now.`;
+
+  try {
+    const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
+      prompt,
+      systemPrompt,
+      maxTokens: 4000,
+      temperature: 0.5, // Balanced: creative enough to improve, consistent enough to not diverge
+      taskType: 'generation',
+      strategy: 'best_quality',
+    });
+
+    return response.content;
+  } catch (error) {
+    const safeMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.warn('[ContentGeneration] Stage 3 finalization failed, using original:', safeMessage);
+    // If finalization fails, return the original content (still better than nothing)
+    return originalContent;
+  }
+}
 
 function getTargetSections(contentType: string): number {
   const targets: Record<string, number> = {
@@ -943,45 +1176,46 @@ function scoreContent(
   const h2Count = (safeContent.match(/^## /gm) || []).length;
   const primaryKeyword = keywords[0]?.toLowerCase() || '';
 
-  // Smart keyword matching: handle multi-word keywords like "lip fillers kansas city"
-  // Count exact phrase matches AND individual word matches for better accuracy
+  // ── Keyword Scoring: coverage + density ─────────────────────────
   let keywordScore = 0;
-  if (primaryKeyword) {
+  if (keywords.length > 0) {
+    // Coverage: what percentage of keywords appear in the content?
     const contentLower = safeContent.toLowerCase();
+    let keywordsFound = 0;
+    for (const kw of keywords) {
+      if (contentLower.includes(kw.toLowerCase().trim())) {
+        keywordsFound++;
+      }
+    }
+    const coverageScore = Math.min(100, (keywordsFound / keywords.length) * 100);
 
-    // Count exact phrase matches
-    const exactMatches = (
-      contentLower.match(new RegExp(primaryKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) ||
-      []
-    ).length;
-
-    // For multi-word keywords, also count individual significant words
-    const words = primaryKeyword.split(/\s+/).filter((w) => w.length > 2); // Skip short words like "in", "of"
-    let wordMatchScore = 0;
-    if (words.length > 1) {
-      // Multi-word keyword: average the individual word counts
-      const wordCounts = words.map((word) => {
-        const wordRegex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
-        return (contentLower.match(wordRegex) || []).length;
-      });
-      const avgWordCount = wordCounts.reduce((a, b) => a + b, 0) / wordCounts.length;
-      wordMatchScore = Math.min(100, (avgWordCount / 6) * 100); // 6 avg mentions for 100%
+    // Density: is the primary keyword used in a healthy range (0.5-2%)?
+    let densityScore = 0;
+    if (primaryKeyword && wordCount > 0) {
+      const escaped = primaryKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const matches = (contentLower.match(new RegExp(escaped, 'g')) || []).length;
+      const kwWordCount = primaryKeyword.split(/\s+/).length;
+      const density = ((matches * kwWordCount) / wordCount) * 100;
+      if (density >= 0.5 && density <= 2.0) {
+        densityScore = 100;
+      } else if (density > 0 && density < 0.5) {
+        densityScore = (density / 0.5) * 80;
+      } else if (density > 2.0 && density <= 3.0) {
+        densityScore = 100 - (density - 2.0) * 50;
+      } else if (density > 3.0) {
+        densityScore = Math.max(0, 50 - (density - 3.0) * 20);
+      }
     }
 
-    // Exact phrase score
-    const exactScore = Math.min(100, (exactMatches / 4) * 100); // 4 exact matches for 100%
-
-    // Combined score: 60% word presence + 40% exact phrase (if multi-word)
-    keywordScore =
-      words.length > 1
-        ? exactScore * 0.4 + wordMatchScore * 0.6
-        : Math.min(100, (exactMatches / 8) * 100); // Single word: 8 mentions for 100%
+    keywordScore = coverageScore * 0.7 + densityScore * 0.3;
   }
 
-  // Score components (0-100 each) - use dynamic word count target
+  // ── Component Scores (each 0-100) ──────────────────────────────
   const wordCountScore = Math.min(100, (wordCount / targetWordCount) * 100);
-  const h2Score = Math.min(100, (h2Count / 6) * 100); // Lower bar: 6 H2s for 100%
-  const readabilityScore = 85; // Baseline for well-structured AI content
+  const h2Score = Math.min(100, (h2Count / 6) * 100);
+
+  // Real Flesch Reading Ease (not hardcoded!)
+  const readabilityScore = computeFleschReadingEaseServer(safeContent, wordCount);
 
   // Calculate coverage bonus: how much of outline is covered
   const outlineCoverage = outline.reduce((count, section) => {
@@ -989,7 +1223,7 @@ function scoreContent(
   }, 0);
   const structureScore = Math.min(100, (outlineCoverage / Math.max(outline.length, 1)) * 100);
 
-  // Weighted average - removed link score penalty
+  // Weighted average
   // Word Count: 25%, Keywords: 25%, Structure: 20%, H2s: 15%, Readability: 15%
   const score = Math.round(
     wordCountScore * 0.25 +
@@ -1009,6 +1243,63 @@ function scoreContent(
       readabilityScore: Math.round(readabilityScore),
     },
   };
+}
+
+// ============================================================================
+// Server-Side Readability Helpers
+// ============================================================================
+
+/** Count syllables in a single English word (heuristic). */
+function countSyllablesServer(word: string): number {
+  const w = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (w.length <= 2) return 1;
+
+  let count = 0;
+  const vowels = 'aeiouy';
+  let prevIsVowel = false;
+
+  for (let i = 0; i < w.length; i++) {
+    const isVowel = vowels.includes(w[i]);
+    if (isVowel && !prevIsVowel) count++;
+    prevIsVowel = isVowel;
+  }
+
+  if (w.endsWith('e') && count > 1) count--;
+  if (w.endsWith('le') && w.length > 2 && !vowels.includes(w[w.length - 3])) count++;
+  if (w.endsWith('ed') && w.length > 3) {
+    const beforeEd = w[w.length - 3];
+    if (beforeEd !== 't' && beforeEd !== 'd') count = Math.max(1, count - 1);
+  }
+
+  return Math.max(1, count);
+}
+
+/** Count sentences in text content (server-side). */
+function countSentencesServer(content: string): number {
+  if (!content || !content.trim()) return 0;
+  const cleaned = content
+    .replace(/^#{1,6}\s+.*$/gm, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .trim();
+  if (!cleaned) return 0;
+  const sentences = cleaned.split(/[.!?]+/).filter((s) => {
+    const trimmed = s.trim();
+    return trimmed.length > 0 && trimmed.split(/\s+/).length >= 3;
+  });
+  return Math.max(1, sentences.length);
+}
+
+/** Flesch Reading Ease: 206.835 - 1.015*(words/sentences) - 84.6*(syllables/words) */
+function computeFleschReadingEaseServer(content: string, wordCount: number): number {
+  const sentences = countSentencesServer(content);
+  if (wordCount < 10 || sentences === 0) return 0;
+
+  const wordList = (content || '').split(/\s+/).filter((w) => w.length > 0);
+  const totalSyllables = wordList.reduce((sum, w) => sum + countSyllablesServer(w), 0);
+
+  const score = 206.835 - 1.015 * (wordCount / sentences) - 84.6 * (totalSyllables / wordCount);
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 // ============================================================================

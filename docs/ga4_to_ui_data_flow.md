@@ -8,7 +8,7 @@ The complete data flow from Google APIs to every dashboard element, with color-c
 
 | Badge       | Color            | Source                | What It Tracks                                                          |
 | ----------- | ---------------- | --------------------- | ----------------------------------------------------------------------- |
-| **GA4**     | Orange `#F99F2A` | Google Analytics 4    | Sessions, users, pageViews, bounceRate, avgSessionDuration, conversions |
+| **GA4**     | Orange `#F99F2A` | Google Analytics 4    | Sessions, users, pageViews, avgSessionDuration, bounceRate, conversions |
 | **GSC**     | Blue `#60a5fa`   | Google Search Console | Clicks, impressions, position, CTR, keywords                            |
 | **GTM**     | Green `#22C55E`  | Google Tag Manager    | generate_lead events, form submissions                                  |
 | **Content** | Gray `#94a3b8`   | Convex contentPieces  | Title, status, wordCount (no Google API data)                           |
@@ -60,11 +60,12 @@ The complete data flow from Google APIs to every dashboard element, with color-c
 
 ### Avg Session — `GA4`
 
-| Layer         | Field                                                      | Source               |
-| ------------- | ---------------------------------------------------------- | -------------------- |
-| **GA4 API**   | `averageSessionDuration` (index 5), `bounceRate` (index 4) |                      |
-| **Normalize** | `bounceRate × 100`                                         | **0.65 → 65.0**      |
-| **UI**        | Value: `m:ss` format · Change: `{bounce}% bounce`          | Green < 50, red ≥ 50 |
+| Layer       | Field                                  | Source                 |
+| ----------- | -------------------------------------- | ---------------------- |
+| **GA4 API** | `averageSessionDuration` (index 5)     | Seconds                |
+| **UI**      | Value: `m:ss` format · Change: `Xm Ys` | Green ≥ 60s, red < 60s |
+
+> `bounceRate` is still fetched and stored (used by Phoo Rating algorithm) but no longer displayed on this card.
 
 ### Phoo Rating — `GSC`
 
@@ -116,12 +117,12 @@ The complete data flow from Google APIs to every dashboard element, with color-c
 
 ## Normalization Rules
 
-| Metric               | Google Returns | Stored As | UI Display          |
-| -------------------- | -------------- | --------- | ------------------- |
-| `bounceRate`         | 0-1 decimal    | 0-100 %   | `{n}% bounce`       |
-| `ctr` (GSC)          | 0-1 decimal    | 0-100 %   | `{n}%`              |
-| `avgSessionDuration` | seconds        | seconds   | `m:ss`              |
-| All counts           | integers       | integers  | `.toLocaleString()` |
+| Metric               | Google Returns | Stored As | UI Display                                       |
+| -------------------- | -------------- | --------- | ------------------------------------------------ |
+| `avgSessionDuration` | seconds        | seconds   | `m:ss` (value), `Xm Ys` (subtitle)               |
+| `bounceRate`         | 0-1 decimal    | 0-100 %   | Not displayed on dashboard (used by Phoo Rating) |
+| `ctr` (GSC)          | 0-1 decimal    | 0-100 %   | `{n}%`                                           |
+| All counts           | integers       | integers  | `.toLocaleString()`                              |
 
 ## Key Files
 

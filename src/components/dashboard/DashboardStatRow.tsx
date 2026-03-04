@@ -42,7 +42,6 @@ type Props = {
   users: number;
   pageViews: number;
   avgSessionDuration: number;
-  bounceRate: number;
   avgPosition: number;
   impressions: number;
   visibilityScore: number;
@@ -63,6 +62,15 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+function formatDurationHuman(seconds: number): string {
+  if (seconds <= 0) return '';
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  if (m === 0) return `${s}s`;
+  if (s === 0) return `${m}m`;
+  return `${m}m ${s}s`;
+}
+
 function formatChange(change: number): string {
   if (change === 0) return '';
   const sign = change > 0 ? '+' : '';
@@ -74,7 +82,6 @@ export function DashboardStatRow({
   users,
   pageViews,
   avgSessionDuration,
-  bounceRate,
   avgPosition,
   impressions,
   visibilityScore,
@@ -87,7 +94,6 @@ export function DashboardStatRow({
   hasGSCData,
   hasGA4,
 }: Props) {
-  const hasData = hasGA4Data || hasGSCData;
   const stats: StatItem[] = [
     {
       label: 'Leads Generated',
@@ -137,10 +143,10 @@ export function DashboardStatRow({
     {
       label: 'Avg Session',
       value: hasGA4Data ? formatDuration(avgSessionDuration) : '--',
-      change: hasGA4Data && bounceRate > 0 ? `${bounceRate.toFixed(0)}% bounce` : '',
-      changeColor: bounceRate < 50 ? '#34d399' : '#f87171',
+      change: hasGA4Data && avgSessionDuration > 0 ? formatDurationHuman(avgSessionDuration) : '',
+      changeColor: avgSessionDuration >= 60 ? '#34d399' : '#f87171',
       subtitle: hasGA4Data
-        ? 'Session Duration'
+        ? 'Avg Session Duration'
         : hasGA4
           ? 'Waiting for traffic data...'
           : 'Connect Google to see data',

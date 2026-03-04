@@ -44,6 +44,7 @@ import { FiUser, FiGrid, FiUsers, FiArrowRight, FiHelpCircle } from 'react-icons
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BRAND } from '@/lib/constants/brand';
+import { AccountShell } from '@/src/components/account/AccountShell';
 
 // Map tab names to indices
 const TAB_MAP: Record<string, number> = {
@@ -87,7 +88,7 @@ export default function SettingsPage() {
   }, [tabParam]);
 
   return (
-    <Box minH="calc(100vh - 64px)" bg="brand.light">
+    <AccountShell>
       <Container
         maxW="container.xl"
         py={{ base: 8, md: 12 }}
@@ -106,7 +107,7 @@ export default function SettingsPage() {
               variant="enclosed"
               isLazy
             >
-              <TabList borderBottomWidth="1px" px={4}>
+              <TabList borderBottomWidth="1px" px={4} display={{ base: 'flex', md: 'none' }}>
                 <Tab py={4} fontWeight="medium">
                   <HStack spacing={2}>
                     <Icon as={FiUser} />
@@ -338,6 +339,6 @@ export default function SettingsPage() {
           </Box>
         </VStack>
       </Container>
-    </Box>
+    </AccountShell>
   );
 }

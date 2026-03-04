@@ -12,7 +12,7 @@
 
 import React from 'react';
 import { Box, VStack, HStack, Flex, Text, Icon, Button, Skeleton } from '@chakra-ui/react';
-import { FiZap, FiSettings } from 'react-icons/fi';
+import { FiZap } from 'react-icons/fi';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
@@ -70,11 +70,6 @@ export function IntegrationsPanel({ projectId, onPublish }: Props) {
             </Text>
           )}
         </HStack>
-        <Link href="/settings?tab=integrations">
-          <Button size="xs" variant="ghost" leftIcon={<FiSettings />}>
-            Manage
-          </Button>
-        </Link>
       </Flex>
 
       {hasAnyConnection ? (

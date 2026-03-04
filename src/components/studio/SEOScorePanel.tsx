@@ -49,40 +49,59 @@ export function SEOScorePanel({
 }: Props) {
   const { grade, color } = getSeoGrade(seoScore);
 
+  // Map readability score to plain-English label
+  const readabilityRaw = qualityMetrics?.readabilityScore ?? 0;
+  const readabilityLabel =
+    readabilityRaw >= 80
+      ? 'Easy'
+      : readabilityRaw >= 60
+        ? 'Standard'
+        : readabilityRaw >= 40
+          ? 'Difficult'
+          : readabilityRaw > 0
+            ? 'Very Difficult'
+            : '—';
+
   const metrics = [
     {
       label: 'Word Count',
-      value: `${wordCount.toLocaleString()}/${targetWordCount.toLocaleString()}`,
+      value:
+        wordCount >= targetWordCount
+          ? wordCount.toLocaleString()
+          : `${wordCount.toLocaleString()} / ${targetWordCount.toLocaleString()}`,
       icon: FiFileText,
       passed: wordCount >= targetWordCount,
       score: qualityMetrics?.wordCountScore,
     },
     {
       label: 'H2 Sections',
-      value: `${h2Count}/7`,
+      value: h2Count >= 7 ? String(h2Count) : `${h2Count} / 7`,
       icon: FiHash,
       passed: h2Count >= 7,
       score: qualityMetrics?.structureScore,
     },
     {
-      label: 'Keywords Used',
-      value: `${keywordCount}/${targetKeywords}`,
+      label: 'Keywords Found',
+      value:
+        keywordCount >= targetKeywords
+          ? String(keywordCount)
+          : `${keywordCount} / ${targetKeywords}`,
       icon: FiType,
-      passed: keywordCount >= targetKeywords * 0.8,
+      passed: keywordCount >= targetKeywords,
       score: qualityMetrics?.keywordScore,
     },
     {
       label: 'Internal Links',
-      value: `${internalLinkCount}/3`,
+      value: internalLinkCount >= 3 ? String(internalLinkCount) : `${internalLinkCount} / 3`,
       icon: FiLink,
       passed: internalLinkCount >= 3,
     },
     {
       label: 'Readability',
-      value: qualityMetrics?.readabilityScore ? `${qualityMetrics.readabilityScore}/100` : '—',
+      value: readabilityRaw > 0 ? `${readabilityRaw} — ${readabilityLabel}` : '—',
       icon: FiEdit3,
-      passed: (qualityMetrics?.readabilityScore ?? 0) >= 60,
-      score: qualityMetrics?.readabilityScore,
+      passed: readabilityRaw >= 60,
+      score: readabilityRaw,
     },
   ];
 

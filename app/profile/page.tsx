@@ -35,16 +35,10 @@ import {
 import { useMe } from '@/lib/useMe';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import {
-  FiMail,
-  FiBriefcase,
-  FiCalendar,
-  FiShield,
-  FiArrowRight,
-  FiSettings,
-} from 'react-icons/fi';
+import { FiMail, FiBriefcase, FiCalendar, FiShield, FiArrowRight } from 'react-icons/fi';
 import Link from 'next/link';
 import { formatLongDate } from '@/lib/dateUtils';
+import { AccountShell } from '@/src/components/account/AccountShell';
 
 // Helper to get initials from name or email
 function getInitials(name?: string, email?: string): string {
@@ -103,7 +97,7 @@ export default function ProfilePage() {
   const memberSince = me._creationTime ? formatLongDate(me._creationTime) : 'Unknown';
 
   return (
-    <Box minH="calc(100vh - 64px)" bg="brand.light">
+    <AccountShell>
       <Container maxW="container.lg" py={{ base: 8, md: 12 }} px={{ base: 4, md: 8 }}>
         <VStack spacing={8} align="stretch">
           {/* Header Section */}
@@ -149,15 +143,6 @@ export default function ProfilePage() {
                     )}
                   </HStack>
                 )}
-              </VStack>
-
-              {/* Actions */}
-              <VStack align="stretch" spacing={2}>
-                <Link href="/settings" passHref>
-                  <Button variant="outline" leftIcon={<FiSettings />} size="sm" w="full">
-                    Edit Settings
-                  </Button>
-                </Link>
               </VStack>
             </HStack>
           </Box>
@@ -274,6 +259,6 @@ export default function ProfilePage() {
           )}
         </VStack>
       </Container>
-    </Box>
+    </AccountShell>
   );
 }

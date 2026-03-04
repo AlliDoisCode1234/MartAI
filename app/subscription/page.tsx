@@ -42,6 +42,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BRAND } from '@/lib/constants/brand';
+import { AccountShell } from '@/src/components/account/AccountShell';
 
 const MotionBox = motion(Box);
 
@@ -229,7 +230,7 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <Box minH="calc(100vh - 64px)" bg="brand.light">
+    <AccountShell>
       <Container maxW="container.xl" py={{ base: 8, md: 12 }} px={{ base: 4, sm: 6, md: 8 }}>
         <VStack spacing={10} align="stretch">
           {/* Header */}
@@ -507,6 +508,6 @@ export default function SubscriptionPage() {
           </Box>
         </VStack>
       </Container>
-    </Box>
+    </AccountShell>
   );
 }

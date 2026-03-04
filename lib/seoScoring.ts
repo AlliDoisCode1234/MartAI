@@ -12,6 +12,14 @@
  * 1. No Convex imports — this is a pure client-side module
  * 2. All functions must be deterministic (same input = same output)
  * 3. Scoring weights match the server-side `scoreContent` exactly
+ *
+ * Readability: Flesch Reading Ease formula
+ *   Reference: https://codebeautify.org/flesch-kincaid-calculator
+ *   Formula: 206.835 - 1.015*(words/sentences) - 84.6*(syllables/words)
+ *   Target: 60-70 for web content (https://hemingwayapp.com)
+ *
+ * Keyword Density: 0.5-2% recommended
+ *   Reference: https://contenthero.co.uk, https://postaffiliatepro.com
  */
 
 // ============================================================================
@@ -61,7 +69,7 @@ const WEIGHTS = {
 } as const;
 
 // ============================================================================
-// Core Functions
+// Core Counting Functions
 // ============================================================================
 
 /**
@@ -86,17 +94,180 @@ export function countLinks(content: string): number {
   return (content.match(/\[.*?\]\(.*?\)/g) || []).length;
 }
 
+// ============================================================================
+// Readability Scoring — Flesch Reading Ease
+// ============================================================================
+
 /**
- * Count occurrences of the primary keyword in content.
- * Returns exact phrase match count for accurate display in the SEO panel.
- * This is a COUNT, not a score — use scoreContentRealTime for scoring.
+ * Count syllables in a single English word using heuristic rules.
+ *
+ * Heuristic approach (no dictionary lookup):
+ * 1. Count vowel groups (a,e,i,o,u,y)
+ * 2. Subtract silent-e at end
+ * 3. Handle common suffixes (-le, -es, -ed)
+ * 4. Minimum 1 syllable per word
+ *
+ * Reference: Carnegie Mellon Pronouncing Dictionary heuristic approach
+ */
+export function countSyllables(word: string): number {
+  const w = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (w.length <= 2) return 1;
+
+  let count = 0;
+  const vowels = 'aeiouy';
+  let prevIsVowel = false;
+
+  for (let i = 0; i < w.length; i++) {
+    const isVowel = vowels.includes(w[i]);
+    if (isVowel && !prevIsVowel) {
+      count++;
+    }
+    prevIsVowel = isVowel;
+  }
+
+  // Silent-e: subtract if word ends in 'e' and has other vowel groups
+  if (w.endsWith('e') && count > 1) {
+    count--;
+  }
+
+  // Handle -le ending (e.g., "table", "simple") — adds a syllable
+  if (w.endsWith('le') && w.length > 2 && !vowels.includes(w[w.length - 3])) {
+    count++;
+  }
+
+  // Handle -ed ending: usually not a syllable unless preceded by t or d
+  if (w.endsWith('ed') && w.length > 3) {
+    const beforeEd = w[w.length - 3];
+    if (beforeEd !== 't' && beforeEd !== 'd') {
+      // "played" = 1 syllable, not 2. But "wanted" = 2.
+      count = Math.max(1, count - 1);
+    }
+  }
+
+  return Math.max(1, count);
+}
+
+/**
+ * Count sentences in text content.
+ * Handles common abbreviations and decimal numbers to avoid
+ * false sentence breaks.
+ */
+export function countSentences(content: string): number {
+  if (!content || !content.trim()) return 0;
+
+  // Strip markdown headings (they end with newlines, not periods)
+  const cleaned = content
+    .replace(/^#{1,6}\s+.*$/gm, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .trim();
+
+  if (!cleaned) return 0;
+
+  // Split on sentence-ending punctuation
+  const sentences = cleaned.split(/[.!?]+/).filter((s) => {
+    const trimmed = s.trim();
+    // Must have at least 3 words to count as a sentence
+    return trimmed.length > 0 && trimmed.split(/\s+/).length >= 3;
+  });
+
+  return Math.max(1, sentences.length);
+}
+
+/**
+ * Compute Flesch Reading Ease score.
+ *
+ * Formula: 206.835 - 1.015*(words/sentences) - 84.6*(syllables/words)
+ *
+ * Score interpretation:
+ *   90-100: Very Easy (5th grade)
+ *   80-89:  Easy (6th grade)
+ *   70-79:  Fairly Easy (7th grade)
+ *   60-69:  Standard (8th-9th grade) — ideal for web content
+ *   50-59:  Fairly Difficult (10th-12th grade)
+ *   30-49:  Difficult (college level)
+ *   0-29:   Very Difficult (college graduate)
+ *
+ * Returns a score clamped to 0-100.
+ */
+export function computeFleschReadingEase(content: string): number {
+  const words = countWords(content);
+  const sentences = countSentences(content);
+
+  if (words < 10 || sentences === 0) return 0;
+
+  // Count total syllables
+  const wordList = (content || '').split(/\s+/).filter((w) => w.length > 0);
+  const totalSyllables = wordList.reduce((sum, w) => sum + countSyllables(w), 0);
+
+  const avgWordsPerSentence = words / sentences;
+  const avgSyllablesPerWord = totalSyllables / words;
+
+  const score = 206.835 - 1.015 * avgWordsPerSentence - 84.6 * avgSyllablesPerWord;
+
+  // Clamp to 0-100 range
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+// ============================================================================
+// Keyword Counting
+// ============================================================================
+
+/**
+ * Count how many of the provided keywords are actually present in the content.
+ * Returns the number of UNIQUE keywords found (at least once each).
+ *
+ * This answers the user question: "Did the AI use ALL my keywords?"
+ * Example: keywords=["lip fillers","botox","med spa"], content mentions 2 → returns 2
+ *
+ * @deprecated Use `countKeywordsUsed` instead. This name is kept for backward compat.
  */
 export function countKeywordOccurrences(content: string, keywords: string[]): number {
-  const primary = keywords[0]?.toLowerCase() || '';
-  if (!primary) return 0;
-  const escaped = primary.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return (content.toLowerCase().match(new RegExp(escaped, 'g')) || []).length;
+  return countKeywordsUsed(content, keywords);
 }
+
+/**
+ * Count how many of the provided keywords appear in the content at least once.
+ * Returns the count of unique keywords found.
+ *
+ * This is a COUNT of coverage, not frequency — use scoreContentRealTime for scoring.
+ */
+export function countKeywordsUsed(content: string, keywords: string[]): number {
+  if (!keywords || keywords.length === 0) return 0;
+  const contentLower = (content || '').toLowerCase();
+
+  let found = 0;
+  for (const keyword of keywords) {
+    const kw = keyword.toLowerCase().trim();
+    if (!kw) continue;
+    if (contentLower.includes(kw)) {
+      found++;
+    }
+  }
+  return found;
+}
+
+/**
+ * Compute keyword density as a percentage.
+ * Industry standard target: 0.5-2%
+ *
+ * Reference: https://contenthero.co.uk, https://postaffiliatepro.com
+ */
+export function computeKeywordDensity(content: string, primaryKeyword: string): number {
+  if (!primaryKeyword || !content) return 0;
+  const words = countWords(content);
+  if (words === 0) return 0;
+
+  const escaped = primaryKeyword.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const matches = (content.toLowerCase().match(new RegExp(escaped, 'g')) || []).length;
+  const keywordWordCount = primaryKeyword.split(/\s+/).length;
+
+  return Number((((matches * keywordWordCount) / words) * 100).toFixed(2));
+}
+
+// ============================================================================
+// Real-Time SEO Scoring
+// ============================================================================
 
 /**
  * Score content for SEO quality in real-time.
@@ -116,43 +287,39 @@ export function scoreContentRealTime(input: SEOScoringInput): SEOScoreResult {
   const primaryKeyword = keywords[0]?.toLowerCase() || '';
 
   // ── Keyword Scoring ──────────────────────────────────────────────
-  // Smart matching: handles multi-word keywords like "lip fillers kansas city"
+  // Two dimensions: (1) keyword coverage — how many keywords appear,
+  // (2) primary keyword density — is it in a healthy range?
   let keywordScore = 0;
-  if (primaryKeyword) {
-    const contentLower = safeContent.toLowerCase();
+  if (keywords.length > 0) {
+    // Coverage: what percentage of keywords appear in the content?
+    const keywordsFound = countKeywordsUsed(safeContent, keywords);
+    const coverageScore = Math.min(100, (keywordsFound / keywords.length) * 100);
 
-    // Count exact phrase matches
-    const exactMatches = (
-      contentLower.match(new RegExp(primaryKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) ||
-      []
-    ).length;
-
-    // For multi-word keywords, also score individual significant words
-    const words = primaryKeyword.split(/\s+/).filter((w) => w.length > 2);
-    let wordMatchScore = 0;
-
-    if (words.length > 1) {
-      const wordCounts = words.map((word) => {
-        const wordRegex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
-        return (contentLower.match(wordRegex) || []).length;
-      });
-      const avgWordCount = wordCounts.reduce((a, b) => a + b, 0) / wordCounts.length;
-      wordMatchScore = Math.min(100, (avgWordCount / 6) * 100);
+    // Density: is the primary keyword used in a healthy range (0.5-2%)?
+    let densityScore = 0;
+    if (primaryKeyword && wordCount > 0) {
+      const density = computeKeywordDensity(safeContent, primaryKeyword);
+      if (density >= 0.5 && density <= 2.0) {
+        densityScore = 100; // Sweet spot
+      } else if (density > 0 && density < 0.5) {
+        densityScore = (density / 0.5) * 80; // Under-optimized
+      } else if (density > 2.0 && density <= 3.0) {
+        densityScore = 100 - (density - 2.0) * 50; // Slightly over
+      } else if (density > 3.0) {
+        densityScore = Math.max(0, 50 - (density - 3.0) * 20); // Keyword stuffing
+      }
     }
 
-    const exactScore = Math.min(100, (exactMatches / 4) * 100);
-
-    // Combined: 60% word presence + 40% exact phrase (multi-word)
-    keywordScore =
-      words.length > 1
-        ? exactScore * 0.4 + wordMatchScore * 0.6
-        : Math.min(100, (exactMatches / 8) * 100);
+    // Combined: 70% coverage + 30% density
+    keywordScore = coverageScore * 0.7 + densityScore * 0.3;
   }
 
   // ── Component Scores (each 0-100) ────────────────────────────────
   const wordCountScore = Math.min(100, (wordCount / targetWordCount) * 100);
   const h2Score = Math.min(100, (h2Count / 6) * 100);
-  const readabilityScore = 85; // Baseline for well-structured content
+
+  // Real readability: Flesch Reading Ease (not hardcoded!)
+  const readabilityScore = wordCount >= 10 ? computeFleschReadingEase(safeContent) : 0;
 
   // Outline coverage: how many outline sections appear in content
   const outlineCoverage = outline.reduce((count, section) => {

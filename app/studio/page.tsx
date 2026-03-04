@@ -276,7 +276,6 @@ export default function DashboardPage() {
               users={kpis?.users?.value ?? 0}
               pageViews={kpis?.pageViews?.value ?? 0}
               avgSessionDuration={kpis?.avgSessionDuration?.value ?? 0}
-              bounceRate={kpis?.bounceRate?.value ?? 0}
               avgPosition={gscStats?.avgPosition ?? 0}
               impressions={gscStats?.impressions ?? 0}
               visibilityScore={kpis?.visibilityScore ?? 0}

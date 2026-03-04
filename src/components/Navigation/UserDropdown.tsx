@@ -1,13 +1,38 @@
 'use client';
 
-import { type FC } from 'react';
-import { Menu, MenuButton, MenuList, MenuItem, MenuDivider, Avatar, Icon } from '@chakra-ui/react';
+/**
+ * UserDropdown
+ *
+ * Component Hierarchy:
+ * App → StudioLayout → StudioSidebar → UserDropdown
+ * App → Navigation → UserDropdown
+ *
+ * Dropdown menu for user actions: profile, settings, billing, logout.
+ * Accepts an optional triggerElement to customize the menu button.
+ */
+
+import { type FC, type ReactElement } from 'react';
+import {
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  Avatar,
+  Icon,
+  Box,
+} from '@chakra-ui/react';
 import { FiUser, FiSettings, FiCreditCard, FiShield, FiLogOut } from 'react-icons/fi';
 import Link from 'next/link';
 import { useAuth } from '@/lib/useAuth';
 import { getUserDisplayName } from '@/lib/funNames';
 
-export const UserDropdown: FC = () => {
+interface Props {
+  /** Optional custom trigger element. Defaults to the user avatar. */
+  triggerElement?: ReactElement;
+}
+
+export const UserDropdown: FC<Props> = ({ triggerElement }) => {
   const { user, logout } = useAuth();
 
   if (!user) return null;
@@ -20,19 +45,25 @@ export const UserDropdown: FC = () => {
 
   return (
     <Menu>
-      <MenuButton>
-        <Avatar
-          size="sm"
-          name={displayName}
-          src={user.image ?? undefined}
-          bg="brand.orange"
-          color="white"
-          fontWeight="bold"
-          cursor="pointer"
-          _hover={{ transform: 'scale(1.05)', boxShadow: 'md' }}
-          transition="all 0.2s"
-        />
-      </MenuButton>
+      {triggerElement ? (
+        <MenuButton as={Box} cursor="pointer" display="inline-flex">
+          {triggerElement}
+        </MenuButton>
+      ) : (
+        <MenuButton>
+          <Avatar
+            size="sm"
+            name={displayName}
+            src={user.image ?? undefined}
+            bg="brand.orange"
+            color="white"
+            fontWeight="bold"
+            cursor="pointer"
+            _hover={{ transform: 'scale(1.05)', boxShadow: 'md' }}
+            transition="all 0.2s"
+          />
+        </MenuButton>
+      )}
       <MenuList>
         <MenuItem as={Link} href="/profile" icon={<Icon as={FiUser} />}>
           Profile
