@@ -41,6 +41,7 @@ import { useState } from 'react';
 import { FiMoreVertical, FiUserPlus, FiTrash2, FiEdit2 } from 'react-icons/fi';
 import { InviteModal } from '@/src/components/settings/InviteModal';
 import { AppBreadcrumb } from '@/src/components/Navigation/AppBreadcrumb';
+import { AccountShell } from '@/src/components/account/AccountShell';
 
 export default function TeamSettingsPage() {
   const toast = useToast();
@@ -154,7 +155,7 @@ export default function TeamSettingsPage() {
   };
 
   return (
-    <Box minH="calc(100vh - 64px)" bg="brand.light">
+    <AccountShell>
       <Container maxW="container.md" py={{ base: 8, md: 12 }} px={{ base: 4, md: 8 }}>
         {/* Breadcrumb */}
         <AppBreadcrumb />
@@ -361,7 +362,6 @@ export default function TeamSettingsPage() {
         </VStack>
       </Container>
 
-      {/* Invite Modal */}
       {organization && (
         <InviteModal
           isOpen={isInviteOpen}
@@ -369,6 +369,6 @@ export default function TeamSettingsPage() {
           organizationId={organization._id}
         />
       )}
-    </Box>
+    </AccountShell>
   );
 }

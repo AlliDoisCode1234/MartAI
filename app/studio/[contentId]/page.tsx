@@ -59,7 +59,7 @@ import {
   countWords,
   countH2s,
   countLinks,
-  countKeywordOccurrences,
+  countKeywordsUsed,
 } from '@/lib/seoScoring';
 import type { SEOScoreResult } from '@/lib/seoScoring';
 
@@ -101,7 +101,7 @@ export default function ContentEditorPage() {
   const AUTO_SAVE_DEBOUNCE_MS = 2000;
   const SAVED_INDICATOR_MS = 3000;
   const TARGET_WORD_COUNT = 1200;
-  const TARGET_KEYWORD_MENTIONS = 8;
+  // Dynamic target: how many keywords the user provided (not a hardcoded number)
 
   // Refs for debounce timers
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -690,8 +690,8 @@ export default function ContentEditorPage() {
               wordCount={wordCount}
               targetWordCount={TARGET_WORD_COUNT}
               h2Count={h2Count}
-              keywordCount={countKeywordOccurrences(content, contentPiece.keywords)}
-              targetKeywords={TARGET_KEYWORD_MENTIONS}
+              keywordCount={countKeywordsUsed(content, contentPiece.keywords)}
+              targetKeywords={contentPiece.keywords?.length ?? 0}
               internalLinkCount={linkCount}
               qualityMetrics={liveScore?.metrics ?? contentPiece.qualityMetrics}
             />

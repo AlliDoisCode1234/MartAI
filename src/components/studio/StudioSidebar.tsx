@@ -11,7 +11,17 @@
  * purple-tinted glass, and animated hover effects.
  */
 
-import { Box, Flex, VStack, Text, Icon, Tooltip, Divider, IconButton } from '@chakra-ui/react';
+import {
+  Box,
+  Flex,
+  VStack,
+  Text,
+  Icon,
+  Tooltip,
+  Divider,
+  IconButton,
+  Avatar,
+} from '@chakra-ui/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -24,6 +34,7 @@ import {
   FiHome,
   FiChevronLeft,
   FiChevronRight,
+  FiMoreVertical,
 } from 'react-icons/fi';
 import { STUDIO_COLORS } from '@/lib/constants/studioTokens';
 import { useAuth } from '@/lib/useAuth';
@@ -148,21 +159,54 @@ export function StudioSidebar({ collapsed = false, onToggle }: Props) {
         })}
       </VStack>
 
-      {/* Profile */}
+      {/* Profile — Opens menu */}
       <Box px={2} pt={4} pb={2}>
         <Divider borderColor="gray.200" mb={4} />
 
-        {/* User Profile Hook */}
         <Box px={collapsed ? 0 : 2} mt={2}>
-          <Flex align="center" gap={3} justifyContent={collapsed ? 'center' : 'flex-start'} py={1}>
-            <UserDropdown />
-            {!collapsed && user && (
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.700" noOfLines={1}>
-                  {getUserDisplayName(user)}
-                </Text>
-              </Box>
-            )}
+          <Flex
+            align="center"
+            gap={collapsed ? 0 : 3}
+            justifyContent={collapsed ? 'center' : 'flex-start'}
+            py={1}
+          >
+            <UserDropdown
+              triggerElement={
+                <Flex
+                  align="center"
+                  gap={3}
+                  px={collapsed ? 0 : 1}
+                  py={1.5}
+                  borderRadius="10px"
+                  cursor="pointer"
+                  _hover={{ bg: 'orange.50' }}
+                  transition="all 0.15s ease"
+                  justifyContent={collapsed ? 'center' : 'flex-start'}
+                  w="full"
+                >
+                  <Avatar
+                    size="sm"
+                    name={user ? getUserDisplayName(user) : ''}
+                    src={user?.image ?? undefined}
+                    bg="brand.orange"
+                    color="white"
+                    fontWeight="bold"
+                  />
+                  {!collapsed && user && (
+                    <Text
+                      fontSize="sm"
+                      fontWeight="semibold"
+                      color="gray.700"
+                      noOfLines={1}
+                      flex={1}
+                      minW={0}
+                    >
+                      {getUserDisplayName(user)}
+                    </Text>
+                  )}
+                </Flex>
+              }
+            />
           </Flex>
         </Box>
       </Box>

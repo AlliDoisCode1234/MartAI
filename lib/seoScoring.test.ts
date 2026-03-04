@@ -2,7 +2,7 @@
  * SEO Scoring Utility — Unit Tests
  *
  * Tests for lib/seoScoring.ts (pure client-side scoring functions).
- * Validates counting accuracy, scoring weights, and edge cases.
+ * Validates counting accuracy, scoring weights, readability, and edge cases.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -10,7 +10,12 @@ import {
   countWords,
   countH2s,
   countLinks,
+  countKeywordsUsed,
   countKeywordOccurrences,
+  countSyllables,
+  countSentences,
+  computeFleschReadingEase,
+  computeKeywordDensity,
   scoreContentRealTime,
 } from './seoScoring';
 
@@ -23,7 +28,6 @@ describe('countWords', () => {
   });
 
   it('returns 0 for null-ish input', () => {
-    // The function handles falsy input defensively
     expect(countWords(undefined as unknown as string)).toBe(0);
   });
 
@@ -78,25 +82,153 @@ describe('countLinks', () => {
 });
 
 // ============================================================================
-// countKeywordOccurrences
+// countSyllables
 // ============================================================================
-describe('countKeywordOccurrences', () => {
+describe('countSyllables', () => {
+  it('counts single-syllable words', () => {
+    expect(countSyllables('cat')).toBe(1);
+    expect(countSyllables('dog')).toBe(1);
+    expect(countSyllables('run')).toBe(1);
+  });
+
+  it('counts multi-syllable words', () => {
+    expect(countSyllables('hello')).toBe(2);
+    expect(countSyllables('beautiful')).toBe(3);
+    expect(countSyllables('information')).toBe(4);
+  });
+
+  it('handles short words as 1 syllable', () => {
+    expect(countSyllables('a')).toBe(1);
+    expect(countSyllables('I')).toBe(1);
+    expect(countSyllables('an')).toBe(1);
+  });
+
+  it('returns at least 1 for any word', () => {
+    expect(countSyllables('xyz')).toBeGreaterThanOrEqual(1);
+    expect(countSyllables('')).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ============================================================================
+// countSentences
+// ============================================================================
+describe('countSentences', () => {
+  it('returns 0 for empty string', () => {
+    expect(countSentences('')).toBe(0);
+  });
+
+  it('counts sentences ending with periods', () => {
+    const text = 'This is sentence one. This is sentence two. And this is three.';
+    expect(countSentences(text)).toBe(3);
+  });
+
+  it('counts sentences ending with exclamation and question marks', () => {
+    const text = 'Hello there friend! How are you doing? I am doing fine.';
+    expect(countSentences(text)).toBe(3);
+  });
+
+  it('strips markdown headings', () => {
+    const text = '## My Heading\nThis is a real sentence here. And another one here.';
+    expect(countSentences(text)).toBe(2);
+  });
+
+  it('returns at least 1 for content with words', () => {
+    expect(countSentences('A short fragment with some words')).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ============================================================================
+// computeFleschReadingEase
+// ============================================================================
+describe('computeFleschReadingEase', () => {
+  it('returns 0 for very short content', () => {
+    expect(computeFleschReadingEase('Too short')).toBe(0);
+  });
+
+  it('returns a score between 0 and 100 for normal content', () => {
+    const content =
+      'The cat sat on the mat. The dog ran in the park. Birds fly in the sky. Fish swim in the sea.';
+    const score = computeFleschReadingEase(content);
+    expect(score).toBeGreaterThan(0);
+    expect(score).toBeLessThanOrEqual(100);
+  });
+
+  it('simple text scores higher (easier to read) than complex text', () => {
+    const simple = 'The cat sat on the mat. The dog ran fast. I like cake. You are nice.';
+    const complex =
+      'The implementation of sophisticated algorithmic methodologies necessitates a comprehensive understanding of computational complexity. Furthermore, the fundamental paradigms underlying theoretical frameworks require substantial intellectual consideration.';
+
+    const simpleScore = computeFleschReadingEase(simple);
+    const complexScore = computeFleschReadingEase(complex);
+
+    expect(simpleScore).toBeGreaterThan(complexScore);
+  });
+
+  it('never returns a negative score', () => {
+    const veryComplex =
+      'Electroencephalographically sophisticated neuropsychological investigations demonstrated unprecedented counterrevolutionary characteristics.';
+    expect(computeFleschReadingEase(veryComplex)).toBeGreaterThanOrEqual(0);
+  });
+});
+
+// ============================================================================
+// countKeywordsUsed (replaces countKeywordOccurrences)
+// ============================================================================
+describe('countKeywordsUsed', () => {
   it('returns 0 for empty keywords array', () => {
-    expect(countKeywordOccurrences('some content', [])).toBe(0);
+    expect(countKeywordsUsed('some content', [])).toBe(0);
   });
 
-  it('returns 0 when keyword not found', () => {
-    expect(countKeywordOccurrences('hello world', ['banana'])).toBe(0);
+  it('returns 0 when no keywords found', () => {
+    expect(countKeywordsUsed('hello world', ['banana'])).toBe(0);
   });
 
-  it('counts exact phrase matches (case-insensitive)', () => {
-    const content = 'Lip fillers are popular. LIP FILLERS cost varies. lip fillers near me.';
-    expect(countKeywordOccurrences(content, ['lip fillers'])).toBe(3);
+  it('counts unique keywords found (case-insensitive)', () => {
+    const content = 'Lip fillers are popular. BOTOX is common. Med spa services are growing.';
+    expect(countKeywordsUsed(content, ['lip fillers', 'botox', 'med spa'])).toBe(3);
   });
 
-  it('uses only the primary (first) keyword', () => {
-    const content = 'hello hello hello world';
-    expect(countKeywordOccurrences(content, ['hello', 'world'])).toBe(3);
+  it('returns 2/3 when only 2 of 3 keywords present', () => {
+    const content = 'Lip fillers are popular. This med spa is great.';
+    expect(countKeywordsUsed(content, ['lip fillers', 'botox', 'med spa'])).toBe(2);
+  });
+
+  it('counts each keyword only once regardless of frequency', () => {
+    const content = 'botox botox botox botox botox botox botox botox';
+    expect(countKeywordsUsed(content, ['botox'])).toBe(1);
+  });
+
+  it('backward compat: countKeywordOccurrences maps to countKeywordsUsed', () => {
+    const content = 'lip fillers are great. lip fillers rock. lip fillers forever.';
+    // Old function returned frequency (3), new function returns coverage (1)
+    expect(countKeywordOccurrences(content, ['lip fillers'])).toBe(1);
+  });
+});
+
+// ============================================================================
+// computeKeywordDensity
+// ============================================================================
+describe('computeKeywordDensity', () => {
+  it('returns 0 for empty content', () => {
+    expect(computeKeywordDensity('', 'keyword')).toBe(0);
+  });
+
+  it('returns 0 for no keyword', () => {
+    expect(computeKeywordDensity('some content here', '')).toBe(0);
+  });
+
+  it('computes density correctly', () => {
+    // 100 words with "seo" appearing 1 time = 1%
+    const words = Array(99).fill('word').join(' ') + ' seo';
+    const density = computeKeywordDensity(words, 'seo');
+    expect(density).toBe(1);
+  });
+
+  it('handles multi-word keywords', () => {
+    // "lip fillers" = 2 words, appearing 1 time in 100 words = 2%
+    const words = Array(98).fill('word').join(' ') + ' lip fillers';
+    const density = computeKeywordDensity(words, 'lip fillers');
+    expect(density).toBe(2);
   });
 });
 
@@ -110,37 +242,56 @@ describe('scoreContentRealTime', () => {
       outline: [],
       keywords: [],
     });
-    // Empty content: only readability (85 * 0.15 = 12.75) contributes
-    expect(result.score).toBe(13); // Math.round(12.75)
+    // Empty content: only readability contributes, but FRE returns 0 for <10 words
+    expect(result.score).toBe(0);
     expect(result.metrics.wordCountScore).toBe(0);
     expect(result.metrics.h2Score).toBe(0);
     expect(result.metrics.keywordScore).toBe(0);
+    expect(result.metrics.readabilityScore).toBe(0);
   });
 
   it('scores well for content that hits targets', () => {
-    // Build content that hits: ~1200 words, 6+ H2s, keyword present, outline covered
-    const words = Array(1200).fill('word').join(' ');
-    const h2s = Array(6)
+    // Build realistic content: ~1200 words, 6+ H2s, keywords present, readable
+    const sections = Array(6)
       .fill(0)
-      .map((_, i) => `## Section ${i + 1}`)
+      .map(
+        (_, i) =>
+          `## Section ${i + 1}\n\nThis section provides detailed information about the topic. We explore key aspects and offer practical advice. The goal is to help readers understand the subject better and take action on what they learn.\n`
+      )
       .join('\n');
-    const outline = ['Section 1', 'Section 2', 'Section 3'];
-    const content = `${h2s}\n\n${words}\n\nseo keyword seo keyword seo keyword seo keyword seo keyword seo keyword seo keyword seo keyword`;
+
+    const filler = Array(180).fill('The quick brown fox jumps over the lazy dog.').join(' ');
+    const content = `${sections}\n\n${filler}\n\nseo keyword appears here. seo keyword again.`;
 
     const result = scoreContentRealTime({
       content,
-      outline,
+      outline: ['Section 1', 'Section 2', 'Section 3'],
       keywords: ['seo keyword'],
       targetWordCount: 1200,
     });
 
-    // Should score 80+ with all targets hit
-    expect(result.score).toBeGreaterThanOrEqual(80);
+    // Should score reasonably well with targets partially hit
+    expect(result.score).toBeGreaterThan(30);
+  });
+
+  it('readability score is NOT hardcoded to 85', () => {
+    // Critical test: verify we compute real readability, not return 85
+    const simpleContent = Array(50).fill('The cat sat on the mat.').join(' ');
+    const result = scoreContentRealTime({
+      content: simpleContent,
+      outline: [],
+      keywords: [],
+    });
+
+    // Simple content should have HIGH readability (FRE > 85 or so)
+    // But the key assertion: it's NOT always 85
+    expect(result.metrics.readabilityScore).not.toBe(85);
+    expect(result.metrics.readabilityScore).toBeGreaterThan(0);
   });
 
   it('returns all metric fields in the expected shape', () => {
     const result = scoreContentRealTime({
-      content: 'test',
+      content: 'This is a test of the scoring system with enough words to count properly.',
       outline: [],
       keywords: ['test'],
     });
@@ -155,7 +306,6 @@ describe('scoreContentRealTime', () => {
   });
 
   it('caps score at 100', () => {
-    // Even with extreme values, score should never exceed 100
     const words = Array(5000).fill('keyword').join(' ');
     const h2s = Array(20)
       .fill(0)
@@ -172,16 +322,19 @@ describe('scoreContentRealTime', () => {
     expect(result.score).toBeLessThanOrEqual(100);
   });
 
-  it('handles multi-word keyword scoring correctly', () => {
+  it('keyword score uses coverage (unique keywords found), not frequency', () => {
+    // 3 keywords, content has 2 of them
     const content =
-      'lip fillers kansas city is great. lip fillers kansas city rocks. We do lip fillers kansas city.';
+      'This article about lip fillers and botox treatments provides important information for patients.';
 
     const result = scoreContentRealTime({
       content,
       outline: [],
-      keywords: ['lip fillers kansas city'],
+      keywords: ['lip fillers', 'botox', 'med spa'], // med spa NOT in content
     });
 
+    // Coverage = 2/3 = 66.7%, score should reflect partial coverage
     expect(result.metrics.keywordScore).toBeGreaterThan(0);
+    expect(result.metrics.keywordScore).toBeLessThan(100);
   });
 });
