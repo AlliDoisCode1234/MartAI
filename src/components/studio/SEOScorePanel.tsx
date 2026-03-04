@@ -83,11 +83,13 @@ export function SEOScorePanel({
     {
       label: 'Keywords Found',
       value:
-        keywordCount >= targetKeywords
-          ? String(keywordCount)
-          : `${keywordCount} / ${targetKeywords}`,
+        targetKeywords === 0
+          ? '—'
+          : keywordCount >= targetKeywords
+            ? String(keywordCount)
+            : `${keywordCount} / ${targetKeywords}`,
       icon: FiType,
-      passed: keywordCount >= targetKeywords,
+      passed: targetKeywords === 0 || keywordCount >= targetKeywords,
       score: qualityMetrics?.keywordScore,
     },
     {

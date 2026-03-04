@@ -46,7 +46,14 @@ export const UserDropdown: FC<Props> = ({ triggerElement }) => {
   return (
     <Menu>
       {triggerElement ? (
-        <MenuButton as={Box} cursor="pointer" display="inline-flex">
+        <MenuButton
+          as={Box}
+          cursor="pointer"
+          display="inline-flex"
+          role="button"
+          tabIndex={0}
+          aria-label="User menu"
+        >
           {triggerElement}
         </MenuButton>
       ) : (

@@ -1195,7 +1195,7 @@ function scoreContent(
       const escaped = primaryKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const matches = (contentLower.match(new RegExp(escaped, 'g')) || []).length;
       const kwWordCount = primaryKeyword.split(/\s+/).length;
-      const density = ((matches * kwWordCount) / wordCount) * 100;
+      const density = Number((((matches * kwWordCount) / wordCount) * 100).toFixed(2));
       if (density >= 0.5 && density <= 2.0) {
         densityScore = 100;
       } else if (density > 0 && density < 0.5) {

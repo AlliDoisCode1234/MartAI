@@ -162,11 +162,11 @@ describe('Normalized GA4 → Dashboard Card Routing', () => {
   };
 
   // Simulating page.tsx → DashboardStatRow prop wiring
+  // Note: bounceRate is still stored in KPIs but no longer passed to DashboardStatRow
   const statRowProps = {
     sessions: kpis.sessions.value ?? 0,
     users: kpis.users.value ?? 0,
     pageViews: kpis.pageViews.value ?? 0,
-    bounceRate: kpis.bounceRate.value ?? 0,
     avgSessionDuration: kpis.avgSessionDuration.value ?? 0,
   };
 
@@ -186,14 +186,14 @@ describe('Normalized GA4 → Dashboard Card Routing', () => {
     expect(statRowProps.avgSessionDuration).toBe(182.5);
   });
 
-  it('Card "Avg Session" subtitle → uses `bounceRate` (42, already 0-100)', () => {
-    expect(statRowProps.bounceRate).toBe(42);
-    // UI renders: `${bounceRate.toFixed(0)}% bounce` → "42% bounce"
+  it('Card "Avg Session" subtitle → uses `avgSessionDuration` (182.5s, human-readable)', () => {
+    expect(statRowProps.avgSessionDuration).toBe(182.5);
+    // UI renders formatDurationHuman(182.5) → "3m 3s" (rounds to 183, then 3*60+3)
   });
 
-  it('bounceRate is NOT double-normalized (should be 42, not 4200)', () => {
-    expect(statRowProps.bounceRate).toBeLessThan(101);
-    expect(statRowProps.bounceRate).toBeGreaterThanOrEqual(0);
+  it('avgSessionDuration is a positive finite number', () => {
+    expect(statRowProps.avgSessionDuration).toBeGreaterThan(0);
+    expect(Number.isFinite(statRowProps.avgSessionDuration)).toBe(true);
   });
 });
 

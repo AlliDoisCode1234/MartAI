@@ -691,7 +691,7 @@ export default function ContentEditorPage() {
               targetWordCount={TARGET_WORD_COUNT}
               h2Count={h2Count}
               keywordCount={countKeywordsUsed(content, contentPiece.keywords)}
-              targetKeywords={contentPiece.keywords?.length || 1}
+              targetKeywords={contentPiece.keywords?.length ?? 0}
               internalLinkCount={linkCount}
               qualityMetrics={liveScore?.metrics ?? contentPiece.qualityMetrics}
             />

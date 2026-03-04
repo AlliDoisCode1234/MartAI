@@ -70,11 +70,16 @@ function AccountShellInner({ children }: Props) {
   const { user } = useAuth();
   const displayName = user ? getUserDisplayName(user) : '';
 
+  // Valid tab values extracted from NAV_ITEMS for normalization
+  const validTabs = NAV_ITEMS.filter((n) => n.matchTab).map((n) => n.matchTab!);
+
   const isActive = (item: AccountNavItem): boolean => {
     // Direct pathname match (e.g. /profile, /subscription, /settings/team)
     if (item.matchTab) {
       // Tab-based matching: pathname must be /settings and tab param must match
-      const currentTab = searchParams?.get('tab') || 'account';
+      const rawTab = searchParams?.get('tab') || 'account';
+      // Normalize unknown tabs to 'account' to match SettingsPage's fallback
+      const currentTab = validTabs.includes(rawTab) ? rawTab : 'account';
       return pathname === '/settings' && currentTab === item.matchTab;
     }
     // Exact pathname match
