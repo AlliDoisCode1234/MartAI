@@ -10,6 +10,7 @@
  * Creates a shell content piece and immediately schedules it.
  */
 
+import { useState } from 'react';
 import {
   Modal,
   ModalOverlay,

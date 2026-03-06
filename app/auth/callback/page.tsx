@@ -79,13 +79,10 @@ export default function AuthCallbackPage() {
 
       // After max attempts, redirect to login with error indicator
       console.log('[AuthCallback] Auth timeout, redirecting to login');
-      logout()
-        .catch(() => {
-          /* sign-out may fail if session is already dead */
-        })
-        .finally(() => {
-          router.replace('/auth/login?error=auth_timeout');
-        });
+      logout('/auth/login?error=auth_timeout').catch(() => {
+        // Fallback: force navigate if logout fails
+        window.location.href = '/auth/login?error=auth_timeout';
+      });
       return;
     }
 
@@ -126,13 +123,10 @@ export default function AuthCallbackPage() {
 
       if (authFlow === 'login') {
         console.log('[AuthCallback] Login-intent gate: no existing account, redirecting to signup');
-        logout()
-          .catch(() => {
-            /* session may already be dead */
-          })
-          .finally(() => {
-            router.replace('/auth/signup?error=no_account');
-          });
+        logout('/auth/signup?error=no_account').catch(() => {
+          // Fallback: force navigate if logout fails
+          window.location.href = '/auth/signup?error=no_account';
+        });
         return;
       }
 

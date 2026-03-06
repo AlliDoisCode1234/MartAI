@@ -106,6 +106,7 @@ export default function SignupPage() {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setError(null);
     try {
       // Mark this as a SIGNUP flow so the callback page allows account creation
       try {
@@ -114,9 +115,16 @@ export default function SignupPage() {
         // sessionStorage unavailable in Safari private browsing
       }
       const result = await signIn('google', { redirectTo: '/auth/callback' });
-      // For OAuth flows, signIn returns a redirect URL
+      // Handle all possible signIn outcomes (matches login page pattern)
       if (result?.redirect) {
         window.location.href = result.redirect.toString();
+      } else if (result?.signingIn) {
+        // User signed in immediately (e.g. existing Google session)
+        router.push('/onboarding');
+      } else {
+        // Unexpected shape — surface error and reset loading
+        setError('Failed to start Google sign-in flow');
+        setLoading(false);
       }
     } catch (err) {
       setError('Failed to sign up with Google');
