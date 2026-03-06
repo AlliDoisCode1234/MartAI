@@ -43,6 +43,8 @@ export function middleware(request: NextRequest) {
       '/resources',
       '/how-it-works',
       '/pricing',
+      '/features',
+      '/solutions',
     ];
     const isPublicRoute = publicRoutes.some(
       (route) => pathname === route || pathname.startsWith(route + '/')

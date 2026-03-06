@@ -46,23 +46,24 @@ const MotionCard = motion(Card);
 
 // Glass card styles
 const glassCard = {
-  bg: 'rgba(30, 30, 30, 0.6)',
-  backdropFilter: 'blur(10px)',
+  bg: 'white',
   borderWidth: '1px',
-  borderColor: 'rgba(255, 255, 255, 0.1)',
-  borderRadius: 'xl',
+  borderColor: 'gray.200',
+  borderRadius: '2xl',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
 };
 
 // Form input styles
 const inputStyles = {
-  bg: 'rgba(255, 255, 255, 0.05)',
-  borderColor: 'rgba(255, 255, 255, 0.1)',
-  color: 'white',
-  _placeholder: { color: 'gray.500' },
-  _hover: { borderColor: 'rgba(255, 255, 255, 0.2)' },
+  bg: 'white',
+  borderColor: 'gray.200',
+  color: 'gray.800',
+  borderRadius: 'lg',
+  _placeholder: { color: 'gray.400' },
+  _hover: { borderColor: 'gray.300' },
   _focus: {
     borderColor: 'orange.400',
-    boxShadow: '0 0 0 1px var(--chakra-colors-orange-400)',
+    boxShadow: '0 0 0 1px var(--chakra-colors-orange-400), 0 0 8px rgba(255, 157, 0, 0.15)',
   },
 };
 
@@ -88,7 +89,7 @@ function SettingSection({ icon, title, description, children, delay = 0 }: Setti
             <Icon as={icon} color="orange.400" boxSize={5} />
           </Box>
           <Box>
-            <Heading size="md" color="white">
+            <Heading size="md" color="gray.800">
               {title}
             </Heading>
             <Text color="gray.400" fontSize="sm">
@@ -96,7 +97,7 @@ function SettingSection({ icon, title, description, children, delay = 0 }: Setti
             </Text>
           </Box>
         </HStack>
-        <Divider borderColor="rgba(255, 255, 255, 0.1)" mb={4} />
+        <Divider borderColor="gray.200" mb={4} />
         {children}
       </CardBody>
     </MotionCard>
@@ -159,7 +160,7 @@ export default function BrandProfilePage() {
           <Box>
             <HStack mb={2}>
               <Icon as={FiTarget} color="orange.400" boxSize={6} />
-              <Heading size="lg" color="white">
+              <Heading size="lg" color="gray.800">
                 Brand Profile & Defaults
               </Heading>
             </HStack>
@@ -178,20 +179,20 @@ export default function BrandProfilePage() {
         </HStack>
 
         <Tabs variant="soft-rounded" colorScheme="orange">
-          <TabList mb={6} bg="rgba(255, 255, 255, 0.05)" p={2} borderRadius="xl">
-            <Tab color="gray.400" _selected={{ color: 'white', bg: 'rgba(255, 157, 0, 0.3)' }}>
+          <TabList mb={6} bg="gray.100" p={2} borderRadius="xl">
+            <Tab color="gray.500" _selected={{ color: 'gray.800', bg: 'white', boxShadow: 'sm' }}>
               Brand Voice
             </Tab>
-            <Tab color="gray.400" _selected={{ color: 'white', bg: 'rgba(255, 157, 0, 0.3)' }}>
+            <Tab color="gray.500" _selected={{ color: 'gray.800', bg: 'white', boxShadow: 'sm' }}>
               Content Defaults
             </Tab>
-            <Tab color="gray.400" _selected={{ color: 'white', bg: 'rgba(255, 157, 0, 0.3)' }}>
+            <Tab color="gray.500" _selected={{ color: 'gray.800', bg: 'white', boxShadow: 'sm' }}>
               Publishing
             </Tab>
-            <Tab color="gray.400" _selected={{ color: 'white', bg: 'rgba(255, 157, 0, 0.3)' }}>
+            <Tab color="gray.500" _selected={{ color: 'gray.800', bg: 'white', boxShadow: 'sm' }}>
               Notifications
             </Tab>
-            <Tab color="gray.400" _selected={{ color: 'white', bg: 'rgba(255, 157, 0, 0.3)' }}>
+            <Tab color="gray.500" _selected={{ color: 'gray.800', bg: 'white', boxShadow: 'sm' }}>
               Support
             </Tab>
           </TabList>
@@ -208,7 +209,7 @@ export default function BrandProfilePage() {
                 >
                   <VStack spacing={4} align="stretch">
                     <FormControl>
-                      <FormLabel color="gray.300">Brand Name</FormLabel>
+                      <FormLabel color="gray.600">Brand Name</FormLabel>
                       <Input
                         {...inputStyles}
                         placeholder="Your company name"
@@ -218,25 +219,25 @@ export default function BrandProfilePage() {
                     </FormControl>
 
                     <FormControl>
-                      <FormLabel color="gray.300">Brand Voice</FormLabel>
+                      <FormLabel color="gray.600">Brand Voice</FormLabel>
                       <Select
                         {...inputStyles}
                         value={settings.brandVoice}
                         onChange={(e) => updateSetting('brandVoice', e.target.value)}
                       >
-                        <option value="professional" style={{ background: '#1e1e1e' }}>
+                        <option value="professional" style={{ background: '#FFFFFF' }}>
                           Professional
                         </option>
-                        <option value="casual" style={{ background: '#1e1e1e' }}>
+                        <option value="casual" style={{ background: '#FFFFFF' }}>
                           Casual & Friendly
                         </option>
-                        <option value="authoritative" style={{ background: '#1e1e1e' }}>
+                        <option value="authoritative" style={{ background: '#FFFFFF' }}>
                           Authoritative
                         </option>
-                        <option value="conversational" style={{ background: '#1e1e1e' }}>
+                        <option value="conversational" style={{ background: '#FFFFFF' }}>
                           Conversational
                         </option>
-                        <option value="technical" style={{ background: '#1e1e1e' }}>
+                        <option value="technical" style={{ background: '#FFFFFF' }}>
                           Technical
                         </option>
                       </Select>
@@ -246,7 +247,7 @@ export default function BrandProfilePage() {
                     </FormControl>
 
                     <FormControl>
-                      <FormLabel color="gray.300">Target Audience</FormLabel>
+                      <FormLabel color="gray.600">Target Audience</FormLabel>
                       <Textarea
                         {...inputStyles}
                         placeholder="Describe your ideal reader..."
@@ -257,7 +258,7 @@ export default function BrandProfilePage() {
                     </FormControl>
 
                     <FormControl>
-                      <FormLabel color="gray.300">Tone Keywords</FormLabel>
+                      <FormLabel color="gray.600">Tone Keywords</FormLabel>
                       <Input
                         {...inputStyles}
                         placeholder="expert, helpful, data-driven..."
@@ -330,7 +331,7 @@ export default function BrandProfilePage() {
                       </Select>
                     </FormControl>
 
-                    <Divider borderColor="rgba(255, 255, 255, 0.1)" />
+                    <Divider borderColor="gray.200" />
 
                     <FormControl display="flex" alignItems="center" justifyContent="space-between">
                       <Box>
@@ -426,7 +427,7 @@ export default function BrandProfilePage() {
                       />
                     </FormControl>
 
-                    <Divider borderColor="rgba(255, 255, 255, 0.1)" />
+                    <Divider borderColor="gray.200" />
 
                     <FormControl>
                       <FormLabel color="gray.300">Default CTA</FormLabel>
@@ -451,16 +452,11 @@ export default function BrandProfilePage() {
                   delay={0.2}
                 >
                   <VStack spacing={3} align="stretch">
-                    <HStack
-                      p={4}
-                      borderRadius="lg"
-                      bg="rgba(255, 255, 255, 0.05)"
-                      justify="space-between"
-                    >
+                    <HStack p={4} borderRadius="lg" bg="gray.50" justify="space-between">
                       <HStack>
                         <Icon as={FiGlobe} color="blue.400" />
                         <Box>
-                          <Text color="white">WordPress</Text>
+                          <Text color="gray.700">WordPress</Text>
                           <Text color="gray.500" fontSize="sm">
                             Not connected
                           </Text>
@@ -550,8 +546,8 @@ export default function BrandProfilePage() {
                   delay={0.1}
                 >
                   <VStack spacing={4} align="stretch">
-                    <Box p={4} borderRadius="lg" bg="rgba(255, 255, 255, 0.05)">
-                      <Text color="gray.300" mb={2}>
+                    <Box p={4} borderRadius="lg" bg="gray.50">
+                      <Text color="gray.600" mb={2}>
                         Have a question or need assistance? Reach out to our support team:
                       </Text>
                       <Button

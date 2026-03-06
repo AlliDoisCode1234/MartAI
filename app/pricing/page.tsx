@@ -38,8 +38,9 @@ import { api } from '@/convex/_generated/api';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import { FiZap, FiTarget, FiTrendingUp, FiCpu } from 'react-icons/fi';
 import { getFaqSchema, PRICING_FAQ_ITEMS, schemaToJsonLd } from '@/src/lib/schemas';
-import { LandingHeader } from '@/src/components/home';
+import { MegaMenuHeader, PremiumFooter } from '@/src/components/marketing';
 import { BRAND } from '@/lib/constants/brand';
+import { IS_LAUNCHED, BETA_JOIN_HREF } from '@/lib/constants/featureFlags';
 
 // Stripe Price IDs for each plan x billing cycle
 // Feb 2026: Lead Generation System pricing pivot
@@ -195,7 +196,11 @@ export default function PricingPage() {
 
     // Redirect unauthenticated users to login first
     if (!isAuthenticated) {
-      router.push('/auth/login?returnTo=/pricing&intent=checkout');
+      if (IS_LAUNCHED) {
+        router.push('/auth/login?returnTo=/pricing&intent=checkout');
+      } else {
+        router.push(BETA_JOIN_HREF);
+      }
       return;
     }
 
@@ -291,7 +296,7 @@ export default function PricingPage() {
         dangerouslySetInnerHTML={{ __html: schemaToJsonLd(faqSchema) }}
       />
 
-      <LandingHeader />
+      <MegaMenuHeader />
 
       <Box bg="white" py={20}>
         <Container maxW="container.xl">
@@ -379,6 +384,8 @@ export default function PricingPage() {
           </Box>
         </Container>
       </Box>
+
+      <PremiumFooter />
     </>
   );
 }

@@ -5,15 +5,14 @@
  *
  * Component Hierarchy:
  * └── app/page.tsx (this file)
- *     ├── (Authenticated) → Redirect to /dashboard
+ *     ├── (Authenticated) → Redirect to /studio
  *     └── (Unauthenticated) → Marketing page
- *         ├── HeroSection
- *         ├── ProblemSection
- *         ├── FeaturesSection
- *         ├── AudienceSection
- *         ├── BetaSection
+ *         ├── MegaMenuHeader
+ *         ├── HeroSection (split layout + product mockup)
+ *         ├── HowItWorksSection
+ *         ├── AboutPhooSection
  *         ├── WaitlistForm
- *         └── Footer
+ *         └── PremiumFooter
  *
  * Routing Logic:
  * - Authenticated users → /dashboard (member portal)
@@ -26,23 +25,21 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { Box, Text, Spinner, VStack } from '@chakra-ui/react';
 import {
-  Box,
-  Container,
-  Text,
-  HStack,
-  Link as ChakraLink,
-  Spinner,
-  VStack,
-} from '@chakra-ui/react';
-import Link from 'next/link';
-import {
-  LandingHeader,
   HeroSection,
   HowItWorksSection,
   AboutPhooSection,
   WaitlistForm,
 } from '@/src/components/home';
+import {
+  MegaMenuHeader,
+  PremiumFooter,
+  FeatureShowcase,
+  ProductScreenshot,
+} from '@/src/components/marketing';
+import { FiEdit3, FiSearch, FiBarChart2 } from 'react-icons/fi';
+import { STUDIO_COLORS } from '@/lib/constants/studioTokens';
 
 export default function Home() {
   const router = useRouter();
@@ -93,39 +90,80 @@ export default function Home() {
   // PhooFab is rendered by Layout for standalone routes
   return (
     <Box minH="100vh" bg="white" color="gray.800" position="relative">
-      <LandingHeader />
+      <MegaMenuHeader />
       <HeroSection />
+
+      {/* Product Feature Showcases */}
+      <FeatureShowcase
+        badge="Content Studio"
+        badgeIcon={FiEdit3}
+        heading="Create SEO-Optimized Content"
+        headingHighlight="in Minutes"
+        description="Our AI Content Studio writes high-quality, SEO-optimized articles tailored to your business. Each piece is scored in real-time so you know exactly how it'll perform."
+        features={[
+          'AI-generated articles with real-time SEO scoring',
+          'One-click publish to WordPress, Shopify, Webflow',
+          'Built-in keyword optimization and density tracking',
+          'Content calendar with scheduling automation',
+        ]}
+        bg={STUDIO_COLORS.pageBg}
+      >
+        <ProductScreenshot
+          src="/images/feature-content-studio.png"
+          alt="Phoo AI Content Studio"
+          width={1200}
+          height={750}
+        />
+      </FeatureShowcase>
+
+      <FeatureShowcase
+        badge="Keyword Intelligence"
+        badgeIcon={FiSearch}
+        heading="Find Keywords That"
+        headingHighlight="Actually Convert"
+        description="Stop guessing which keywords to target. Phoo identifies high-value opportunities based on your real Google Search Console data."
+        features={[
+          'Quick-win keyword discovery from real GSC data',
+          'Difficulty scoring with volume analysis',
+          'Competitor gap analysis',
+          'Keyword-to-content automation pipeline',
+        ]}
+        reverse
+      >
+        <ProductScreenshot
+          src="/images/feature-keyword-research.png"
+          alt="Phoo keyword research dashboard"
+          width={1200}
+          height={750}
+        />
+      </FeatureShowcase>
+
+      <FeatureShowcase
+        badge="Analytics Dashboard"
+        badgeIcon={FiBarChart2}
+        heading="Track What Matters,"
+        headingHighlight="Not Vanity Metrics"
+        description="Your Executive Briefing dashboard shows the 5 metrics that actually drive revenue. No noise, just signal."
+        features={[
+          'Real-time GA4 and GSC data integration',
+          'Phoo Rating (PR Score) for search visibility',
+          'Cumulative growth tracking since day one',
+          'AI Intelligence Brief with plain-English insights',
+        ]}
+        bg={STUDIO_COLORS.pageBg}
+      >
+        <ProductScreenshot
+          src="/images/feature-analytics.png"
+          alt="Phoo analytics dashboard"
+          width={1200}
+          height={750}
+        />
+      </FeatureShowcase>
+
       <HowItWorksSection />
       <AboutPhooSection />
       <WaitlistForm />
-      {/* Footer */}
-      <Box as="footer" py={12} borderTop="1px solid" borderColor="gray.200">
-        <Container maxW="6xl" textAlign="center">
-          <HStack justify="center" spacing={6} mb={4}>
-            <ChakraLink
-              as={Link}
-              href="/privacy"
-              color="gray.600"
-              fontSize="sm"
-              _hover={{ color: 'brand.orange' }}
-            >
-              Privacy Policy
-            </ChakraLink>
-            <ChakraLink
-              as={Link}
-              href="/terms"
-              color="gray.600"
-              fontSize="sm"
-              _hover={{ color: 'brand.orange' }}
-            >
-              Terms of Service
-            </ChakraLink>
-          </HStack>
-          <Text color="gray.500" fontSize="sm">
-            © {new Date().getFullYear()} Phoo AI. All rights reserved.
-          </Text>
-        </Container>
-      </Box>
+      <PremiumFooter />
     </Box>
   );
 }

@@ -39,12 +39,13 @@ type Props = {
 };
 
 const baseSelectStyles = {
-  bg: '#1a1230',
-  border: '1px solid rgba(255,255,255,0.1)',
+  bg: 'white',
+  border: '1px solid',
+  borderColor: 'gray.200',
   fontSize: 'sm',
-  _hover: { borderColor: 'rgba(255,255,255,0.2)' },
+  _hover: { borderColor: 'gray.300' },
   _focus: { borderColor: '#F99F2A', boxShadow: '0 0 0 1px #F99F2A' },
-  sx: { option: { bg: '#1a1230', color: 'white' } },
+  sx: { option: { bg: 'white', color: 'gray.800' } },
 };
 
 export function KeywordFilters({
@@ -91,7 +92,7 @@ export function KeywordFilters({
         onChange={(e) => onStatusChange(e.target.value)}
         w="160px"
         flexShrink={0}
-        color="white"
+        color="gray.700"
         {...baseSelectStyles}
       >
         <option value="all">All Statuses</option>
@@ -106,7 +107,7 @@ export function KeywordFilters({
         onChange={(e) => onClusterChange(e.target.value)}
         w="180px"
         flexShrink={0}
-        color="white"
+        color="gray.700"
         {...baseSelectStyles}
       >
         <option value="all">All Clusters</option>
@@ -124,10 +125,10 @@ export function KeywordFilters({
         flexShrink={0}
         bg={quickWinFilter ? 'rgba(52,211,153,0.2)' : 'transparent'}
         color={quickWinFilter ? '#34d399' : 'gray.500'}
-        borderColor={quickWinFilter ? '#34d399' : 'rgba(255,255,255,0.1)'}
+        borderColor={quickWinFilter ? '#34d399' : 'gray.200'}
         _hover={{
-          bg: quickWinFilter ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.05)',
-          color: quickWinFilter ? '#34d399' : 'white',
+          bg: quickWinFilter ? 'rgba(52,211,153,0.3)' : 'gray.50',
+          color: quickWinFilter ? '#34d399' : 'gray.700',
         }}
         fontWeight="semibold"
         fontSize="xs"
@@ -146,12 +147,13 @@ export function KeywordFilters({
           placeholder="Search keywords..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          bg="#1a1230"
-          border="1px solid rgba(255,255,255,0.1)"
-          color="white"
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
+          color="gray.800"
           fontSize="sm"
-          _placeholder={{ color: 'gray.500' }}
-          _hover={{ borderColor: 'rgba(255,255,255,0.2)' }}
+          _placeholder={{ color: 'gray.400' }}
+          _hover={{ borderColor: 'gray.300' }}
           _focus={{ borderColor: '#F99F2A', boxShadow: '0 0 0 1px #F99F2A' }}
         />
       </InputGroup>

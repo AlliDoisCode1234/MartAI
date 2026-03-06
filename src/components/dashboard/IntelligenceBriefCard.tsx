@@ -9,7 +9,7 @@
  * Translates granular SEO data into a single plain-English paragraph for Business Owners.
  */
 
-import { Box, HStack, Heading, Text, Icon, useColorModeValue } from '@chakra-ui/react';
+import { Box, HStack, Heading, Text, Icon } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { FiZap } from 'react-icons/fi';
 import { STUDIO_COLORS } from '@/lib/constants/studioTokens';
@@ -29,8 +29,6 @@ export function IntelligenceBriefCard({
   quickWinCount,
   pendingDrafts,
 }: Props) {
-  const cardBg = useColorModeValue('rgba(255, 255, 255, 0.03)', 'rgba(30, 30, 30, 0.6)');
-
   let briefText = '';
 
   if (!hasData) {
@@ -49,9 +47,9 @@ export function IntelligenceBriefCard({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5, delay: 0.3 }}
-      bg="linear-gradient(135deg, rgba(249, 159, 42, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)"
+      bg="white"
       borderWidth="1px"
-      borderColor="rgba(249, 159, 42, 0.3)"
+      borderColor="rgba(247, 148, 30, 0.2)"
       borderRadius="xl"
       p={{ base: 5, md: 6 }}
       position="relative"
@@ -83,12 +81,12 @@ export function IntelligenceBriefCard({
         >
           <Icon as={FiZap} color={STUDIO_COLORS.amber} />
         </Box>
-        <Heading size="sm" color="white">
+        <Heading size="sm" color="gray.800">
           Phoo Intelligence Brief
         </Heading>
       </HStack>
 
-      <Text color="gray.300" fontSize="md" lineHeight="tall" fontWeight="medium">
+      <Text color="gray.600" fontSize="md" lineHeight="tall" fontWeight="medium">
         {briefText}
       </Text>
     </MotionBox>

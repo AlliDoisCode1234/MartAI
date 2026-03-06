@@ -77,16 +77,18 @@ export function ContentJourney({ contentByStage, totalContent }: Props) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
-      bg="rgba(255, 255, 255, 0.02)"
+      bg="white"
       borderRadius="12px"
-      border="1px solid rgba(255, 255, 255, 0.08)"
+      border="1px solid"
+      borderColor="gray.100"
       p={4}
+      boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
     >
       <VStack align="stretch" spacing={5}>
         {/* Header */}
         <HStack justify="space-between">
           <VStack align="start" spacing={1}>
-            <Heading size="md" color="white">
+            <Heading size="md" color="gray.800">
               Content Journey
             </Heading>
             <Text color="gray.500" fontSize="sm">
@@ -132,7 +134,7 @@ export function ContentJourney({ contentByStage, totalContent }: Props) {
                   {/* Label and Progress */}
                   <VStack flex={1} align="stretch" spacing={1}>
                     <HStack justify="space-between">
-                      <Text color="white" fontSize="sm" fontWeight="medium">
+                      <Text color="gray.700" fontSize="sm" fontWeight="medium">
                         {stage.label}
                       </Text>
                       <Text color="gray.500" fontSize="xs">
@@ -143,7 +145,7 @@ export function ContentJourney({ contentByStage, totalContent }: Props) {
                       value={percentage}
                       size="sm"
                       borderRadius="full"
-                      bg="rgba(255, 255, 255, 0.1)"
+                      bg="gray.100"
                       sx={{
                         '& > div': {
                           bg: stage.color,

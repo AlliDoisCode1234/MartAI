@@ -220,19 +220,14 @@ export default function DashboardPage() {
                 >
                   Dashboard
                 </Badge>
-                <Heading
-                  size={{ base: 'xl', md: '2xl' }}
-                  bgGradient="linear(to-r, white, gray.300)"
-                  bgClip="text"
-                  fontWeight="bold"
-                >
-                  Welcome back, {userName}
+                <Heading size={{ base: 'xl', md: '2xl' }} color="gray.800" fontWeight="bold">
+                  Overview Dashboard
                 </Heading>
                 <HStack spacing={4} flexWrap="wrap">
                   <Button
                     size="xs"
                     variant="ghost"
-                    color="gray.400"
+                    color="gray.500"
                     leftIcon={<FiRefreshCw />}
                     onClick={handleSync}
                     isLoading={isSyncing}
@@ -240,7 +235,7 @@ export default function DashboardPage() {
                     Sync Data
                   </Button>
                   {gscStats?.lastSyncDate && (
-                    <Text color="gray.600" fontSize="xs">
+                    <Text color="gray.400" fontSize="xs">
                       Last synced:{' '}
                       {new Date(gscStats.lastSyncDate).toLocaleDateString('en-US', {
                         month: 'short',
@@ -257,10 +252,10 @@ export default function DashboardPage() {
                   <Button
                     size="md"
                     variant="outline"
-                    borderColor="rgba(255, 157, 0, 0.5)"
-                    color={STUDIO_COLORS.amber}
+                    borderColor="orange.300"
+                    color="orange.500"
                     rightIcon={<FiBarChart2 />}
-                    _hover={{ bg: 'rgba(255, 157, 0, 0.1)' }}
+                    _hover={{ bg: 'orange.50' }}
                   >
                     Deep SEO Insights
                   </Button>
@@ -296,22 +291,22 @@ export default function DashboardPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              bg="rgba(255, 255, 255, 0.03)"
+              bg="white"
               borderWidth="1px"
-              borderColor="rgba(255, 255, 255, 0.1)"
+              borderColor="orange.200"
               borderRadius="xl"
               p={{ base: 5, md: 6 }}
               mt={2}
             >
               <Flex align="center" gap={4} flexWrap="wrap">
-                <Box bg="rgba(255, 157, 0, 0.2)" borderRadius="full" p={3}>
-                  <FiBarChart2 color={STUDIO_COLORS.amber} size={24} />
+                <Box bg="orange.50" borderRadius="full" p={3}>
+                  <FiBarChart2 color="#F99F2A" size={24} />
                 </Box>
                 <VStack align="start" spacing={1} flex={1}>
-                  <Heading size="sm" color="white">
+                  <Heading size="sm" color="gray.800">
                     Connect your data sources
                   </Heading>
-                  <Text color="gray.400" fontSize="sm">
+                  <Text color="gray.500" fontSize="sm">
                     Link Google Analytics and Search Console to unlock real-time SEO metrics.
                   </Text>
                 </VStack>

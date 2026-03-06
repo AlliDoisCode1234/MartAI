@@ -194,52 +194,44 @@ export function DashboardStatRow({
       {stats.map((stat, i) => (
         <MotionBox
           key={stat.label}
-          bg={
-            stat.isHighlighted
-              ? 'linear-gradient(135deg, rgba(249, 159, 42, 0.14) 0%, rgba(249, 159, 42, 0.04) 100%)'
-              : 'rgba(255, 255, 255, 0.03)'
-          }
-          backdropFilter="blur(20px)"
-          border={
-            stat.isHighlighted
-              ? '1.5px solid rgba(249, 159, 42, 0.55)'
-              : '1px solid rgba(255, 255, 255, 0.08)'
-          }
+          bg={stat.isHighlighted ? 'linear-gradient(135deg, #F7941E 0%, #E8851A 100%)' : 'white'}
+          border={stat.isHighlighted ? 'none' : '1px solid'}
+          borderColor={stat.isHighlighted ? 'transparent' : 'gray.200'}
           boxShadow={
             stat.isHighlighted
-              ? '0 0 30px rgba(249, 159, 42, 0.2), 0 0 60px rgba(249, 159, 42, 0.08), inset 0 1px 0 rgba(249, 159, 42, 0.2)'
-              : 'none'
+              ? '0 4px 20px rgba(247, 148, 30, 0.35)'
+              : '0 2px 8px rgba(0, 0, 0, 0.06)'
           }
-          borderRadius="2xl"
+          borderRadius="xl"
           p={{ base: 4, md: 5 }}
           position="relative"
           overflow="hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 + i * 0.08 }}
-          _before={
-            stat.isHighlighted
-              ? {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2px',
-                  bg: 'linear-gradient(90deg, transparent, #F99F2A, transparent)',
-                }
-              : undefined
-          }
+          _hover={{
+            boxShadow: stat.isHighlighted
+              ? '0 8px 30px rgba(247, 148, 30, 0.45)'
+              : '0 4px 12px rgba(0, 0, 0, 0.08)',
+          }}
         >
           <VStack align="start" spacing={3}>
             <HStack spacing={2}>
-              <Box p={2} borderRadius="lg" bg={stat.iconBg}>
-                <Icon as={stat.icon} boxSize={4} color={stat.iconColor} />
+              <Box
+                p={2}
+                borderRadius="lg"
+                bg={stat.isHighlighted ? 'rgba(255,255,255,0.25)' : stat.iconBg}
+              >
+                <Icon
+                  as={stat.icon}
+                  boxSize={4}
+                  color={stat.isHighlighted ? 'white' : stat.iconColor}
+                />
               </Box>
               <Text
-                color={stat.isHighlighted ? '#F99F2A' : 'gray.300'}
+                color={stat.isHighlighted ? 'white' : 'gray.500'}
                 fontSize="xs"
-                fontWeight={stat.isHighlighted ? 'bold' : 'semibold'}
+                fontWeight="semibold"
                 letterSpacing="wider"
                 textTransform={stat.isHighlighted ? 'uppercase' : undefined}
               >
@@ -261,7 +253,7 @@ export function DashboardStatRow({
 
             <HStack align="baseline" spacing={2}>
               <Text
-                color="white"
+                color={stat.isHighlighted ? 'white' : 'gray.800'}
                 fontSize={{ base: '2xl', md: '3xl' }}
                 fontWeight="bold"
                 lineHeight="1"
@@ -269,13 +261,17 @@ export function DashboardStatRow({
                 {stat.value}
               </Text>
               {stat.change && (
-                <Text fontSize="sm" fontWeight="semibold" color={stat.changeColor}>
+                <Text
+                  fontSize="sm"
+                  fontWeight="semibold"
+                  color={stat.isHighlighted ? 'rgba(255,255,255,0.85)' : stat.changeColor}
+                >
                   {stat.change}
                 </Text>
               )}
             </HStack>
 
-            <Text color="gray.500" fontSize="xs">
+            <Text color={stat.isHighlighted ? 'rgba(255,255,255,0.8)' : 'gray.500'} fontSize="xs">
               {stat.subtitle}
             </Text>
           </VStack>

@@ -316,13 +316,13 @@ export default function CreateContentPage() {
                 size="sm"
                 color="gray.400"
                 leftIcon={<Icon as={FiArrowLeft} />}
-                _hover={{ color: 'white' }}
+                _hover={{ color: 'gray.700' }}
               >
                 Back
               </Button>
             </Link>
             <Box>
-              <Heading size="lg" color="white">
+              <Heading size="lg" color="gray.800">
                 Create Content
               </Heading>
               <Text color="gray.500" mt={1}>
@@ -385,7 +385,7 @@ export default function CreateContentPage() {
                   <Icon as={FiZap} boxSize={8} color="#F99F2A" />
                 </Box>
                 <VStack spacing={1}>
-                  <Text color="white" fontSize="lg" fontWeight="bold">
+                  <Text color="gray.800" fontSize="lg" fontWeight="bold">
                     Don&apos;t know where to start?
                   </Text>
                   <Text color="gray.400" fontSize="sm" textAlign="center" maxW="400px">
@@ -416,11 +416,11 @@ export default function CreateContentPage() {
             </Box>
 
             <HStack spacing={4} align="center">
-              <Divider borderColor="whiteAlpha.200" />
+              <Divider borderColor="gray.200" />
               <Text color="gray.500" fontSize="xs" whiteSpace="nowrap" textTransform="uppercase">
                 or choose a content type
               </Text>
-              <Divider borderColor="whiteAlpha.200" />
+              <Divider borderColor="gray.200" />
             </HStack>
 
             {/* Type Selector Grid */}
@@ -436,10 +436,12 @@ export default function CreateContentPage() {
         {/* Step 2: Content Details */}
         {step === 'details' && selectedType && (
           <Box
-            bg="rgba(255, 255, 255, 0.03)"
-            border="1px solid rgba(255, 255, 255, 0.08)"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.200"
             borderRadius="16px"
             p={8}
+            boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
           >
             <VStack spacing={6} align="stretch">
               <HStack>
@@ -452,15 +454,16 @@ export default function CreateContentPage() {
               </HStack>
 
               <FormControl>
-                <FormLabel color="gray.300">Title</FormLabel>
+                <FormLabel color="gray.600">Title</FormLabel>
                 <Input
                   placeholder="Enter your content title..."
-                  color="white"
-                  bg="rgba(255, 255, 255, 0.05)"
-                  border="1px solid rgba(255, 255, 255, 0.1)"
-                  _placeholder={{ color: 'gray.500' }}
+                  color="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.200"
+                  _placeholder={{ color: 'gray.400' }}
                   _focus={{
-                    borderColor: '#FF9D00',
+                    borderColor: 'orange.400',
                     boxShadow: '0 0 0 1px #FF9D00',
                   }}
                   value={title}
@@ -470,7 +473,7 @@ export default function CreateContentPage() {
 
               <FormControl>
                 <HStack justify="space-between" mb={2}>
-                  <FormLabel color="gray.300" mb={0}>
+                  <FormLabel color="gray.600" mb={0}>
                     Target Keywords
                   </FormLabel>
                   <Button
@@ -487,12 +490,13 @@ export default function CreateContentPage() {
                 </HStack>
                 <Textarea
                   placeholder="seo tips, content marketing, keyword research..."
-                  color="white"
-                  bg="rgba(255, 255, 255, 0.05)"
-                  border="1px solid rgba(255, 255, 255, 0.1)"
-                  _placeholder={{ color: 'gray.500' }}
+                  color="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.200"
+                  _placeholder={{ color: 'gray.400' }}
                   _focus={{
-                    borderColor: '#FF9D00',
+                    borderColor: 'orange.400',
                     boxShadow: '0 0 0 1px #FF9D00',
                   }}
                   value={keywords}
@@ -507,7 +511,7 @@ export default function CreateContentPage() {
               {/* Let Phoo Build It — inline option */}
               <Box>
                 <HStack spacing={4} align="center" py={2}>
-                  <Divider borderColor="whiteAlpha.200" />
+                  <Divider borderColor="gray.200" />
                   <Text
                     color="gray.500"
                     fontSize="xs"
@@ -516,7 +520,7 @@ export default function CreateContentPage() {
                   >
                     or let Phoo handle it
                   </Text>
-                  <Divider borderColor="whiteAlpha.200" />
+                  <Divider borderColor="gray.200" />
                 </HStack>
 
                 <Box
@@ -539,7 +543,7 @@ export default function CreateContentPage() {
                       <Icon as={FiZap} boxSize={5} color="#F99F2A" />
                     </Box>
                     <VStack align="start" spacing={0}>
-                      <Text color="white" fontWeight="bold" fontSize="sm">
+                      <Text color="gray.800" fontWeight="bold" fontSize="sm">
                         Let Phoo Build It
                       </Text>
                       <Text color="gray.400" fontSize="xs">
@@ -573,16 +577,18 @@ export default function CreateContentPage() {
         {/* Step 3: Manual Generating (existing flow) */}
         {step === 'generating' && (
           <Box
-            bg="rgba(255, 255, 255, 0.03)"
-            border="1px solid rgba(255, 255, 255, 0.08)"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.200"
             borderRadius="16px"
             p={12}
+            boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
           >
             <VStack spacing={6}>
               <Box bg="rgba(255, 157, 0, 0.1)" borderRadius="full" p={6}>
                 <Icon as={FiZap} boxSize={12} color="#FF9D00" animation="pulse 1s infinite" />
               </Box>
-              <Heading size="md" color="white">
+              <Heading size="md" color="gray.800">
                 Generating Your Content
               </Heading>
               <Text color="gray.500" textAlign="center">
@@ -594,7 +600,7 @@ export default function CreateContentPage() {
                   size="sm"
                   colorScheme="orange"
                   borderRadius="full"
-                  bg="rgba(255, 255, 255, 0.1)"
+                  bg="gray.100"
                 />
                 <Text color="gray.600" fontSize="sm" textAlign="center" mt={2}>
                   {progress < 30
@@ -613,12 +619,13 @@ export default function CreateContentPage() {
         {/* Step 4: Auto-Generating (Let Phoo Build It flow) */}
         {step === 'auto-generating' && (
           <Box
-            bg="rgba(255, 255, 255, 0.03)"
+            bg="white"
             border="1px solid rgba(249, 159, 42, 0.15)"
             borderRadius="16px"
             p={12}
             position="relative"
             overflow="hidden"
+            boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
             _before={{
               content: '""',
               position: 'absolute',
@@ -643,7 +650,7 @@ export default function CreateContentPage() {
               </Box>
 
               <VStack spacing={2}>
-                <Heading size="md" color="white">
+                <Heading size="md" color="gray.800">
                   Phoo is Building Your Content
                 </Heading>
                 <Text color="#F99F2A" fontSize="sm" fontWeight="medium" minH="20px">
@@ -653,13 +660,7 @@ export default function CreateContentPage() {
 
               {/* Progress Bar */}
               <Box w="100%" maxW="500px">
-                <Box
-                  w="100%"
-                  h="6px"
-                  bg="rgba(255, 255, 255, 0.08)"
-                  borderRadius="full"
-                  overflow="hidden"
-                >
+                <Box w="100%" h="6px" bg="gray.200" borderRadius="full" overflow="hidden">
                   <Box
                     h="100%"
                     bg="linear-gradient(90deg, #F99F2A, #e53e3e)"

@@ -4,11 +4,17 @@
  * How It Works Page
  *
  * Component Hierarchy:
- * App → HowItWorksPage (this file)
+ * App -> HowItWorksPage
+ *   ├── MegaMenuHeader
+ *   ├── Hero Banner
+ *   ├── 3-Step Process Cards
+ *   ├── FeatureShowcase x3 (Content Studio, Keywords, Analytics)
+ *   ├── GEO Differentiator
+ *   ├── CTA Section
+ *   └── PremiumFooter
  *
- * GEO-optimized explainer page for the public marketing site.
- * Shows the 3-step process: URL → Connect → Automate
- * Includes HowTo JSON-LD schema for Google AI Overviews
+ * GEO-optimized explainer page with product screenshots.
+ * Includes HowTo JSON-LD schema for Google AI Overviews.
  */
 
 import {
@@ -25,11 +31,26 @@ import {
   Badge,
 } from '@chakra-ui/react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import Script from 'next/script';
-import { FiGlobe, FiLink, FiZap, FiArrowRight, FiCheck, FiCpu } from 'react-icons/fi';
+import {
+  FiGlobe,
+  FiLink,
+  FiZap,
+  FiArrowRight,
+  FiCheck,
+  FiCpu,
+  FiEdit3,
+  FiSearch,
+  FiBarChart2,
+} from 'react-icons/fi';
 import { getHowToSchema, HOW_IT_WORKS_STEPS, schemaToJsonLd } from '@/src/lib/schemas';
-import { LandingHeader } from '@/src/components/home';
+import {
+  MegaMenuHeader,
+  PremiumFooter,
+  FeatureShowcase,
+  ProductScreenshot,
+} from '@/src/components/marketing';
+import { IS_LAUNCHED, BETA_JOIN_HREF, LAUNCHED_SIGNUP_HREF } from '@/lib/constants/featureFlags';
 
 const MotionBox = motion(Box);
 
@@ -57,14 +78,30 @@ function StepCard({
       initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.5, delay }}
-      bg="gray.50"
+      bg="white"
       p={8}
       borderRadius="2xl"
       border="1px solid"
       borderColor="gray.200"
+      boxShadow="0 4px 16px rgba(0, 0, 0, 0.06)"
       position="relative"
-      _hover={{ transform: 'translateY(-5px)', borderColor: 'brand.orange' }}
+      overflow="hidden"
+      _hover={{
+        transform: 'translateY(-5px)',
+        borderColor: 'brand.orange',
+        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.10)',
+      }}
+      style={{ transition: 'transform 0.2s, border-color 0.2s, box-shadow 0.2s' }}
     >
+      {/* Orange top accent stripe */}
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        h="3px"
+        bgGradient="linear(to-r, brand.orange, brand.red)"
+      />
       {/* Step number badge */}
       <Circle
         size="40px"
@@ -116,7 +153,6 @@ function StepCard({
 }
 
 export default function HowItWorksPage() {
-  const router = useRouter();
   const prefersReducedMotion = useReducedMotion() ?? false;
 
   // Generate HowTo schema for Google AI Overviews
@@ -166,12 +202,12 @@ export default function HowItWorksPage() {
         dangerouslySetInnerHTML={{ __html: schemaToJsonLd(howToSchema) }}
       />
 
-      <LandingHeader />
+      <MegaMenuHeader />
 
       <Box bg="white" minH="100vh">
+        {/* ── Hero Section ──────────────────────────────────── */}
         <Container maxW="container.xl" py={{ base: 16, md: 24 }}>
           <VStack spacing={16}>
-            {/* Header */}
             <VStack spacing={4} textAlign="center" maxW="3xl">
               <MotionBox
                 initial={{ opacity: 0, y: -20 }}
@@ -180,7 +216,7 @@ export default function HowItWorksPage() {
               >
                 <HStack justify="center" mb={4}>
                   <Badge
-                    bg="rgba(255, 157, 0, 0.1)"
+                    bg="orange.50"
                     color="brand.orange"
                     px={3}
                     py={1}
@@ -193,15 +229,6 @@ export default function HowItWorksPage() {
                     </HStack>
                   </Badge>
                 </HStack>
-                <Text
-                  color="brand.orange"
-                  fontWeight="bold"
-                  fontSize="sm"
-                  textTransform="uppercase"
-                  letterSpacing="wide"
-                >
-                  How It Works
-                </Text>
                 <Heading
                   as="h1"
                   fontSize={{ base: '3xl', md: '5xl' }}
@@ -210,7 +237,7 @@ export default function HowItWorksPage() {
                   mt={2}
                 >
                   3 Simple Steps to{' '}
-                  <Text as="span" color="brand.orange">
+                  <Text as="span" bgGradient="linear(to-r, brand.orange, brand.red)" bgClip="text">
                     AI-Ready SEO
                   </Text>
                 </Heading>
@@ -233,8 +260,79 @@ export default function HowItWorksPage() {
                 />
               ))}
             </SimpleGrid>
+          </VStack>
+        </Container>
 
-            {/* GEO Differentiator */}
+        {/* ── Feature Showcases ──────────────────────────────── */}
+        <FeatureShowcase
+          badge="Content Studio"
+          badgeIcon={FiEdit3}
+          heading="Create SEO-Optimized Content"
+          headingHighlight="in Minutes"
+          description="Our AI Content Studio writes high-quality, SEO-optimized articles tailored to your business. Each piece is scored in real-time so you know exactly how it'll perform before you publish."
+          features={[
+            'AI-generated articles with real-time SEO scoring',
+            'One-click publish to WordPress, Shopify, Webflow',
+            'Built-in keyword optimization and density tracking',
+            'Content calendar with scheduling automation',
+          ]}
+          bg="#F8FAFC"
+        >
+          <ProductScreenshot
+            src="/images/feature-content-studio.png"
+            alt="Phoo AI Content Studio showing real-time SEO scoring and article editing"
+            width={1200}
+            height={750}
+          />
+        </FeatureShowcase>
+
+        <FeatureShowcase
+          badge="Keyword Intelligence"
+          badgeIcon={FiSearch}
+          heading="Find Keywords That"
+          headingHighlight="Actually Convert"
+          description="Stop guessing which keywords to target. Phoo identifies high-value opportunities based on your real Google Search Console data, showing you exactly where quick wins are hiding."
+          features={[
+            'Quick-win keyword discovery from real GSC data',
+            'Difficulty scoring with volume analysis',
+            'Competitor gap analysis',
+            'Keyword-to-content automation pipeline',
+          ]}
+          reverse
+        >
+          <ProductScreenshot
+            src="/images/feature-keyword-research.png"
+            alt="Phoo keyword research dashboard with difficulty scores and quick wins"
+            width={1200}
+            height={750}
+          />
+        </FeatureShowcase>
+
+        <FeatureShowcase
+          badge="Analytics Dashboard"
+          badgeIcon={FiBarChart2}
+          heading="Track What Matters,"
+          headingHighlight="Not Vanity Metrics"
+          description="Your Executive Briefing dashboard shows the 5 metrics that actually drive revenue: leads, traffic, sessions, content pipeline, and your proprietary PR Score. No noise, just signal."
+          features={[
+            'Real-time GA4 and GSC data integration',
+            'Phoo Rating (PR Score) for search visibility',
+            'Cumulative growth tracking since day one',
+            'AI Intelligence Brief with plain-English insights',
+          ]}
+          bg="#F8FAFC"
+        >
+          <ProductScreenshot
+            src="/images/feature-analytics.png"
+            alt="Phoo analytics dashboard with KPI cards and growth chart"
+            width={1200}
+            height={750}
+          />
+        </FeatureShowcase>
+
+        {/* ── GEO Differentiator ──────────────────────────────── */}
+        <Box py={{ base: 12, md: 20 }}>
+          <Container maxW="3xl">
             <Box
               bg="orange.50"
               border="1px solid"
@@ -242,8 +340,6 @@ export default function HowItWorksPage() {
               borderRadius="xl"
               p={8}
               textAlign="center"
-              w="full"
-              maxW="3xl"
             >
               <VStack spacing={4}>
                 <Heading size="md" color="gray.800">
@@ -252,62 +348,56 @@ export default function HowItWorksPage() {
                 <Text color="gray.600">
                   Google&apos;s AI now answers 40% of searches directly—without users clicking any
                   links. Traditional SEO gets you ranked. Phoo&apos;s GEO gets you{' '}
-                  <strong style={{ color: '#FF9D00' }}>cited</strong>.
+                  <strong style={{ color: '#F7941E' }}>cited</strong>.
                 </Text>
               </VStack>
             </Box>
+          </Container>
+        </Box>
 
-            {/* CTA Section */}
+        {/* ── CTA Section ──────────────────────────────────── */}
+        <Box py={{ base: 12, md: 20 }} bgGradient="linear(to-br, brand.orange, orange.600)">
+          <Container maxW="3xl">
             <MotionBox
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.8 }}
-              bg="gray.50"
-              border="1px solid"
-              borderColor="gray.200"
-              p={{ base: 8, md: 12 }}
-              borderRadius="2xl"
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
               textAlign="center"
-              w="full"
-              maxW="3xl"
             >
               <VStack spacing={6}>
-                <Heading size="lg" color="gray.800">
+                <Heading size="lg" color="white">
                   Ready to dominate both search AND AI?
                 </Heading>
-                <Text color="gray.600" fontSize="lg">
+                <Text color="whiteAlpha.900" fontSize="lg">
                   Join hundreds of businesses growing their organic traffic—and getting cited by
                   Google&apos;s AI.
                 </Text>
-                <HStack spacing={4}>
-                  <Button
-                    size="lg"
-                    bg="brand.orange"
-                    color="white"
-                    rightIcon={<Icon as={FiArrowRight} />}
-                    _hover={{ bg: 'orange.500', transform: 'translateY(-2px)' }}
-                    onClick={() => router.push('/onboarding')}
-                  >
-                    Start Your Trial
-                  </Button>
-                  {/* PRICING CTA - COMMENTED OUT FOR BETA
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    borderColor="gray.300"
-                    color="gray.700"
-                    _hover={{ bg: 'gray.100' }}
-                    onClick={() => router.push('/pricing')}
-                  >
-                    View Pricing
-                  </Button>
-                  */}
-                </HStack>
+                <Button
+                  as="a"
+                  href={IS_LAUNCHED ? LAUNCHED_SIGNUP_HREF : BETA_JOIN_HREF}
+                  size="lg"
+                  bg="white"
+                  color="brand.orange"
+                  borderRadius="full"
+                  px={8}
+                  fontWeight="bold"
+                  rightIcon={<Icon as={FiArrowRight} />}
+                  _hover={{
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                  }}
+                  transition="all 0.3s ease"
+                >
+                  {IS_LAUNCHED ? 'Start Getting Leads' : 'Join Beta'}
+                </Button>
               </VStack>
             </MotionBox>
-          </VStack>
-        </Container>
+          </Container>
+        </Box>
       </Box>
+
+      <PremiumFooter />
     </>
   );
 }

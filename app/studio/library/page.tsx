@@ -116,7 +116,7 @@ export default function LibraryPage() {
         {/* Header */}
         <HStack justify="space-between">
           <Box>
-            <Heading size="lg" color="white">
+            <Heading size="lg" color="gray.800">
               Content Library
             </Heading>
             <Text color="gray.500" mt={1}>
@@ -143,25 +143,26 @@ export default function LibraryPage() {
             </InputLeftElement>
             <Input
               placeholder="Search content..."
-              bg="rgba(255, 255, 255, 0.05)"
-              border="1px solid rgba(255, 255, 255, 0.1)"
-              _placeholder={{ color: 'gray.500' }}
+              bg="white"
+              border="1px solid"
+              borderColor="gray.200"
+              _placeholder={{ color: 'gray.400' }}
               _focus={{
-                borderColor: '#FF9D00',
+                borderColor: 'orange.400',
                 boxShadow: '0 0 0 1px #FF9D00',
               }}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </InputGroup>
-          <HStack bg="rgba(255, 255, 255, 0.05)" borderRadius="8px" p={1}>
+          <HStack bg="gray.100" borderRadius="8px" p={1}>
             <IconButton
               aria-label="Grid view"
               icon={<Icon as={FiGrid} />}
               size="sm"
               variant={viewMode === 'grid' ? 'solid' : 'ghost'}
-              bg={viewMode === 'grid' ? 'rgba(255, 157, 0, 0.2)' : 'transparent'}
-              color={viewMode === 'grid' ? '#FF9D00' : 'gray.400'}
+              bg={viewMode === 'grid' ? 'orange.50' : 'transparent'}
+              color={viewMode === 'grid' ? 'orange.500' : 'gray.400'}
               onClick={() => setViewMode('grid')}
             />
             <IconButton
@@ -169,8 +170,8 @@ export default function LibraryPage() {
               icon={<Icon as={FiList} />}
               size="sm"
               variant={viewMode === 'list' ? 'solid' : 'ghost'}
-              bg={viewMode === 'list' ? 'rgba(255, 157, 0, 0.2)' : 'transparent'}
-              color={viewMode === 'list' ? '#FF9D00' : 'gray.400'}
+              bg={viewMode === 'list' ? 'orange.50' : 'transparent'}
+              color={viewMode === 'list' ? 'orange.500' : 'gray.400'}
               onClick={() => setViewMode('list')}
             />
           </HStack>
@@ -193,12 +194,13 @@ export default function LibraryPage() {
                 borderRadius="8px"
                 color="gray.400"
                 _selected={{
-                  color: 'white',
-                  bg: 'rgba(255, 255, 255, 0.1)',
+                  color: 'gray.800',
+                  bg: 'gray.100',
+                  fontWeight: 'semibold',
                 }}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
-                <Badge ml={2} bg="rgba(255, 255, 255, 0.1)" color="gray.400">
+                <Badge ml={2} bg="gray.100" color="gray.500">
                   {counts[status]}
                 </Badge>
               </Tab>
@@ -215,8 +217,9 @@ export default function LibraryPage() {
           </SimpleGrid>
         ) : filteredContent.length === 0 ? (
           <Box
-            bg="rgba(255, 255, 255, 0.03)"
-            border="1px dashed rgba(255, 255, 255, 0.1)"
+            bg="white"
+            border="1px dashed"
+            borderColor="gray.200"
             borderRadius="16px"
             p={12}
             textAlign="center"

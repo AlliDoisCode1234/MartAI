@@ -85,7 +85,7 @@ function InsightsSkeleton() {
         <Box>
           <HStack mb={2}>
             <Icon as={FiSearch} color={STUDIO_COLORS.amber} boxSize={6} />
-            <Heading size="lg" color="white">
+            <Heading size="lg" color="gray.800">
               Content Insights
             </Heading>
           </HStack>
@@ -116,7 +116,7 @@ function InsightsEmpty() {
         <Box bg="rgba(255, 157, 0, 0.1)" borderRadius="full" p={6}>
           <Icon as={FiBarChart2} boxSize={12} color={STUDIO_COLORS.amber} />
         </Box>
-        <Heading size="lg" color="white">
+        <Heading size="lg" color="gray.800">
           No Project Selected
         </Heading>
         <Text color={STUDIO_COLORS.textMuted} maxW="400px">
@@ -147,10 +147,10 @@ function StatusDot({ color, label, count }: { color: string; label: string; coun
       >
         {label}
       </Badge>
-      <Box flex={1} h="6px" borderRadius="full" bg="rgba(255, 255, 255, 0.08)" overflow="hidden">
+      <Box flex={1} h="6px" borderRadius="full" bg="gray.200" overflow="hidden">
         <Box h="100%" w={`${Math.min(count * 5, 100)}%`} bg={color} borderRadius="full" />
       </Box>
-      <Text color="white" fontWeight="bold" fontSize="sm" minW="24px" textAlign="right">
+      <Text color="gray.800" fontWeight="bold" fontSize="sm" minW="24px" textAlign="right">
         {count}
       </Text>
     </HStack>
@@ -213,7 +213,7 @@ export default function InsightsPage() {
         >
           <HStack mb={2}>
             <Icon as={FiSearch} color={STUDIO_COLORS.amber} boxSize={6} />
-            <Heading size="lg" color="white">
+            <Heading size="lg" color="gray.800">
               Content Insights
             </Heading>
           </HStack>
@@ -284,7 +284,7 @@ export default function InsightsPage() {
           >
             <HStack mb={4}>
               <Icon as={FiActivity} color={STUDIO_COLORS.blue} />
-              <Heading size="sm" color="white">
+              <Heading size="sm" color="gray.800">
                 Content Performance
               </Heading>
             </HStack>
@@ -300,7 +300,7 @@ export default function InsightsPage() {
             {/* Underperforming */}
             {underperforming.length > 0 && (
               <>
-                <Divider my={4} borderColor="rgba(255, 255, 255, 0.06)" />
+                <Divider my={4} borderColor="gray.200" />
                 <HStack mb={3}>
                   <Text fontSize="xs" color={STUDIO_COLORS.coral}>
                     Underperforming Content
@@ -321,7 +321,7 @@ export default function InsightsPage() {
           >
             <HStack mb={6}>
               <Icon as={FiActivity} color={STUDIO_COLORS.amber} />
-              <Heading size="sm" color="white">
+              <Heading size="sm" color="gray.800">
                 Optimization Health
               </Heading>
               <Badge
@@ -351,7 +351,7 @@ export default function InsightsPage() {
               />
             </VStack>
 
-            <Divider my={4} borderColor="rgba(255, 255, 255, 0.06)" />
+            <Divider my={4} borderColor="gray.200" />
 
             {/* Total Reworks */}
             <HStack justify="space-between">
@@ -401,7 +401,7 @@ export default function InsightsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.4 }}
           >
-            <Heading size="sm" color="white" mb={5}>
+            <Heading size="sm" color="gray.800" mb={5}>
               Content Pipeline
             </Heading>
             <HStack mb={4} justify="space-between">
@@ -416,7 +416,7 @@ export default function InsightsPage() {
                 </Text>
               </HStack>
               <HStack>
-                <Text fontSize="2xl" fontWeight="bold" color="white">
+                <Text fontSize="2xl" fontWeight="bold" color="gray.800">
                   {pipeline.total}
                 </Text>
                 <Badge
@@ -446,7 +446,7 @@ export default function InsightsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9, duration: 0.4 }}
           >
-            <Heading size="sm" color="white" mb={2}>
+            <Heading size="sm" color="gray.800" mb={2}>
               SEO Health
             </Heading>
             <Text fontSize="xs" color={STUDIO_COLORS.textMuted} mb={4}>
@@ -478,7 +478,7 @@ export default function InsightsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0, duration: 0.4 }}
           >
-            <Heading size="sm" color="white" mb={5}>
+            <Heading size="sm" color="gray.800" mb={5}>
               Business Impact Estimator
             </Heading>
             <VStack spacing={4} align="stretch">
@@ -487,7 +487,7 @@ export default function InsightsPage() {
                   Est. Monthly Visitors in 5 Months
                 </Text>
                 <HStack>
-                  <Text fontSize="lg" fontWeight="bold" color="white">
+                  <Text fontSize="lg" fontWeight="bold" color="gray.800">
                     +{(pipeline.published * 500).toLocaleString()}
                   </Text>
                   <Icon as={FiTrendingUp} color={STUDIO_COLORS.green} boxSize={3} />
@@ -498,13 +498,13 @@ export default function InsightsPage() {
                 <Text fontSize="xs" color={STUDIO_COLORS.textMuted}>
                   Est. Leads Per Month
                 </Text>
-                <Text fontSize="lg" fontWeight="bold" color="white">
+                <Text fontSize="lg" fontWeight="bold" color="gray.800">
                   {Math.max(Math.round(pipeline.published * 2.3), 0)}-
                   {Math.max(Math.round(pipeline.published * 4.8), 0)}
                 </Text>
               </Flex>
 
-              <Divider borderColor="rgba(255, 255, 255, 0.06)" />
+              <Divider borderColor="gray.200" />
 
               <Flex justify="space-between" align="center">
                 <HStack>
@@ -514,7 +514,7 @@ export default function InsightsPage() {
                   </Text>
                 </HStack>
                 <HStack>
-                  <Text fontSize="sm" fontWeight="bold" color="white">
+                  <Text fontSize="sm" fontWeight="bold" color="gray.800">
                     {underperforming.filter((a) => a.quickWin).length}
                   </Text>
                   <Badge

@@ -35,7 +35,7 @@ import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
 import { FiSearch, FiClock, FiEye, FiStar } from 'react-icons/fi';
 import { useState } from 'react';
-import { LandingHeader } from '@/src/components/home';
+import { MegaMenuHeader, PremiumFooter } from '@/src/components/marketing';
 
 // Category labels and colors
 const CATEGORY_CONFIG = {
@@ -81,7 +81,7 @@ export default function ResourcesPage() {
 
   return (
     <Box minH="100vh" bg="gray.50">
-      <LandingHeader />
+      <MegaMenuHeader />
       <Box pt={24} pb={12}>
         <Container maxW="6xl">
           {/* Header */}
@@ -172,6 +172,7 @@ export default function ResourcesPage() {
           )}
         </Container>
       </Box>
+      <PremiumFooter />
     </Box>
   );
 }

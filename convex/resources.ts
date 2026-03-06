@@ -19,7 +19,8 @@ export const listPublished = query({
         v.literal('tutorial'),
         v.literal('case-study'),
         v.literal('insight'),
-        v.literal('news')
+        v.literal('news'),
+        v.literal('integrations')
       )
     ),
     limit: v.optional(v.number()),
@@ -137,7 +138,8 @@ export const create = mutation({
       v.literal('tutorial'),
       v.literal('case-study'),
       v.literal('insight'),
-      v.literal('news')
+      v.literal('news'),
+      v.literal('integrations')
     ),
     tags: v.optional(v.array(v.string())),
     readTimeMinutes: v.number(),

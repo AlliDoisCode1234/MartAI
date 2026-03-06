@@ -74,8 +74,9 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
       <MotionBox
         position="relative"
         overflow="hidden"
-        bg="linear-gradient(135deg, #1a1230 0%, rgba(249,159,42,0.06) 100%)"
-        border="1px solid rgba(249,159,42,0.2)"
+        bg="white"
+        border="1px solid"
+        borderColor="orange.100"
         borderLeft="3px solid #F99F2A"
         borderRadius="xl"
         p={5}
@@ -86,16 +87,13 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
         <Sparkline color="#F99F2A" />
         <VStack align="stretch" spacing={2}>
           <HStack spacing={2} align="baseline">
-            <Text color="#F99F2A" fontSize="2xl" fontWeight="bold" lineHeight="1">
+            <Text color="#F99F2A" fontSize="3xl" fontWeight="bold" lineHeight="1">
               {foundation}
             </Text>
             <Text color="gray.400" fontSize="xs" fontWeight="semibold">
               Foundation Keywords
             </Text>
           </HStack>
-          <Text color="white" fontSize="3xl" fontWeight="bold" lineHeight="1">
-            {foundation}
-          </Text>
           <HStack spacing={1} align="center">
             <Icon as={FiTrendingUp} color="#34d399" boxSize={3} />
             <Text color="#34d399" fontSize="xs" fontWeight="bold">
@@ -135,8 +133,9 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
       <MotionBox
         position="relative"
         overflow="hidden"
-        bg="linear-gradient(135deg, #1a1230 0%, rgba(96,165,250,0.06) 100%)"
-        border="1px solid rgba(96,165,250,0.2)"
+        bg="white"
+        border="1px solid"
+        borderColor="blue.100"
         borderLeft="3px solid #60a5fa"
         borderRadius="xl"
         p={5}
@@ -146,17 +145,13 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
       >
         <VStack align="stretch" spacing={2}>
           <HStack spacing={2} align="baseline">
-            <Text color="#60a5fa" fontSize="2xl" fontWeight="bold" lineHeight="1">
+            <Text color="#60a5fa" fontSize="3xl" fontWeight="bold" lineHeight="1">
               {authority}
             </Text>
             <Text color="gray.400" fontSize="xs" fontWeight="semibold">
               Authority Keywords
             </Text>
           </HStack>
-          <ColorDots colors={['#60a5fa', '#3b82f6', '#818cf8', '#6366f1', '#a78bfa', '#8b5cf6']} />
-          <Text color="white" fontSize="3xl" fontWeight="bold" lineHeight="1">
-            {authority}
-          </Text>
           <Text color="gray.400" fontSize="xs">
             {quickWins} Easiest Wins
           </Text>
@@ -193,8 +188,9 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
       <MotionBox
         position="relative"
         overflow="hidden"
-        bg="linear-gradient(135deg, #1a1230 0%, rgba(52,211,153,0.06) 100%)"
-        border="1px solid rgba(52,211,153,0.2)"
+        bg="white"
+        border="1px solid"
+        borderColor="green.100"
         borderLeft="3px solid #34d399"
         borderRadius="xl"
         p={5}
@@ -204,7 +200,7 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
       >
         <VStack align="stretch" spacing={2}>
           <HStack spacing={2} align="baseline">
-            <Text color="#34d399" fontSize="2xl" fontWeight="bold" lineHeight="1">
+            <Text color="#34d399" fontSize="3xl" fontWeight="bold" lineHeight="1">
               {revenueReady}
             </Text>
             <Text color="gray.400" fontSize="xs" fontWeight="semibold">
@@ -212,9 +208,6 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
             </Text>
           </HStack>
           <ColorDots colors={['#34d399', '#10b981', '#f59e0b', '#60a5fa', '#F99F2A', '#a78bfa']} />
-          <Text color="gray.400" fontSize="xs">
-            Fastest Rank Growth
-          </Text>
           <HStack spacing={1} flexWrap="wrap" mt={1}>
             <Badge
               bg="rgba(52,211,153,0.2)"
@@ -236,8 +229,9 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
       <MotionBox
         position="relative"
         overflow="hidden"
-        bg="linear-gradient(135deg, #1a1230 0%, rgba(167,139,250,0.06) 100%)"
-        border="1px solid rgba(167,139,250,0.2)"
+        bg="white"
+        border="1px solid"
+        borderColor="purple.100"
         borderLeft="3px solid #a78bfa"
         borderRadius="xl"
         p={5}
@@ -247,20 +241,17 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
       >
         <VStack align="stretch" spacing={2}>
           <HStack spacing={2} align="baseline">
-            <Text color="#a78bfa" fontSize="2xl" fontWeight="bold" lineHeight="1">
+            <Text color="#a78bfa" fontSize="3xl" fontWeight="bold" lineHeight="1">
               {total}
             </Text>
             <Text color="gray.400" fontSize="xs" fontWeight="semibold">
               Total Keywords
             </Text>
           </HStack>
-          <Text color="white" fontSize="3xl" fontWeight="bold" lineHeight="1">
-            {total}
-          </Text>
           {revenueReady < total * 0.2 && (
-            <HStack spacing={1.5} mt={2} bg="rgba(249,159,42,0.08)" px={3} py={2} borderRadius="md">
+            <HStack spacing={1.5} mt={2} bg="orange.50" px={3} py={2} borderRadius="md">
               <Icon as={FiAlertTriangle} color="#F99F2A" boxSize={3.5} flexShrink={0} />
-              <Text color="gray.300" fontSize="xs">
+              <Text color="gray.600" fontSize="xs">
                 Focus on Revenue-Ready keywords for quicker lead generation.
               </Text>
             </HStack>
