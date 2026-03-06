@@ -37,8 +37,11 @@ import {
   PremiumFooter,
   FeatureShowcase,
   ProductScreenshot,
+  SocialProofBar,
+  DarkGradientAISection,
+  CTASection,
 } from '@/src/components/marketing';
-import { FiEdit3, FiSearch, FiBarChart2 } from 'react-icons/fi';
+import { FiEdit3, FiSearch, FiBarChart2, FiGlobe } from 'react-icons/fi';
 import { STUDIO_COLORS } from '@/lib/constants/studioTokens';
 
 export default function Home() {
@@ -92,6 +95,7 @@ export default function Home() {
     <Box minH="100vh" bg="white" color="gray.800" position="relative">
       <MegaMenuHeader />
       <HeroSection />
+      <SocialProofBar />
 
       {/* Product Feature Showcases */}
       <FeatureShowcase
@@ -160,9 +164,34 @@ export default function Home() {
         />
       </FeatureShowcase>
 
+      <FeatureShowcase
+        badge="CMS Publishing"
+        badgeIcon={FiGlobe}
+        heading="Publish Everywhere"
+        headingHighlight="in One Click"
+        description="Connect your WordPress, Shopify, or Webflow site and publish optimized content without leaving Phoo. No copy-pasting, no formatting headaches."
+        features={[
+          'One-click publish to WordPress, Shopify, Webflow',
+          'Automatic SEO meta tags and schema markup',
+          'Image optimization and responsive formatting',
+          'Scheduled publishing via content calendar',
+        ]}
+        reverse
+      >
+        <ProductScreenshot
+          src="/images/feature-publishing.png"
+          alt="Phoo CMS publishing dashboard"
+          width={1200}
+          height={750}
+        />
+      </FeatureShowcase>
+
+      <DarkGradientAISection />
+
       <HowItWorksSection />
       <AboutPhooSection />
       <WaitlistForm />
+      <CTASection />
       <PremiumFooter />
     </Box>
   );

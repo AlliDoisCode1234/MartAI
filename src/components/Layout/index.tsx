@@ -47,6 +47,7 @@ const PUBLIC_ROUTES = [
   '/resources', // Public educational content
   '/features', // Feature marketing pages
   '/solutions', // Solution/persona marketing pages
+  '/product', // Product deep-dive page
 ];
 
 // Routes that bypass the entire app shell (no Navigation, no Phoo)
@@ -65,6 +66,7 @@ const STANDALONE_ROUTES = [
   '/resources',
   '/features',
   '/solutions',
+  '/product',
 ];
 
 // Standalone routes that should NOT show PhooFab either

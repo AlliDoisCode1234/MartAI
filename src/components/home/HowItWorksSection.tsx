@@ -9,7 +9,7 @@
  * Animated 3-step explainer with arrow progression.
  */
 
-import { Box, Container, Heading, Text, HStack, VStack, Icon, Flex } from '@chakra-ui/react';
+import { Box, Container, Heading, Text, VStack, Icon, Flex } from '@chakra-ui/react';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import { Globe, Sparkles, TrendingUp, ChevronRight } from 'lucide-react';
@@ -114,14 +114,19 @@ export function HowItWorksSection() {
         <MotionFlex
           justify="center"
           align="center"
-          gap={{ base: 2, md: 4 }}
-          flexWrap={{ base: 'wrap', md: 'nowrap' }}
+          gap={{ base: 6, md: 4 }}
+          direction={{ base: 'column', md: 'row' }}
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
         >
           {STEPS.map((step, index) => (
-            <HStack key={step.step} spacing={{ base: 2, md: 4 }}>
+            <Flex
+              key={step.step}
+              align="center"
+              gap={{ base: 3, md: 4 }}
+              direction={{ base: 'column', md: 'row' }}
+            >
               {/* Step Card */}
               <MotionBox
                 variants={stepVariants}
@@ -132,8 +137,9 @@ export function HowItWorksSection() {
                 border="1px solid"
                 borderColor="gray.100"
                 textAlign="center"
-                minW={{ base: '120px', md: '220px' }}
-                maxW={{ base: '160px', md: '260px' }}
+                minW={{ base: '240px', md: '220px' }}
+                maxW={{ base: '320px', md: '260px' }}
+                w={{ base: '100%', md: 'auto' }}
                 _hover={{
                   transform: 'translateY(-4px)',
                   boxShadow: 'lg',
@@ -224,7 +230,7 @@ export function HowItWorksSection() {
                   </motion.div>
                 </MotionBox>
               )}
-            </HStack>
+            </Flex>
           ))}
         </MotionFlex>
       </Container>

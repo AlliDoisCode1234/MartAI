@@ -13,3 +13,7 @@ export { StatBadge } from './StatBadge';
 export { FeatureShowcase } from './FeatureShowcase';
 export { FeaturePageTemplate } from './FeaturePageTemplate';
 export { SolutionPageTemplate } from './SolutionPageTemplate';
+export { SocialProofBar } from './SocialProofBar';
+export { DarkGradientAISection } from './DarkGradientAISection';
+export { CTASection } from './CTASection';
+export { ComparisonTable } from './ComparisonTable';

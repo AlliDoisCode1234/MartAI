@@ -219,7 +219,7 @@ export function HeroSection({ onCtaClick }: Props) {
                   }}
                   transition="all 0.3s ease"
                 >
-                  Watch Demo
+                  How It Works
                 </Button>
               </HStack>
             </MotionBox>

@@ -116,7 +116,7 @@ export const PremiumFooter: FC = () => {
           </VStack>
 
           {/* Link Columns */}
-          <SimpleGrid columns={{ base: 2, sm: 4 }} spacing={{ base: 8, md: 12 }}>
+          <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} spacing={{ base: 8, md: 12 }}>
             <FooterColumn title="Product" links={PRODUCT_LINKS} />
             <FooterColumn title="Resources" links={RESOURCE_LINKS} />
             <FooterColumn title="Solutions" links={COMPANY_LINKS} />
@@ -138,27 +138,29 @@ export const PremiumFooter: FC = () => {
             &copy; {new Date().getFullYear()} Phoo AI. All rights reserved.
           </Text>
 
-          {/* Social Icons */}
-          <HStack spacing={6}>
-            {SOCIAL_LINKS.map((social) => (
-              <a
-                key={social.label}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={social.label}
-              >
-                <Icon
-                  as={social.icon}
-                  boxSize={5}
-                  color="rgba(255, 255, 255, 0.5)"
-                  _hover={{ color: 'brand.orange' }}
-                  transition="color 0.2s ease"
-                  cursor="pointer"
-                />
-              </a>
-            ))}
-          </HStack>
+          {/* Social Icons — only render links with real URLs */}
+          {SOCIAL_LINKS.filter((s) => s.href !== '#').length > 0 && (
+            <HStack spacing={6}>
+              {SOCIAL_LINKS.filter((s) => s.href !== '#').map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                >
+                  <Icon
+                    as={social.icon}
+                    boxSize={5}
+                    color="rgba(255, 255, 255, 0.5)"
+                    _hover={{ color: 'brand.orange' }}
+                    transition="color 0.2s ease"
+                    cursor="pointer"
+                  />
+                </a>
+              ))}
+            </HStack>
+          )}
         </Flex>
       </Container>
     </Box>
