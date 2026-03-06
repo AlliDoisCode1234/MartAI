@@ -8,7 +8,7 @@
  *
  * High-impact dark section highlighting GEO urgency.
  * Per LDD: deep navy background with glowing gradient orbs,
- * "40% of searches answered by AI" stat, glassmorphic card.
+ * "1 in 4 searches show AI answers" stat, glassmorphic card.
  */
 
 import {
@@ -37,9 +37,9 @@ interface StatCard {
 }
 
 const STATS: StatCard[] = [
-  { icon: FiAlertTriangle, stat: '40%', label: 'of searches now answered by AI' },
-  { icon: FiTarget, stat: '0%', label: 'of small businesses optimized for it' },
-  { icon: FiTrendingUp, stat: '3x', label: 'more citations with GEO optimization' },
+  { icon: FiAlertTriangle, stat: '1 in 4', label: 'Google searches show AI answers' },
+  { icon: FiTarget, stat: '58%', label: 'of searches now end without a click' },
+  { icon: FiTrendingUp, stat: '40%', label: 'visibility boost with GEO optimization' },
 ];
 
 export function DarkGradientAISection() {

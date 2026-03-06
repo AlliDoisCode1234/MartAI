@@ -135,7 +135,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                       name: 'What is GEO optimization and why does it matter?',
                       acceptedAnswer: {
                         '@type': 'Answer',
-                        text: '40% of searches are now answered directly by AI (Google AI Overviews, ChatGPT, Perplexity). GEO (Generative Engine Optimization) ensures your content gets cited by these AI systems, not just ranked in traditional search results.',
+                        text: 'Over 1 in 4 Google searches now show AI-generated answers (Google AI Overviews, ChatGPT, Perplexity). GEO (Generative Engine Optimization) ensures your content gets cited by these AI systems, not just ranked in traditional search results. Studies show GEO can boost content visibility by up to 40%.',
                       },
                     },
                     {

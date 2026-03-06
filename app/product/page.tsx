@@ -113,8 +113,8 @@ export default function ProductPage() {
             {/* Full-width product screenshot */}
             <Box w="100%" maxW="960px" pt={4}>
               <ProductScreenshot
-                src="/images/feature-analytics.png"
-                alt="Phoo AI Marketing Platform — Dashboard Overview"
+                src="/images/dashboard-mockup.png"
+                alt="Phoo AI Marketing Platform — full dashboard overview"
                 width={1920}
                 height={1080}
               />
@@ -183,8 +183,8 @@ export default function ProductPage() {
         bg={STUDIO_COLORS.pageBg}
       >
         <ProductScreenshot
-          src="/images/feature-analytics.png"
-          alt="Phoo Rating dashboard — unified health score"
+          src="/images/feature-phoo-rating.png"
+          alt="Phoo Rating — unified SEO and GEO health score gauge"
           width={1200}
           height={750}
         />
@@ -239,7 +239,7 @@ export default function ProductPage() {
         badgeIcon={FiCalendar}
         heading="Get Cited by"
         headingHighlight="AI Search Engines"
-        description="40% of searches are now answered by AI. Phoo optimizes your content for both Google and AI citation engines so you're visible everywhere."
+        description="Over 1 in 4 Google searches now show AI-generated answers. Phoo optimizes your content for both Google and AI citation engines so you're visible everywhere."
         features={[
           'AI citation readiness scoring',
           'Structured data and schema automation',
@@ -249,8 +249,8 @@ export default function ProductPage() {
         reverse
       >
         <ProductScreenshot
-          src="/images/feature-content-studio.png"
-          alt="GEO Optimization — AI citation readiness"
+          src="/images/feature-geo.png"
+          alt="GEO Optimization — AI citation readiness analysis"
           width={1200}
           height={750}
         />

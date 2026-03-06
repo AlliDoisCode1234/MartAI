@@ -24,9 +24,9 @@ interface MetricBadge {
 }
 
 const METRICS: MetricBadge[] = [
-  { icon: FiUsers, value: '100+', label: 'Founding Members' },
-  { icon: FiTrendingUp, value: '10x', label: 'Content Velocity' },
-  { icon: FiZap, value: '87', label: 'Avg PR Score' },
+  { icon: FiZap, value: 'Minutes', label: 'Not Weeks to Publish' },
+  { icon: FiTrendingUp, value: '$164', label: 'Per Month Starting' },
+  { icon: FiUsers, value: '6 Tools', label: 'One Platform' },
 ];
 
 export function SocialProofBar() {
