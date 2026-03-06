@@ -278,9 +278,7 @@ export function KeywordTable({
                     </Text>
                   </Td>
                   <Td borderColor="transparent" py={3} isNumeric>
-                    <Text color="gray.400" fontSize="sm">
-                      {kw.difficulty !== null ? `${kw.difficulty}/100` : '--'}
-                    </Text>
+                    <DifficultyBadge difficulty={kw.difficulty} />
                   </Td>
                   <Td borderColor="transparent" py={3} isNumeric>
                     <RankChangeCell position={kw.gscPosition} change={kw.rankChange} />
@@ -378,6 +376,50 @@ export function KeywordTable({
         </AlertDialogOverlay>
       </AlertDialog>
     </Box>
+  );
+}
+
+// Difficulty badge — colored word labels matching marketing screenshots
+function DifficultyBadge({ difficulty }: { difficulty: number | null }) {
+  if (difficulty === null) {
+    return (
+      <Text color="gray.400" fontSize="sm">
+        --
+      </Text>
+    );
+  }
+
+  const label = difficulty <= 30 ? 'Easy' : difficulty <= 60 ? 'Medium' : 'Hard';
+  const color = difficulty <= 30 ? '#22C55E' : difficulty <= 60 ? '#F7941E' : '#EF4444';
+  const bg =
+    difficulty <= 30
+      ? 'rgba(34, 197, 94, 0.15)'
+      : difficulty <= 60
+        ? 'rgba(247, 148, 30, 0.15)'
+        : 'rgba(239, 68, 68, 0.15)';
+
+  return (
+    <Tooltip
+      label={`Difficulty: ${difficulty}/100`}
+      bg="gray.800"
+      color="gray.200"
+      fontSize="xs"
+      hasArrow
+    >
+      <Badge
+        bg={bg}
+        color={color}
+        fontSize="11px"
+        fontWeight="semibold"
+        px={2.5}
+        py={0.5}
+        borderRadius="6px"
+        cursor="default"
+        textTransform="capitalize"
+      >
+        {label}
+      </Badge>
+    </Tooltip>
   );
 }
 

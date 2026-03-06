@@ -15,9 +15,9 @@
  * Each card has gradient accent-tinted background and colored left border.
  */
 
-import { SimpleGrid, Box, VStack, HStack, Text, Icon, Badge } from '@chakra-ui/react';
+import { SimpleGrid, Box, VStack, HStack, Text, Icon } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { FiTrendingUp, FiAlertTriangle } from 'react-icons/fi';
+import { FiAlertTriangle } from 'react-icons/fi';
 
 const MotionBox = motion(Box);
 
@@ -56,17 +56,6 @@ function Sparkline({ color }: { color: string }) {
   );
 }
 
-/** Colored dots row — visual indicator for intent/category distribution */
-function ColorDots({ colors }: { colors: string[] }) {
-  return (
-    <HStack spacing="4px" my={1}>
-      {colors.map((c, i) => (
-        <Box key={i} w="10px" h="10px" borderRadius="full" bg={c} />
-      ))}
-    </HStack>
-  );
-}
-
 export function KeywordStatCards({ foundation, authority, revenueReady, total, quickWins }: Props) {
   return (
     <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={5}>
@@ -80,6 +69,7 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
         borderLeft="3px solid #F99F2A"
         borderRadius="xl"
         p={5}
+        boxShadow="0 2px 12px rgba(0, 0, 0, 0.06)"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -94,38 +84,9 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
               Foundation Keywords
             </Text>
           </HStack>
-          <HStack spacing={1} align="center">
-            <Icon as={FiTrendingUp} color="#34d399" boxSize={3} />
-            <Text color="#34d399" fontSize="xs" fontWeight="bold">
-              20% Last 30 Days
-            </Text>
-          </HStack>
-          <HStack spacing={1} flexWrap="wrap" mt={1}>
-            <Badge
-              bg="rgba(249,159,42,0.2)"
-              color="#F99F2A"
-              fontSize="7px"
-              px={2}
-              py={0.5}
-              borderRadius="full"
-              textTransform="none"
-              fontWeight="semibold"
-            >
-              Most Revenue Potential
-            </Badge>
-            <Badge
-              bg="rgba(96,165,250,0.2)"
-              color="#60a5fa"
-              fontSize="7px"
-              px={2}
-              py={0.5}
-              borderRadius="full"
-              textTransform="none"
-              fontWeight="semibold"
-            >
-              Brand Niche
-            </Badge>
-          </HStack>
+          <Text color="gray.400" fontSize="xs">
+            Informational & awareness-stage terms
+          </Text>
         </VStack>
       </MotionBox>
 
@@ -139,6 +100,7 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
         borderLeft="3px solid #60a5fa"
         borderRadius="xl"
         p={5}
+        boxShadow="0 2px 12px rgba(0, 0, 0, 0.06)"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.16 }}
@@ -153,34 +115,8 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
             </Text>
           </HStack>
           <Text color="gray.400" fontSize="xs">
-            {quickWins} Easiest Wins
+            {quickWins} quick win opportunities
           </Text>
-          <HStack spacing={1} flexWrap="wrap" mt={1}>
-            <Badge
-              bg="rgba(249,159,42,0.25)"
-              color="#F99F2A"
-              fontSize="7px"
-              px={2}
-              py={0.5}
-              borderRadius="full"
-              textTransform="none"
-              fontWeight="bold"
-            >
-              COMMERCIAL
-            </Badge>
-            <Badge
-              bg="rgba(167,139,250,0.2)"
-              color="#a78bfa"
-              fontSize="7px"
-              px={2}
-              py={0.5}
-              borderRadius="full"
-              textTransform="none"
-              fontWeight="semibold"
-            >
-              {quickWins} Partners
-            </Badge>
-          </HStack>
         </VStack>
       </MotionBox>
 
@@ -194,6 +130,7 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
         borderLeft="3px solid #34d399"
         borderRadius="xl"
         p={5}
+        boxShadow="0 2px 12px rgba(0, 0, 0, 0.06)"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.22 }}
@@ -207,21 +144,9 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
               Revenue-Ready Keywords
             </Text>
           </HStack>
-          <ColorDots colors={['#34d399', '#10b981', '#f59e0b', '#60a5fa', '#F99F2A', '#a78bfa']} />
-          <HStack spacing={1} flexWrap="wrap" mt={1}>
-            <Badge
-              bg="rgba(52,211,153,0.2)"
-              color="#34d399"
-              fontSize="7px"
-              px={2}
-              py={0.5}
-              borderRadius="full"
-              textTransform="none"
-              fontWeight="semibold"
-            >
-              BOFU / Transactional Intent
-            </Badge>
-          </HStack>
+          <Text color="gray.400" fontSize="xs">
+            Bottom-of-funnel, transactional intent
+          </Text>
         </VStack>
       </MotionBox>
 
@@ -235,6 +160,7 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
         borderLeft="3px solid #a78bfa"
         borderRadius="xl"
         p={5}
+        boxShadow="0 2px 12px rgba(0, 0, 0, 0.06)"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.28 }}

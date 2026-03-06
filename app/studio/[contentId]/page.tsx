@@ -413,16 +413,16 @@ export default function ContentEditorPage() {
     return (
       <StudioLayout>
         <VStack spacing={8} py={20} textAlign="center">
-          <Heading size="lg" color="white">
+          <Heading size="lg" color="gray.800">
             Content Not Found
           </Heading>
           <Text color="gray.500">This content piece may have been deleted or moved.</Text>
           <Link href="/studio/library">
             <Button
               variant="ghost"
-              color="gray.400"
+              color="gray.500"
               leftIcon={<Icon as={FiArrowLeft} />}
-              _hover={{ color: 'white' }}
+              _hover={{ color: 'gray.800' }}
             >
               Back to Library
             </Button>
@@ -440,7 +440,7 @@ export default function ContentEditorPage() {
           <Box bg="rgba(255, 157, 0, 0.1)" borderRadius="full" p={6} animation="pulse 2s infinite">
             <Icon as={FiRefreshCw} boxSize={12} color="#FF9D00" />
           </Box>
-          <Heading size="lg" color="white">
+          <Heading size="lg" color="gray.800">
             Generating Content...
           </Heading>
           <Text color="gray.500">{contentPiece.title}</Text>
@@ -470,16 +470,16 @@ export default function ContentEditorPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                color="gray.400"
+                color="gray.500"
                 leftIcon={<Icon as={FiArrowLeft} />}
-                _hover={{ color: 'white' }}
+                _hover={{ color: 'gray.800' }}
               >
                 Library
               </Button>
             </Link>
             <Box>
               <HStack spacing={2}>
-                <Heading size="md" color="white" noOfLines={1}>
+                <Heading size="md" color="gray.800" noOfLines={1}>
                   {contentPiece.title}
                 </Heading>
                 <Badge bg="rgba(255, 157, 0, 0.1)" color="#FF9D00" textTransform="capitalize">
@@ -517,7 +517,7 @@ export default function ContentEditorPage() {
                   </Text>
                 )}
                 {saveStatus === 'saved' && (
-                  <Text as="span" color="#22C55E" ml={1}>
+                  <Text as="span" color="#16A34A" ml={1}>
                     • Saved
                   </Text>
                 )}
@@ -539,19 +539,20 @@ export default function ContentEditorPage() {
           <HStack spacing={2}>
             <Button
               variant="ghost"
-              color="gray.400"
+              color="gray.500"
               leftIcon={<Icon as={FiSave} />}
               isLoading={isSaving}
               onClick={handleSave}
               isDisabled={!hasChanges}
+              _hover={{ color: 'gray.800' }}
             >
               Save
             </Button>
             {contentPiece.status === 'scheduled' ? (
               <Button
                 variant="outline"
-                borderColor="gray.500"
-                color="gray.400"
+                borderColor="gray.300"
+                color="gray.600"
                 leftIcon={<Icon as={FiCalendar} />}
                 onClick={handleUnschedule}
               >
@@ -613,18 +614,20 @@ export default function ContentEditorPage() {
         <HStack align="start" spacing={6}>
           {/* Editor */}
           <Box
-            bg="rgba(255, 255, 255, 0.03)"
-            border="1px solid rgba(255, 255, 255, 0.08)"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.200"
             borderRadius="16px"
+            boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
             flex={1}
             minH="600px"
             display="flex"
             flexDirection="column"
           >
-            <Box p={4} borderBottom="1px solid rgba(255, 255, 255, 0.08)">
+            <Box p={4} borderBottom="1px solid" borderBottomColor="gray.200">
               <HStack spacing={2} justify="space-between">
                 <HStack spacing={2}>
-                  <Badge bg="rgba(255, 255, 255, 0.1)" color="gray.400">
+                  <Badge bg="gray.100" color="gray.600">
                     Markdown
                   </Badge>
                   <Divider orientation="vertical" h={4} />
@@ -670,14 +673,14 @@ export default function ContentEditorPage() {
                 bg="transparent"
                 border="none"
                 _focus={{ boxShadow: 'none' }}
-                color="gray.200"
+                color="gray.800"
                 fontSize="md"
                 lineHeight="1.8"
                 minH="550px"
                 flex={1}
                 p={6}
                 resize="none"
-                _placeholder={{ color: 'gray.600' }}
+                _placeholder={{ color: 'gray.400' }}
               />
             )}
           </Box>

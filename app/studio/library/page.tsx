@@ -37,6 +37,7 @@ import { ContentCard } from '@/src/components/studio/ContentCard';
 import { FiSearch, FiGrid, FiList, FiPlus } from 'react-icons/fi';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useProject } from '@/lib/hooks';
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
 import { useLoadingAnnounce } from '@/src/lib/accessibility';
@@ -47,7 +48,13 @@ type StatusFilter = 'all' | 'draft' | 'published' | 'scheduled';
 
 export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const searchParams = useSearchParams();
+  const initialStatus = (
+    ['draft', 'published', 'scheduled'].includes(searchParams.get('status') || '')
+      ? searchParams.get('status')
+      : 'all'
+  ) as StatusFilter;
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Get current project

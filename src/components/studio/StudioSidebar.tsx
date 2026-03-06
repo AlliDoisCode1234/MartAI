@@ -24,7 +24,7 @@ import {
   Avatar,
 } from '@chakra-ui/react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   FiGrid,
   FiFileText,
@@ -48,12 +48,23 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ComponentType;
+  children?: { href: string; label: string; status?: string }[];
 }
 
 const navItems: NavItem[] = [
   { href: '/studio', label: 'Dashboard', icon: FiGrid },
   { href: '/studio/insights', label: 'Analytics', icon: FiBarChart2 },
-  { href: '/studio/library', label: 'Library', icon: FiFileText },
+  {
+    href: '/studio/library',
+    label: 'Library',
+    icon: FiFileText,
+    children: [
+      { href: '/studio/library', label: 'All Articles', status: 'all' },
+      { href: '/studio/library?status=draft', label: 'Drafts', status: 'draft' },
+      { href: '/studio/library?status=scheduled', label: 'Scheduled', status: 'scheduled' },
+      { href: '/studio/library?status=published', label: 'Published', status: 'published' },
+    ],
+  },
   { href: '/studio/keywords', label: 'Keywords', icon: FiSearch },
   { href: '/studio/calendar', label: 'Calendar', icon: FiCalendar },
   { href: '/studio/create', label: 'Create', icon: FiPlusCircle },
@@ -72,6 +83,7 @@ interface Props {
 
 export function StudioSidebar({ collapsed = false, onToggle }: Props) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
 
   const isActive = (href: string) =>
@@ -145,49 +157,92 @@ export function StudioSidebar({ collapsed = false, onToggle }: Props) {
           const active = isActive(item.href);
 
           return (
-            <Tooltip
-              key={item.href}
-              label={item.label}
-              placement="right"
-              isDisabled={!collapsed}
-              hasArrow
-              bg="gray.900"
-              color="white"
-              fontSize="xs"
-            >
-              <Link href={item.href} style={{ textDecoration: 'none' }}>
-                <Flex
-                  align="center"
-                  gap={3}
-                  px={3}
-                  py={2.5}
-                  borderRadius="10px"
-                  cursor="pointer"
-                  bg={active ? 'brand.orange' : 'transparent'}
-                  color={active ? 'white' : 'whiteAlpha.600'}
-                  fontWeight={active ? '600' : '400'}
-                  _hover={{
-                    bg: active ? 'brand.orange' : 'whiteAlpha.100',
-                    color: 'white',
-                  }}
-                  _focusVisible={{
-                    outline: '2px solid',
-                    outlineColor: 'brand.orange',
-                    outlineOffset: '2px',
-                  }}
-                  transition="all 0.15s ease"
-                  aria-current={active ? 'page' : undefined}
-                  justifyContent={collapsed ? 'center' : 'flex-start'}
-                >
-                  <Icon as={item.icon} boxSize={collapsed ? 5 : '18px'} flexShrink={0} />
-                  {!collapsed && (
-                    <Text fontSize="sm" lineHeight="1">
-                      {item.label}
-                    </Text>
-                  )}
-                </Flex>
-              </Link>
-            </Tooltip>
+            <Box key={item.href}>
+              <Tooltip
+                label={item.label}
+                placement="right"
+                isDisabled={!collapsed}
+                hasArrow
+                bg="gray.900"
+                color="white"
+                fontSize="xs"
+              >
+                <Link href={item.href} style={{ textDecoration: 'none' }}>
+                  <Flex
+                    align="center"
+                    gap={3}
+                    px={3}
+                    py={2.5}
+                    borderRadius="10px"
+                    cursor="pointer"
+                    bg={active ? 'brand.orange' : 'transparent'}
+                    color={active ? 'white' : 'whiteAlpha.600'}
+                    fontWeight={active ? '600' : '400'}
+                    _hover={{
+                      bg: active ? 'brand.orange' : 'whiteAlpha.100',
+                      color: 'white',
+                    }}
+                    _focusVisible={{
+                      outline: '2px solid',
+                      outlineColor: 'brand.orange',
+                      outlineOffset: '2px',
+                    }}
+                    transition="all 0.15s ease"
+                    aria-current={active ? 'page' : undefined}
+                    justifyContent={collapsed ? 'center' : 'flex-start'}
+                  >
+                    <Icon as={item.icon} boxSize={collapsed ? 5 : '18px'} flexShrink={0} />
+                    {!collapsed && (
+                      <Text fontSize="sm" lineHeight="1">
+                        {item.label}
+                      </Text>
+                    )}
+                  </Flex>
+                </Link>
+              </Tooltip>
+
+              {/* Sub-items: visible when parent is active and sidebar is expanded */}
+              {item.children && active && !collapsed && (
+                <VStack spacing={0} align="stretch" pl={7} mt={0.5}>
+                  {item.children.map((child) => {
+                    const currentStatus = searchParams.get('status') || 'all';
+                    const childActive =
+                      pathname === '/studio/library' && currentStatus === (child.status || 'all');
+
+                    return (
+                      <Link key={child.label} href={child.href} style={{ textDecoration: 'none' }}>
+                        <Flex
+                          align="center"
+                          px={3}
+                          py={1.5}
+                          borderRadius="8px"
+                          cursor="pointer"
+                          color={childActive ? 'white' : 'whiteAlpha.500'}
+                          fontWeight={childActive ? '600' : '400'}
+                          bg={childActive ? 'whiteAlpha.100' : 'transparent'}
+                          _hover={{
+                            bg: 'whiteAlpha.100',
+                            color: 'whiteAlpha.800',
+                          }}
+                          transition="all 0.15s ease"
+                          fontSize="13px"
+                        >
+                          <Box
+                            w="4px"
+                            h="4px"
+                            borderRadius="full"
+                            bg={childActive ? 'brand.orange' : 'whiteAlpha.300'}
+                            mr={2.5}
+                            flexShrink={0}
+                          />
+                          <Text lineHeight="1">{child.label}</Text>
+                        </Flex>
+                      </Link>
+                    );
+                  })}
+                </VStack>
+              )}
+            </Box>
           );
         })}
       </VStack>
