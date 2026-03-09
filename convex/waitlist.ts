@@ -1,4 +1,4 @@
-import { mutation, query } from './_generated/server';
+import { mutation, query, internalQuery } from './_generated/server';
 import { v } from 'convex/values';
 import { api } from './_generated/api';
 
@@ -144,6 +144,25 @@ export const listWaitlistEntries = query({
       .withIndex('by_created')
       .order('desc')
       .take(limit);
+
+    return entries;
+  },
+});
+
+/**
+ * Internal: Get all waitlist entries after a given timestamp.
+ * Used by the HubSpot backfill action to recover missed syncs.
+ */
+export const listWaitlistEntriesAfterDate = internalQuery({
+  args: {
+    afterTimestamp: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const entries = await ctx.db
+      .query('waitlist')
+      .withIndex('by_created', (q) => q.gt('createdAt', args.afterTimestamp))
+      .order('asc')
+      .collect();
 
     return entries;
   },

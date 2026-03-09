@@ -33,7 +33,8 @@ export const HUBSPOT_CUSTOM_PROPERTIES = {
   phoo_waitlist_signup: {
     label: 'Phoo Waitlist Signup',
     description: 'Whether contact signed up via phoo.ai beta waitlist',
-    type: 'booleancheckbox',
+    type: 'enumeration',
+    options: ['signed_up', 'not_signed_up'],
   },
 
   // Product Usage & Status
@@ -208,6 +209,16 @@ export function mapUserToHubSpot(user: {
   return props;
 }
 
+// Valid options for phoo_lead_source in HubSpot (must match HubSpot property options)
+const VALID_LEAD_SOURCES = [
+  'waitlist_beta',
+  'organic',
+  'referral',
+  'partner',
+  'paid',
+  'migration',
+] as const;
+
 /**
  * Map waitlist signup to HubSpot contact properties
  */
@@ -222,13 +233,20 @@ export function mapWaitlistToHubSpot(data: {
   // and we can't reliably determine the user's local date. HubSpot tracks
   // create date natively via the built-in 'createdate' property.
 
+  // Validate source against HubSpot's allowed options.
+  // Forms pass 'phoo.ai' as source (tracking origin) but HubSpot only accepts
+  // the enumeration values. Default to 'waitlist_beta' for waitlist signups.
+  const validatedSource =
+    data.source && (VALID_LEAD_SOURCES as readonly string[]).includes(data.source)
+      ? data.source
+      : 'waitlist_beta';
+
   const props: Record<string, string | number | boolean> = {
     lifecyclestage: 'lead',
     hs_lead_status: 'NEW',
-    // HubSpot has this as boolean checkbox (true/false)
-    phoo_waitlist_signup: true,
-    // Use custom source or default to waitlist_beta
-    phoo_lead_source: data.source || 'waitlist_beta',
+    // HubSpot has this as enumeration with options: signed_up, not_signed_up
+    phoo_waitlist_signup: 'signed_up',
+    phoo_lead_source: validatedSource,
     phoo_onboarding_status: 'not_started',
     phoo_account_status: 'inactive',
   };

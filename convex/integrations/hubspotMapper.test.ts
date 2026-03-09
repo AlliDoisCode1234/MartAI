@@ -79,10 +79,20 @@ describe('HubSpot Mapper: mapWaitlistToHubSpot', () => {
 
     expect(result.lifecyclestage).toBe('lead');
     expect(result.hs_lead_status).toBe('NEW');
-    expect(result.phoo_waitlist_signup).toBe(true);
+    expect(result.phoo_waitlist_signup).toBe('signed_up');
     expect(result.phoo_lead_source).toBe('waitlist_beta');
     expect(result.phoo_onboarding_status).toBe('not_started');
     expect(result.phoo_account_status).toBe('inactive');
+  });
+
+  test('should map phoo.ai source to waitlist_beta (validation)', () => {
+    const result = mapWaitlistToHubSpot({
+      email: 'lead@example.com',
+      source: 'phoo.ai',
+    });
+
+    // 'phoo.ai' is not a valid HubSpot option, should fall back to 'waitlist_beta'
+    expect(result.phoo_lead_source).toBe('waitlist_beta');
   });
 
   test('should map custom source', () => {

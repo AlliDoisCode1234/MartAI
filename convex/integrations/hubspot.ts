@@ -54,12 +54,15 @@ async function hubspotRequest(
 
 /**
  * Create or update a contact in HubSpot
+ * Uses search-before-create for idempotent upsert by email.
  */
 async function upsertContact(
   email: string,
   properties: Record<string, string | number | boolean>
 ): Promise<{ id: string; isNew: boolean }> {
-  // First, try to find existing contact by email
+  // Step 1: Search for existing contact by email
+  let existingContactId: string | null = null;
+
   try {
     const searchResult = await hubspotRequest('/crm/v3/objects/contacts/search', 'POST', {
       filterGroups: [
@@ -70,17 +73,21 @@ async function upsertContact(
     });
 
     if (searchResult.results?.length > 0) {
-      // Update existing contact
-      const contactId = searchResult.results[0].id;
-      await hubspotRequest(`/crm/v3/objects/contacts/${contactId}`, 'PATCH', { properties });
-      console.log(`[HubSpot] Updated contact: ${email} (ID: ${contactId})`);
-      return { id: contactId, isNew: false };
+      existingContactId = searchResult.results[0].id;
     }
   } catch (e) {
-    // Contact not found, will create new
+    // Search failed — fall through to create
+    console.warn(`[HubSpot] Search failed for ${email}, will attempt create:`, e);
   }
 
-  // Create new contact
+  // Step 2: If found, update (PATCH errors propagate to caller)
+  if (existingContactId) {
+    await hubspotRequest(`/crm/v3/objects/contacts/${existingContactId}`, 'PATCH', { properties });
+    console.log(`[HubSpot] Updated contact: ${email} (ID: ${existingContactId})`);
+    return { id: existingContactId, isNew: false };
+  }
+
+  // Step 3: Not found — create new contact
   const createResult = await hubspotRequest('/crm/v3/objects/contacts', 'POST', {
     properties: { email, ...properties },
   });
@@ -524,7 +531,9 @@ export const syncWaitlistToHubspot = action({
   handler: async (ctx, args) => {
     // Graceful skip if no API key
     if (!isHubSpotEnabled()) {
-      console.log('[HubSpot] Skipping waitlist sync - no API key configured');
+      console.warn(
+        `[HubSpot] SKIPPED waitlist sync for ${args.email} - HUBSPOT_API_KEY not set in environment`
+      );
       return { success: false, reason: 'no_api_key' };
     }
 
@@ -540,15 +549,131 @@ export const syncWaitlistToHubspot = action({
 
     try {
       const result = await upsertContact(args.email, properties);
-      console.log(`[HubSpot] Synced waitlist signup: ${args.email}`);
+      console.log(`[HubSpot] Synced waitlist signup: ${args.email} (ID: ${result.id})`);
       return {
         success: true,
         hubspotId: result.id,
         isNew: result.isNew,
       };
     } catch (error) {
-      console.error('[HubSpot] Failed to sync waitlist:', error);
-      return { success: false, reason: 'api_error' };
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[HubSpot] FAILED to sync waitlist for ${args.email}: ${errorMessage}`);
+      return { success: false, reason: 'api_error', error: errorMessage };
     }
+  },
+});
+
+/**
+ * Backfill a single waitlist entry to HubSpot.
+ * Internal action - callable from dashboard or by the bulk backfill.
+ */
+export const backfillSingleWaitlistEntry = internalAction({
+  args: {
+    email: v.string(),
+    source: v.optional(v.string()),
+    utmSource: v.optional(v.string()),
+    utmMedium: v.optional(v.string()),
+    utmCampaign: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (!isHubSpotEnabled()) {
+      console.warn(`[HubSpot Backfill] SKIPPED ${args.email} - HUBSPOT_API_KEY not set`);
+      return { success: false, reason: 'no_api_key' };
+    }
+
+    const { mapWaitlistToHubSpot } = await import('./hubspotMapper');
+    const properties = mapWaitlistToHubSpot({
+      email: args.email,
+      source: args.source,
+      utmSource: args.utmSource,
+      utmMedium: args.utmMedium,
+      utmCampaign: args.utmCampaign,
+    });
+
+    const result = await upsertContact(args.email, properties);
+    console.log(
+      `[HubSpot Backfill] Synced: ${args.email} (ID: ${result.id}, new: ${result.isNew})`
+    );
+    return { success: true, hubspotId: result.id, isNew: result.isNew };
+  },
+});
+
+/**
+ * Backfill all waitlist entries added after a given date to HubSpot.
+ * Internal action - run from Convex Dashboard for post-Jan-20-2026 recovery.
+ *
+ * Usage from Convex Dashboard:
+ *   Function: integrations/hubspot:backfillWaitlistToHubspot
+ *   Args: { "cutoffTimestamp": 1737417600000 }
+ *   (1737417600000 = Jan 21 2026 00:00:00 UTC)
+ */
+export const backfillWaitlistToHubspot = internalAction({
+  args: {
+    cutoffTimestamp: v.number(),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    synced: number;
+    skipped: number;
+    errors: number;
+    total: number;
+    errorDetails: Array<{ email: string; error: string }>;
+  }> => {
+    if (!isHubSpotEnabled()) {
+      console.error(
+        '[HubSpot Backfill] HUBSPOT_API_KEY not set - cannot backfill. Set the env var and retry.'
+      );
+      return { synced: 0, skipped: 0, errors: 0, total: 0, errorDetails: [] };
+    }
+
+    // Fetch all waitlist entries after the cutoff date
+    const entries = await ctx.runQuery(internal.waitlist.listWaitlistEntriesAfterDate, {
+      afterTimestamp: args.cutoffTimestamp,
+    });
+
+    console.log(
+      `[HubSpot Backfill] Found ${entries.length} waitlist entries after ${new Date(args.cutoffTimestamp).toISOString()}`
+    );
+
+    let synced = 0;
+    let skipped = 0;
+    let errors = 0;
+    const errorDetails: Array<{ email: string; error: string }> = [];
+
+    const { mapWaitlistToHubSpot } = await import('./hubspotMapper');
+
+    for (const entry of entries) {
+      try {
+        const properties = mapWaitlistToHubSpot({
+          email: entry.email,
+          source: entry.source,
+          utmSource: entry.metadata?.utmSource,
+          utmMedium: entry.metadata?.utmMedium,
+          utmCampaign: entry.metadata?.utmCampaign,
+        });
+
+        const result = await upsertContact(entry.email, properties);
+        console.log(
+          `[HubSpot Backfill] ${result.isNew ? 'Created' : 'Updated'}: ${entry.email} (ID: ${result.id})`
+        );
+        synced++;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`[HubSpot Backfill] FAILED: ${entry.email} - ${errorMessage}`);
+        errorDetails.push({ email: entry.email, error: errorMessage });
+        errors++;
+      }
+
+      // Rate limit: HubSpot allows 10 requests/second
+      await new Promise((r) => setTimeout(r, 100));
+    }
+
+    console.log(
+      `[HubSpot Backfill] Complete: ${synced} synced, ${skipped} skipped, ${errors} errors out of ${entries.length} total`
+    );
+
+    return { synced, skipped, errors, total: entries.length, errorDetails };
   },
 });
