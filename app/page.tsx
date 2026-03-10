@@ -39,7 +39,6 @@ import {
   ProductScreenshot,
   SocialProofBar,
   DarkGradientAISection,
-  CTASection,
 } from '@/src/components/marketing';
 import { FiEdit3, FiSearch, FiBarChart2, FiGlobe } from 'react-icons/fi';
 import { STUDIO_COLORS } from '@/lib/constants/studioTokens';
@@ -191,7 +190,6 @@ export default function Home() {
       <HowItWorksSection />
       <AboutPhooSection />
       <WaitlistForm />
-      <CTASection />
       <PremiumFooter />
     </Box>
   );

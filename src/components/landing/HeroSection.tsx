@@ -157,8 +157,15 @@ export function HeroSection({ onCtaClick }: Props) {
           >
             <Button
               as="a"
-              href={IS_LAUNCHED ? LAUNCHED_SIGNUP_HREF : BETA_JOIN_HREF}
-              onClick={onCtaClick}
+              href={onCtaClick ? '#join-beta' : IS_LAUNCHED ? LAUNCHED_SIGNUP_HREF : BETA_JOIN_HREF}
+              onClick={
+                onCtaClick
+                  ? (e: React.MouseEvent) => {
+                      e.preventDefault();
+                      onCtaClick();
+                    }
+                  : undefined
+              }
               size="lg"
               px={10}
               py={8}

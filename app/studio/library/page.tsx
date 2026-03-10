@@ -36,7 +36,7 @@ import { StudioLayout } from '@/src/components/studio';
 import { ContentCard } from '@/src/components/studio/ContentCard';
 import { FiSearch, FiGrid, FiList, FiPlus } from 'react-icons/fi';
 import Link from 'next/link';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useProject } from '@/lib/hooks';
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
@@ -46,15 +46,22 @@ import type { Id } from '@/convex/_generated/dataModel';
 type ViewMode = 'grid' | 'list';
 type StatusFilter = 'all' | 'draft' | 'published' | 'scheduled';
 
+const VALID_STATUSES: StatusFilter[] = ['draft', 'published', 'scheduled'];
+
+function getStatusFromParams(params: URLSearchParams): StatusFilter {
+  const raw = params.get('status') || '';
+  return VALID_STATUSES.includes(raw as StatusFilter) ? (raw as StatusFilter) : 'all';
+}
+
 export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const searchParams = useSearchParams();
-  const initialStatus = (
-    ['draft', 'published', 'scheduled'].includes(searchParams.get('status') || '')
-      ? searchParams.get('status')
-      : 'all'
-  ) as StatusFilter;
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(getStatusFromParams(searchParams));
+
+  // Sync tab state when URL params change (e.g. sidebar sub-item clicks)
+  useEffect(() => {
+    setStatusFilter(getStatusFromParams(searchParams));
+  }, [searchParams]);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Get current project

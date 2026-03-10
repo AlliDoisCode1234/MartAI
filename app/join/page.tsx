@@ -25,18 +25,20 @@ import {
   ProblemSection,
   FeaturesSection,
   AudienceSection,
-  BetaSection,
   WaitlistForm,
 } from '@/src/components/landing';
 
 export default function JoinPage() {
+  const scrollToForm = () => {
+    document.getElementById('join-beta')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <Box minH="100vh" bg="gray.900" color="white">
-      <HeroSection />
+      <HeroSection onCtaClick={scrollToForm} />
       <ProblemSection />
       <FeaturesSection />
       <AudienceSection />
-      <BetaSection />
       <WaitlistForm />
       {/* Footer */}
       <Box as="footer" py={12} borderTop="1px solid" borderColor="whiteAlpha.100">

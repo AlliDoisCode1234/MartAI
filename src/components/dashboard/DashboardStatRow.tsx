@@ -244,8 +244,10 @@ export function DashboardStatRow({
                 px={1.5}
                 py={0.5}
                 borderRadius="full"
-                bg={SOURCE_COLORS[stat.source].bg}
-                color={SOURCE_COLORS[stat.source].text}
+                bg={stat.isHighlighted ? 'rgba(255,255,255,0.2)' : SOURCE_COLORS[stat.source].bg}
+                color={
+                  stat.isHighlighted ? 'rgba(255,255,255,0.9)' : SOURCE_COLORS[stat.source].text
+                }
               >
                 {stat.source}
               </Text>

@@ -279,6 +279,12 @@ export const transitionToMaintenanceMode = internalMutation({
       accountStatus: 'inactive',
     });
 
+    // Fire-and-forget HubSpot sync
+    ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncLifecycleChangeToHubspot, {
+      userId: subscription.userId,
+      accountStatus: 'inactive',
+    });
+
     return { success: true };
   },
 });
@@ -310,6 +316,13 @@ export const reactivateSubscription = internalMutation({
       reactivatedAt: now,
     });
 
+    // Fire-and-forget HubSpot sync
+    ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncLifecycleChangeToHubspot, {
+      userId: subscription.userId,
+      accountStatus: 'active',
+      lifecyclestage: 'customer',
+    });
+
     return { success: true };
   },
 });
@@ -339,6 +352,12 @@ export const cancelSubscription = internalMutation({
       accountStatus: 'churned',
       churnedAt: now,
       churnReason: reason,
+    });
+
+    // Fire-and-forget HubSpot sync
+    ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncLifecycleChangeToHubspot, {
+      userId: subscription.userId,
+      accountStatus: 'churned',
     });
 
     return { success: true };
@@ -379,6 +398,13 @@ export const adminActivateSubscription = mutation({
       reactivatedAt: now,
     });
 
+    // Fire-and-forget HubSpot sync
+    ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncLifecycleChangeToHubspot, {
+      userId: subscription.userId,
+      accountStatus: 'active',
+      lifecyclestage: 'customer',
+    });
+
     // Log: Only IDs, not sensitive data (per security rules)
     console.log(
       `[AdminActivate] Subscription ${subscriptionId} activated by admin. Reason: ${reason ?? 'N/A'}`
@@ -415,6 +441,13 @@ export const adminChangeSubscriptionPlan = mutation({
     // Update user's membership tier
     await ctx.db.patch(subscription.userId, {
       membershipTier: newPlanTier as any,
+    });
+
+    // Fire-and-forget HubSpot sync
+    ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncLifecycleChangeToHubspot, {
+      userId: subscription.userId,
+      accountStatus: 'active',
+      membershipTier: newPlanTier,
     });
 
     console.log(`[AdminPlanChange] Subscription ${subscriptionId} changed to ${newPlanTier}`);

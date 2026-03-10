@@ -28,10 +28,10 @@ export function GrowthActionCard({ title = 'Next 3 Growth Actions', actions }: P
   if (actions.length === 0) {
     return (
       <Box {...STUDIO_CARD} p={6}>
-        <Heading size="sm" color="white" mb={4}>
+        <Heading size="sm" color={STUDIO_COLORS.textPrimary} mb={4}>
           {title}
         </Heading>
-        <Text color={STUDIO_COLORS.textMuted} fontSize="sm">
+        <Text color={STUDIO_COLORS.textSecondary} fontSize="sm">
           No actions available yet. Create some content to get started.
         </Text>
       </Box>
@@ -40,7 +40,7 @@ export function GrowthActionCard({ title = 'Next 3 Growth Actions', actions }: P
 
   return (
     <Box {...STUDIO_CARD} p={6} h="100%">
-      <Heading size="sm" color="white" mb={5}>
+      <Heading size="sm" color={STUDIO_COLORS.textPrimary} mb={5}>
         {title}
       </Heading>
       <VStack spacing={5} align="stretch">
@@ -57,10 +57,10 @@ export function GrowthActionCard({ title = 'Next 3 Growth Actions', actions }: P
               boxShadow={`0 0 8px ${action.color || STUDIO_COLORS.amber}40`}
             />
             <Box flex={1}>
-              <Text fontSize="sm" fontWeight="semibold" color="white" mb={0.5}>
+              <Text fontSize="sm" fontWeight="semibold" color={STUDIO_COLORS.textPrimary} mb={0.5}>
                 {action.title}
               </Text>
-              <Text fontSize="xs" color={STUDIO_COLORS.textMuted} lineHeight="tall">
+              <Text fontSize="xs" color={STUDIO_COLORS.textSecondary} lineHeight="tall">
                 {action.description}
               </Text>
             </Box>

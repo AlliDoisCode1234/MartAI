@@ -56,20 +56,20 @@ describe('HubSpot Mapper: mapUserToHubSpot', () => {
     const now = Date.now();
     const user = {
       acquisitionSource: 'referral',
-      acquisitionDate: now,
       lastActiveAt: now,
     };
 
     const result = mapUserToHubSpot(user);
 
     expect(result.phoo_lead_source).toBe('referral');
-    expect(result.phoo_acquisition_date).toBe(now);
     expect(result.phoo_last_activity).toBe(now);
   });
 
-  test('should return empty object for empty user', () => {
+  test('should return minimal object for empty user', () => {
     const result = mapUserToHubSpot({});
-    expect(Object.keys(result).length).toBe(0);
+    // phoo_signup_abandoned is always set
+    expect(result.phoo_signup_abandoned).toBe(false);
+    expect(Object.keys(result).length).toBe(1);
   });
 });
 
