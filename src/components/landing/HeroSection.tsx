@@ -15,6 +15,7 @@ import { Box, Container, Heading, Text, Button, HStack, Icon, VStack } from '@ch
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MartCharacter } from '@/src/components/assistant/MartCharacter';
+import { IS_LAUNCHED, BETA_JOIN_HREF, LAUNCHED_SIGNUP_HREF } from '@/lib/constants/featureFlags';
 
 interface Props {
   onCtaClick?: () => void;
@@ -156,8 +157,15 @@ export function HeroSection({ onCtaClick }: Props) {
           >
             <Button
               as="a"
-              href="#join-beta"
-              onClick={onCtaClick}
+              href={onCtaClick ? '#join-beta' : IS_LAUNCHED ? LAUNCHED_SIGNUP_HREF : BETA_JOIN_HREF}
+              onClick={
+                onCtaClick
+                  ? (e: React.MouseEvent) => {
+                      e.preventDefault();
+                      onCtaClick();
+                    }
+                  : undefined
+              }
               size="lg"
               px={10}
               py={8}
@@ -175,7 +183,7 @@ export function HeroSection({ onCtaClick }: Props) {
               rightIcon={<Icon as={ArrowRight} boxSize={6} />}
               transition="all 0.3s ease"
             >
-              Join the Phoo Beta
+              {IS_LAUNCHED ? 'Start Getting Leads' : 'Join the Phoo Beta'}
             </Button>
           </MotionBox>
         </VStack>

@@ -69,7 +69,7 @@ export function RankedArticleTable({ articles, variant = 'top' }: Props) {
           mb={1}
           justify="space-between"
           borderBottom="1px solid"
-          borderColor="rgba(255, 255, 255, 0.06)"
+          borderColor={STUDIO_COLORS.cardBorder}
         >
           <Text flex={1} fontSize="xs" color={STUDIO_COLORS.textMuted} fontWeight="medium">
             Article
@@ -95,13 +95,18 @@ export function RankedArticleTable({ articles, variant = 'top' }: Props) {
           py={2.5}
           align="center"
           borderRadius="lg"
-          _hover={{ bg: 'rgba(255, 255, 255, 0.03)' }}
+          _hover={{ bg: STUDIO_COLORS.cardBgHover }}
           transition="background 0.15s"
         >
           {/* Rank + Title */}
           <HStack flex={1} spacing={3} minW={0}>
             <RankBadge rank={article.rank} variant={variant} />
-            <Text fontSize="sm" color="white" noOfLines={1} title={article.title}>
+            <Text
+              fontSize="sm"
+              color={STUDIO_COLORS.textPrimary}
+              noOfLines={1}
+              title={article.title}
+            >
               {article.title}
             </Text>
           </HStack>

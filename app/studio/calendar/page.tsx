@@ -138,20 +138,23 @@ function DayCell({ date, isCurrentMonth, pieces, onDayClick }: DayCellProps) {
   return (
     <Box
       position="relative"
-      bg={today ? 'rgba(255, 157, 0, 0.1)' : 'rgba(255, 255, 255, 0.02)'}
-      border={today ? '1px solid rgba(255, 157, 0, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)'}
-      borderRadius="8px"
+      bg={today ? 'orange.50' : 'white'}
+      border={today ? '1px solid' : '1px solid'}
+      borderColor={today ? 'orange.200' : 'gray.200'}
+      borderRadius="12px"
       p={2}
       minH="120px"
       opacity={isCurrentMonth ? 1 : 0.4}
       transition="all 0.15s ease"
       cursor={isCurrentMonth ? 'pointer' : 'default'}
+      boxShadow="0 1px 4px rgba(0, 0, 0, 0.04)"
       onMouseEnter={() => isCurrentMonth && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={isCurrentMonth && onDayClick ? () => onDayClick(date) : undefined}
       _hover={{
-        bg: isCurrentMonth ? 'rgba(255, 255, 255, 0.05)' : undefined,
-        borderColor: isCurrentMonth && !today ? 'rgba(255, 157, 0, 0.2)' : undefined,
+        bg: isCurrentMonth ? 'gray.50' : undefined,
+        borderColor: isCurrentMonth && !today ? 'orange.200' : undefined,
+        boxShadow: isCurrentMonth ? '0 4px 12px rgba(0, 0, 0, 0.08)' : undefined,
       }}
     >
       {/* Quick-create icon on hover */}
@@ -176,7 +179,7 @@ function DayCell({ date, isCurrentMonth, pieces, onDayClick }: DayCellProps) {
       <Text
         fontSize="sm"
         fontWeight={today ? 'bold' : 'medium'}
-        color={today ? '#FF9D00' : isCurrentMonth ? 'white' : 'gray.600'}
+        color={today ? '#FF9D00' : isCurrentMonth ? 'gray.700' : 'gray.400'}
         mb={2}
       >
         {date.getDate()}
@@ -275,7 +278,7 @@ export default function CalendarPage() {
         {/* Header */}
         <HStack justify="space-between" wrap="wrap" gap={4}>
           <Box>
-            <Heading size="lg" bgGradient="linear(to-r, white, gray.400)" bgClip="text">
+            <Heading size="lg" color="gray.800">
               Content Calendar
             </Heading>
             <Text color="gray.500" mt={1}>
@@ -300,10 +303,12 @@ export default function CalendarPage() {
         {/* Filters & Navigation */}
         <HStack
           justify="space-between"
-          bg="rgba(255, 255, 255, 0.03)"
-          border="1px solid rgba(255, 255, 255, 0.08)"
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
           borderRadius="12px"
           p={4}
+          boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
         >
           {/* Month Navigation */}
           <HStack spacing={4}>
@@ -312,11 +317,11 @@ export default function CalendarPage() {
               variant="ghost"
               color="gray.400"
               onClick={prevMonth}
-              _hover={{ color: 'white' }}
+              _hover={{ color: 'gray.700' }}
             >
               <Icon as={FiChevronLeft} />
             </Button>
-            <Heading size="md" color="white" minW="200px" textAlign="center">
+            <Heading size="md" color="gray.800" minW="200px" textAlign="center">
               {MONTHS[month]} {year}
             </Heading>
             <Button
@@ -324,7 +329,7 @@ export default function CalendarPage() {
               variant="ghost"
               color="gray.400"
               onClick={nextMonth}
-              _hover={{ color: 'white' }}
+              _hover={{ color: 'gray.700' }}
             >
               <Icon as={FiChevronRight} />
             </Button>
@@ -333,7 +338,7 @@ export default function CalendarPage() {
               variant="ghost"
               color="gray.500"
               onClick={goToToday}
-              _hover={{ color: 'white' }}
+              _hover={{ color: 'gray.700' }}
               leftIcon={<Icon as={FiCalendar} />}
             >
               Today
@@ -343,23 +348,24 @@ export default function CalendarPage() {
           <HStack spacing={3}>
             <Select
               size="sm"
-              bg="rgba(255, 255, 255, 0.05)"
-              border="1px solid rgba(255, 255, 255, 0.1)"
-              color="white"
+              bg="white"
+              border="1px solid"
+              borderColor="gray.200"
+              color="gray.700"
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
               w="140px"
             >
-              <option value="all" style={{ background: '#1a1a2e' }}>
+              <option value="all" style={{ background: '#FFFFFF' }}>
                 All Priority
               </option>
-              <option value="P0" style={{ background: '#1a1a2e' }}>
+              <option value="P0" style={{ background: '#FFFFFF' }}>
                 Urgent
               </option>
-              <option value="P1" style={{ background: '#1a1a2e' }}>
+              <option value="P1" style={{ background: '#FFFFFF' }}>
                 High
               </option>
-              <option value="P2" style={{ background: '#1a1a2e' }}>
+              <option value="P2" style={{ background: '#FFFFFF' }}>
                 Normal
               </option>
             </Select>
@@ -400,14 +406,15 @@ export default function CalendarPage() {
         {/* Empty State */}
         {totalScheduled === 0 && (
           <Box
-            bg="rgba(255, 255, 255, 0.03)"
-            border="1px dashed rgba(255, 255, 255, 0.1)"
+            bg="white"
+            border="1px dashed"
+            borderColor="gray.200"
             borderRadius="16px"
             p={12}
             textAlign="center"
           >
             <Icon as={FiCalendar} boxSize={12} color="gray.600" mb={4} />
-            <Heading size="md" color="white" mb={2}>
+            <Heading size="md" color="gray.800" mb={2}>
               No Content Scheduled
             </Heading>
             <Text color="gray.500" mb={4}>

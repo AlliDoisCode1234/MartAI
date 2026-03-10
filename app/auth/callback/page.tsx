@@ -79,13 +79,10 @@ export default function AuthCallbackPage() {
 
       // After max attempts, redirect to login with error indicator
       console.log('[AuthCallback] Auth timeout, redirecting to login');
-      logout()
-        .catch(() => {
-          /* sign-out may fail if session is already dead */
-        })
-        .finally(() => {
-          router.replace('/auth/login?error=auth_timeout');
-        });
+      logout('/auth/login?error=auth_timeout').catch(() => {
+        // Fallback: force navigate if logout fails
+        window.location.href = '/auth/login?error=auth_timeout';
+      });
       return;
     }
 
@@ -100,7 +97,7 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    // User authenticated but no user record found - treat as new user needing onboarding
+    // User authenticated but no user record found
     // Give it a short delay to allow Convex DB to catch up (race condition)
     if (user === null) {
       if (userNullRetries < MAX_USER_NULL_RETRIES) {
@@ -111,6 +108,26 @@ export default function AuthCallbackPage() {
           setUserNullRetries((prev) => prev + 1);
         }, 1000);
         return () => clearTimeout(timer);
+      }
+
+      // ── Login-intent gate ──────────────────────────────────
+      // If the user initiated from /auth/login and no account exists,
+      // they should NOT have an account created. Sign out and redirect.
+      let authFlow = 'signup'; // default: allow creation (backward compatible)
+      try {
+        authFlow = sessionStorage.getItem('authFlow') || 'signup';
+        sessionStorage.removeItem('authFlow');
+      } catch {
+        // sessionStorage unavailable (Safari private browsing)
+      }
+
+      if (authFlow === 'login') {
+        console.log('[AuthCallback] Login-intent gate: no existing account, redirecting to signup');
+        logout('/auth/signup?error=no_account').catch(() => {
+          // Fallback: force navigate if logout fails
+          window.location.href = '/auth/signup?error=no_account';
+        });
+        return;
       }
 
       console.log('[AuthCallback] No user record after wait, passing to onboarding');
@@ -129,6 +146,8 @@ export default function AuthCallbackPage() {
     // Security: Validate returnTo is a relative path to prevent Open Redirect attacks
     try {
       const savedReturnTo = sessionStorage.getItem('authReturnTo');
+      // Clean up auth flow state
+      sessionStorage.removeItem('authFlow');
       if (savedReturnTo) {
         sessionStorage.removeItem('authReturnTo');
         // Only allow relative paths — block protocol-relative URLs and absolute URLs

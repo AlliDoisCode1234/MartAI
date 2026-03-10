@@ -1,3 +1,15 @@
+'use client';
+
+/**
+ * QuickCreateModal
+ *
+ * Component Hierarchy:
+ * App → StudioLayout → CalendarPage → QuickCreateModal (this file)
+ *
+ * Modal dialog to schedule a new content piece from the calendar.
+ * Creates a shell content piece and immediately schedules it.
+ */
+
 import { useState } from 'react';
 import {
   Modal,
@@ -118,8 +130,8 @@ export function QuickCreateModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
       <ModalOverlay backdropFilter="blur(4px)" bg="blackAlpha.700" />
-      <ModalContent bg="#0f172a" border="1px solid rgba(249, 159, 42, 0.2)">
-        <ModalHeader color="white" borderBottom="1px solid rgba(255, 255, 255, 0.05)">
+      <ModalContent bg="white" border="1px solid" borderColor="gray.200">
+        <ModalHeader color="gray.800" borderBottom="1px solid" borderColor="gray.100">
           <Icon as={FiCalendar} mr={2} color="#F99F2A" />
           Schedule Content
         </ModalHeader>
@@ -128,49 +140,52 @@ export function QuickCreateModal({
         <ModalBody py={6}>
           <VStack spacing={4}>
             <FormControl>
-              <FormLabel color="gray.300" fontSize="sm">
+              <FormLabel color="gray.600" fontSize="sm">
                 Title
               </FormLabel>
               <Input
                 placeholder="Content Title..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                bg="rgba(0,0,0,0.2)"
-                border="1px solid rgba(255,255,255,0.1)"
-                color="white"
+                bg="gray.50"
+                border="1px solid"
+                borderColor="gray.200"
+                color="gray.800"
                 _focus={{ borderColor: '#F99F2A', boxShadow: '0 0 0 1px #F99F2A' }}
               />
             </FormControl>
 
             <FormControl>
-              <FormLabel color="gray.300" fontSize="sm">
+              <FormLabel color="gray.600" fontSize="sm">
                 Target Keyword (Optional)
               </FormLabel>
               <Input
                 placeholder="e.g. digital marketing tips"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                bg="rgba(0,0,0,0.2)"
-                border="1px solid rgba(255,255,255,0.1)"
-                color="white"
+                bg="gray.50"
+                border="1px solid"
+                borderColor="gray.200"
+                color="gray.800"
                 _focus={{ borderColor: '#F99F2A', boxShadow: '0 0 0 1px #F99F2A' }}
               />
             </FormControl>
 
             <FormControl>
-              <FormLabel color="gray.300" fontSize="sm">
+              <FormLabel color="gray.600" fontSize="sm">
                 Content Type
               </FormLabel>
               <Select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                bg="rgba(0,0,0,0.2)"
-                border="1px solid rgba(255,255,255,0.1)"
-                color="white"
+                bg="gray.50"
+                border="1px solid"
+                borderColor="gray.200"
+                color="gray.800"
                 _focus={{ borderColor: '#F99F2A', boxShadow: '0 0 0 1px #F99F2A' }}
               >
                 {CONTENT_TYPES.map((ct) => (
-                  <option key={ct.value} value={ct.value} style={{ background: '#0f172a' }}>
+                  <option key={ct.value} value={ct.value} style={{ background: 'white' }}>
                     {ct.label}
                   </option>
                 ))}
@@ -179,8 +194,8 @@ export function QuickCreateModal({
           </VStack>
         </ModalBody>
 
-        <ModalFooter borderTop="1px solid rgba(255, 255, 255, 0.05)">
-          <Button variant="ghost" mr={3} onClick={onClose} color="gray.400">
+        <ModalFooter borderTop="1px solid" borderColor="gray.100">
+          <Button variant="ghost" mr={3} onClick={onClose} color="gray.500">
             Cancel
           </Button>
           <Button

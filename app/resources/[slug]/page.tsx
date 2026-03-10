@@ -33,7 +33,7 @@ import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { FiClock, FiEye, FiChevronRight, FiArrowLeft, FiShare2 } from 'react-icons/fi';
 import { MDXContent } from '@/src/components/resources/MDXContent';
-import { LandingHeader } from '@/src/components/home';
+import { MegaMenuHeader, PremiumFooter } from '@/src/components/marketing';
 
 // Hero image mapping by slug
 const HERO_IMAGES: Record<string, string> = {
@@ -150,7 +150,7 @@ export default function ResourceDetailPage() {
 
   return (
     <>
-      <LandingHeader />
+      <MegaMenuHeader />
 
       {/* Article Schema Markup */}
       <script
@@ -302,6 +302,7 @@ export default function ResourceDetailPage() {
           </HStack>
         </Container>
       </Box>
+      <PremiumFooter />
     </>
   );
 }

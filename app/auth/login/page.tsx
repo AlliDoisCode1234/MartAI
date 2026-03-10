@@ -150,6 +150,12 @@ export default function LoginPage() {
           // sessionStorage unavailable in Safari private browsing
         }
       }
+      // Mark this as a LOGIN flow so the callback page can gate new-user creation
+      try {
+        sessionStorage.setItem('authFlow', 'login');
+      } catch {
+        // sessionStorage unavailable in Safari private browsing
+      }
       console.log('[GoogleLogin] Calling signIn("google")...');
       const result = await signIn('google', { redirectTo: '/auth/callback' });
       console.log('[GoogleLogin] signIn result:', result);

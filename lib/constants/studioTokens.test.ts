@@ -35,7 +35,7 @@ describe('STUDIO_COLORS', () => {
   });
 
   it('defines all required accent colors', () => {
-    expect(STUDIO_COLORS.amber).toBe('#FF9D00');
+    expect(STUDIO_COLORS.amber).toBe('#F7941E');
     expect(STUDIO_COLORS.green).toBe('#22C55E');
     expect(STUDIO_COLORS.coral).toBe('#FF6B6B');
     expect(STUDIO_COLORS.blue).toBe('#3B82F6');
@@ -43,7 +43,7 @@ describe('STUDIO_COLORS', () => {
   });
 
   it('defines text hierarchy colors', () => {
-    expect(STUDIO_COLORS.textPrimary).toBe('#FFFFFF');
+    expect(STUDIO_COLORS.textPrimary).toBe('#1A202C');
     expect(STUDIO_COLORS.textSecondary).toBeDefined();
     expect(STUDIO_COLORS.textMuted).toBeDefined();
     expect(STUDIO_COLORS.textDim).toBeDefined();
@@ -52,19 +52,15 @@ describe('STUDIO_COLORS', () => {
   it('hex colors are valid hex format', () => {
     const hexPattern = /^#[0-9A-Fa-f]{6}$/;
     expect(STUDIO_COLORS.pageBg).toMatch(hexPattern);
+    expect(STUDIO_COLORS.cardBg).toMatch(hexPattern);
+    expect(STUDIO_COLORS.cardBorder).toMatch(hexPattern);
+    expect(STUDIO_COLORS.textPrimary).toMatch(hexPattern);
+    expect(STUDIO_COLORS.textSecondary).toMatch(hexPattern);
     expect(STUDIO_COLORS.amber).toMatch(hexPattern);
     expect(STUDIO_COLORS.green).toMatch(hexPattern);
     expect(STUDIO_COLORS.coral).toMatch(hexPattern);
     expect(STUDIO_COLORS.blue).toMatch(hexPattern);
     expect(STUDIO_COLORS.purple).toMatch(hexPattern);
-  });
-
-  it('rgba colors are valid rgba format', () => {
-    const rgbaPattern = /^rgba\(\d+,\s*\d+,\s*\d+,\s*[\d.]+\)$/;
-    expect(STUDIO_COLORS.cardBg).toMatch(rgbaPattern);
-    expect(STUDIO_COLORS.cardBgHover).toMatch(rgbaPattern);
-    expect(STUDIO_COLORS.cardBorder).toMatch(rgbaPattern);
-    expect(STUDIO_COLORS.textSecondary).toMatch(rgbaPattern);
   });
 
   it('has no undefined values', () => {
@@ -111,7 +107,7 @@ describe('STUDIO_GRADIENTS', () => {
 describe('STUDIO_CARD', () => {
   it('defines required card properties', () => {
     expect(STUDIO_CARD.bg).toBeDefined();
-    expect(STUDIO_CARD.backdropFilter).toContain('blur');
+    expect(STUDIO_CARD.boxShadow).toBeDefined();
     expect(STUDIO_CARD.borderWidth).toBe('1px');
     expect(STUDIO_CARD.borderColor).toBeDefined();
     expect(STUDIO_CARD.borderRadius).toBe('xl');

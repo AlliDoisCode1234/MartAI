@@ -75,7 +75,7 @@ interface Props {
 
 const thStyle = {
   color: 'gray.500',
-  borderColor: 'rgba(255,255,255,0.06)',
+  borderColor: 'gray.200',
   fontSize: '10px',
   fontWeight: 'bold',
   textTransform: 'uppercase' as const,
@@ -135,7 +135,7 @@ export function KeywordTable({
           mb={3}
         >
           <HStack justify="space-between">
-            <Text color="gray.300" fontSize="sm">
+            <Text color="gray.600" fontSize="sm">
               {selectedIds.length} keyword{selectedIds.length > 1 ? 's' : ''} selected
             </Text>
             <HStack spacing={2}>
@@ -143,7 +143,7 @@ export function KeywordTable({
                 size="xs"
                 variant="ghost"
                 color="gray.400"
-                _hover={{ color: 'white' }}
+                _hover={{ color: 'gray.700' }}
                 onClick={() => onSelectionChange([])}
               >
                 Clear
@@ -164,15 +164,10 @@ export function KeywordTable({
         </Box>
       )}
 
-      <Box
-        bg="#1a1230"
-        borderRadius="xl"
-        border="1px solid rgba(255,255,255,0.06)"
-        overflowX="auto"
-      >
+      <Box bg="white" borderRadius="xl" border="1px solid" borderColor="gray.200" overflowX="auto">
         <Table variant="unstyled" size="sm">
           <Thead>
-            <Tr borderBottom="1px solid rgba(255,255,255,0.06)">
+            <Tr borderBottom="1px solid" borderColor="gray.200">
               <Th {...thStyle} w="40px">
                 <Checkbox
                   isChecked={allSelected}
@@ -227,8 +222,9 @@ export function KeywordTable({
               return (
                 <Tr
                   key={kw._id}
-                  borderBottom="1px solid rgba(255,255,255,0.04)"
-                  _hover={{ bg: 'rgba(255,255,255,0.03)' }}
+                  borderBottom="1px solid"
+                  borderBottomColor="gray.100"
+                  _hover={{ bg: 'gray.50' }}
                   transition="background 0.15s"
                 >
                   <Td borderColor="transparent" py={3}>
@@ -243,7 +239,7 @@ export function KeywordTable({
                     <Link
                       as={NextLink}
                       href={`/keywords/${kw._id}`}
-                      color="gray.200"
+                      color="gray.700"
                       _hover={{ color: '#F99F2A', textDecor: 'underline' }}
                       fontSize="sm"
                       fontWeight="medium"
@@ -277,14 +273,12 @@ export function KeywordTable({
                     <PhooScoreBadge score={phooScore} />
                   </Td>
                   <Td borderColor="transparent" py={3} isNumeric>
-                    <Text color="gray.200" fontSize="sm">
+                    <Text color="gray.600" fontSize="sm">
                       {kw.searchVolume !== null ? kw.searchVolume.toLocaleString() : '--'}
                     </Text>
                   </Td>
                   <Td borderColor="transparent" py={3} isNumeric>
-                    <Text color="gray.400" fontSize="sm">
-                      {kw.difficulty !== null ? `${kw.difficulty}/100` : '--'}
-                    </Text>
+                    <DifficultyBadge difficulty={kw.difficulty} />
                   </Td>
                   <Td borderColor="transparent" py={3} isNumeric>
                     <RankChangeCell position={kw.gscPosition} change={kw.rankChange} />
@@ -298,12 +292,12 @@ export function KeywordTable({
                         variant="ghost"
                         size="xs"
                         color="gray.500"
-                        _hover={{ color: 'white', bg: 'rgba(255,255,255,0.08)' }}
+                        _hover={{ color: 'gray.700', bg: 'gray.100' }}
                         aria-label="Row actions"
                       />
                       <MenuList
-                        bg="#1e1640"
-                        borderColor="rgba(255,255,255,0.1)"
+                        bg="white"
+                        borderColor="gray.200"
                         boxShadow="lg"
                         minW="160px"
                         py={1}
@@ -311,14 +305,14 @@ export function KeywordTable({
                         <MenuItem
                           icon={<FiLayers />}
                           fontSize="sm"
-                          color="gray.300"
+                          color="gray.600"
                           bg="transparent"
-                          _hover={{ bg: 'rgba(255,255,255,0.06)', color: 'white' }}
+                          _hover={{ bg: 'gray.50', color: 'gray.800' }}
                           onClick={() => setClusterModalKeyword({ id: kw._id, text: kw.keyword })}
                         >
                           Add to Cluster
                         </MenuItem>
-                        <MenuDivider borderColor="rgba(255,255,255,0.08)" />
+                        <MenuDivider borderColor="gray.200" />
                         <MenuItem
                           icon={<FiTrash2 />}
                           fontSize="sm"
@@ -350,11 +344,11 @@ export function KeywordTable({
       {/* Bulk Delete Confirm Dialog */}
       <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose} isCentered>
         <AlertDialogOverlay bg="blackAlpha.700">
-          <AlertDialogContent bg="#1e1640" border="1px solid rgba(255,255,255,0.1)">
-            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="white">
+          <AlertDialogContent bg="white" border="1px solid" borderColor="gray.200">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="gray.800">
               Delete {selectedIds.length} Keyword{selectedIds.length > 1 ? 's' : ''}
             </AlertDialogHeader>
-            <AlertDialogBody color="gray.400">
+            <AlertDialogBody color="gray.600">
               This action cannot be undone. The selected keywords will be permanently removed from
               your library.
             </AlertDialogBody>
@@ -364,7 +358,7 @@ export function KeywordTable({
                 onClick={onClose}
                 variant="ghost"
                 color="gray.400"
-                _hover={{ color: 'white' }}
+                _hover={{ color: 'gray.700' }}
               >
                 Cancel
               </Button>
@@ -385,6 +379,50 @@ export function KeywordTable({
   );
 }
 
+// Difficulty badge — colored word labels matching marketing screenshots
+function DifficultyBadge({ difficulty }: { difficulty: number | null }) {
+  if (difficulty === null) {
+    return (
+      <Text color="gray.400" fontSize="sm">
+        --
+      </Text>
+    );
+  }
+
+  const label = difficulty <= 30 ? 'Easy' : difficulty <= 60 ? 'Medium' : 'Hard';
+  const color = difficulty <= 30 ? '#22C55E' : difficulty <= 60 ? '#F7941E' : '#EF4444';
+  const bg =
+    difficulty <= 30
+      ? 'rgba(34, 197, 94, 0.15)'
+      : difficulty <= 60
+        ? 'rgba(247, 148, 30, 0.15)'
+        : 'rgba(239, 68, 68, 0.15)';
+
+  return (
+    <Tooltip
+      label={`Difficulty: ${difficulty}/100`}
+      bg="gray.800"
+      color="gray.200"
+      fontSize="xs"
+      hasArrow
+    >
+      <Badge
+        bg={bg}
+        color={color}
+        fontSize="11px"
+        fontWeight="semibold"
+        px={2.5}
+        py={0.5}
+        borderRadius="6px"
+        cursor="default"
+        textTransform="capitalize"
+      >
+        {label}
+      </Badge>
+    </Tooltip>
+  );
+}
+
 // Rank & Change cell — shows current position with change pill.
 function RankChangeCell({ position, change }: { position: number | null; change: number | null }) {
   if (position === null && change === null) {
@@ -400,7 +438,7 @@ function RankChangeCell({ position, change }: { position: number | null; change:
   if (change === null || change === 0) {
     return (
       <HStack spacing={1} justify="flex-end">
-        <Text color="gray.200" fontSize="sm">
+        <Text color="gray.600" fontSize="sm">
           {posStr}
         </Text>
       </HStack>
@@ -414,7 +452,7 @@ function RankChangeCell({ position, change }: { position: number | null; change:
 
   return (
     <HStack spacing={1.5} justify="flex-end">
-      <Text color="gray.200" fontSize="sm">
+      <Text color="gray.600" fontSize="sm">
         {posStr}
       </Text>
       <Badge

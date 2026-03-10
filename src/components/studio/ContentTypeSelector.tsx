@@ -23,6 +23,7 @@ import {
 } from '@chakra-ui/react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { STUDIO_COLORS } from '@/lib/constants/studioTokens';
 import {
   FiHome,
   FiUser,
@@ -207,15 +208,15 @@ export function ContentTypeSelector({
                 >
                   <Box
                     p={4}
-                    bg={isSelected ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255, 255, 255, 0.03)'}
+                    bg={isSelected ? 'rgba(247, 148, 30, 0.08)' : 'white'}
                     border="1px solid"
-                    borderColor={isSelected ? 'purple.500' : 'rgba(255, 255, 255, 0.1)'}
+                    borderColor={isSelected ? STUDIO_COLORS.amber : 'gray.200'}
                     borderRadius="md"
                     cursor="pointer"
                     transition="all 0.15s ease"
                     _hover={{
-                      bg: isSelected ? 'rgba(139, 92, 246, 0.3)' : 'rgba(255, 255, 255, 0.06)',
-                      borderColor: isSelected ? 'purple.400' : 'rgba(255, 255, 255, 0.2)',
+                      bg: isSelected ? 'rgba(247, 148, 30, 0.14)' : 'gray.50',
+                      borderColor: isSelected ? STUDIO_COLORS.amberDark : 'gray.300',
                       transform: 'translateY(-2px)',
                     }}
                     onClick={() => onSelect(typeId)}
@@ -224,13 +225,13 @@ export function ContentTypeSelector({
                       <Icon
                         as={IconComponent}
                         boxSize={5}
-                        color={isSelected ? 'purple.400' : 'gray.400'}
+                        color={isSelected ? STUDIO_COLORS.amber : 'gray.400'}
                       />
                       <VStack align="start" spacing={0}>
                         <Text
                           fontSize="sm"
                           fontWeight="medium"
-                          color={isSelected ? 'white' : 'gray.200'}
+                          color={isSelected ? STUDIO_COLORS.amberDark : 'gray.700'}
                           noOfLines={1}
                         >
                           {type.name}

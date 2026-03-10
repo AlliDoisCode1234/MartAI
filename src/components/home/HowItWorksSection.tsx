@@ -9,10 +9,11 @@
  * Animated 3-step explainer with arrow progression.
  */
 
-import { Box, Container, Heading, Text, HStack, VStack, Icon, Flex } from '@chakra-ui/react';
+import { Box, Container, Heading, Text, VStack, Icon, Flex } from '@chakra-ui/react';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import { Globe, Sparkles, TrendingUp, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -25,6 +26,7 @@ const STEPS = [
     description: 'One URL unlocks your lead engine',
     color: 'blue.500',
     bgColor: 'blue.50',
+    screenshot: '/images/steps/step-connect.png',
   },
   {
     icon: Sparkles,
@@ -33,6 +35,7 @@ const STEPS = [
     description: 'Content optimized for Google & AI search',
     color: 'brand.orange',
     bgColor: 'orange.50',
+    screenshot: '/images/steps/step-ai-build.png',
   },
   {
     icon: TrendingUp,
@@ -41,6 +44,7 @@ const STEPS = [
     description: 'Predictable inbound pipeline',
     color: 'green.500',
     bgColor: 'green.50',
+    screenshot: '/images/steps/step-leads.png',
   },
 ];
 
@@ -110,25 +114,32 @@ export function HowItWorksSection() {
         <MotionFlex
           justify="center"
           align="center"
-          gap={{ base: 2, md: 4 }}
-          flexWrap={{ base: 'wrap', md: 'nowrap' }}
+          gap={{ base: 6, md: 4 }}
+          direction={{ base: 'column', md: 'row' }}
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
         >
           {STEPS.map((step, index) => (
-            <HStack key={step.step} spacing={{ base: 2, md: 4 }}>
+            <Flex
+              key={step.step}
+              align="center"
+              gap={{ base: 3, md: 4 }}
+              direction={{ base: 'column', md: 'row' }}
+            >
               {/* Step Card */}
               <MotionBox
                 variants={stepVariants}
-                p={{ base: 4, md: 6 }}
+                p={{ base: 4, md: 5 }}
                 borderRadius="2xl"
                 bg="white"
                 boxShadow="md"
                 border="1px solid"
                 borderColor="gray.100"
                 textAlign="center"
-                minW={{ base: '100px', md: '160px' }}
+                minW={{ base: '240px', md: '220px' }}
+                maxW={{ base: '320px', md: '260px' }}
+                w={{ base: '100%', md: 'auto' }}
                 _hover={{
                   transform: 'translateY(-4px)',
                   boxShadow: 'lg',
@@ -140,8 +151,8 @@ export function HowItWorksSection() {
                 <VStack spacing={3}>
                   {/* Icon with colored background */}
                   <Box
-                    w={{ base: 12, md: 14 }}
-                    h={{ base: 12, md: 14 }}
+                    w={{ base: 10, md: 12 }}
+                    h={{ base: 10, md: 12 }}
                     borderRadius="full"
                     bg={step.bgColor}
                     display="flex"
@@ -150,7 +161,26 @@ export function HowItWorksSection() {
                     border="2px solid"
                     borderColor={step.color}
                   >
-                    <Icon as={step.icon} boxSize={{ base: 5, md: 6 }} color={step.color} />
+                    <Icon as={step.icon} boxSize={{ base: 4, md: 5 }} color={step.color} />
+                  </Box>
+
+                  {/* Product Screenshot */}
+                  <Box
+                    borderRadius="lg"
+                    overflow="hidden"
+                    boxShadow="0 2px 8px rgba(0,0,0,0.08)"
+                    border="1px solid"
+                    borderColor="gray.100"
+                    w="100%"
+                    display={{ base: 'none', md: 'block' }}
+                  >
+                    <Image
+                      src={step.screenshot}
+                      alt={`${step.title} — product preview`}
+                      width={240}
+                      height={130}
+                      style={{ width: '100%', height: 'auto', display: 'block' }}
+                    />
                   </Box>
 
                   {/* Step number badge */}
@@ -200,7 +230,7 @@ export function HowItWorksSection() {
                   </motion.div>
                 </MotionBox>
               )}
-            </HStack>
+            </Flex>
           ))}
         </MotionFlex>
       </Container>

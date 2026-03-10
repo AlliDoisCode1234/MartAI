@@ -1,5 +1,16 @@
 'use client';
 
+/**
+ * SignupPage
+ *
+ * Component Hierarchy:
+ * App -> auth/signup -> SignupPage
+ *
+ * Signup page with Google OAuth and email/password registration.
+ * Handles invite flows, beta code verification, and error states
+ * from login-intent gate (no_account redirect).
+ */
+
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -18,7 +29,6 @@ import {
   Divider,
   HStack,
   FormHelperText,
-  Badge,
 } from '@chakra-ui/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { FaGoogle } from 'react-icons/fa';
@@ -35,6 +45,7 @@ export default function SignupPage() {
   const inviteEmail = searchParams.get('email');
   const inviteToken = searchParams.get('invite');
   const isInviteFlow = !!(inviteEmail && inviteToken);
+  const noAccountError = searchParams.get('error') === 'no_account';
 
   const [formData, setFormData] = useState({
     name: '',
@@ -78,11 +89,11 @@ export default function SignupPage() {
 
       // If from invite, redirect back to invite page to accept
       if (isInviteFlow && inviteToken) {
-        console.log('🚀 Signup successful, redirecting to invite page');
+        console.log('[Signup] Signup successful, redirecting to invite page');
         router.push(`/invite/${inviteToken}`);
       } else {
         // Regular signup - go to onboarding
-        console.log('🚀 Signup successful, redirecting to /onboarding');
+        console.log('[Signup] Signup successful, redirecting to /onboarding');
         router.push('/onboarding');
       }
     } catch (err) {
@@ -95,10 +106,28 @@ export default function SignupPage() {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setError(null);
     try {
-      await signIn('google');
+      // Mark this as a SIGNUP flow so the callback page allows account creation
+      try {
+        sessionStorage.setItem('authFlow', 'signup');
+      } catch {
+        // sessionStorage unavailable in Safari private browsing
+      }
+      const result = await signIn('google', { redirectTo: '/auth/callback' });
+      // Handle all possible signIn outcomes (matches login page pattern)
+      if (result?.redirect) {
+        window.location.href = result.redirect.toString();
+      } else if (result?.signingIn) {
+        // User signed in immediately (e.g. existing Google session)
+        router.push('/onboarding');
+      } else {
+        // Unexpected shape — surface error and reset loading
+        setError('Failed to start Google sign-in flow');
+        setLoading(false);
+      }
     } catch (err) {
-      setError('Failed to sign in with Google');
+      setError('Failed to sign up with Google');
       setLoading(false);
     }
   };
@@ -138,10 +167,12 @@ export default function SignupPage() {
                 : "No SEO knowledge needed. We'll help you get found on Google."}
             </Text>
 
-            {error && (
+            {(error || noAccountError) && (
               <Alert status="error" borderRadius="md">
                 <AlertIcon />
-                {error}
+                {noAccountError
+                  ? 'No account found with this email. Please sign up to get started.'
+                  : error}
               </Alert>
             )}
 

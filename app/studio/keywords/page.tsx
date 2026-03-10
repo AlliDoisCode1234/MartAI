@@ -199,8 +199,8 @@ export default function StudioKeywordsPage() {
     return (
       <StudioLayout>
         <VStack spacing={4} align="stretch">
-          <Skeleton height="80px" startColor="gray.700" endColor="gray.600" borderRadius="xl" />
-          <Skeleton height="300px" startColor="gray.700" endColor="gray.600" borderRadius="xl" />
+          <Skeleton height="80px" startColor="gray.200" endColor="gray.100" borderRadius="xl" />
+          <Skeleton height="300px" startColor="gray.200" endColor="gray.100" borderRadius="xl" />
         </VStack>
       </StudioLayout>
     );
@@ -215,7 +215,7 @@ export default function StudioKeywordsPage() {
         <HStack justify="space-between">
           <HStack spacing={3}>
             <Icon as={FiKey} boxSize={6} color={STUDIO_COLORS.amber} />
-            <Heading size="lg" color="white">
+            <Heading size="lg" color="gray.800">
               Keywords Library
             </Heading>
           </HStack>
@@ -247,13 +247,14 @@ export default function StudioKeywordsPage() {
                 py={2}
                 borderRadius="8px"
                 _selected={{
-                  color: 'white',
-                  bg: 'rgba(255, 157, 0, 0.15)',
+                  color: 'gray.800',
+                  bg: 'orange.50',
                   borderBottom: `2px solid ${STUDIO_COLORS.amber}`,
+                  fontWeight: 'semibold',
                 }}
                 _hover={{
-                  color: 'white',
-                  bg: 'rgba(255, 255, 255, 0.05)',
+                  color: 'gray.700',
+                  bg: 'gray.50',
                 }}
               >
                 {label}

@@ -67,10 +67,11 @@ export function TopPerformingContentCard({ content }: Props) {
 
   return (
     <MotionBox
-      bg="rgba(255, 255, 255, 0.03)"
-      backdropFilter="blur(20px)"
-      border="1px solid rgba(255, 255, 255, 0.08)"
-      borderRadius="2xl"
+      bg="white"
+      border="1px solid"
+      borderColor="gray.100"
+      boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
+      borderRadius="xl"
       p={{ base: 4, md: 5 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -80,7 +81,7 @@ export function TopPerformingContentCard({ content }: Props) {
       <VStack align="stretch" spacing={4} h="100%">
         <HStack spacing={2}>
           <Icon as={FiTrendingUp} color="#FF9D00" boxSize={4} />
-          <Text color="white" fontWeight="semibold" fontSize="sm">
+          <Text color="gray.800" fontWeight="semibold" fontSize="sm">
             Top Performing Content
           </Text>
         </HStack>
@@ -118,7 +119,7 @@ export function TopPerformingContentCard({ content }: Props) {
                 </Box>
 
                 <VStack align="start" spacing={0} flex={1} minW={0}>
-                  <Text color="gray.200" fontSize="xs" fontWeight="medium" noOfLines={2}>
+                  <Text color="gray.700" fontSize="xs" fontWeight="medium" noOfLines={2}>
                     {item.title}
                   </Text>
                   <HStack spacing={2}>
@@ -146,7 +147,7 @@ export function TopPerformingContentCard({ content }: Props) {
           })}
         </VStack>
 
-        <HStack justify="flex-end" pt={2} borderTop="1px solid rgba(255,255,255,0.06)">
+        <HStack justify="flex-end" pt={2} borderTop="1px solid" borderTopColor="gray.100">
           <Link href="/studio">
             <HStack spacing={1} cursor="pointer">
               <Text color="gray.400" fontSize="xs">

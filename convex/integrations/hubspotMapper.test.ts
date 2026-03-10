@@ -56,20 +56,20 @@ describe('HubSpot Mapper: mapUserToHubSpot', () => {
     const now = Date.now();
     const user = {
       acquisitionSource: 'referral',
-      acquisitionDate: now,
       lastActiveAt: now,
     };
 
     const result = mapUserToHubSpot(user);
 
     expect(result.phoo_lead_source).toBe('referral');
-    expect(result.phoo_acquisition_date).toBe(now);
     expect(result.phoo_last_activity).toBe(now);
   });
 
-  test('should return empty object for empty user', () => {
+  test('should return minimal object for empty user', () => {
     const result = mapUserToHubSpot({});
-    expect(Object.keys(result).length).toBe(0);
+    // phoo_signup_abandoned is always set
+    expect(result.phoo_signup_abandoned).toBe(false);
+    expect(Object.keys(result).length).toBe(1);
   });
 });
 
@@ -79,10 +79,20 @@ describe('HubSpot Mapper: mapWaitlistToHubSpot', () => {
 
     expect(result.lifecyclestage).toBe('lead');
     expect(result.hs_lead_status).toBe('NEW');
-    expect(result.phoo_waitlist_signup).toBe(true);
+    expect(result.phoo_waitlist_signup).toBe('signed_up');
     expect(result.phoo_lead_source).toBe('waitlist_beta');
     expect(result.phoo_onboarding_status).toBe('not_started');
     expect(result.phoo_account_status).toBe('inactive');
+  });
+
+  test('should map phoo.ai source to waitlist_beta (validation)', () => {
+    const result = mapWaitlistToHubSpot({
+      email: 'lead@example.com',
+      source: 'phoo.ai',
+    });
+
+    // 'phoo.ai' is not a valid HubSpot option, should fall back to 'waitlist_beta'
+    expect(result.phoo_lead_source).toBe('waitlist_beta');
   });
 
   test('should map custom source', () => {

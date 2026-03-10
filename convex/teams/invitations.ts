@@ -329,6 +329,11 @@ export const acceptInvitation = mutation({
       });
     }
 
+    // Fire-and-forget HubSpot sync (team members skip normal onboarding)
+    ctx.scheduler.runAfter(0, api.integrations.hubspot.syncUserToHubspot, {
+      userId,
+    });
+
     return { success: true, organizationId: invitation.organizationId };
   },
 });

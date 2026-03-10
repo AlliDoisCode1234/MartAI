@@ -94,20 +94,31 @@ export function HeroKPICard({
 
   return (
     <MotionBox
-      bg={gradient}
+      bg={STUDIO_COLORS.cardBg}
       borderRadius="xl"
       borderWidth="1px"
-      borderColor="rgba(255, 255, 255, 0.08)"
+      borderColor={STUDIO_COLORS.cardBorder}
+      borderLeftWidth="4px"
+      borderLeftColor={
+        gradient.includes('amber') || gradient.includes(STUDIO_COLORS.amber)
+          ? STUDIO_COLORS.amber
+          : gradient.includes('blue') || gradient.includes(STUDIO_COLORS.blue)
+            ? STUDIO_COLORS.blue
+            : gradient.includes('green') || gradient.includes(STUDIO_COLORS.green)
+              ? STUDIO_COLORS.green
+              : STUDIO_COLORS.purple
+      }
       p={5}
       position="relative"
       overflow="hidden"
+      boxShadow="0 2px 8px rgba(0, 0, 0, 0.08)"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: 'easeOut' }}
       _hover={{
-        borderColor: 'rgba(255, 255, 255, 0.15)',
+        borderColor: STUDIO_COLORS.activeBorder,
         transform: 'translateY(-2px)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
       }}
       cursor="default"
       style={{ transition: 'border-color 0.2s, transform 0.2s, box-shadow 0.2s' }}
@@ -119,7 +130,7 @@ export function HeroKPICard({
             w="28px"
             h="28px"
             borderRadius="lg"
-            bg="rgba(255, 255, 255, 0.1)"
+            bg="rgba(247, 148, 30, 0.1)"
             align="center"
             justify="center"
           >
@@ -135,7 +146,13 @@ export function HeroKPICard({
       </Flex>
 
       {/* Value */}
-      <Text fontSize="3xl" fontWeight="bold" color="white" lineHeight="1.1" mb={1}>
+      <Text
+        fontSize="3xl"
+        fontWeight="bold"
+        color={STUDIO_COLORS.textPrimary}
+        lineHeight="1.1"
+        mb={1}
+      >
         {value}
       </Text>
 
@@ -174,11 +191,11 @@ export function HeroKPICard({
             <Tag
               key={tag.label}
               size="sm"
-              bg={tag.active ? 'rgba(255, 157, 0, 0.15)' : 'rgba(255, 255, 255, 0.06)'}
+              bg={tag.active ? 'rgba(247, 148, 30, 0.1)' : STUDIO_COLORS.pageBgEnd}
               color={tag.active ? STUDIO_COLORS.amber : STUDIO_COLORS.textMuted}
               borderRadius="full"
               cursor="pointer"
-              _hover={{ bg: 'rgba(255, 157, 0, 0.2)' }}
+              _hover={{ bg: 'rgba(247, 148, 30, 0.15)' }}
             >
               <TagLabel fontSize="xs">{tag.label}</TagLabel>
             </Tag>

@@ -108,7 +108,7 @@ export function CalendarCard({ contentPiece }: Props) {
         {/* Title */}
         <Text
           fontSize="xs"
-          color="white"
+          color="gray.700"
           noOfLines={2}
           lineHeight="1.3"
           fontWeight="medium"

@@ -33,7 +33,8 @@ export const HUBSPOT_CUSTOM_PROPERTIES = {
   phoo_waitlist_signup: {
     label: 'Phoo Waitlist Signup',
     description: 'Whether contact signed up via phoo.ai beta waitlist',
-    type: 'booleancheckbox',
+    type: 'enumeration',
+    options: ['signed_up', 'not_signed_up'],
   },
 
   // Product Usage & Status
@@ -142,7 +143,8 @@ export const HUBSPOT_CUSTOM_PROPERTIES = {
 // ============================================================================
 
 /**
- * Map a Convex user to HubSpot contact properties
+ * Map a Convex user to HubSpot contact properties.
+ * Used by syncUserToHubspot action — includes project, onboarding, and PR data.
  */
 export function mapUserToHubSpot(user: {
   email?: string;
@@ -152,17 +154,17 @@ export function mapUserToHubSpot(user: {
   onboardingStatus?: string;
   accountStatus?: string;
   acquisitionSource?: string;
-  acquisitionDate?: number;
   lastActiveAt?: number;
-  onboardingSteps?: {
-    ga4Connected?: boolean;
-    gscConnected?: boolean;
-  };
+  onboardingSteps?: Record<string, boolean | string | number | undefined>;
   engagementMilestones?: {
     totalKeywords?: number;
     totalClusters?: number;
     totalPublished?: number;
   };
+  projectCount?: number;
+  primaryWebsite?: string;
+  prScore?: number | null;
+  prTier?: string | null;
 }): Record<string, string | number | boolean> {
   const props: Record<string, string | number | boolean> = {};
 
@@ -175,10 +177,12 @@ export function mapUserToHubSpot(user: {
 
   // Acquisition
   if (user.acquisitionSource) {
-    props.phoo_lead_source = user.acquisitionSource;
-  }
-  if (user.acquisitionDate) {
-    props.phoo_acquisition_date = user.acquisitionDate;
+    const validatedSource = (VALID_LEAD_SOURCES as readonly string[]).includes(
+      user.acquisitionSource
+    )
+      ? user.acquisitionSource
+      : 'waitlist_beta';
+    props.phoo_lead_source = validatedSource;
   }
 
   // Product status
@@ -191,22 +195,64 @@ export function mapUserToHubSpot(user: {
   if (user.accountStatus) {
     props.phoo_account_status = user.accountStatus;
   }
+  if (user.projectCount !== undefined) {
+    props.phoo_project_count = user.projectCount;
+  }
+  if (user.primaryWebsite) {
+    props.phoo_website = user.primaryWebsite;
+  }
+
+  // Onboarding abandon tracking
+  props.phoo_signup_abandoned = false;
+
+  // Onboarding step details
+  if (user.onboardingSteps) {
+    const steps = user.onboardingSteps;
+    if (steps.signupCompleted !== undefined) {
+      props.phoo_signup_completed = !!steps.signupCompleted;
+    }
+    if (steps.planSelected && typeof steps.planSelected === 'string') {
+      props.phoo_plan = steps.planSelected;
+    }
+    if (steps.paymentCompleted !== undefined) {
+      props.phoo_payment_completed = !!steps.paymentCompleted;
+    }
+    if (steps.projectCreated !== undefined) {
+      props.phoo_project_created = !!steps.projectCreated;
+    }
+    if (steps.ga4Connected !== undefined) {
+      props.phoo_ga4_connected = !!steps.ga4Connected;
+    }
+    if (steps.gscConnected !== undefined) {
+      props.phoo_gsc_connected = !!steps.gscConnected;
+    }
+  }
+
+  // PR Score
+  if (user.prScore !== undefined && user.prScore !== null) {
+    props.phoo_pr_score = user.prScore;
+  }
+  if (user.prTier) {
+    props.phoo_pr_tier = user.prTier;
+  }
 
   // Activity
   if (user.lastActiveAt) {
     props.phoo_last_activity = user.lastActiveAt;
   }
 
-  // Integrations
-  if (user.onboardingSteps?.ga4Connected !== undefined) {
-    props.phoo_ga4_connected = user.onboardingSteps.ga4Connected;
-  }
-  if (user.onboardingSteps?.gscConnected !== undefined) {
-    props.phoo_gsc_connected = user.onboardingSteps.gscConnected;
-  }
-
   return props;
 }
+
+// Valid options for phoo_lead_source in HubSpot (must match HubSpot property options)
+const VALID_LEAD_SOURCES = [
+  'waitlist_beta',
+  'organic',
+  'referral',
+  'partner',
+  'paid',
+  'migration',
+] as const;
 
 /**
  * Map waitlist signup to HubSpot contact properties
@@ -222,13 +268,20 @@ export function mapWaitlistToHubSpot(data: {
   // and we can't reliably determine the user's local date. HubSpot tracks
   // create date natively via the built-in 'createdate' property.
 
+  // Validate source against HubSpot's allowed options.
+  // Forms pass 'phoo.ai' as source (tracking origin) but HubSpot only accepts
+  // the enumeration values. Default to 'waitlist_beta' for waitlist signups.
+  const validatedSource =
+    data.source && (VALID_LEAD_SOURCES as readonly string[]).includes(data.source)
+      ? data.source
+      : 'waitlist_beta';
+
   const props: Record<string, string | number | boolean> = {
     lifecyclestage: 'lead',
     hs_lead_status: 'NEW',
-    // HubSpot has this as boolean checkbox (true/false)
-    phoo_waitlist_signup: true,
-    // Use custom source or default to waitlist_beta
-    phoo_lead_source: data.source || 'waitlist_beta',
+    // HubSpot has this as enumeration with options: signed_up, not_signed_up
+    phoo_waitlist_signup: 'signed_up',
+    phoo_lead_source: validatedSource,
     phoo_onboarding_status: 'not_started',
     phoo_account_status: 'inactive',
   };
@@ -248,6 +301,86 @@ export function mapWaitlistToHubSpot(data: {
 }
 
 /**
+ * Map prospect to HubSpot contact properties
+ */
+export function mapProspectToHubSpot(prospect: {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  companyName?: string;
+  source?: string;
+  status?: string;
+  monthlyRevenue?: number;
+  timeline?: string;
+  marketingFrustration?: string;
+}): Record<string, string | number | boolean> {
+  const props: Record<string, string | number | boolean> = {
+    firstname: prospect.firstName || '',
+    lastname: prospect.lastName || '',
+  };
+
+  if (prospect.phone) props.phone = prospect.phone;
+  if (prospect.companyName) props.company = prospect.companyName;
+
+  // Validate source against HubSpot options
+  const validatedSource =
+    prospect.source && (VALID_LEAD_SOURCES as readonly string[]).includes(prospect.source)
+      ? prospect.source
+      : 'organic';
+  props.phoo_lead_source = validatedSource;
+
+  if (prospect.status) {
+    props.phoo_account_status = prospect.status;
+  }
+
+  return props;
+}
+
+/**
+ * Map abandoned signup to HubSpot
+ */
+export function mapAbandonedSignupToHubSpot(data: {
+  abandonedAtStep: string;
+  firstName?: string;
+}): Record<string, string | number | boolean> {
+  const props: Record<string, string | number | boolean> = {
+    phoo_signup_abandoned: true,
+    phoo_abandoned_at_step: data.abandonedAtStep,
+  };
+
+  if (data.firstName) {
+    props.firstname = data.firstName;
+  }
+
+  return props;
+}
+
+/**
+ * Map API access request to HubSpot
+ */
+export function mapApiAccessToHubSpot(request: {
+  companyName: string;
+  useCase: string;
+  expectedMonthlyVolume: string;
+  status: string;
+  contactName?: string;
+}): Record<string, string | number | boolean> {
+  const props: Record<string, string | number | boolean> = {
+    company: request.companyName,
+    phoo_api_access_requested: true,
+    phoo_lead_source: 'organic',
+  };
+
+  if (request.contactName) {
+    const nameParts = request.contactName.split(' ');
+    props.firstname = nameParts[0] || '';
+    props.lastname = nameParts.slice(1).join(' ') || '';
+  }
+
+  return props;
+}
+
+/**
  * Map Phoo Rating (PR) score update to HubSpot
  */
 export function mapPRScoreToHubSpot(data: {
@@ -255,6 +388,7 @@ export function mapPRScoreToHubSpot(data: {
   prTier?: string;
   needsAttention?: boolean;
   lastActiveAt?: number;
+  churnRisk?: boolean;
 }): Record<string, string | number | boolean> {
   const props: Record<string, string | number | boolean> = {
     phoo_pr_score: data.prScore,
@@ -267,26 +401,32 @@ export function mapPRScoreToHubSpot(data: {
   if (data.lastActiveAt) {
     props.phoo_last_activity = data.lastActiveAt;
   }
+  if (data.churnRisk !== undefined) {
+    props.phoo_churn_risk = data.churnRisk;
+  }
 
   return props;
 }
 
-// ============================================================================
-// PROPERTY MIGRATION NOTE
-// ============================================================================
 /**
- * MIGRATION: martai_* → phoo_*
- *
- * The existing hubspot.ts uses `martai_*` prefix. For consistency with the
- * phoo.ai brand, new properties should use `phoo_*` prefix.
- *
- * To migrate:
- * 1. Create new `phoo_*` properties in HubSpot
- * 2. Update mappers to use new names
- * 3. Run bulk sync to populate new fields
- * 4. Update any HubSpot workflows/lists to use new properties
- * 5. (Optional) Delete old `martai_*` properties
- *
- * For now, this mapper uses `phoo_*` for new waitlist signups.
- * Existing `martai_*` properties in hubspot.ts continue to work.
+ * Map a subscription lifecycle change to HubSpot properties.
+ * Used when subscription status changes (cancel, reactivate, etc.)
  */
+export function mapLifecycleChangeToHubSpot(change: {
+  accountStatus: string;
+  membershipTier?: string;
+  lifecyclestage?: string;
+}): Record<string, string | number | boolean> {
+  const props: Record<string, string | number | boolean> = {
+    phoo_account_status: change.accountStatus,
+  };
+
+  if (change.membershipTier) {
+    props.phoo_plan = change.membershipTier;
+  }
+  if (change.lifecyclestage) {
+    props.lifecyclestage = change.lifecyclestage;
+  }
+
+  return props;
+}

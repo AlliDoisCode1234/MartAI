@@ -9,6 +9,15 @@ import { action, internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
 import { Id } from '../_generated/dataModel';
+import {
+  mapUserToHubSpot,
+  mapWaitlistToHubSpot,
+  mapProspectToHubSpot,
+  mapAbandonedSignupToHubSpot,
+  mapApiAccessToHubSpot,
+  mapPRScoreToHubSpot,
+  mapLifecycleChangeToHubSpot,
+} from './hubspotMapper';
 
 // HubSpot API base URL
 const HUBSPOT_API_URL = 'https://api.hubapi.com';
@@ -54,12 +63,15 @@ async function hubspotRequest(
 
 /**
  * Create or update a contact in HubSpot
+ * Uses search-before-create for idempotent upsert by email.
  */
 async function upsertContact(
   email: string,
   properties: Record<string, string | number | boolean>
 ): Promise<{ id: string; isNew: boolean }> {
-  // First, try to find existing contact by email
+  // Step 1: Search for existing contact by email
+  let existingContactId: string | null = null;
+
   try {
     const searchResult = await hubspotRequest('/crm/v3/objects/contacts/search', 'POST', {
       filterGroups: [
@@ -70,17 +82,21 @@ async function upsertContact(
     });
 
     if (searchResult.results?.length > 0) {
-      // Update existing contact
-      const contactId = searchResult.results[0].id;
-      await hubspotRequest(`/crm/v3/objects/contacts/${contactId}`, 'PATCH', { properties });
-      console.log(`[HubSpot] Updated contact: ${email} (ID: ${contactId})`);
-      return { id: contactId, isNew: false };
+      existingContactId = searchResult.results[0].id;
     }
   } catch (e) {
-    // Contact not found, will create new
+    // Search failed — fall through to create
+    console.warn(`[HubSpot] Search failed for ${email}, will attempt create:`, e);
   }
 
-  // Create new contact
+  // Step 2: If found, update (PATCH errors propagate to caller)
+  if (existingContactId) {
+    await hubspotRequest(`/crm/v3/objects/contacts/${existingContactId}`, 'PATCH', { properties });
+    console.log(`[HubSpot] Updated contact: ${email} (ID: ${existingContactId})`);
+    return { id: existingContactId, isNew: false };
+  }
+
+  // Step 3: Not found — create new contact
   const createResult = await hubspotRequest('/crm/v3/objects/contacts', 'POST', {
     properties: { email, ...properties },
   });
@@ -91,11 +107,11 @@ async function upsertContact(
 
 /**
  * Sync a user to HubSpot
+ * Uses centralized mapper for phoo_* properties.
  */
 export const syncUserToHubspot = action({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
-    // Graceful skip if no API key
     if (!isHubSpotEnabled()) {
       console.log('[HubSpot] Skipping user sync - no API key configured');
       return { success: false, reason: 'no_api_key' };
@@ -112,87 +128,44 @@ export const syncUserToHubspot = action({
       userId: args.userId,
     });
 
-    // Get latest MR score if they have a project
-    let mrScore: number | null = null;
-    let mrTier: string | null = null;
+    // Get latest PR score if they have a project
+    let prScore: number | null = null;
+    let prTier: string | null = null;
     let primaryWebsite: string | null = null;
 
     if (projects.length > 0) {
       primaryWebsite = projects[0].websiteUrl;
       try {
-        const mrData = await ctx.runQuery(api.analytics.martaiRatingQueries.getLatestScore, {
+        const prData = await ctx.runQuery(api.analytics.martaiRatingQueries.getLatestScore, {
           projectId: projects[0]._id,
         });
-        if (mrData) {
-          mrScore = mrData.overall;
-          if (mrScore !== null) {
-            if (mrScore >= 80) mrTier = 'thriving';
-            else if (mrScore >= 65) mrTier = 'growing';
-            else if (mrScore >= 50) mrTier = 'building';
-            else mrTier = 'needs_work';
+        if (prData) {
+          prScore = prData.overall;
+          if (prScore !== null) {
+            if (prScore >= 80) prTier = 'thriving';
+            else if (prScore >= 65) prTier = 'growing';
+            else if (prScore >= 50) prTier = 'building';
+            else prTier = 'needs_work';
           }
         }
       } catch (e) {
-        // No MR score yet
+        // No PR score yet
       }
     }
 
-    // Parse name
-    const nameParts = (user.name || '').split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
+    // Use centralized mapper (phoo_* prefix)
+    const properties = mapUserToHubSpot({
+      ...user,
+      onboardingSteps: user.onboardingSteps as Record<
+        string,
+        boolean | string | number | undefined
+      >,
+      projectCount: projects.length,
+      primaryWebsite: primaryWebsite ?? undefined,
+      prScore,
+      prTier,
+    });
 
-    // Build properties
-    const properties: Record<string, string | number | boolean> = {
-      firstname: firstName,
-      lastname: lastName,
-      // Custom MartAI properties
-      martai_plan: user.membershipTier || 'free',
-      martai_onboarding_status: user.onboardingStatus || 'not_started',
-      martai_project_count: projects.length,
-      martai_signup_abandoned: false,
-    };
-
-    // Add onboarding step details
-    if (user.onboardingSteps) {
-      const steps = user.onboardingSteps;
-      if (steps.signupCompleted !== undefined) {
-        properties.martai_signup_completed = steps.signupCompleted;
-      }
-      if (steps.planSelected) {
-        properties.martai_selected_plan = steps.planSelected;
-      }
-      if (steps.paymentCompleted !== undefined) {
-        properties.martai_payment_completed = steps.paymentCompleted;
-      }
-      if (steps.projectCreated !== undefined) {
-        properties.martai_project_created = steps.projectCreated;
-      }
-      if (steps.ga4Connected !== undefined) {
-        properties.martai_ga4_connected = steps.ga4Connected;
-      }
-      if (steps.gscConnected !== undefined) {
-        properties.martai_gsc_connected = steps.gscConnected;
-      }
-    }
-
-    // Add MR score if available
-    if (mrScore !== null) {
-      properties.martai_mr_score = mrScore;
-    }
-    if (mrTier) {
-      properties.martai_mr_tier = mrTier;
-    }
-    if (primaryWebsite) {
-      properties.martai_website = primaryWebsite;
-    }
-
-    // Add last activity for churn tracking
-    if (user.lastActiveAt) {
-      properties.martai_last_activity = user.lastActiveAt;
-    }
-
-    // Sync to HubSpot
     const result = await upsertContact(user.email, properties);
 
     return {
@@ -206,7 +179,6 @@ export const syncUserToHubspot = action({
 export const syncProspectToHubspot = action({
   args: { prospectId: v.id('prospects') },
   handler: async (ctx, args) => {
-    // Graceful skip if no API key
     if (!isHubSpotEnabled()) {
       console.log('[HubSpot] Skipping prospect sync - no API key configured');
       return { success: false, reason: 'no_api_key' };
@@ -223,24 +195,18 @@ export const syncProspectToHubspot = action({
 
     const p = prospect.prospect;
 
-    const properties: Record<string, string | number | boolean> = {
-      firstname: p.firstName || '',
-      lastname: p.lastName || '',
-      phone: p.phone || '',
-      company: p.companyName || '',
-      martai_lead_source: p.source || 'website',
-      martai_prospect_status: p.status || 'draft',
-    };
-
-    if (p.monthlyRevenue) {
-      properties.martai_monthly_revenue = p.monthlyRevenue;
-    }
-    if (p.timeline) {
-      properties.martai_timeline = p.timeline;
-    }
-    if (p.marketingFrustration) {
-      properties.martai_marketing_frustration = p.marketingFrustration;
-    }
+    // Use centralized mapper (phoo_* prefix)
+    const properties = mapProspectToHubSpot({
+      firstName: p.firstName,
+      lastName: p.lastName,
+      phone: p.phone,
+      companyName: p.companyName,
+      source: p.source,
+      status: p.status,
+      monthlyRevenue: p.monthlyRevenue,
+      timeline: p.timeline,
+      marketingFrustration: p.marketingFrustration,
+    });
 
     const result = await upsertContact(p.email!, properties);
 
@@ -258,18 +224,15 @@ export const syncProspectToHubspot = action({
 export const markAbandonedSignup = action({
   args: {
     email: v.string(),
-    abandonedAtStep: v.string(), // 'signup' | 'plan' | 'payment' | 'onboarding'
+    abandonedAtStep: v.string(),
     firstName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const properties: Record<string, string | number | boolean> = {
-      martai_signup_abandoned: true,
-      martai_abandoned_at_step: args.abandonedAtStep,
-    };
-
-    if (args.firstName) {
-      properties.firstname = args.firstName;
-    }
+    // Use centralized mapper (phoo_* prefix)
+    const properties = mapAbandonedSignupToHubSpot({
+      abandonedAtStep: args.abandonedAtStep,
+      firstName: args.firstName,
+    });
 
     const result = await upsertContact(args.email, properties);
 
@@ -287,7 +250,6 @@ export const markAbandonedSignup = action({
 export const syncApiAccessRequest = action({
   args: { requestId: v.id('apiAccessRequests') },
   handler: async (ctx, args) => {
-    // Graceful skip if no API key
     if (!isHubSpotEnabled()) {
       console.log('[HubSpot] Skipping API access request sync - no API key configured');
       return { success: false, reason: 'no_api_key' };
@@ -302,40 +264,14 @@ export const syncApiAccessRequest = action({
       return { success: false, reason: 'no_email' };
     }
 
-    // Map use case to readable format
-    const useCaseMap: Record<string, string> = {
-      bi_integration: 'BI Integration',
-      automation: 'Automation',
-      custom_reports: 'Custom Reports',
-      other: 'Other',
-    };
-
-    // Map volume to readable format
-    const volumeMap: Record<string, string> = {
-      under_100: 'Under 100 calls/mo',
-      '100_1000': '100-1,000 calls/mo',
-      '1000_10000': '1,000-10,000 calls/mo',
-      over_10000: 'Over 10,000 calls/mo',
-    };
-
-    const properties: Record<string, string | number | boolean> = {
-      company: request.companyName,
-      martai_api_access_requested: true,
-      martai_api_use_case: useCaseMap[request.useCase] || request.useCase,
-      martai_api_volume: volumeMap[request.expectedMonthlyVolume] || request.expectedMonthlyVolume,
-      martai_api_request_status: request.status,
-      martai_lead_source: 'api_access_form',
-    };
-
-    if (request.contactName) {
-      const nameParts = request.contactName.split(' ');
-      properties.firstname = nameParts[0] || '';
-      properties.lastname = nameParts.slice(1).join(' ') || '';
-    }
-
-    if (request.useCaseDetails) {
-      properties.martai_api_use_case_details = request.useCaseDetails;
-    }
+    // Use centralized mapper (phoo_* prefix)
+    const properties = mapApiAccessToHubSpot({
+      companyName: request.companyName,
+      useCase: request.useCase,
+      expectedMonthlyVolume: request.expectedMonthlyVolume,
+      status: request.status,
+      contactName: request.contactName,
+    });
 
     const result = await upsertContact(request.email, properties);
 
@@ -369,9 +305,8 @@ export const updateMRScore = internalAction({
     mrTier?: string | null;
     churnRisk?: boolean;
   }> => {
-    // Graceful skip if no API key
     if (!isHubSpotEnabled()) {
-      console.log('[HubSpot] Skipping MR score update - no API key configured');
+      console.log('[HubSpot] Skipping PR score update - no API key configured');
       return { success: false, reason: 'no_api_key' };
     }
 
@@ -388,50 +323,44 @@ export const updateMRScore = internalAction({
       return { success: false, reason: 'no_projects' };
     }
 
-    // Get latest MR score
-    let mrScore: number | null = null;
-    let mrTier: string | null = null;
+    // Get latest PR score
+    let prScore: number | null = null;
+    let prTier: string | null = null;
 
     try {
-      const mrData = await ctx.runQuery(api.analytics.martaiRatingQueries.getLatestScore, {
+      const prData = await ctx.runQuery(api.analytics.martaiRatingQueries.getLatestScore, {
         projectId: projects[0]._id,
       });
-      if (mrData) {
-        mrScore = mrData.overall;
-        if (mrScore !== null) {
-          if (mrScore >= 80) mrTier = 'thriving';
-          else if (mrScore >= 65) mrTier = 'growing';
-          else if (mrScore >= 50) mrTier = 'building';
-          else mrTier = 'needs_work';
+      if (prData) {
+        prScore = prData.overall;
+        if (prScore !== null) {
+          if (prScore >= 80) prTier = 'thriving';
+          else if (prScore >= 65) prTier = 'growing';
+          else if (prScore >= 50) prTier = 'building';
+          else prTier = 'needs_work';
         }
       }
     } catch (e) {
       return { success: false, reason: 'no_mr_score' };
     }
 
-    if (mrScore === null) {
+    if (prScore === null) {
       return { success: false, reason: 'no_mr_score' };
     }
 
-    // Calculate churn risk
-    // Risk if: score < 50 OR score dropped significantly
-    // For now, we just check if score is low (weekly cron can compare to previous)
-    const churnRisk = mrScore < 50 || mrTier === 'needs_work';
+    const churnRisk = prScore < 50 || prTier === 'needs_work';
 
-    const properties: Record<string, string | number | boolean> = {
-      martai_mr_score: mrScore,
-      martai_churn_risk: churnRisk,
-    };
-    if (mrTier) {
-      properties.martai_mr_tier = mrTier;
-    }
-    if (user.lastActiveAt) {
-      properties.martai_last_activity = user.lastActiveAt;
-    }
+    // Use centralized mapper (phoo_* prefix)
+    const properties = mapPRScoreToHubSpot({
+      prScore,
+      prTier: prTier ?? undefined,
+      churnRisk,
+      lastActiveAt: user.lastActiveAt,
+    });
 
     await upsertContact(user.email, properties);
 
-    return { success: true, mrScore, mrTier, churnRisk };
+    return { success: true, mrScore: prScore, mrTier: prTier, churnRisk };
   },
 });
 
@@ -524,12 +453,13 @@ export const syncWaitlistToHubspot = action({
   handler: async (ctx, args) => {
     // Graceful skip if no API key
     if (!isHubSpotEnabled()) {
-      console.log('[HubSpot] Skipping waitlist sync - no API key configured');
+      console.warn(
+        `[HubSpot] SKIPPED waitlist sync for ${args.email} - HUBSPOT_API_KEY not set in environment`
+      );
       return { success: false, reason: 'no_api_key' };
     }
 
-    // Use centralized mapper for consistent property naming
-    const { mapWaitlistToHubSpot } = await import('./hubspotMapper');
+    // Use centralized mapper (already imported at top)
     const properties = mapWaitlistToHubSpot({
       email: args.email,
       source: args.source,
@@ -540,15 +470,172 @@ export const syncWaitlistToHubspot = action({
 
     try {
       const result = await upsertContact(args.email, properties);
-      console.log(`[HubSpot] Synced waitlist signup: ${args.email}`);
+      console.log(`[HubSpot] Synced waitlist signup: ${args.email} (ID: ${result.id})`);
       return {
         success: true,
         hubspotId: result.id,
         isNew: result.isNew,
       };
     } catch (error) {
-      console.error('[HubSpot] Failed to sync waitlist:', error);
-      return { success: false, reason: 'api_error' };
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[HubSpot] FAILED to sync waitlist for ${args.email}: ${errorMessage}`);
+      return { success: false, reason: 'api_error', error: errorMessage };
+    }
+  },
+});
+
+/**
+ * Backfill a single waitlist entry to HubSpot.
+ * Internal action - callable from dashboard or by the bulk backfill.
+ */
+export const backfillSingleWaitlistEntry = internalAction({
+  args: {
+    email: v.string(),
+    source: v.optional(v.string()),
+    utmSource: v.optional(v.string()),
+    utmMedium: v.optional(v.string()),
+    utmCampaign: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (!isHubSpotEnabled()) {
+      console.warn(`[HubSpot Backfill] SKIPPED ${args.email} - HUBSPOT_API_KEY not set`);
+      return { success: false, reason: 'no_api_key' };
+    }
+
+    const properties = mapWaitlistToHubSpot({
+      email: args.email,
+      source: args.source,
+      utmSource: args.utmSource,
+      utmMedium: args.utmMedium,
+      utmCampaign: args.utmCampaign,
+    });
+
+    const result = await upsertContact(args.email, properties);
+    console.log(
+      `[HubSpot Backfill] Synced: ${args.email} (ID: ${result.id}, new: ${result.isNew})`
+    );
+    return { success: true, hubspotId: result.id, isNew: result.isNew };
+  },
+});
+
+/**
+ * Backfill all waitlist entries added after a given date to HubSpot.
+ * Internal action - run from Convex Dashboard for post-Jan-20-2026 recovery.
+ *
+ * Usage from Convex Dashboard:
+ *   Function: integrations/hubspot:backfillWaitlistToHubspot
+ *   Args: { "cutoffTimestamp": 1737417600000 }
+ *   (1737417600000 = Jan 21 2026 00:00:00 UTC)
+ */
+export const backfillWaitlistToHubspot = internalAction({
+  args: {
+    cutoffTimestamp: v.number(),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    synced: number;
+    skipped: number;
+    errors: number;
+    total: number;
+    errorDetails: Array<{ email: string; error: string }>;
+  }> => {
+    if (!isHubSpotEnabled()) {
+      console.error(
+        '[HubSpot Backfill] HUBSPOT_API_KEY not set - cannot backfill. Set the env var and retry.'
+      );
+      return { synced: 0, skipped: 0, errors: 0, total: 0, errorDetails: [] };
+    }
+
+    // Fetch all waitlist entries after the cutoff date
+    const entries = await ctx.runQuery(internal.waitlist.listWaitlistEntriesAfterDate, {
+      afterTimestamp: args.cutoffTimestamp,
+    });
+
+    console.log(
+      `[HubSpot Backfill] Found ${entries.length} waitlist entries after ${new Date(args.cutoffTimestamp).toISOString()}`
+    );
+
+    let synced = 0;
+    let skipped = 0;
+    let errors = 0;
+    const errorDetails: Array<{ email: string; error: string }> = [];
+
+    for (const entry of entries) {
+      try {
+        const properties = mapWaitlistToHubSpot({
+          email: entry.email,
+          source: entry.source,
+          utmSource: entry.metadata?.utmSource,
+          utmMedium: entry.metadata?.utmMedium,
+          utmCampaign: entry.metadata?.utmCampaign,
+        });
+
+        const result = await upsertContact(entry.email, properties);
+        console.log(
+          `[HubSpot Backfill] ${result.isNew ? 'Created' : 'Updated'}: ${entry.email} (ID: ${result.id})`
+        );
+        synced++;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`[HubSpot Backfill] FAILED: ${entry.email} - ${errorMessage}`);
+        errorDetails.push({ email: entry.email, error: errorMessage });
+        errors++;
+      }
+
+      // Rate limit: HubSpot allows 10 requests/second
+      await new Promise((r) => setTimeout(r, 100));
+    }
+
+    console.log(
+      `[HubSpot Backfill] Complete: ${synced} synced, ${skipped} skipped, ${errors} errors out of ${entries.length} total`
+    );
+
+    return { synced, skipped, errors, total: entries.length, errorDetails };
+  },
+});
+
+/**
+ * Sync a subscription lifecycle change to HubSpot.
+ * Used by subscription mutations to keep HubSpot in sync with account status.
+ * Fire-and-forget via ctx.scheduler.runAfter(0, ...)
+ */
+export const syncLifecycleChangeToHubspot = internalAction({
+  args: {
+    userId: v.id('users'),
+    accountStatus: v.string(),
+    membershipTier: v.optional(v.string()),
+    lifecyclestage: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (!isHubSpotEnabled()) {
+      console.log('[HubSpot] Skipping lifecycle sync - no API key configured');
+      return { success: false, reason: 'no_api_key' };
+    }
+
+    const user = await ctx.runQuery(api.users.getById, { userId: args.userId });
+    if (!user?.email) {
+      console.log(`[HubSpot] User ${args.userId} has no email, skipping lifecycle sync`);
+      return { success: false, reason: 'no_email' };
+    }
+
+    const properties = mapLifecycleChangeToHubSpot({
+      accountStatus: args.accountStatus,
+      membershipTier: args.membershipTier,
+      lifecyclestage: args.lifecyclestage,
+    });
+
+    try {
+      const result = await upsertContact(user.email, properties);
+      console.log(
+        `[HubSpot] Lifecycle sync: ${user.email} → ${args.accountStatus} (ID: ${result.id})`
+      );
+      return { success: true, hubspotId: result.id };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[HubSpot] FAILED lifecycle sync for ${user.email}: ${errorMessage}`);
+      return { success: false, reason: 'api_error', error: errorMessage };
     }
   },
 });

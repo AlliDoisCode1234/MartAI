@@ -43,10 +43,11 @@ export function KeywordsClimbedCard({ keywords, suggestedKeywords, totalCount, h
 
   return (
     <MotionBox
-      bg="rgba(255, 255, 255, 0.03)"
-      backdropFilter="blur(20px)"
-      border="1px solid rgba(255, 255, 255, 0.08)"
-      borderRadius="2xl"
+      bg="white"
+      border="1px solid"
+      borderColor="gray.100"
+      boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
+      borderRadius="xl"
       p={{ base: 4, md: 5 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -56,7 +57,7 @@ export function KeywordsClimbedCard({ keywords, suggestedKeywords, totalCount, h
       <VStack align="stretch" spacing={4} h="100%">
         <HStack spacing={2}>
           <Icon as={FiTrendingUp} color="#F99F2A" boxSize={4} />
-          <Text color="white" fontWeight="semibold" fontSize="sm">
+          <Text color="gray.800" fontWeight="semibold" fontSize="sm">
             Top Keywords{' '}
             <Text as="span" color="gray.400" fontWeight="normal">
               by Position
@@ -80,7 +81,7 @@ export function KeywordsClimbedCard({ keywords, suggestedKeywords, totalCount, h
           {/* Tracked keywords — solid styling */}
           {keywords.map((kw) => (
             <HStack key={kw.keyword} justify="space-between">
-              <Text color="gray.300" fontSize="sm" noOfLines={1} maxW="55%">
+              <Text color="gray.600" fontSize="sm" noOfLines={1} maxW="55%">
                 {kw.keyword}
               </Text>
               <HStack spacing={3}>
@@ -133,7 +134,7 @@ export function KeywordsClimbedCard({ keywords, suggestedKeywords, totalCount, h
           ))}
         </VStack>
 
-        <HStack justify="space-between" pt={2} borderTop="1px solid rgba(255,255,255,0.06)">
+        <HStack justify="space-between" pt={2} borderTop="1px solid" borderTopColor="gray.100">
           <Text color="gray.400" fontSize="xs">
             {totalCount} Total Keywords Tracked
           </Text>

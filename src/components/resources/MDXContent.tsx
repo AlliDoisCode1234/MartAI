@@ -62,6 +62,25 @@ const MDX_CONTENT: Record<string, React.ComponentType> = {
   'measuring-content-roi': dynamic(() => import('@/content/resources/measuring-content-roi.mdx'), {
     loading: () => <ContentLoading />,
   }),
+  'how-to-connect-wordpress': dynamic(
+    () => import('@/content/resources/how-to-connect-wordpress.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'how-to-connect-shopify': dynamic(
+    () => import('@/content/resources/how-to-connect-shopify.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'how-to-connect-wix': dynamic(() => import('@/content/resources/how-to-connect-wix.mdx'), {
+    loading: () => <ContentLoading />,
+  }),
+  'how-to-connect-webflow': dynamic(
+    () => import('@/content/resources/how-to-connect-webflow.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
+  'how-to-connect-google-analytics': dynamic(
+    () => import('@/content/resources/how-to-connect-google-analytics.mdx'),
+    { loading: () => <ContentLoading /> }
+  ),
 };
 
 function ContentLoading() {
@@ -76,7 +95,7 @@ function ComingSoon({ slug }: { slug: string }) {
   return (
     <VStack spacing={4} py={12} textAlign="center">
       <Text color="gray.400" fontSize="lg">
-        📝 This article is coming soon!
+        [Draft] This article is coming soon!
       </Text>
       <Text color="gray.400" fontSize="sm">
         Content file: content/resources/{slug}.mdx

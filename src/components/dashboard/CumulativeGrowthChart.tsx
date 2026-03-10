@@ -98,13 +98,15 @@ function CustomTooltip({
 
   return (
     <Box
-      bg="rgba(15, 23, 42, 0.95)"
-      border="1px solid rgba(255,255,255,0.1)"
+      bg="white"
+      border="1px solid"
+      borderColor="gray.200"
       borderRadius="12px"
       px={3}
       py={2}
+      boxShadow="0 4px 12px rgba(0, 0, 0, 0.08)"
     >
-      <Text color="gray.300" fontSize="xs" fontWeight="semibold" mb={1}>
+      <Text color="gray.600" fontSize="xs" fontWeight="semibold" mb={1}>
         {label}
       </Text>
       {payload.map((entry) => (
@@ -128,10 +130,11 @@ export function CumulativeGrowthChart({
 
   return (
     <MotionBox
-      bg="rgba(255, 255, 255, 0.03)"
-      backdropFilter="blur(20px)"
-      border="1px solid rgba(255, 255, 255, 0.08)"
+      bg="white"
+      border="1px solid"
+      borderColor="gray.200"
       borderRadius="2xl"
+      boxShadow="0 2px 8px rgba(0, 0, 0, 0.08)"
       p={{ base: 4, md: 6 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -141,9 +144,9 @@ export function CumulativeGrowthChart({
         {/* Header */}
         <HStack spacing={2}>
           <Icon as={FiTrendingUp} color="#F99F2A" boxSize={4} />
-          <Text color="white" fontWeight="semibold" fontSize="sm">
+          <Text color="gray.800" fontWeight="semibold" fontSize="sm">
             Cumulative Growth{' '}
-            <Text as="span" color="gray.400" fontWeight="normal">
+            <Text as="span" color="gray.500" fontWeight="normal">
               Since Joining Phoo
             </Text>
           </Text>
@@ -156,9 +159,9 @@ export function CumulativeGrowthChart({
           justify={{ base: 'center', md: 'flex-start' }}
         >
           <HStack spacing={2}>
-            <Icon as={FiUsers} color="#34d399" boxSize={4} />
+            <Icon as={FiUsers} color="#F99F2A" boxSize={4} />
             <VStack align="start" spacing={0}>
-              <Text color="#34d399" fontSize="xl" fontWeight="bold">
+              <Text color="#F99F2A" fontSize="xl" fontWeight="bold">
                 {hasData ? totalClicks.toLocaleString() : '--'}
               </Text>
               <Text color="gray.500" fontSize="xs" whiteSpace="nowrap">
@@ -186,8 +189,8 @@ export function CumulativeGrowthChart({
               <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="gradSessions" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#34d399" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#F99F2A" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#F99F2A" stopOpacity={0.02} />
                   </linearGradient>
                   <linearGradient id="gradClicks" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#F99F2A" stopOpacity={0.2} />
@@ -196,22 +199,22 @@ export function CumulativeGrowthChart({
                 </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="rgba(255,255,255,0.05)"
+                  stroke="rgba(0, 0, 0, 0.06)"
                   vertical={false}
                 />
                 {/* X-axis: always visible, consistent ticks left-to-right */}
                 <XAxis
                   dataKey="label"
-                  stroke="rgba(255,255,255,0.3)"
+                  stroke="#A0AEC0"
                   fontSize={11}
                   tickLine={false}
-                  axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
+                  axisLine={{ stroke: '#E2E8F0' }}
                   interval="preserveStartEnd"
                   minTickGap={40}
                 />
                 {/* Y-axis: visible with zero baseline */}
                 <YAxis
-                  stroke="rgba(255,255,255,0.2)"
+                  stroke="#A0AEC0"
                   fontSize={11}
                   tickLine={false}
                   axisLine={false}
@@ -219,16 +222,16 @@ export function CumulativeGrowthChart({
                   domain={[0, 'auto']}
                   allowDecimals={false}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)' }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(0, 0, 0, 0.1)' }} />
                 <Area
                   type="monotone"
                   dataKey="sessions"
-                  stroke="#34d399"
+                  stroke="#F99F2A"
                   fill="url(#gradSessions)"
                   strokeWidth={2.5}
                   name="Sessions"
                   dot={renderDot}
-                  activeDot={{ r: 5, stroke: '#34d399', strokeWidth: 2, fill: '#0f172a' }}
+                  activeDot={{ r: 5, stroke: '#F99F2A', strokeWidth: 2, fill: '#FFFFFF' }}
                 />
                 <Area
                   type="monotone"
@@ -238,7 +241,7 @@ export function CumulativeGrowthChart({
                   strokeWidth={2.5}
                   name="Clicks"
                   dot={renderDot}
-                  activeDot={{ r: 5, stroke: '#F99F2A', strokeWidth: 2, fill: '#0f172a' }}
+                  activeDot={{ r: 5, stroke: '#F99F2A', strokeWidth: 2, fill: '#FFFFFF' }}
                 />
               </AreaChart>
             </ResponsiveContainer>

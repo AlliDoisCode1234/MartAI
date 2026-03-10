@@ -122,25 +122,26 @@ export function ContentCard({ contentPiece, onDeleted }: Props) {
     <Box position="relative">
       <Link href={`/studio/${contentPiece._id}`} style={{ textDecoration: 'none' }}>
         <Box
-          bg="rgba(255, 255, 255, 0.03)"
-          border="1px solid rgba(255, 255, 255, 0.08)"
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
           borderRadius="16px"
           p={5}
           cursor="pointer"
+          boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
           transition="all 0.2s ease"
           _hover={{
-            bg: 'rgba(255, 255, 255, 0.06)',
-            borderColor: 'rgba(255, 157, 0, 0.3)',
-            boxShadow: '0 0 30px rgba(255, 157, 0, 0.1)',
-            transform: 'translateY(-2px)',
+            borderColor: 'orange.200',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.10)',
+            transform: 'translateY(-3px)',
           }}
         >
           <VStack align="stretch" spacing={4}>
             {/* Header with type badge and MoreVert */}
             <HStack justify="space-between">
               <Badge
-                bg="rgba(255, 255, 255, 0.1)"
-                color="gray.300"
+                bg="gray.100"
+                color="gray.600"
                 px={2}
                 py={1}
                 borderRadius="6px"
@@ -154,7 +155,13 @@ export function ContentCard({ contentPiece, onDeleted }: Props) {
             </HStack>
 
             {/* Title */}
-            <Text fontSize="md" fontWeight="semibold" color="white" noOfLines={2} lineHeight="1.4">
+            <Text
+              fontSize="md"
+              fontWeight="semibold"
+              color="gray.800"
+              noOfLines={2}
+              lineHeight="1.4"
+            >
               {contentPiece.title}
             </Text>
 
@@ -214,14 +221,10 @@ export function ContentCard({ contentPiece, onDeleted }: Props) {
             variant="ghost"
             size="sm"
             color="gray.400"
-            _hover={{ color: 'white', bg: 'rgba(255, 255, 255, 0.1)' }}
+            _hover={{ color: 'gray.700', bg: 'gray.100' }}
             onClick={(e) => e.preventDefault()}
           />
-          <MenuList
-            bg="#1A1A1A"
-            borderColor="rgba(255, 255, 255, 0.1)"
-            boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
-          >
+          <MenuList bg="white" borderColor="gray.200" boxShadow="0 8px 32px rgba(0, 0, 0, 0.12)">
             <MenuItem
               icon={<FiCopy />}
               onClick={handleDuplicate}
@@ -239,13 +242,13 @@ export function ContentCard({ contentPiece, onDeleted }: Props) {
             >
               Quick Publish
             </MenuItem>
-            <MenuDivider borderColor="rgba(255, 255, 255, 0.1)" />
+            <MenuDivider borderColor="gray.100" />
             <MenuItem
               icon={<FiTrash2 />}
               onClick={handleDelete}
               color="red.400"
               bg="transparent"
-              _hover={{ bg: 'rgba(255, 0, 0, 0.1)' }}
+              _hover={{ bg: 'red.50' }}
             >
               Delete
             </MenuItem>
