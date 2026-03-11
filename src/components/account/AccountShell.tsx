@@ -72,15 +72,17 @@ function AccountShellInner({ children }: Props) {
   const validTabs = NAV_ITEMS.filter((n) => n.matchTab).map((n) => n.matchTab!);
 
   const isActive = (item: AccountNavItem): boolean => {
-    // Direct pathname match (e.g. /profile, /subscription, /settings/team)
+    // Tab-based matching
     if (item.matchTab) {
-      // Tab-based matching: pathname must be /settings and tab param must match
-      const rawTab = searchParams?.get('tab') || 'profile';
-      // Normalize unknown tabs to 'profile' to match SettingsPage's fallback
-      const currentTab = validTabs.includes(rawTab) ? rawTab : 'profile';
+      // Team has its own route at /settings/team
+      if (item.matchTab === 'team' && pathname === '/settings/team') return true;
+      // Tab matching: pathname must be /settings and tab param must match
+      const rawTab = searchParams?.get('tab') || 'account';
+      // Normalize: treat 'profile' as alias for 'account', unknown tabs default to 'account'
+      const currentTab = rawTab === 'profile' ? 'account' : (validTabs.includes(rawTab) ? rawTab : 'account');
       return pathname === '/settings' && currentTab === item.matchTab;
     }
-    // Exact pathname match
+    // Exact pathname match (e.g. /subscription)
     return pathname === item.href.split('?')[0];
   };
 

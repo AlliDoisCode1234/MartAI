@@ -351,6 +351,7 @@ export default function InsightsPage() {
                   title=""
                   value={optimization.onPageScore}
                   colorScheme={getScoreColorScheme(optimization.onPageScore)}
+                  showHeader={false}
                 />
                 <Text fontSize="xs" color="gray.400" mt={1}>Avg SEO score across all content</Text>
               </Box>
@@ -369,6 +370,7 @@ export default function InsightsPage() {
                   title=""
                   value={optimization.internalLinkingScore}
                   colorScheme={getScoreColorScheme(optimization.internalLinkingScore)}
+                  showHeader={false}
                 />
                 <Text fontSize="xs" color="gray.400" mt={1}>Articles with internal links</Text>
               </Box>
@@ -387,6 +389,7 @@ export default function InsightsPage() {
                   title=""
                   value={optimization.clusterCoverage}
                   colorScheme={getScoreColorScheme(optimization.clusterCoverage)}
+                  showHeader={false}
                 />
                 <Text fontSize="xs" color="gray.400" mt={1}>Articles with target keywords assigned</Text>
               </Box>

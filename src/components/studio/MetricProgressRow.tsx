@@ -19,6 +19,7 @@ interface Props {
   maxValue?: number;
   color?: string;
   colorScheme?: string;
+  showHeader?: boolean;
 }
 
 export function MetricProgressRow({
@@ -27,19 +28,22 @@ export function MetricProgressRow({
   maxValue = 100,
   color,
   colorScheme = 'orange',
+  showHeader = true,
 }: Props) {
   const percentage = Math.min(Math.round((value / maxValue) * 100), 100);
 
   return (
     <Box>
-      <Flex justify="space-between" align="center" mb={2}>
-        <Text fontSize="sm" color={STUDIO_COLORS.textSecondary}>
-          {title}
-        </Text>
-        <Text fontSize="sm" fontWeight="bold" color={color || 'white'}>
-          {value}
-        </Text>
-      </Flex>
+      {showHeader && (
+        <Flex justify="space-between" align="center" mb={2}>
+          <Text fontSize="sm" color={STUDIO_COLORS.textSecondary}>
+            {title}
+          </Text>
+          <Text fontSize="sm" fontWeight="bold" color={color || 'white'}>
+            {value}
+          </Text>
+        </Flex>
+      )}
       <Progress
         value={percentage}
         colorScheme={colorScheme}

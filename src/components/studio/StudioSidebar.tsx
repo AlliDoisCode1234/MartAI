@@ -198,7 +198,7 @@ export function StudioSidebar({ collapsed = false, onToggle }: Props) {
               </Tooltip>
 
               {/* Sub-items: visible when parent is active and sidebar is expanded */}
-              {item.children && !collapsed && (
+              {item.children && active && !collapsed && (
                 <VStack spacing={0} align="stretch" pl={7} mt={0.5}>
                   {item.children.map((child) => {
                     const currentStatus = searchParams.get('status') || 'all';
