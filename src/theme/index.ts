@@ -270,14 +270,14 @@ const components = {
     baseStyle: (props: StyleFunctionProps) => ({
       container: {
         borderRadius: 'lg', // 12px
-        boxShadow: 'sm',
-        // Wave 3: Subtle borders for better visual hierarchy
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+        // Herald Border standard: clear card edges on grey background
         borderWidth: '1px',
-        borderColor: mode('border.light', 'border.dark')(props),
+        borderColor: mode('gray.200', 'border.dark')(props),
         bg: mode('white', 'gray.800')(props),
         transition: 'all 0.2s',
         _hover: {
-          boxShadow: 'md',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.10)',
           transform: 'translateY(-2px)',
         },
       },
@@ -301,7 +301,7 @@ const components = {
           },
         },
       }),
-      // Wave 3: New "outlined" variant for clearer borders
+      // Wave 3: outlined variant for clearer borders
       outlined: (props: StyleFunctionProps) => ({
         container: {
           boxShadow: 'none',
@@ -310,6 +310,18 @@ const components = {
           _hover: {
             borderColor: mode('gray.300', 'whiteAlpha.300')(props),
             boxShadow: 'sm',
+          },
+        },
+      }),
+      // Herald Border: colored left accent for category identity
+      accentLeft: (props: StyleFunctionProps) => ({
+        container: {
+          borderLeftWidth: '3px',
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+          borderColor: mode('gray.200', 'border.dark')(props),
+          _hover: {
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.10)',
+            transform: 'translateY(-2px)',
           },
         },
       }),

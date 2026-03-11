@@ -69,8 +69,9 @@ export function TopPerformingContentCard({ content }: Props) {
     <MotionBox
       bg="white"
       border="1px solid"
-      borderColor="gray.100"
-      boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
+      borderColor="gray.200"
+      borderLeft="3px solid #FF9D00"
+      boxShadow="0 2px 12px rgba(0, 0, 0, 0.08)"
       borderRadius="xl"
       p={{ base: 4, md: 5 }}
       initial={{ opacity: 0, y: 20 }}

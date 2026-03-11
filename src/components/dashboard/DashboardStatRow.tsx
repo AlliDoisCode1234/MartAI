@@ -6,12 +6,14 @@
  * Component Hierarchy:
  * App → Dashboard → DashboardStatRow (this file)
  *
- * 4 glassmorphic stat cards showing combined GA4 + GSC metrics.
+ * 5 stat cards with Herald Border pattern (colored left accent)
+ * showing combined GA4 + GSC metrics with accessibility tooltips.
  */
 
 import { Grid, Box, HStack, VStack, Text, Icon } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { FiUsers, FiEye, FiClock, FiTarget, FiZap } from 'react-icons/fi';
+import { MetricTooltip } from '@/src/components/shared';
 
 const MotionBox = motion(Box);
 
@@ -35,6 +37,8 @@ type StatItem = {
   iconBg: string;
   isHighlighted?: boolean;
   source: DataSource;
+  accentColor: string;
+  tooltipKey?: string;
 };
 
 type Props = {
@@ -111,6 +115,8 @@ export function DashboardStatRow({
       iconColor: '#22C55E',
       iconBg: 'rgba(34, 197, 94, 0.15)',
       source: 'GTM',
+      accentColor: '#22C55E',
+      tooltipKey: 'leads-generated',
     },
     {
       label: 'Site Traffic',
@@ -126,6 +132,8 @@ export function DashboardStatRow({
       iconColor: '#F99F2A',
       iconBg: 'rgba(249, 159, 42, 0.15)',
       source: 'GA4',
+      accentColor: '#F99F2A',
+      tooltipKey: 'site-traffic',
     },
     {
       label: 'Sessions',
@@ -141,6 +149,8 @@ export function DashboardStatRow({
       iconColor: '#818cf8',
       iconBg: 'rgba(129, 140, 248, 0.15)',
       source: 'GA4',
+      accentColor: '#818cf8',
+      tooltipKey: 'sessions',
     },
     {
       label: 'Avg Session',
@@ -156,6 +166,8 @@ export function DashboardStatRow({
       iconColor: '#34d399',
       iconBg: 'rgba(52, 211, 153, 0.15)',
       source: 'GA4',
+      accentColor: '#34d399',
+      tooltipKey: 'avg-session',
     },
     {
       label: 'Phoo Rating',
@@ -178,6 +190,8 @@ export function DashboardStatRow({
       iconBg: 'rgba(249, 159, 42, 0.15)',
       isHighlighted: true,
       source: 'GSC',
+      accentColor: '#F99F2A',
+      tooltipKey: 'phoo-rating',
     },
   ];
 
@@ -194,13 +208,18 @@ export function DashboardStatRow({
       {stats.map((stat, i) => (
         <MotionBox
           key={stat.label}
-          bg={stat.isHighlighted ? 'linear-gradient(135deg, #F7941E 0%, #E8851A 100%)' : 'white'}
-          border={stat.isHighlighted ? 'none' : '1px solid'}
-          borderColor={stat.isHighlighted ? 'transparent' : 'gray.200'}
+          bg={
+            stat.isHighlighted
+              ? 'linear-gradient(135deg, rgba(249,159,42,0.06) 0%, white 100%)'
+              : 'white'
+          }
+          border="1px solid"
+          borderColor={stat.isHighlighted ? 'orange.200' : 'gray.200'}
+          borderLeft={`${stat.isHighlighted ? '4px' : '3px'} solid ${stat.accentColor}`}
           boxShadow={
             stat.isHighlighted
-              ? '0 4px 20px rgba(247, 148, 30, 0.35)'
-              : '0 2px 8px rgba(0, 0, 0, 0.06)'
+              ? '0 2px 16px rgba(249, 159, 42, 0.15)'
+              : '0 2px 12px rgba(0, 0, 0, 0.08)'
           }
           borderRadius="xl"
           p={{ base: 4, md: 5 }}
@@ -211,25 +230,27 @@ export function DashboardStatRow({
           transition={{ delay: 0.1 + i * 0.08 }}
           _hover={{
             boxShadow: stat.isHighlighted
-              ? '0 8px 30px rgba(247, 148, 30, 0.45)'
-              : '0 4px 12px rgba(0, 0, 0, 0.08)',
+              ? '0 4px 20px rgba(249, 159, 42, 0.25)'
+              : '0 4px 16px rgba(0, 0, 0, 0.10)',
+            transform: 'translateY(-2px)',
           }}
+          style={{ transition: 'box-shadow 0.2s, transform 0.2s' }}
         >
           <VStack align="start" spacing={3}>
             <HStack spacing={2}>
               <Box
                 p={2}
                 borderRadius="lg"
-                bg={stat.isHighlighted ? 'rgba(255,255,255,0.25)' : stat.iconBg}
+                bg={stat.iconBg}
               >
                 <Icon
                   as={stat.icon}
                   boxSize={4}
-                  color={stat.isHighlighted ? 'white' : stat.iconColor}
+                  color={stat.iconColor}
                 />
               </Box>
               <Text
-                color={stat.isHighlighted ? 'white' : 'gray.500'}
+                color={stat.isHighlighted ? 'gray.700' : 'gray.500'}
                 fontSize="xs"
                 fontWeight="semibold"
                 letterSpacing="wider"
@@ -237,6 +258,9 @@ export function DashboardStatRow({
               >
                 {stat.label}
               </Text>
+              {stat.tooltipKey && (
+                <MetricTooltip metricKey={stat.tooltipKey} size={12} />
+              )}
               <Text
                 fontSize="9px"
                 fontWeight="bold"
@@ -244,10 +268,8 @@ export function DashboardStatRow({
                 px={1.5}
                 py={0.5}
                 borderRadius="full"
-                bg={stat.isHighlighted ? 'rgba(255,255,255,0.2)' : SOURCE_COLORS[stat.source].bg}
-                color={
-                  stat.isHighlighted ? 'rgba(255,255,255,0.9)' : SOURCE_COLORS[stat.source].text
-                }
+                bg={SOURCE_COLORS[stat.source].bg}
+                color={SOURCE_COLORS[stat.source].text}
               >
                 {stat.source}
               </Text>
@@ -255,7 +277,7 @@ export function DashboardStatRow({
 
             <HStack align="baseline" spacing={2}>
               <Text
-                color={stat.isHighlighted ? 'white' : 'gray.800'}
+                color="gray.800"
                 fontSize={{ base: '2xl', md: '3xl' }}
                 fontWeight="bold"
                 lineHeight="1"
@@ -266,14 +288,14 @@ export function DashboardStatRow({
                 <Text
                   fontSize="sm"
                   fontWeight="semibold"
-                  color={stat.isHighlighted ? 'rgba(255,255,255,0.85)' : stat.changeColor}
+                  color={stat.changeColor}
                 >
                   {stat.change}
                 </Text>
               )}
             </HStack>
 
-            <Text color={stat.isHighlighted ? 'rgba(255,255,255,0.8)' : 'gray.500'} fontSize="xs">
+            <Text color="gray.500" fontSize="xs">
               {stat.subtitle}
             </Text>
           </VStack>

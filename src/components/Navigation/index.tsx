@@ -44,7 +44,6 @@ const userNavItems: NavItem[] = [
   { label: 'Keywords', path: '/studio/keywords' },
   { label: 'Create', path: '/studio/create' },
   { label: 'Insights', path: '/studio/insights' },
-  { label: 'Brand Profile', path: '/studio/brand-profile' },
 ];
 
 // Admin navigation (same as user - Admin portal accessible only via UserDropdown)

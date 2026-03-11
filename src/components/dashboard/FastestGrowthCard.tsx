@@ -68,8 +68,9 @@ export function FastestGrowthCard({ firstPageReadyCount, contentRefreshCount }: 
         <Box
           bg="white"
           border="1px solid"
-          borderColor="gray.100"
-          boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
+          borderColor="gray.200"
+          borderLeft="3px solid #F99F2A"
+          boxShadow="0 2px 12px rgba(0, 0, 0, 0.08)"
           borderRadius="xl"
           p={{ base: 4, md: 5 }}
         >
@@ -144,8 +145,9 @@ export function FastestGrowthCard({ firstPageReadyCount, contentRefreshCount }: 
         <Box
           bg="white"
           border="1px solid"
-          borderColor="gray.100"
-          boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
+          borderColor="gray.200"
+          borderLeft="3px solid #34d399"
+          boxShadow="0 2px 12px rgba(0, 0, 0, 0.08)"
           borderRadius="xl"
           p={{ base: 4, md: 5 }}
           flex={1}
