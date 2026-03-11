@@ -43,7 +43,7 @@ export function MetricProgressRow({
       <Progress
         value={percentage}
         colorScheme={colorScheme}
-        bg="rgba(255, 255, 255, 0.08)"
+        bg="gray.200"
         borderRadius="full"
         size="sm"
         sx={{

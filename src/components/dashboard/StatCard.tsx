@@ -56,8 +56,11 @@ export function StatCard({
     <MotionCard
       variants={itemVariants}
       bg="white"
-      boxShadow="lg"
+      boxShadow="0 2px 12px rgba(0, 0, 0, 0.08)"
       borderRadius="xl"
+      borderWidth="1px"
+      borderColor="gray.200"
+      borderLeft={`3px solid ${iconColor}`}
       initial="hidden"
       animate="show"
       transition={{ delay }}

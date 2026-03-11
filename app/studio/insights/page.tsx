@@ -324,41 +324,79 @@ export default function InsightsPage() {
               <Heading size="sm" color="gray.800">
                 Optimization Health
               </Heading>
+              <Spacer />
               <Badge
                 bg={`${getScoreColor(optimization.onPageScore)}20`}
                 color={getScoreColor(optimization.onPageScore)}
-                fontSize="xs"
+                fontSize="sm"
+                fontWeight="bold"
                 borderRadius="full"
+                px={3}
               >
                 {optimization.onPageScore}
               </Badge>
             </HStack>
             <VStack spacing={5} align="stretch">
-              <MetricProgressRow
-                title="On-Page Optimization Score"
-                value={optimization.onPageScore}
-                colorScheme={getScoreColorScheme(optimization.onPageScore)}
-              />
-              <MetricProgressRow
-                title="Internal Linking Score"
-                value={optimization.internalLinkingScore}
-                colorScheme={getScoreColorScheme(optimization.internalLinkingScore)}
-              />
-              <MetricProgressRow
-                title="Cluster Coverage"
-                value={optimization.clusterCoverage}
-                colorScheme={getScoreColorScheme(optimization.clusterCoverage)}
-              />
+              {/* On-Page Score */}
+              <Box>
+                <HStack justify="space-between" mb={1.5}>
+                  <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                    On-Page Optimization
+                  </Text>
+                  <Text fontSize="sm" fontWeight="bold" color={getScoreColor(optimization.onPageScore)}>
+                    {optimization.onPageScore}%
+                  </Text>
+                </HStack>
+                <MetricProgressRow
+                  title=""
+                  value={optimization.onPageScore}
+                  colorScheme={getScoreColorScheme(optimization.onPageScore)}
+                />
+                <Text fontSize="xs" color="gray.400" mt={1}>Avg SEO score across all content</Text>
+              </Box>
+
+              {/* Internal Linking */}
+              <Box>
+                <HStack justify="space-between" mb={1.5}>
+                  <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                    Internal Linking
+                  </Text>
+                  <Text fontSize="sm" fontWeight="bold" color={getScoreColor(optimization.internalLinkingScore)}>
+                    {optimization.internalLinkingScore}%
+                  </Text>
+                </HStack>
+                <MetricProgressRow
+                  title=""
+                  value={optimization.internalLinkingScore}
+                  colorScheme={getScoreColorScheme(optimization.internalLinkingScore)}
+                />
+                <Text fontSize="xs" color="gray.400" mt={1}>Articles with internal links</Text>
+              </Box>
+
+              {/* Cluster Coverage */}
+              <Box>
+                <HStack justify="space-between" mb={1.5}>
+                  <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                    Cluster Coverage
+                  </Text>
+                  <Text fontSize="sm" fontWeight="bold" color={getScoreColor(optimization.clusterCoverage)}>
+                    {optimization.clusterCoverage}%
+                  </Text>
+                </HStack>
+                <MetricProgressRow
+                  title=""
+                  value={optimization.clusterCoverage}
+                  colorScheme={getScoreColorScheme(optimization.clusterCoverage)}
+                />
+                <Text fontSize="xs" color="gray.400" mt={1}>Articles with target keywords assigned</Text>
+              </Box>
             </VStack>
 
             <Divider my={4} borderColor="gray.200" />
 
-            {/* Total Reworks */}
-            <HStack justify="space-between">
-              <Text fontSize="xs" color={STUDIO_COLORS.textMuted}>
-                Total Reworks: Bunch/{optimization.totalReworksBunch}
-              </Text>
-            </HStack>
+            <Text fontSize="xs" color={STUDIO_COLORS.textMuted}>
+              Based on {optimization.totalReworksBunch} scored articles
+            </Text>
           </MotionBox>
 
           {/* Next 3 Growth Actions */}

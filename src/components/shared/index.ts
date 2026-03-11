@@ -25,3 +25,6 @@ export { PermissionGate } from './PermissionGate';
 
 // Integration components
 export { IntegrationStatusCard } from './IntegrationStatusCard';
+
+// Accessibility components
+export { MetricTooltip } from './MetricTooltip';

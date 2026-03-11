@@ -3,7 +3,7 @@
 import { Box, VStack, HStack, Text, Badge, Icon, useColorModeValue } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { FiAward } from 'react-icons/fi';
-import { AnimatedCounter, CircularGauge, ChangeIndicator, ScoreBar } from '@/src/components/shared';
+import { AnimatedCounter, CircularGauge, ChangeIndicator, ScoreBar, MetricTooltip } from '@/src/components/shared';
 import { TIER_CONFIG, SCORE_COMPONENTS } from '@/src/constants/martaiRating';
 
 const MotionBox = motion(Box);
@@ -86,6 +86,7 @@ export function PRScoreWidget({ score, loading }: Props) {
       p={8}
       borderWidth="1px"
       borderColor={borderColor}
+      borderLeft="3px solid #F7941E"
       boxShadow="xl"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -93,9 +94,12 @@ export function PRScoreWidget({ score, loading }: Props) {
     >
       <VStack spacing={8}>
         <HStack justify="space-between" w="full">
-          <Text fontSize="lg" fontWeight="bold" letterSpacing="tight">
-            PR
-          </Text>
+          <HStack spacing={1}>
+            <Text fontSize="lg" fontWeight="bold" letterSpacing="tight">
+              Phoo Rating
+            </Text>
+            <MetricTooltip metricKey="pr" size={14} />
+          </HStack>
           <ChangeIndicator current={score.overall} previous={score.previousScore} />
         </HStack>
 

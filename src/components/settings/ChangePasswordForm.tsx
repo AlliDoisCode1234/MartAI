@@ -183,10 +183,10 @@ export function ChangePasswordForm({ userEmail, hasPassword }: Props) {
         )}
 
         {!hasPassword && (
-          <Alert status="info" borderRadius="md">
+          <Alert status="info" borderRadius="md" bg="blue.50" borderColor="blue.100" borderWidth="1px">
             <AlertIcon />
-            <Text fontSize="sm">
-              You signed up with Google. Setting a password lets you log in with email too.
+            <Text fontSize="sm" color="gray.600">
+              Secured by Phoo. Add a password for an alternative way to sign in.
             </Text>
           </Alert>
         )}

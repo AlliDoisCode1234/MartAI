@@ -28,6 +28,7 @@ import {
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { MetricTooltip } from '@/src/components/shared';
 
 const MotionCard = motion(Card);
 
@@ -95,19 +96,28 @@ export function IntelligenceCard({ report }: Props) {
             <Divider />
             <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={6}>
               <Stat>
-                <StatLabel color="gray.500">Coverage Score</StatLabel>
+                <StatLabel color="gray.500">
+                  Coverage Score
+                  <MetricTooltip metricKey="coverage-score" size={12} />
+                </StatLabel>
                 <StatNumber fontSize="2xl" fontWeight="bold">
                   {report.metrics?.coverageScore ?? '—'}
                 </StatNumber>
               </Stat>
               <Stat>
-                <StatLabel color="gray.500">Organic Keywords</StatLabel>
+                <StatLabel color="gray.500">
+                  Organic Keywords
+                  <MetricTooltip metricKey="organic-keywords" size={12} />
+                </StatLabel>
                 <StatNumber fontSize="2xl" fontWeight="bold">
                   {report.metrics?.organicKeywords ?? '—'}
                 </StatNumber>
               </Stat>
               <Stat>
-                <StatLabel color="gray.500">Traffic Estimate</StatLabel>
+                <StatLabel color="gray.500">
+                  Traffic Estimate
+                  <MetricTooltip metricKey="traffic-estimate" size={12} />
+                </StatLabel>
                 <StatNumber fontSize="2xl" fontWeight="bold">
                   {report.metrics?.trafficEstimate
                     ? report.metrics.trafficEstimate.toLocaleString()
@@ -115,7 +125,10 @@ export function IntelligenceCard({ report }: Props) {
                 </StatNumber>
               </Stat>
               <Stat>
-                <StatLabel color="gray.500">Confidence</StatLabel>
+                <StatLabel color="gray.500">
+                  Confidence
+                  <MetricTooltip metricKey="confidence" size={12} />
+                </StatLabel>
                 <StatNumber fontSize="2xl" fontWeight="bold">
                   {report.confidence?.score ?? '—'}%
                 </StatNumber>

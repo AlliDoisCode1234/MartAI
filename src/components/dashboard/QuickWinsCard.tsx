@@ -27,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
+import { MetricTooltip } from '@/src/components/shared';
 
 type Props = {
   projectId: Id<'projects'>;
@@ -134,6 +135,7 @@ export function QuickWinsCard({ projectId }: Props) {
                     <Badge size="sm" colorScheme={getDifficultyColor(win.difficulty ?? 0)}>
                       KD {win.difficulty ?? 0}
                     </Badge>
+                    <MetricTooltip metricKey="kd" size={11} />
                     <Text fontSize="xs" color="gray.500">
                       {win.searchVolume != null
                         ? `${formatVolume(win.searchVolume)}/mo`

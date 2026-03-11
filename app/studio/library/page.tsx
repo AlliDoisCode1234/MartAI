@@ -199,22 +199,47 @@ export default function LibraryPage() {
             setStatusFilter((['all', 'draft', 'published', 'scheduled'] as const)[i])
           }
         >
-          <TabList gap={2}>
-            {(['all', 'draft', 'published', 'scheduled'] as const).map((status) => (
+          <TabList
+            borderBottom="2px solid"
+            borderBottomColor="gray.200"
+            gap={0}
+          >
+            {(['all', 'draft', 'published', 'scheduled'] as const).map((status, idx) => (
               <Tab
                 key={status}
-                px={4}
-                py={2}
-                borderRadius="8px"
+                px={5}
+                py={2.5}
                 color="gray.400"
+                fontSize="sm"
+                fontWeight="medium"
+                position="relative"
+                borderBottom="2px solid transparent"
+                mb="-2px"
+                borderRight={
+                  idx < 3 ? '1px solid' : 'none'
+                }
+                borderRightColor="gray.200"
+                transition="all 0.15s ease"
                 _selected={{
                   color: 'gray.800',
-                  bg: 'gray.100',
                   fontWeight: 'semibold',
+                  borderBottomColor: '#F99F2A',
+                }}
+                _hover={{
+                  color: 'gray.600',
+                  bg: 'gray.50',
                 }}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
-                <Badge ml={2} bg="gray.100" color="gray.500">
+                <Badge
+                  ml={2}
+                  fontSize="xs"
+                  borderRadius="full"
+                  minW="22px"
+                  textAlign="center"
+                  bg={statusFilter === status ? 'orange.50' : 'gray.100'}
+                  color={statusFilter === status ? 'orange.600' : 'gray.500'}
+                >
                   {counts[status]}
                 </Badge>
               </Tab>

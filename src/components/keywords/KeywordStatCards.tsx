@@ -18,6 +18,7 @@
 import { SimpleGrid, Box, VStack, HStack, Text, Icon } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { FiAlertTriangle } from 'react-icons/fi';
+import { MetricTooltip } from '@/src/components/shared';
 
 const MotionBox = motion(Box);
 
@@ -65,7 +66,7 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
         overflow="hidden"
         bg="white"
         border="1px solid"
-        borderColor="orange.100"
+        borderColor="gray.200"
         borderLeft="3px solid #F99F2A"
         borderRadius="xl"
         p={5}
@@ -83,6 +84,7 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
             <Text color="gray.400" fontSize="xs" fontWeight="semibold">
               Foundation Keywords
             </Text>
+            <MetricTooltip metricKey="foundation-keywords" size={12} />
           </HStack>
           <Text color="gray.400" fontSize="xs">
             Informational & awareness-stage terms
@@ -96,8 +98,8 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
         overflow="hidden"
         bg="white"
         border="1px solid"
-        borderColor="blue.100"
-        borderLeft="3px solid #60a5fa"
+        borderColor="gray.200"
+        borderLeft="3px solid #475569"
         borderRadius="xl"
         p={5}
         boxShadow="0 2px 12px rgba(0, 0, 0, 0.06)"
@@ -107,12 +109,13 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
       >
         <VStack align="stretch" spacing={2}>
           <HStack spacing={2} align="baseline">
-            <Text color="#60a5fa" fontSize="3xl" fontWeight="bold" lineHeight="1">
+            <Text color="#475569" fontSize="3xl" fontWeight="bold" lineHeight="1">
               {authority}
             </Text>
             <Text color="gray.400" fontSize="xs" fontWeight="semibold">
               Authority Keywords
             </Text>
+            <MetricTooltip metricKey="authority-keywords" size={12} />
           </HStack>
           <Text color="gray.400" fontSize="xs">
             {quickWins} quick win opportunities
@@ -126,8 +129,8 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
         overflow="hidden"
         bg="white"
         border="1px solid"
-        borderColor="green.100"
-        borderLeft="3px solid #34d399"
+        borderColor="gray.200"
+        borderLeft="3px solid #0d9488"
         borderRadius="xl"
         p={5}
         boxShadow="0 2px 12px rgba(0, 0, 0, 0.06)"
@@ -137,12 +140,13 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
       >
         <VStack align="stretch" spacing={2}>
           <HStack spacing={2} align="baseline">
-            <Text color="#34d399" fontSize="3xl" fontWeight="bold" lineHeight="1">
+            <Text color="#0d9488" fontSize="3xl" fontWeight="bold" lineHeight="1">
               {revenueReady}
             </Text>
             <Text color="gray.400" fontSize="xs" fontWeight="semibold">
               Revenue-Ready Keywords
             </Text>
+            <MetricTooltip metricKey="revenue-ready-keywords" size={12} />
           </HStack>
           <Text color="gray.400" fontSize="xs">
             Bottom-of-funnel, transactional intent
@@ -156,8 +160,8 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
         overflow="hidden"
         bg="white"
         border="1px solid"
-        borderColor="purple.100"
-        borderLeft="3px solid #a78bfa"
+        borderColor="gray.200"
+        borderLeft="3px solid #78716c"
         borderRadius="xl"
         p={5}
         boxShadow="0 2px 12px rgba(0, 0, 0, 0.06)"
@@ -167,12 +171,13 @@ export function KeywordStatCards({ foundation, authority, revenueReady, total, q
       >
         <VStack align="stretch" spacing={2}>
           <HStack spacing={2} align="baseline">
-            <Text color="#a78bfa" fontSize="3xl" fontWeight="bold" lineHeight="1">
+            <Text color="#78716c" fontSize="3xl" fontWeight="bold" lineHeight="1">
               {total}
             </Text>
             <Text color="gray.400" fontSize="xs" fontWeight="semibold">
               Total Keywords
             </Text>
+            <MetricTooltip metricKey="total-keywords" size={12} />
           </HStack>
           {revenueReady < total * 0.2 && (
             <HStack spacing={1.5} mt={2} bg="orange.50" px={3} py={2} borderRadius="md">

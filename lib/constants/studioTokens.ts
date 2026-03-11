@@ -80,7 +80,7 @@ export const STUDIO_CARD = {
   borderWidth: '1px',
   borderColor: STUDIO_COLORS.cardBorder,
   borderRadius: 'xl',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
 } as const;
 
 /** Elevated card for hero KPIs, featured sections, and primary CTAs */
@@ -89,7 +89,7 @@ export const STUDIO_CARD_ELEVATED = {
   borderWidth: '1px',
   borderColor: STUDIO_COLORS.cardBorder,
   borderRadius: '2xl',
-  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.10)',
 } as const;
 
 export const STUDIO_CARD_HOVER = {

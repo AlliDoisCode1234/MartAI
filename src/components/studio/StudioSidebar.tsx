@@ -35,8 +35,6 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiSettings,
-  FiUser,
-  FiTarget,
 } from 'react-icons/fi';
 import { IoFlame } from 'react-icons/io5';
 import { useAuth } from '@/lib/useAuth';
@@ -52,8 +50,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { href: '/studio/create', label: 'Create', icon: FiPlusCircle },
   { href: '/studio', label: 'Dashboard', icon: FiGrid },
-  { href: '/studio/insights', label: 'Analytics', icon: FiBarChart2 },
+  { href: '/studio/calendar', label: 'Calendar', icon: FiCalendar },
   {
     href: '/studio/library',
     label: 'Library',
@@ -66,14 +65,11 @@ const navItems: NavItem[] = [
     ],
   },
   { href: '/studio/keywords', label: 'Keywords', icon: FiSearch },
-  { href: '/studio/calendar', label: 'Calendar', icon: FiCalendar },
-  { href: '/studio/create', label: 'Create', icon: FiPlusCircle },
-  { href: '/studio/brand-profile', label: 'Brand Profile', icon: FiTarget },
+  { href: '/studio/insights', label: 'Analytics', icon: FiBarChart2 },
 ];
 
 const bottomNavItems: NavItem[] = [
-  { href: '/studio/brand-profile', label: 'Settings', icon: FiSettings },
-  { href: '/settings/profile', label: 'User Profile', icon: FiUser },
+  { href: '/settings', label: 'Settings', icon: FiSettings },
 ];
 
 interface Props {
@@ -202,7 +198,7 @@ export function StudioSidebar({ collapsed = false, onToggle }: Props) {
               </Tooltip>
 
               {/* Sub-items: visible when parent is active and sidebar is expanded */}
-              {item.children && active && !collapsed && (
+              {item.children && !collapsed && (
                 <VStack spacing={0} align="stretch" pl={7} mt={0.5}>
                   {item.children.map((child) => {
                     const currentStatus = searchParams.get('status') || 'all';

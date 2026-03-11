@@ -83,6 +83,7 @@ export function ContentJourney({ contentByStage, totalContent }: Props) {
       borderColor="gray.100"
       p={4}
       boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
+      overflow="hidden"
     >
       <VStack align="stretch" spacing={5}>
         {/* Header */}
