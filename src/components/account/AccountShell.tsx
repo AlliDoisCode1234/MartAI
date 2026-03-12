@@ -24,7 +24,6 @@ import {
   FiTarget,
   FiGrid,
   FiUsers,
-  FiCreditCard,
 } from 'react-icons/fi';
 import { useAuth } from '@/lib/useAuth';
 import { getUserDisplayName } from '@/lib/funNames';
@@ -33,6 +32,8 @@ import { Suspense } from 'react';
 /**
  * Navigation items for the account sidebar.
  * `matchTab` is used for /settings?tab=X matching.
+ * Note: Billing is intentionally NOT a top-level nav item.
+ * It lives inside Settings > Account > Billing accordion.
  */
 interface AccountNavItem {
   href: string;
@@ -52,7 +53,6 @@ const NAV_ITEMS: AccountNavItem[] = [
     matchTab: 'integrations',
   },
   { href: '/settings?tab=team', label: 'Team', icon: FiUsers, matchTab: 'team' },
-  { href: '/subscription', label: 'Billing', icon: FiCreditCard },
 ];
 
 interface Props {

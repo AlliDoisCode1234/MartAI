@@ -8,7 +8,9 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://phoo.ai';
+  // IMPORTANT: Use www.phoo.ai (canonical) — non-www 307-redirects to www at DNS level.
+  // If sitemap uses non-www, GSC flags every page as "Page with redirect".
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.phoo.ai';
 
   // Core public pages with high SEO priority
   const publicRoutes = [

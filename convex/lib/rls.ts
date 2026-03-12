@@ -97,21 +97,6 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       },
     },
 
-    // Competitors: project-scoped
-    competitors: {
-      read: async (ruleCtx, competitor) => {
-        if (isAdmin) return true;
-        if (!userId) return false;
-        const project = await ruleCtx.db.get(competitor.projectId);
-        return project?.userId === userId;
-      },
-      modify: async (ruleCtx, competitor) => {
-        if (isAdmin) return true;
-        if (!userId) return false;
-        const project = await ruleCtx.db.get(competitor.projectId);
-        return project?.userId === userId;
-      },
-    },
 
     // API Keys: user-scoped
     apiKeys: {
@@ -338,11 +323,6 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       },
     },
 
-    // OAuth tokens: super_admin only (sensitive)
-    oauthTokens: {
-      read: async () => isSuperAdmin,
-      modify: async () => isSuperAdmin,
-    },
 
     // Usage limits: user-scoped read, admin modify
     usageLimits: {
@@ -353,11 +333,6 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       modify: async () => isAdmin,
     },
 
-    // Personas: global table with isDefault flag - readable by all authenticated, modifiable by admin
-    personas: {
-      read: async () => !!userId, // Any authenticated user can read personas
-      modify: async () => isAdmin, // Only admins can modify personas
-    },
 
     // Beta codes: admin only (sensitive)
     betaCodes: {
@@ -425,11 +400,6 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       },
     },
 
-    // Brief versions: admin-only (needs cross-table lookup via briefs)
-    briefVersions: {
-      read: async () => isAdmin,
-      modify: async () => isAdmin,
-    },
 
     // Keyword library: global table (admin-only)
     keywordLibrary: {
@@ -443,11 +413,6 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       modify: async () => isAdmin,
     },
 
-    // Rankings: admin-only (system-generated data)
-    rankings: {
-      read: async () => isAdmin,
-      modify: async () => isAdmin,
-    },
 
     // SEO audits: admin-only
     seoAudits: {
@@ -455,11 +420,6 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       modify: async () => isAdmin,
     },
 
-    // SEO statistics: admin-only (legacy table without projectId)
-    seoStatistics: {
-      read: async () => isAdmin,
-      modify: async () => isAdmin,
-    },
 
     // SERP analyses: admin-only
     serpAnalyses: {
@@ -467,11 +427,6 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       modify: async () => isAdmin,
     },
 
-    // Generated pages: admin-only (legacy table with clientId instead of projectId)
-    generatedPages: {
-      read: async () => isAdmin,
-      modify: async () => isAdmin,
-    },
 
     // Submitted URLs: admin-only (prospect-scoped, not project-scoped)
     submittedUrls: {
@@ -576,15 +531,6 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       modify: async () => isAdmin,
     },
 
-    // ========================================================================
-    // P3 LOW - Legacy/Deprecated
-    // ========================================================================
-
-    // Clients (deprecated): admin only
-    clients: {
-      read: async () => isAdmin,
-      modify: async () => isAdmin,
-    },
 
     // Waitlist: admin read, public write
     waitlist: {

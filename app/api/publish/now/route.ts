@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
       briefId: draft.briefId,
     });
 
-    // Get OAuth connection
+    // Get CMS platform connection (decrypted credentials)
     const projectIdTyped = assertProjectId(draft.projectId);
-    const connection = await callConvexQuery(apiLocal.oauthTokens.getOAuthToken, {
-      clientId: projectIdTyped,
+    const connection = await callConvexQuery(apiLocal.integrations.platformConnections.getConnection, {
+      projectId: projectIdTyped,
       platform,
     });
 
@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
     if (platform === 'wordpress') {
       const wpClient = new WordPressClient({
         siteUrl: connection.siteUrl,
-        username: connection.wordpressSiteId || 'admin',
-        password: connection.accessToken,
+        username: connection.credentials.username || 'admin',
+        password: connection.credentials.applicationPassword || '',
       });
 
       const result = await publishWithRetry(
@@ -108,8 +108,8 @@ export async function POST(request: NextRequest) {
       publishedUrl = result.url;
     } else if (platform === 'shopify') {
       const shopifyClient = new ShopifyClient({
-        shopDomain: connection.shopifyShop || connection.siteUrl,
-        accessToken: connection.accessToken,
+        shopDomain: connection.siteUrl,
+        accessToken: connection.credentials.accessToken || '',
       });
 
       const result = await publishWithRetry(

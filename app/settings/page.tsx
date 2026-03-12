@@ -48,6 +48,7 @@ import {
   AccordionPanel,
   AccordionIcon,
   useToast,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { WordPressConnect } from '@/src/components/settings/WordPressConnect';
 import { ShopifyConnect } from '@/src/components/settings/ShopifyConnect';
@@ -77,6 +78,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { BRAND } from '@/lib/constants/brand';
 import { AccountShell } from '@/src/components/account/AccountShell';
+import { CancellationRetentionModal } from '@/src/components/account/CancellationRetentionModal';
 import { formatLongDate } from '@/lib/dateUtils';
 
 // Map tab names to indices
@@ -133,6 +135,7 @@ export default function SettingsPage() {
 
   const { project: activeProject } = useProject(null, { autoSelect: true });
   const { me, loading: meLoading } = useMe();
+  const cancelModal = useDisclosure();
 
   const myOrganizations = useQuery(
     api.organizations.organizations.getMyOrganizations,
@@ -204,6 +207,7 @@ export default function SettingsPage() {
   const memberSince = me?._creationTime ? formatLongDate(me._creationTime) : 'Unknown';
 
   return (
+    <>
     <AccountShell>
       <Container
         maxW="container.xl"
@@ -454,6 +458,21 @@ export default function SettingsPage() {
                                 </HStack>
                               </Box>
                             )}
+
+                            {/* ── Danger Zone: Cancel ── */}
+                            <Divider borderColor="gray.100" my={2} />
+                            <Box pt={2}>
+                              <Text
+                                fontSize="xs"
+                                color="gray.400"
+                                cursor="pointer"
+                                _hover={{ color: 'red.400', textDecoration: 'underline' }}
+                                transition="color 0.15s"
+                                onClick={cancelModal.onOpen}
+                              >
+                                Cancel subscription
+                              </Text>
+                            </Box>
                           </VStack>
                         </AccordionPanel>
                       </AccordionItem>
@@ -758,5 +777,13 @@ export default function SettingsPage() {
         </VStack>
       </Container>
     </AccountShell>
+
+    {/* Cancellation modal — rendered outside AccountShell to avoid z-index issues */}
+    <CancellationRetentionModal
+      isOpen={cancelModal.isOpen}
+      onClose={cancelModal.onClose}
+      currentPlan={tier}
+    />
+  </>
   );
 }

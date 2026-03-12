@@ -66,6 +66,7 @@ export default function DashboardPage() {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery(api.users.current);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
 
   const {
     projectId,
@@ -143,19 +144,33 @@ export default function DashboardPage() {
     toast({ title: 'Syncing data from Google...', status: 'info', duration: 3000 });
     try {
       const result = await syncProject({ projectId: projectId as Id<'projects'> });
+      const now = Date.now();
+      setLastSyncedAt(now);
+
       if (result.status === 'error') {
         toast({
           title: 'Sync completed with errors',
           description: result.error,
           status: 'warning',
           duration: 8000,
+          isClosable: true,
         });
       } else {
+        // Build change summary for the toast
+        const syncData = (result.data ?? {}) as Record<string, unknown>;
+        const changes: string[] = [];
+        if (syncData.gscSynced) changes.push('Search Console data');
+        if (syncData.ga4Synced) changes.push('Analytics data');
+        const summary = changes.length > 0
+          ? `Updated: ${changes.join(', ')}.`
+          : 'Sync complete. Your data is up to date.';
+
         toast({
           title: 'Sync complete',
-          description: 'Dashboard data updated from Google.',
+          description: summary,
           status: 'success',
           duration: 5000,
+          isClosable: true,
         });
       }
     } catch (e) {
@@ -234,10 +249,10 @@ export default function DashboardPage() {
                   >
                     Sync Data
                   </Button>
-                  {gscStats?.lastSyncDate && (
+                  {(lastSyncedAt || gscStats?.lastSyncDate) && (
                     <Text color="gray.400" fontSize="xs">
                       Last synced:{' '}
-                      {new Date(gscStats.lastSyncDate).toLocaleDateString('en-US', {
+                      {new Date(lastSyncedAt || gscStats?.lastSyncDate || 0).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         hour: 'numeric',

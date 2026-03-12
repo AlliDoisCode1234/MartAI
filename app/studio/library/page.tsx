@@ -37,7 +37,7 @@ import { ContentCard } from '@/src/components/studio/ContentCard';
 import { FiSearch, FiGrid, FiList, FiPlus } from 'react-icons/fi';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useProject } from '@/lib/hooks';
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
 import { useLoadingAnnounce } from '@/src/lib/accessibility';
@@ -56,12 +56,20 @@ function getStatusFromParams(params: URLSearchParams): StatusFilter {
 export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(getStatusFromParams(searchParams));
 
-  // Sync tab state when URL params change (e.g. sidebar sub-item clicks)
   useEffect(() => {
     setStatusFilter(getStatusFromParams(searchParams));
   }, [searchParams]);
+
+  // Update both local state and URL when tab changes
+  const handleStatusChange = (status: StatusFilter) => {
+    setStatusFilter(status);
+    const url = status === 'all' ? '/studio/library' : `/studio/library?status=${status}`;
+    router.replace(url, { scroll: false });
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
 
   // Get current project
@@ -196,7 +204,7 @@ export default function LibraryPage() {
           variant="unstyled"
           index={['all', 'draft', 'published', 'scheduled'].indexOf(statusFilter)}
           onChange={(i) =>
-            setStatusFilter((['all', 'draft', 'published', 'scheduled'] as const)[i])
+            handleStatusChange((['all', 'draft', 'published', 'scheduled'] as const)[i])
           }
         >
           <TabList

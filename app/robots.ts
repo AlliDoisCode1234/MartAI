@@ -30,7 +30,7 @@ export default function robots(): MetadataRoute.Robots {
   }
 
   // Production — allow crawlers everywhere except private routes
-  const productionUrl = siteUrl || 'https://phoo.ai';
+  const productionUrl = siteUrl || 'https://www.phoo.ai';
 
   return {
     rules: [

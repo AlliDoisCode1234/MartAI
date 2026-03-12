@@ -58,24 +58,19 @@ export const clearAllUserData = internalMutation({
     await clearTable('keywords'); // Project-scoped, DELETE
     await clearTable('keywordClusters');
     await clearTable('keywordIdeas');
-    await clearTable('rankings');
     await clearTable('serpAnalyses');
     await clearTable('seoAudits');
-    await clearTable('seoStatistics');
     await clearTable('insights');
     await clearTable('projectScores');
     await clearTable('quarterlyPlans');
-    await clearTable('competitors');
 
     // Phase 3: Connections & Analytics
     await clearTable('ga4Connections');
     await clearTable('gscConnections');
     await clearTable('platformConnections');
     await clearTable('analyticsData');
-    await clearTable('competitorAnalytics');
     await clearTable('analyticsEvents');
     await clearTable('apiKeys');
-    await clearTable('oauthTokens');
     await clearTable('generatedPages');
 
     // Phase 4: Projects & Prospects
@@ -86,11 +81,9 @@ export const clearAllUserData = internalMutation({
     // Phase 5: Billing & Auth
     await clearTable('subscriptions');
     await clearTable('usageLimits');
-    await clearTable('clients');
     await clearTable('apiAccessRequests');
     await clearTable('passwordResetTokens');
     await clearTable('contentTemplates');
-    await clearTable('personas');
 
     // Phase 6: Organizations
     await clearTable('organizationInvitations');

@@ -104,9 +104,9 @@ async function processPosts(duePosts: any[], api: any) {
         throw new Error('Content piece not found');
       }
 
-      // Get connection
-      const connection = await callConvexQuery(api.integrations.oauth.getOAuthToken, {
-        clientId: post.projectId as any,
+      // Get connection (decrypted credentials from platformConnections)
+      const connection = await callConvexQuery(api.integrations.platformConnections.getConnection, {
+        projectId: post.projectId as any,
         platform: post.platform,
       });
 
@@ -123,8 +123,8 @@ async function processPosts(duePosts: any[], api: any) {
       if (post.platform === 'wordpress') {
         const wpClient = new WordPressClient({
           siteUrl: connection.siteUrl,
-          username: connection.wordpressSiteId || 'admin',
-          password: connection.accessToken,
+          username: connection.credentials.username || 'admin',
+          password: connection.credentials.applicationPassword || '',
         });
 
         const result = await publishWithRetry(
@@ -160,8 +160,8 @@ async function processPosts(duePosts: any[], api: any) {
         publishedUrl = result.url;
       } else if (post.platform === 'shopify') {
         const shopifyClient = new ShopifyClient({
-          shopDomain: connection.shopifyShop || connection.siteUrl,
-          accessToken: connection.accessToken,
+          shopDomain: connection.siteUrl,
+          accessToken: connection.credentials.accessToken || '',
         });
 
         const result = await publishWithRetry(

@@ -21,7 +21,6 @@ export {
   analyticsSyncWorkflow,
   contentPerformanceWorkflow,
   competitorAnalysisWorkflow,
-  rankTrackingWorkflow,
 } from './analyticsWorkflows';
 
 // Onboarding (Types and Utilities)
@@ -52,7 +51,7 @@ export const WORKFLOW_REGISTRY = {
   'analytics:sync': 'workflows/analyticsWorkflows:analyticsSyncWorkflow',
   'analytics:analyzeContent': 'workflows/analyticsWorkflows:contentPerformanceWorkflow',
   'analytics:analyzeCompetitors': 'workflows/analyticsWorkflows:competitorAnalysisWorkflow',
-  'analytics:trackRankings': 'workflows/analyticsWorkflows:rankTrackingWorkflow',
+  // NOTE: 'analytics:trackRankings' removed - seo/rankings module deleted
 } as const;
 
 /**

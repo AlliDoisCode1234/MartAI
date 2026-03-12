@@ -115,7 +115,7 @@ export default function ResourceDetailPage() {
 
   const config = CATEGORY_CONFIG[resource.category as keyof typeof CATEGORY_CONFIG];
   const heroImage = HERO_IMAGES[slug] || null;
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://phoo.ai';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.phoo.ai';
 
   // Article schema markup for SEO
   const articleSchema = {

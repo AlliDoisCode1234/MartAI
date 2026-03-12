@@ -19,10 +19,11 @@ export const getIntegrationsByProject = query({
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
       .first();
 
-    // Get OAuth tokens (CMS connections)
-    const oauthTokens = await ctx.db
-      .query("oauthTokens")
-      .collect(); // Note: May need to filter by project/client if schema supports it
+    // Get CMS platform connections (replaced legacy oauthTokens)
+    const platformConns = await ctx.db
+      .query("platformConnections")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
 
     return {
       projectId: args.projectId,
@@ -41,11 +42,10 @@ export const getIntegrationsByProject = query({
           }
         : { connected: false },
       cms: {
-        wordpress: oauthTokens.some((t) => t.platform === "wordpress"),
-        shopify: oauthTokens.some((t) => t.platform === "shopify"),
-        webflow: oauthTokens.some((t) => t.platform === "webflow"),
+        wordpress: platformConns.some((c) => c.platform === "wordpress"),
+        shopify: platformConns.some((c) => c.platform === "shopify"),
+        webflow: platformConns.some((c) => c.platform === "webflow"),
       },
     };
   },
 });
-
