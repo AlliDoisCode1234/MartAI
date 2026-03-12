@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/authMiddleware';
 import { callConvexMutation, callConvexQuery, unsafeApi } from '@/lib/convexClient';
-import { assertDraftId, assertProjectId } from '@/lib/typeGuards';
+import { assertProjectId } from '@/lib/typeGuards';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,11 +13,15 @@ export async function POST(request: NextRequest) {
   try {
     await requireAuth(request);
     const body = await request.json();
-    const { draftId, publishDate, timezone, platform, tags, categories, slug } = body;
+    const { contentPieceId, projectId, publishDate, timezone, platform, tags, categories, slug } =
+      body;
 
-    if (!draftId || !publishDate || !timezone || !platform) {
+    if (!contentPieceId || !projectId || !publishDate || !timezone || !platform) {
       return NextResponse.json(
-        { error: 'draftId, publishDate, timezone, and platform are required' },
+        {
+          error:
+            'contentPieceId, projectId, publishDate, timezone, and platform are required',
+        },
         { status: 400 }
       );
     }
@@ -26,28 +30,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Convex not configured' }, { status: 503 });
     }
 
-    // Validate required field - type guaranteed after assertion
-    const draftIdTyped = assertDraftId(draftId);
-    const draft = await callConvexQuery(apiLocal.drafts.getDraftById, {
-      draftId: draftIdTyped,
+    // Validate content piece exists
+    const contentPiece = await callConvexQuery(apiLocal.contentPieces.getById, {
+      contentPieceId,
     });
 
-    if (!draft) {
-      return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
-    }
-
-    if (draft.status !== 'approved') {
-      return NextResponse.json(
-        { error: 'Draft must be approved before scheduling' },
-        { status: 400 }
-      );
+    if (!contentPiece) {
+      return NextResponse.json({ error: 'Content piece not found' }, { status: 404 });
     }
 
     // Parse publish date
     const publishTimestamp =
       typeof publishDate === 'string' ? new Date(publishDate).getTime() : publishDate;
 
-    if (isNaN(publishTimestamp)) {
+    if (Number.isNaN(publishTimestamp)) {
       return NextResponse.json({ error: 'Invalid publish date' }, { status: 400 });
     }
 
@@ -57,11 +53,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify platform connection exists
-    const projectIdTyped = assertProjectId(draft.projectId);
-    const platformConnection = await callConvexQuery(apiLocal.oauthTokens.getOAuthToken, {
-      clientId: projectIdTyped,
-      platform,
-    });
+    const projectIdTyped = assertProjectId(projectId);
+    const platformConnection = await callConvexQuery(
+      apiLocal.integrations.platformConnections.getConnection,
+      {
+        projectId: projectIdTyped,
+        platform,
+      }
+    );
 
     if (!platformConnection) {
       return NextResponse.json(
@@ -70,19 +69,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create scheduled post
-    const postId = await callConvexMutation(apiLocal.scheduledPosts.createScheduledPost, {
-      draftId: draftIdTyped,
-      projectId: projectIdTyped,
-      briefId: draft.briefId,
-      publishDate: publishTimestamp,
-      timezone,
-      platform,
-      tags: tags || [],
-      categories: categories || [],
-      slug: slug || undefined,
-      status: 'scheduled',
-    });
+    // Create scheduled post using contentPieceId (current API)
+    const postId = await callConvexMutation(
+      apiLocal.publishing.scheduledPosts.createScheduledPost,
+      {
+        contentPieceId,
+        projectId: projectIdTyped,
+        publishDate: publishTimestamp,
+        timezone,
+        platform,
+        tags: tags || [],
+        categories: categories || [],
+        slug: slug || undefined,
+        status: 'scheduled',
+      }
+    );
 
     return NextResponse.json({
       success: true,

@@ -173,32 +173,6 @@ export const competitorAnalysisWorkflow = workflow.define({
   },
 });
 
-/**
- * Rank Tracking Workflow
- *
- * Tracks keyword rankings and detects significant changes
- */
-type RankTrackingWorkflowReturn = {
-  status: 'updated';
-  updated: boolean;
-};
-export const rankTrackingWorkflow = workflow.define({
-  args: {
-    projectId: v.id('projects'),
-  },
-  returns: v.object({
-    status: v.literal('updated'),
-    updated: v.boolean(),
-  }),
-  handler: async (step, args): Promise<RankTrackingWorkflowReturn> => {
-    // Step 1: Update rankings
-    const result = await step.runAction(internal.seo.rankings.updateRankings, {
-      projectId: args.projectId,
-    });
 
-    return {
-      status: 'updated',
-      updated: result.updated,
-    };
-  },
-});
+// NOTE: rankTrackingWorkflow was removed because seo/rankings module was deleted.
+// Rank tracking now happens through GSC keyword sync in analytics/sync.ts.

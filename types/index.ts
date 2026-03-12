@@ -21,7 +21,6 @@ export type Id<T extends string> = string & { readonly [__tableName]: T };
 // Don't re-export to avoid conflicts
 
 // Specific ID types for each table
-export type ClientId = Id<'clients'>;
 export type ProjectId = Id<'projects'>;
 export type UserId = Id<'users'>;
 export type SessionId = Id<'sessions'>;
@@ -34,13 +33,10 @@ export type DraftId = Id<'drafts'>;
 export type ScheduledPostId = Id<'scheduledPosts'>;
 export type GA4ConnectionId = Id<'ga4Connections'>;
 export type GSCConnectionId = Id<'gscConnections'>;
-export type OAuthTokenId = Id<'oauthTokens'>;
 export type AnalyticsDataId = Id<'analyticsData'>;
 export type InsightId = Id<'insights'>;
 export type CompetitorId = Id<'competitors'>;
 export type SEOAuditId = Id<'seoAudits'>;
-export type RankingId = Id<'rankings'>;
-export type StatisticsId = Id<'seoStatistics'>;
 export type GeneratedPageId = Id<'generatedPages'>;
 export type ProspectId = Id<'prospects'>;
 export type ProspectDetailId = Id<'prospectDetails'>;
@@ -109,18 +105,7 @@ export interface Project {
   updatedAt: number;
 }
 
-export interface Client {
-  _id: ClientId;
-  projectId: ProjectId;
-  businessName: string;
-  websiteUrl: string;
-  industry?: string;
-  competitors?: string[];
-  goals?: string;
-  brandVoice?: string;
-  createdAt: number;
-  updatedAt: number;
-}
+
 
 // ============================================================================
 // Prospecting Types
@@ -498,19 +483,7 @@ export interface GSCConnection {
   updatedAt: number;
 }
 
-export interface OAuthToken {
-  _id: OAuthTokenId;
-  clientId: ClientId;
-  platform: 'wordpress' | 'shopify' | 'webflow';
-  accessToken: string;
-  refreshToken?: string;
-  tokenExpiry?: number;
-  siteUrl: string;
-  shopifyShop?: string;
-  wordpressSiteId?: string;
-  createdAt: number;
-  updatedAt: number;
-}
+
 
 // ============================================================================
 // Analytics Types

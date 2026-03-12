@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/authMiddleware';
 import { WordPressClient } from '@/lib/integrations/wordpress';
 import { ShopifyClient } from '@/lib/integrations/shopify';
 import { WebflowClient } from '@/lib/integrations/webflow';
-import { callConvexQuery, callConvexMutation, unsafeApi as api } from '@/lib/convexClient';
+import { callConvexMutation, unsafeApi as api } from '@/lib/convexClient';
 
 export async function POST(request: NextRequest) {
   try {
@@ -108,11 +108,16 @@ export async function POST(request: NextRequest) {
       // Store connection if valid and has publishing rights
       if (testResult.valid && testResult.canPublish && api) {
         try {
-          await callConvexMutation(api.integrations.oauth.storeOAuthToken, {
+          await callConvexMutation(api.integrations.platformConnections.saveConnection, {
             projectId: projectId as any,
             platform,
-            accessToken: JSON.stringify(credentials),
-            status: 'connected',
+            siteUrl: credentials.siteUrl || credentials.shopDomain || '',
+            siteName: testResult.siteName,
+            credentials: {
+              username: credentials.username,
+              applicationPassword: credentials.password,
+              accessToken: credentials.accessToken,
+            },
           });
         } catch (error) {
           console.warn('Failed to store connection:', error);

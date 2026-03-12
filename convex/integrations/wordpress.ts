@@ -1,5 +1,10 @@
 import { query } from '../_generated/server';
 import { v } from 'convex/values';
+import {
+  decryptPlatformCredentials,
+  type EncryptedCredentials,
+  type PlatformCredentials,
+} from '../lib/encryptedCredentials';
 
 export const getConnection = query({
   args: {
@@ -16,10 +21,15 @@ export const getConnection = query({
 
     if (!connection) return null;
 
+    // Decrypt credentials before returning (they are encrypted at rest)
+    const decrypted = await decryptPlatformCredentials(
+      connection.credentials as EncryptedCredentials | PlatformCredentials
+    );
+
     return {
       url: connection.siteUrl,
-      username: connection.credentials.username ?? 'admin',
-      password: connection.credentials.applicationPassword ?? '',
+      username: decrypted.username ?? 'admin',
+      password: decrypted.applicationPassword ?? '',
     };
   },
 });
