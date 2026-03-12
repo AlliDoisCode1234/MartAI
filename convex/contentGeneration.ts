@@ -1299,10 +1299,11 @@ function countSyllablesServer(word: string): number {
 function countSentencesServer(content: string): number {
   if (!content || !content.trim()) return 0;
   const cleaned = content
-    .replace(/^#{1,6}\s+.*$/gm, '')        // headings
+    .replace(/^#{1,6}\s+/gm, '')           // heading markers (keep text)
     .replace(/```[\s\S]*?```/g, '')         // code blocks
     .replace(/`[^`]+`/g, '')               // inline code
-    .replace(/!?\[.*?\]\(.*?\)/g, '')      // links and images
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')  // images (remove entirely)
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links (keep label text)
     .replace(/^[-*+]\s+/gm, '')            // bullet points
     .replace(/^\d+\.\s+/gm, '')            // numbered lists
     .replace(/\*\*([^*]+)\*\*/g, '$1')     // bold
@@ -1320,12 +1321,12 @@ function countSentencesServer(content: string): number {
 
 /** Flesch Reading Ease: 206.835 - 1.015*(words/sentences) - 84.6*(syllables/words) */
 function computeFleschReadingEaseServer(content: string, wordCount: number): number {
-  // Strip markdown to get plain prose for accurate syllable counting
   const plainText = (content || '')
-    .replace(/^#{1,6}\s+/gm, '')           // heading markers
+    .replace(/^#{1,6}\s+/gm, '')           // heading markers (keep text)
     .replace(/```[\s\S]*?```/g, '')         // code blocks
     .replace(/`[^`]+`/g, '')               // inline code
-    .replace(/!?\[.*?\]\(.*?\)/g, '')      // links and images
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')  // images (remove entirely)
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links (keep label text)
     .replace(/\*\*([^*]+)\*\*/g, '$1')     // bold
     .replace(/\*([^*]+)\*/g, '$1')         // italic
     .replace(/^[-*+>]\s*/gm, '')           // bullets, blockquotes

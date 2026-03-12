@@ -158,10 +158,11 @@ export function countSentences(content: string): number {
 
   // Strip all markdown formatting to get plain prose
   const cleaned = content
-    .replace(/^#{1,6}\s+.*$/gm, '')        // headings
+    .replace(/^#{1,6}\s+/gm, '')           // heading markers (keep text)
     .replace(/```[\s\S]*?```/g, '')         // code blocks
     .replace(/`[^`]+`/g, '')               // inline code
-    .replace(/!?\[.*?\]\(.*?\)/g, '')      // links and images
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')  // images (remove entirely)
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links (keep label text)
     .replace(/^[-*+]\s+/gm, '')            // bullet points
     .replace(/^\d+\.\s+/gm, '')            // numbered lists
     .replace(/\*\*([^*]+)\*\*/g, '$1')     // bold
@@ -201,10 +202,11 @@ export function countSentences(content: string): number {
 export function computeFleschReadingEase(content: string): number {
   // Strip markdown to get plain prose for accurate syllable counting
   const plainText = (content || '')
-    .replace(/^#{1,6}\s+/gm, '')           // heading markers
+    .replace(/^#{1,6}\s+/gm, '')           // heading markers (keep text)
     .replace(/```[\s\S]*?```/g, '')         // code blocks
     .replace(/`[^`]+`/g, '')               // inline code
-    .replace(/!?\[.*?\]\(.*?\)/g, '')      // links and images
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')  // images (remove entirely)
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links (keep label text)
     .replace(/\*\*([^*]+)\*\*/g, '$1')     // bold
     .replace(/\*([^*]+)\*/g, '$1')         // italic
     .replace(/^[-*+>]\s*/gm, '')           // bullets, blockquotes
