@@ -149,17 +149,26 @@ export function countSyllables(word: string): number {
 
 /**
  * Count sentences in text content.
- * Handles common abbreviations and decimal numbers to avoid
- * false sentence breaks.
+ * Strips markdown formatting before splitting on sentence-ending punctuation.
+ * Also counts paragraph breaks as sentence boundaries for markdown content
+ * where paragraphs may not end with periods.
  */
 export function countSentences(content: string): number {
   if (!content || !content.trim()) return 0;
 
-  // Strip markdown headings (they end with newlines, not periods)
+  // Strip all markdown formatting to get plain prose
   const cleaned = content
-    .replace(/^#{1,6}\s+.*$/gm, '')
-    .replace(/\*\*/g, '')
-    .replace(/\*/g, '')
+    .replace(/^#{1,6}\s+/gm, '')           // heading markers (keep text)
+    .replace(/```[\s\S]*?```/g, '')         // code blocks
+    .replace(/`[^`]+`/g, '')               // inline code
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')  // images (remove entirely)
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links (keep label text)
+    .replace(/^[-*+]\s+/gm, '')            // bullet points
+    .replace(/^\d+\.\s+/gm, '')            // numbered lists
+    .replace(/\*\*([^*]+)\*\*/g, '$1')     // bold
+    .replace(/\*([^*]+)\*/g, '$1')         // italic
+    .replace(/^>\s*/gm, '')               // blockquotes
+    .replace(/---+/g, '')                  // horizontal rules
     .trim();
 
   if (!cleaned) return 0;
@@ -167,8 +176,8 @@ export function countSentences(content: string): number {
   // Split on sentence-ending punctuation
   const sentences = cleaned.split(/[.!?]+/).filter((s) => {
     const trimmed = s.trim();
-    // Must have at least 3 words to count as a sentence
-    return trimmed.length > 0 && trimmed.split(/\s+/).length >= 3;
+    // Must have at least 2 words to count as a sentence
+    return trimmed.length > 0 && trimmed.split(/\s+/).length >= 2;
   });
 
   return Math.max(1, sentences.length);
@@ -191,13 +200,26 @@ export function countSentences(content: string): number {
  * Returns a score clamped to 0-100.
  */
 export function computeFleschReadingEase(content: string): number {
-  const words = countWords(content);
+  // Strip markdown to get plain prose for accurate syllable counting
+  const plainText = (content || '')
+    .replace(/^#{1,6}\s+/gm, '')           // heading markers (keep text)
+    .replace(/```[\s\S]*?```/g, '')         // code blocks
+    .replace(/`[^`]+`/g, '')               // inline code
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')  // images (remove entirely)
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links (keep label text)
+    .replace(/\*\*([^*]+)\*\*/g, '$1')     // bold
+    .replace(/\*([^*]+)\*/g, '$1')         // italic
+    .replace(/^[-*+>]\s*/gm, '')           // bullets, blockquotes
+    .replace(/---+/g, '')                  // horizontal rules
+    .trim();
+
+  const words = countWords(plainText);
   const sentences = countSentences(content);
 
   if (words < 10 || sentences === 0) return 0;
 
-  // Count total syllables
-  const wordList = (content || '').split(/\s+/).filter((w) => w.length > 0);
+  // Count total syllables on plain text only
+  const wordList = plainText.split(/\s+/).filter((w) => w.length > 0);
   const totalSyllables = wordList.reduce((sum, w) => sum + countSyllables(w), 0);
 
   const avgWordsPerSentence = words / sentences;

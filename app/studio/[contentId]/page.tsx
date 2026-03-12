@@ -662,7 +662,7 @@ export default function ContentEditorPage() {
               </HStack>
             </Box>
             {showPreview ? (
-              <Box flex={1} overflow="auto" minH="550px">
+              <Box flex={1} overflow="auto" maxH="600px" minH="550px">
                 <MarkdownPreview content={content} />
               </Box>
             ) : (

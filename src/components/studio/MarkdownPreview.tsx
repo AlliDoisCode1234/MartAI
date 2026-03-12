@@ -9,18 +9,7 @@
  */
 
 import React from 'react';
-import {
-  Box,
-  Heading,
-  Text,
-  Link,
-  Image,
-  Code,
-  Divider,
-  UnorderedList,
-  OrderedList,
-  ListItem,
-} from '@chakra-ui/react';
+import { Box, Text } from '@chakra-ui/react';
 import ReactMarkdown from 'react-markdown';
 
 interface Props {
@@ -32,51 +21,54 @@ export function MarkdownPreview({ content }: Props) {
     <Box
       className="markdown-preview"
       p={6}
-      color="gray.200"
+      color="#2d3748"
       fontSize="md"
       lineHeight="1.8"
       sx={{
         '& h1': {
           fontSize: '2xl',
           fontWeight: 'bold',
-          color: 'white',
+          color: '#1a1a1a',
           mb: 4,
           mt: 6,
           pb: 2,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          borderBottom: '1px solid #e2e8f0',
         },
         '& h2': {
           fontSize: 'xl',
           fontWeight: 'bold',
-          color: 'white',
+          color: '#1a1a1a',
           mb: 3,
           mt: 5,
         },
         '& h3': {
           fontSize: 'lg',
           fontWeight: 'semibold',
-          color: 'gray.100',
+          color: '#2d3748',
           mb: 2,
           mt: 4,
         },
         '& p': {
           mb: 4,
-          color: 'gray.300',
+          color: '#4a5568',
         },
         '& ul, & ol': {
           pl: 6,
           mb: 4,
+          color: '#4a5568',
         },
         '& li': {
           mb: 2,
+          color: '#4a5568',
         },
         '& a': {
-          color: '#FF9D00',
+          color: '#D97706',
           textDecoration: 'underline',
           _hover: { opacity: 0.8 },
         },
         '& code': {
-          bg: 'rgba(255, 255, 255, 0.1)',
+          bg: '#f7fafc',
+          color: '#1a1a1a',
           px: 2,
           py: 0.5,
           borderRadius: 'md',
@@ -84,29 +76,31 @@ export function MarkdownPreview({ content }: Props) {
           fontFamily: 'mono',
         },
         '& pre': {
-          bg: 'rgba(255, 255, 255, 0.05)',
+          bg: '#f7fafc',
+          color: '#1a1a1a',
           p: 4,
           borderRadius: 'lg',
           mb: 4,
           overflow: 'auto',
+          border: '1px solid #e2e8f0',
         },
         '& pre code': {
           bg: 'transparent',
           p: 0,
         },
         '& blockquote': {
-          borderLeft: '4px solid #FF9D00',
+          borderLeft: '4px solid #F99F2A',
           pl: 4,
           py: 2,
           my: 4,
-          bg: 'rgba(255, 157, 0, 0.05)',
+          bg: 'rgba(249, 159, 42, 0.06)',
           borderRadius: '0 8px 8px 0',
           fontStyle: 'italic',
-          color: 'gray.400',
+          color: '#718096',
         },
         '& hr': {
           my: 6,
-          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderColor: '#e2e8f0',
         },
         '& img': {
           maxW: '100%',
@@ -119,13 +113,19 @@ export function MarkdownPreview({ content }: Props) {
           borderCollapse: 'collapse',
         },
         '& th, & td': {
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid #e2e8f0',
           p: 2,
           textAlign: 'left',
+          color: '#4a5568',
         },
         '& th': {
-          bg: 'rgba(255, 255, 255, 0.05)',
+          bg: '#f7fafc',
           fontWeight: 'semibold',
+          color: '#2d3748',
+        },
+        '& strong': {
+          color: '#1a1a1a',
+          fontWeight: 'bold',
         },
       }}
     >

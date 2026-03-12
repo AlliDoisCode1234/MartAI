@@ -6,189 +6,171 @@
  * Component Hierarchy:
  * App -> Keywords -> KeywordsPage -> KeywordStatCards (this file)
  *
- * 4 stat cards pixel-matched to mockup:
- *  1. Foundation: sparkline chart, growth %, badges
- *  2. Authority: colored dot indicators, easiest wins
- *  3. Revenue-Ready: colored dot indicators, rank growth
- *  4. Total: tip with warning icon
- *
- * Each card has gradient accent-tinted background and colored left border.
+ * 4 actionable stat cards that double as table filters.
+ * Clicking a card filters the keyword table below to the relevant subset.
+ * Active card is visually highlighted with colored border and background.
  */
 
 import { SimpleGrid, Box, VStack, HStack, Text, Icon } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { FiAlertTriangle } from 'react-icons/fi';
+import { FiSearch, FiZap, FiLayers, FiList } from 'react-icons/fi';
 import { MetricTooltip } from '@/src/components/shared';
 
 const MotionBox = motion(Box);
 
+type CardFilter = 'all' | 'ranking' | 'quickwins' | 'unclustered';
+
 type Props = {
-  foundation: number;
-  authority: number;
-  revenueReady: number;
   total: number;
+  rankingOnGoogle: number;
   quickWins: number;
+  unclustered: number;
+  activeFilter: CardFilter;
+  onFilterChange: (filter: CardFilter) => void;
 };
 
-/** Mini sparkline SVG — upward trend curve with fill */
-function Sparkline({ color }: { color: string }) {
-  return (
-    <Box position="absolute" top="8px" right="8px" opacity={0.6} w="80px" h="40px">
-      <svg width="80" height="40" viewBox="0 0 80 40" fill="none">
-        <defs>
-          <linearGradient id={`sparkGrad-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.4" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M0 35 Q10 32 16 28 T32 22 T48 18 T60 10 T72 6 T80 4"
-          stroke={color}
-          strokeWidth="2"
-          fill="none"
-          strokeLinecap="round"
-        />
-        <path
-          d="M0 35 Q10 32 16 28 T32 22 T48 18 T60 10 T72 6 T80 4 L80 40 L0 40 Z"
-          fill={`url(#sparkGrad-${color.replace('#', '')})`}
-        />
-      </svg>
-    </Box>
-  );
+const CARDS: Array<{
+  key: CardFilter;
+  label: string;
+  sublabel: string;
+  icon: typeof FiList;
+  accentColor: string;
+  borderColor: string;
+  bgActive: string;
+  metricKey: string;
+}> = [
+  {
+    key: 'all',
+    label: 'Total Keywords',
+    sublabel: 'All tracked keywords',
+    icon: FiList,
+    accentColor: '#78716c',
+    borderColor: '#78716c',
+    bgActive: 'rgba(120, 113, 108, 0.06)',
+    metricKey: 'total-keywords',
+  },
+  {
+    key: 'ranking',
+    label: 'Ranking on Google',
+    sublabel: 'Keywords with GSC position data',
+    icon: FiSearch,
+    accentColor: '#0d9488',
+    borderColor: '#0d9488',
+    bgActive: 'rgba(13, 148, 136, 0.06)',
+    metricKey: 'ranking-keywords',
+  },
+  {
+    key: 'quickwins',
+    label: 'Quick Wins',
+    sublabel: 'Low effort, high opportunity',
+    icon: FiZap,
+    accentColor: '#F99F2A',
+    borderColor: '#F99F2A',
+    bgActive: 'rgba(249, 159, 42, 0.06)',
+    metricKey: 'quick-wins',
+  },
+  {
+    key: 'unclustered',
+    label: 'Unclustered',
+    sublabel: 'Not assigned to any group',
+    icon: FiLayers,
+    accentColor: '#475569',
+    borderColor: '#475569',
+    bgActive: 'rgba(71, 85, 105, 0.06)',
+    metricKey: 'unclustered-keywords',
+  },
+];
+
+function getCount(key: CardFilter, props: Props): number {
+  switch (key) {
+    case 'all':
+      return props.total;
+    case 'ranking':
+      return props.rankingOnGoogle;
+    case 'quickwins':
+      return props.quickWins;
+    case 'unclustered':
+      return props.unclustered;
+  }
 }
 
-export function KeywordStatCards({ foundation, authority, revenueReady, total, quickWins }: Props) {
+export function KeywordStatCards(props: Props) {
+  const { activeFilter, onFilterChange } = props;
+
   return (
     <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={5}>
-      {/* ─── Card 1: Foundation ─── */}
-      <MotionBox
-        position="relative"
-        overflow="hidden"
-        bg="white"
-        border="1px solid"
-        borderColor="gray.200"
-        borderLeft="3px solid #F99F2A"
-        borderRadius="xl"
-        p={5}
-        boxShadow="0 2px 12px rgba(0, 0, 0, 0.06)"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <Sparkline color="#F99F2A" />
-        <VStack align="stretch" spacing={2}>
-          <HStack spacing={2} align="baseline">
-            <Text color="#F99F2A" fontSize="3xl" fontWeight="bold" lineHeight="1">
-              {foundation}
-            </Text>
-            <Text color="gray.400" fontSize="xs" fontWeight="semibold">
-              Foundation Keywords
-            </Text>
-            <MetricTooltip metricKey="foundation-keywords" size={12} />
-          </HStack>
-          <Text color="gray.400" fontSize="xs">
-            Informational & awareness-stage terms
-          </Text>
-        </VStack>
-      </MotionBox>
+      {CARDS.map((card, index) => {
+        const count = getCount(card.key, props);
+        const isActive = activeFilter === card.key;
 
-      {/* ─── Card 2: Authority ─── */}
-      <MotionBox
-        position="relative"
-        overflow="hidden"
-        bg="white"
-        border="1px solid"
-        borderColor="gray.200"
-        borderLeft="3px solid #475569"
-        borderRadius="xl"
-        p={5}
-        boxShadow="0 2px 12px rgba(0, 0, 0, 0.06)"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.16 }}
-      >
-        <VStack align="stretch" spacing={2}>
-          <HStack spacing={2} align="baseline">
-            <Text color="#475569" fontSize="3xl" fontWeight="bold" lineHeight="1">
-              {authority}
-            </Text>
-            <Text color="gray.400" fontSize="xs" fontWeight="semibold">
-              Authority Keywords
-            </Text>
-            <MetricTooltip metricKey="authority-keywords" size={12} />
-          </HStack>
-          <Text color="gray.400" fontSize="xs">
-            {quickWins} quick win opportunities
-          </Text>
-        </VStack>
-      </MotionBox>
-
-      {/* ─── Card 3: Revenue-Ready ─── */}
-      <MotionBox
-        position="relative"
-        overflow="hidden"
-        bg="white"
-        border="1px solid"
-        borderColor="gray.200"
-        borderLeft="3px solid #0d9488"
-        borderRadius="xl"
-        p={5}
-        boxShadow="0 2px 12px rgba(0, 0, 0, 0.06)"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.22 }}
-      >
-        <VStack align="stretch" spacing={2}>
-          <HStack spacing={2} align="baseline">
-            <Text color="#0d9488" fontSize="3xl" fontWeight="bold" lineHeight="1">
-              {revenueReady}
-            </Text>
-            <Text color="gray.400" fontSize="xs" fontWeight="semibold">
-              Revenue-Ready Keywords
-            </Text>
-            <MetricTooltip metricKey="revenue-ready-keywords" size={12} />
-          </HStack>
-          <Text color="gray.400" fontSize="xs">
-            Bottom-of-funnel, transactional intent
-          </Text>
-        </VStack>
-      </MotionBox>
-
-      {/* ─── Card 4: Total ─── */}
-      <MotionBox
-        position="relative"
-        overflow="hidden"
-        bg="white"
-        border="1px solid"
-        borderColor="gray.200"
-        borderLeft="3px solid #78716c"
-        borderRadius="xl"
-        p={5}
-        boxShadow="0 2px 12px rgba(0, 0, 0, 0.06)"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.28 }}
-      >
-        <VStack align="stretch" spacing={2}>
-          <HStack spacing={2} align="baseline">
-            <Text color="#78716c" fontSize="3xl" fontWeight="bold" lineHeight="1">
-              {total}
-            </Text>
-            <Text color="gray.400" fontSize="xs" fontWeight="semibold">
-              Total Keywords
-            </Text>
-            <MetricTooltip metricKey="total-keywords" size={12} />
-          </HStack>
-          {revenueReady < total * 0.2 && (
-            <HStack spacing={1.5} mt={2} bg="orange.50" px={3} py={2} borderRadius="md">
-              <Icon as={FiAlertTriangle} color="#F99F2A" boxSize={3.5} flexShrink={0} />
-              <Text color="gray.600" fontSize="xs">
-                Focus on Revenue-Ready keywords for quicker lead generation.
+        return (
+          <MotionBox
+            key={card.key}
+            position="relative"
+            overflow="hidden"
+            bg={isActive ? card.bgActive : 'white'}
+            border="1px solid"
+            borderColor={isActive ? card.borderColor : 'gray.200'}
+            borderLeft={`3px solid ${card.accentColor}`}
+            borderRadius="xl"
+            p={5}
+            boxShadow={
+              isActive
+                ? `0 2px 12px rgba(0, 0, 0, 0.1)`
+                : '0 2px 12px rgba(0, 0, 0, 0.06)'
+            }
+            cursor="pointer"
+            onClick={() => onFilterChange(card.key)}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + index * 0.06 }}
+            _hover={{
+              borderColor: card.borderColor,
+              transform: 'translateY(-1px)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+            }}
+            sx={{
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <VStack align="stretch" spacing={2}>
+              <HStack spacing={2} align="center">
+                <Icon
+                  as={card.icon}
+                  color={isActive ? card.accentColor : 'gray.400'}
+                  boxSize={4}
+                  flexShrink={0}
+                />
+                <Text
+                  color={isActive ? 'gray.700' : 'gray.400'}
+                  fontSize="xs"
+                  fontWeight="semibold"
+                  textTransform="uppercase"
+                  letterSpacing="wider"
+                >
+                  {card.label}
+                </Text>
+                <MetricTooltip metricKey={card.metricKey} size={12} />
+              </HStack>
+              <HStack spacing={2} align="baseline">
+                <Text
+                  color={card.accentColor}
+                  fontSize="3xl"
+                  fontWeight="bold"
+                  lineHeight="1"
+                >
+                  {count}
+                </Text>
+              </HStack>
+              <Text color="gray.400" fontSize="xs">
+                {card.sublabel}
               </Text>
-            </HStack>
-          )}
-        </VStack>
-      </MotionBox>
+            </VStack>
+          </MotionBox>
+        );
+      })}
     </SimpleGrid>
   );
 }
+
+export type { CardFilter };

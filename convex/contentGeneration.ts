@@ -817,13 +817,29 @@ CRITICAL - CONTENT UNIQUENESS RULES:
 - Avoid generic filler like "this is important" or "many professionals overlook this"
 - Every paragraph must add NEW information the reader hasn't seen earlier in the article
 
-BRAND PROTECTION RULES (NON-NEGOTIABLE):
-- This content is published on the USER'S website to promote THEIR business. NEVER make a competitor look better than the user's brand.
-- In comparison/vs articles: the user's brand MUST be positioned as the superior or recommended choice. Acknowledge competitor features briefly, then show how the user's offering is better, more innovative, or more valuable.
-- NEVER write conclusions like "Competitor X is better for beginners" or "If ease-of-use matters, choose Competitor Y." Instead, frame the user's product as the smarter, more forward-thinking choice.
-- Use language that positions the user's brand as the winner: "while [competitor] offers [basic feature], [user's brand] goes further by..."
-- If comparing pricing, position the user's offering as better value, not more expensive.
-- The final recommendation MUST favor the user's brand.`;
+BRAND PROTECTION RULES (NON-NEGOTIABLE — VIOLATION = INSTANT REJECTION):
+This content is published on the USER'S OWN WEBSITE. The user's brand MUST WIN. ALWAYS.
+
+HARD RULES:
+- The user's brand/product MUST be positioned as the SUPERIOR choice in EVERY section, EVERY comparison, and EVERY conclusion.
+- Competitors should be acknowledged briefly but ALWAYS shown as inferior, limited, or outdated compared to the user's brand.
+- The CONCLUSION MUST recommend the user's brand as the best choice. No exceptions.
+- NEVER use phrases like "[Competitor] is better for...", "[Competitor] excels at...", "[Competitor] leads the pack", "[Competitor] is the superior choice"
+- NEVER position the user's brand as "simpler", "more basic", or "less capable" than a competitor.
+- In comparison articles, the user's brand gets MORE positive coverage (60%+ of the article) and the competitor gets brief, factual mentions.
+- Frame competitor features as "basic" or "expected" while the user's features are "innovative", "advanced", or "game-changing".
+- If comparing pricing, the user's offering is ALWAYS better value, never "more expensive".
+
+EXAMPLES OF FORBIDDEN PATTERNS:
+- BAD: "SEMrush leads the pack with advanced features" → GOOD: "While SEMrush offers standard features, [User's Brand] goes further with AI-driven automation"
+- BAD: "SEMrush emerges as the superior choice" → GOOD: "[User's Brand] emerges as the smarter, more innovative choice"
+- BAD: "If you need depth, choose SEMrush" → GOOD: "[User's Brand] delivers both depth AND simplicity—the best of both worlds"
+
+BRAND SAFETY CHECKLIST (verify before submitting):
+1. Does the conclusion recommend the user's brand? If not, REWRITE.
+2. Is any competitor called "superior", "better", or "leading"? If yes, REWRITE.
+3. Does the user's brand get the most positive coverage? If not, REWRITE.
+4. Would a reader finish this article wanting to buy FROM the user? If not, REWRITE.`;
 
   // Extra boost for retry attempts
   const retryBoost = enhanceQuality
@@ -853,11 +869,16 @@ Your content MUST be AT LEAST ${wordCountTarget} words. Aim for ${wordCountTarge
 - Short content will be automatically rejected
 
 Writing guidelines:
-- Write in a professional but conversational tone
-- Use short paragraphs (2-4 sentences) but MANY of them
+- Write in a professional but conversational tone — like explaining to a smart friend
+- Use SHORT sentences (10-20 words max per sentence). Break long sentences into two.
+- Use simple, everyday words. Replace complex words: "utilize" → "use", "implement" → "set up", "leverage" → "use", "comprehensive" → "complete", "facilitate" → "help"
+- Use short paragraphs (2-3 sentences max) with lots of them
 - Include actionable advice and specific examples in every section
 - Add transition sentences between sections
-- Write for readability (aim for Flesch score 60+)
+- Write for HIGH readability (aim for Flesch Reading Ease score of 80+, meaning 6th-7th grade level)
+- Avoid jargon unless defining it immediately
+- Use active voice, not passive voice
+- Start sentences with simple subjects, not long dependent clauses
 ${baseQualityRequirements}${retryBoost}${personaInstructions}
 
 Format the content as Markdown with:
@@ -1274,31 +1295,52 @@ function countSyllablesServer(word: string): number {
   return Math.max(1, count);
 }
 
-/** Count sentences in text content (server-side). */
+/** Count sentences in text content (server-side). Strips markdown before counting. */
 function countSentencesServer(content: string): number {
   if (!content || !content.trim()) return 0;
   const cleaned = content
-    .replace(/^#{1,6}\s+.*$/gm, '')
-    .replace(/\*\*/g, '')
-    .replace(/\*/g, '')
+    .replace(/^#{1,6}\s+/gm, '')           // heading markers (keep text)
+    .replace(/```[\s\S]*?```/g, '')         // code blocks
+    .replace(/`[^`]+`/g, '')               // inline code
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')  // images (remove entirely)
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links (keep label text)
+    .replace(/^[-*+]\s+/gm, '')            // bullet points
+    .replace(/^\d+\.\s+/gm, '')            // numbered lists
+    .replace(/\*\*([^*]+)\*\*/g, '$1')     // bold
+    .replace(/\*([^*]+)\*/g, '$1')         // italic
+    .replace(/^>\s*/gm, '')               // blockquotes
+    .replace(/---+/g, '')                  // horizontal rules
     .trim();
   if (!cleaned) return 0;
   const sentences = cleaned.split(/[.!?]+/).filter((s) => {
     const trimmed = s.trim();
-    return trimmed.length > 0 && trimmed.split(/\s+/).length >= 3;
+    return trimmed.length > 0 && trimmed.split(/\s+/).length >= 2;
   });
   return Math.max(1, sentences.length);
 }
 
 /** Flesch Reading Ease: 206.835 - 1.015*(words/sentences) - 84.6*(syllables/words) */
 function computeFleschReadingEaseServer(content: string, wordCount: number): number {
-  const sentences = countSentencesServer(content);
-  if (wordCount < 10 || sentences === 0) return 0;
+  const plainText = (content || '')
+    .replace(/^#{1,6}\s+/gm, '')           // heading markers (keep text)
+    .replace(/```[\s\S]*?```/g, '')         // code blocks
+    .replace(/`[^`]+`/g, '')               // inline code
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')  // images (remove entirely)
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links (keep label text)
+    .replace(/\*\*([^*]+)\*\*/g, '$1')     // bold
+    .replace(/\*([^*]+)\*/g, '$1')         // italic
+    .replace(/^[-*+>]\s*/gm, '')           // bullets, blockquotes
+    .replace(/---+/g, '')                  // horizontal rules
+    .trim();
 
-  const wordList = (content || '').split(/\s+/).filter((w) => w.length > 0);
+  const plainWordCount = plainText.split(/\s+/).filter((w) => w.length > 0).length;
+  const sentences = countSentencesServer(content);
+  if (plainWordCount < 10 || sentences === 0) return 0;
+
+  const wordList = plainText.split(/\s+/).filter((w) => w.length > 0);
   const totalSyllables = wordList.reduce((sum, w) => sum + countSyllablesServer(w), 0);
 
-  const score = 206.835 - 1.015 * (wordCount / sentences) - 84.6 * (totalSyllables / wordCount);
+  const score = 206.835 - 1.015 * (plainWordCount / sentences) - 84.6 * (totalSyllables / plainWordCount);
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
