@@ -208,3 +208,184 @@ export const getProviderSummary = mutation({
     }));
   },
 });
+
+/**
+ * Seed models only (for when providers exist but models table is empty).
+ * Uses CURRENT March 2026 model lineup. Safe to run multiple times.
+ *
+ * MODEL ROTATION STRATEGY:
+ * When new models release or old ones deprecate:
+ * 1. Update the MODEL_CATALOG below with new model IDs and pricing
+ * 2. Run this function in production (it skips existing models)
+ * 3. Disable deprecated models via the admin dashboard
+ *
+ * Last updated: 2026-03-11
+ * Deprecations tracked:
+ * - GPT-4o: retired Feb 16, 2026 → replaced by GPT-4.1
+ * - Claude 3.5 Sonnet: legacy → replaced by Claude Sonnet 4.6
+ * - Gemini 1.5 Pro/Flash: deprecated → replaced by Gemini 3.x series
+ */
+export const seedModels = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const providers = await ctx.db.query('aiProviders').collect();
+    const existingModels = await ctx.db.query('aiModels').collect();
+
+    if (providers.length === 0) {
+      return { seeded: false, message: 'No providers found. Run seedProviders first.' };
+    }
+
+    // Build set of existing model IDs so we can skip duplicates
+    const existingModelIds = new Set(existingModels.map((m) => m.modelId));
+    let modelsCreated = 0;
+
+    const openai = providers.find((p) => p.name === 'openai');
+    const anthropic = providers.find((p) => p.name === 'anthropic');
+    const google = providers.find((p) => p.name === 'google');
+
+    // ========================================
+    // OPENAI — Current as of March 2026
+    // ========================================
+    if (openai) {
+      const openaiModels = [
+        {
+          modelId: 'gpt-4.1',
+          displayName: 'GPT-4.1',
+          capabilities: ['chat', 'vision', 'function_calling', 'structured_output'],
+          contextWindow: 1000000,
+          costPer1kInputTokens: 0.15,
+          costPer1kOutputTokens: 0.6,
+          priority: 1,
+        },
+        {
+          modelId: 'gpt-5.1',
+          displayName: 'GPT-5.1 (Reasoning)',
+          capabilities: ['chat', 'vision', 'function_calling', 'structured_output', 'reasoning'],
+          contextWindow: 400000,
+          costPer1kInputTokens: 0.5,
+          costPer1kOutputTokens: 2,
+          priority: 2,
+        },
+        {
+          modelId: 'gpt-5-mini',
+          displayName: 'GPT-5 Mini',
+          capabilities: ['chat', 'vision', 'function_calling'],
+          contextWindow: 128000,
+          costPer1kInputTokens: 0.03,
+          costPer1kOutputTokens: 0.12,
+          priority: 3,
+        },
+      ];
+
+      for (const model of openaiModels) {
+        if (!existingModelIds.has(model.modelId)) {
+          await ctx.db.insert('aiModels', {
+            providerId: openai._id,
+            ...model,
+            isEnabled: true,
+            createdAt: now,
+          });
+          modelsCreated++;
+        }
+      }
+    }
+
+    // ========================================
+    // ANTHROPIC — Current as of March 2026
+    // ========================================
+    if (anthropic) {
+      const anthropicModels = [
+        {
+          modelId: 'claude-opus-4.6',
+          displayName: 'Claude Opus 4.6',
+          capabilities: ['chat', 'vision', 'function_calling', 'reasoning'],
+          contextWindow: 1000000,
+          costPer1kInputTokens: 0.6,
+          costPer1kOutputTokens: 3,
+          priority: 1,
+        },
+        {
+          modelId: 'claude-sonnet-4.6',
+          displayName: 'Claude Sonnet 4.6',
+          capabilities: ['chat', 'vision', 'function_calling'],
+          contextWindow: 1000000,
+          costPer1kInputTokens: 0.3,
+          costPer1kOutputTokens: 1.5,
+          priority: 2,
+        },
+        {
+          modelId: 'claude-haiku-4.5',
+          displayName: 'Claude Haiku 4.5',
+          capabilities: ['chat', 'vision'],
+          contextWindow: 200000,
+          costPer1kInputTokens: 0.04,
+          costPer1kOutputTokens: 0.2,
+          priority: 3,
+        },
+      ];
+
+      for (const model of anthropicModels) {
+        if (!existingModelIds.has(model.modelId)) {
+          await ctx.db.insert('aiModels', {
+            providerId: anthropic._id,
+            ...model,
+            isEnabled: true,
+            createdAt: now,
+          });
+          modelsCreated++;
+        }
+      }
+    }
+
+    // ========================================
+    // GOOGLE — Current as of March 2026
+    // ========================================
+    if (google) {
+      const googleModels = [
+        {
+          modelId: 'gemini-3.1-pro',
+          displayName: 'Gemini 3.1 Pro',
+          capabilities: ['chat', 'vision', 'function_calling', 'structured_output', 'reasoning'],
+          contextWindow: 2000000,
+          costPer1kInputTokens: 0.25,
+          costPer1kOutputTokens: 1,
+          priority: 1,
+        },
+        {
+          modelId: 'gemini-3-flash',
+          displayName: 'Gemini 3 Flash',
+          capabilities: ['chat', 'vision', 'function_calling', 'structured_output'],
+          contextWindow: 1000000,
+          costPer1kInputTokens: 0.05,
+          costPer1kOutputTokens: 0.2,
+          priority: 2,
+        },
+        {
+          modelId: 'gemini-3.1-flash-lite',
+          displayName: 'Gemini 3.1 Flash-Lite',
+          capabilities: ['chat', 'vision'],
+          contextWindow: 1000000,
+          costPer1kInputTokens: 0.01,
+          costPer1kOutputTokens: 0.04,
+          priority: 3,
+        },
+      ];
+
+      for (const model of googleModels) {
+        if (!existingModelIds.has(model.modelId)) {
+          await ctx.db.insert('aiModels', {
+            providerId: google._id,
+            ...model,
+            isEnabled: true,
+            createdAt: now,
+          });
+          modelsCreated++;
+        }
+      }
+    }
+
+    console.log(`[Seed] Created ${modelsCreated} models for ${providers.length} providers`);
+    return { seeded: true, modelsCreated, skippedExisting: existingModelIds.size };
+  },
+});

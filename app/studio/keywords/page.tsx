@@ -47,6 +47,7 @@ import {
   KeywordImport,
   KeywordSettings,
 } from '@/src/components/keywords';
+import type { CardFilter } from '@/src/components/keywords/KeywordStatCards';
 import { FiPlus, FiKey, FiLayers } from 'react-icons/fi';
 import { STUDIO_COLORS, STUDIO_CARD } from '@/lib/constants/studioTokens';
 import { useRouter } from 'next/navigation';
@@ -95,6 +96,34 @@ export default function StudioKeywordsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('library');
+  const [activeCard, setActiveCard] = useState<CardFilter>('all');
+
+  const handleCardFilter = (filter: CardFilter) => {
+    setActiveCard(filter);
+    setCurrentPage(1);
+    switch (filter) {
+      case 'all':
+        setStatusFilter('all');
+        setClusterFilter('all');
+        setQuickWinFilter(false);
+        break;
+      case 'ranking':
+        setStatusFilter('all');
+        setClusterFilter('all');
+        setQuickWinFilter(false);
+        break;
+      case 'quickwins':
+        setStatusFilter('all');
+        setClusterFilter('all');
+        setQuickWinFilter(true);
+        break;
+      case 'unclustered':
+        setStatusFilter('all');
+        setClusterFilter('all');
+        setQuickWinFilter(false);
+        break;
+    }
+  };
 
   const deleteKeywordMut = useMutation(api.seo.keywords.deleteKeyword);
   const deleteKeywordsMut = useMutation(api.seo.keywords.deleteKeywords);
@@ -126,6 +155,13 @@ export default function StudioKeywordsPage() {
     if (!enrichedKeywordsData) return [];
 
     let filtered: EnrichedKeyword[] = enrichedKeywordsData.keywords as EnrichedKeyword[];
+
+    // Card-level filter applied first
+    if (activeCard === 'ranking') {
+      filtered = filtered.filter((kw) => kw.gscPosition !== null);
+    } else if (activeCard === 'unclustered') {
+      filtered = filtered.filter((kw) => kw.clusterName === null);
+    }
 
     if (statusFilter !== 'all') {
       filtered = filtered.filter((kw) => kw.status === statusFilter);
@@ -176,7 +212,7 @@ export default function StudioKeywordsPage() {
     }
 
     return sorted;
-  }, [enrichedKeywordsData, statusFilter, clusterFilter, quickWinFilter, search, sortBy]);
+  }, [enrichedKeywordsData, activeCard, statusFilter, clusterFilter, quickWinFilter, search, sortBy]);
 
   const totalPages = Math.ceil(processedKeywords.length / ITEMS_PER_PAGE);
   const safePage = Math.min(currentPage, Math.max(1, totalPages));
@@ -270,11 +306,12 @@ export default function StudioKeywordsPage() {
           ) : (
             <VStack spacing={6} align="stretch">
               <KeywordStatCards
-                foundation={enrichedKeywordsData.stats.foundation}
-                authority={enrichedKeywordsData.stats.authority}
-                revenueReady={enrichedKeywordsData.stats.revenueReady}
                 total={enrichedKeywordsData.stats.total}
+                rankingOnGoogle={enrichedKeywordsData.stats.rankingOnGoogle}
                 quickWins={enrichedKeywordsData.stats.quickWins}
+                unclustered={enrichedKeywordsData.stats.unclustered}
+                activeFilter={activeCard}
+                onFilterChange={handleCardFilter}
               />
 
               <KeywordFilters

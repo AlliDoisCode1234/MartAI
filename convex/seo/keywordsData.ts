@@ -162,13 +162,10 @@ export const getKeywordsEnriched = query({
 
     // Compute stat card counts
     const stats = {
-      total: keywords.length,
-      foundation: keywords.filter((k) => k.phase === 'foundation').length,
-      authority: keywords.filter((k) => k.phase === 'authority').length,
-      revenueReady: keywords.filter(
-        (k) => k.intent === 'transactional' || k.intent === 'commercial'
-      ).length,
+      total: enriched.length,
+      rankingOnGoogle: enriched.filter((k) => k.gscPosition !== null).length,
       quickWins: enriched.filter((k) => k.isQuickWin).length,
+      unclustered: enriched.filter((k) => k.clusterName === null).length,
     };
 
     // Unique cluster names for filter dropdown
