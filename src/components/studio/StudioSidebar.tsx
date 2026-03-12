@@ -197,13 +197,13 @@ export function StudioSidebar({ collapsed = false, onToggle }: Props) {
                 </Link>
               </Tooltip>
 
-              {/* Sub-items: visible when parent is active and sidebar is expanded */}
-              {item.children && active && !collapsed && (
+              {/* Sub-items: always visible when sidebar is expanded */}
+              {item.children && !collapsed && (
                 <VStack spacing={0} align="stretch" pl={7} mt={0.5}>
                   {item.children.map((child) => {
                     const currentStatus = searchParams.get('status') || 'all';
-                    const childActive =
-                      pathname === '/studio/library' && currentStatus === (child.status || 'all');
+                    const isOnLibrary = pathname === '/studio/library';
+                    const childActive = isOnLibrary && currentStatus === (child.status || 'all');
 
                     return (
                       <Link key={child.label} href={child.href} style={{ textDecoration: 'none' }}>

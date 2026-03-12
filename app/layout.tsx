@@ -15,7 +15,7 @@ import type { Metadata } from 'next';
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || 'G-8LBCMYNZ6R';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://phoo.ai'),
+  metadataBase: new URL('https://www.phoo.ai'),
   title: 'Phoo - Get Found on Google and in AI Answers',
   description:
     'Phoo replaces your $2,500/mo marketing agency with an AI-powered lead generation system. Built for Google and the new AI search era.',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     siteName: 'Phoo',
     type: 'website',
     locale: 'en_US',
-    url: 'https://phoo.ai',
+    url: 'https://www.phoo.ai',
   },
   // Twitter/X card
   twitter: {
@@ -78,26 +78,26 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               '@graph': [
                 {
                   '@type': 'Organization',
-                  '@id': 'https://phoo.ai/#organization',
+                  '@id': 'https://www.phoo.ai/#organization',
                   name: 'Phoo AI',
-                  url: 'https://phoo.ai',
+                  url: 'https://www.phoo.ai',
                   description: 'AI-powered SEO and lead generation platform for small businesses.',
                   foundingDate: '2025',
                 },
                 {
                   '@type': 'WebSite',
-                  '@id': 'https://phoo.ai/#website',
-                  url: 'https://phoo.ai',
+                  '@id': 'https://www.phoo.ai/#website',
+                  url: 'https://www.phoo.ai',
                   name: 'Phoo',
-                  publisher: { '@id': 'https://phoo.ai/#organization' },
+                  publisher: { '@id': 'https://www.phoo.ai/#organization' },
                 },
                 {
                   '@type': 'SoftwareApplication',
-                  '@id': 'https://phoo.ai/#application',
+                  '@id': 'https://www.phoo.ai/#application',
                   name: 'Phoo',
                   applicationCategory: 'BusinessApplication',
                   operatingSystem: 'Web',
-                  url: 'https://phoo.ai',
+                  url: 'https://www.phoo.ai',
                   description:
                     'AI-powered SEO and lead generation system that replaces your marketing agency.',
                   offers: {
@@ -107,12 +107,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     priceValidUntil: '2027-01-01',
                     availability: 'https://schema.org/InStock',
                   },
-                  publisher: { '@id': 'https://phoo.ai/#organization' },
+                  publisher: { '@id': 'https://www.phoo.ai/#organization' },
                 },
                 // FAQ schema — triggers rich result dropdowns AND feeds AI citations
                 {
                   '@type': 'FAQPage',
-                  '@id': 'https://phoo.ai/#faq',
+                  '@id': 'https://www.phoo.ai/#faq',
                   mainEntity: [
                     {
                       '@type': 'Question',
@@ -159,31 +159,31 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 // Breadcrumbs — gets breadcrumb trail in search results
                 {
                   '@type': 'BreadcrumbList',
-                  '@id': 'https://phoo.ai/#breadcrumbs',
+                  '@id': 'https://www.phoo.ai/#breadcrumbs',
                   itemListElement: [
                     {
                       '@type': 'ListItem',
                       position: 1,
                       name: 'Home',
-                      item: 'https://phoo.ai',
+                      item: 'https://www.phoo.ai',
                     },
                     {
                       '@type': 'ListItem',
                       position: 2,
                       name: 'Product',
-                      item: 'https://phoo.ai/product',
+                      item: 'https://www.phoo.ai/product',
                     },
                     {
                       '@type': 'ListItem',
                       position: 3,
                       name: 'Pricing',
-                      item: 'https://phoo.ai/pricing',
+                      item: 'https://www.phoo.ai/pricing',
                     },
                     {
                       '@type': 'ListItem',
                       position: 4,
                       name: 'How It Works',
-                      item: 'https://phoo.ai/how-it-works',
+                      item: 'https://www.phoo.ai/how-it-works',
                     },
                   ],
                 },

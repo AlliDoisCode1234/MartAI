@@ -5,14 +5,13 @@ import { authTables } from '@convex-dev/auth/server';
 /**
  * MartAI Convex Schema
  *
- * 55 Tables organized by domain:
+ * 47 Tables organized by domain:
  *
  * ┌────────────────────────────────────────────────────────────────┐
  * │ SECTION                    │ TABLES              │ LINES      │
  * ├────────────────────────────────────────────────────────────────┤
  * │ 1. Auth & Users            │ users               │ ~9-100     │
- * │ 2. Clients & Legacy        │ clients, legacy*    │ ~105-280   │
- * │ 3. Prospects & Leads       │ prospects, details  │ ~281-365   │
+ * │ 2. Prospects & Leads       │ prospects, details  │ ~200-290   │
  * │ 4. Projects & Orgs         │ projects, ga4, gsc  │ ~474-560   │
  * │ 5. SEO & Keywords          │ keywords, clusters  │ ~158-230   │
  * │ 6. Content Creation        │ briefs, drafts,     │ ~560-720   │
@@ -23,8 +22,6 @@ import { authTables } from '@convex-dev/auth/server';
  * │ 9. Billing & Usage         │ subscriptions, api  │ ~417-470   │
  * │ 10. Platform & Webhooks    │ webhooks, platform  │ ~680-1075  │
  * │ 11. Organizations          │ orgs, teams, invites│ ~927-1014  │
- * │ 12. DEPRECATED             │ legacyUsers/Sessions│ ~248-280   │
- * │                            │ briefs, drafts      │ ~560-615   │
  * └────────────────────────────────────────────────────────────────┘
  *
  * Cleanup Status:
@@ -131,6 +128,7 @@ export default defineSchema({
       v.union(
         v.literal('active'),
         v.literal('inactive'),
+        v.literal('churning'), // User requested cancellation, access continues until period end
         v.literal('churned'),
         v.literal('suspended') // Admin action
       )
@@ -205,23 +203,9 @@ export default defineSchema({
     .index('by_status', ['status'])
     .index('by_sent_to', ['sentTo']),
 
-  // Client/Business information
-  clients: defineTable({
-    companyName: v.string(),
-    website: v.string(),
-    industry: v.string(),
-    targetAudience: v.string(),
-    monthlyRevenueGoal: v.optional(v.string()),
-    userId: v.string(), // Auth user ID
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index('by_user', ['userId'])
-    .index('by_website', ['website']),
 
   // SEO Audits
   seoAudits: defineTable({
-    clientId: v.optional(v.id('clients')), // Optional for backwards compatibility
     projectId: v.optional(v.id('projects')), // New SaaS link
     website: v.string(),
     overallScore: v.number(),
@@ -254,7 +238,6 @@ export default defineSchema({
     crawlErrors: v.optional(v.number()),
     createdAt: v.number(),
   })
-    .index('by_client', ['clientId'])
     .index('by_project', ['projectId'])
     .index('by_website', ['website']),
 
@@ -289,74 +272,7 @@ export default defineSchema({
     .index('by_project_keyword', ['projectId', 'keyword'])
     .index('by_project_cluster', ['projectId', 'clusterId']),
 
-  // OAuth tokens for WordPress/Shopify
-  oauthTokens: defineTable({
-    clientId: v.id('clients'),
-    platform: v.string(), // wordpress, shopify
-    accessToken: v.string(),
-    refreshToken: v.optional(v.string()),
-    tokenExpiry: v.optional(v.number()),
-    siteUrl: v.string(), // WordPress site URL or Shopify shop domain
-    shopifyShop: v.optional(v.string()),
-    wordpressSiteId: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index('by_client', ['clientId'])
-    .index('by_platform', ['platform'])
-    .index('by_client_platform', ['clientId', 'platform']),
 
-  // Generated pages (WordPress/Shopify)
-  generatedPages: defineTable({
-    clientId: v.id('clients'),
-    platform: v.string(), // wordpress, shopify
-    pageId: v.string(), // External page ID
-    pageUrl: v.string(),
-    title: v.string(),
-    content: v.string(),
-    keywords: v.array(v.string()),
-    status: v.string(), // draft, published, failed
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index('by_client', ['clientId'])
-    .index('by_platform', ['platform'])
-    .index('by_status', ['status']),
-
-  // Rank tracking
-  rankings: defineTable({
-    projectId: v.id('projects'),
-    keyword: v.string(),
-    position: v.number(),
-    url: v.string(),
-    searchEngine: v.string(), // google, bing
-    location: v.optional(v.string()),
-    date: v.number(),
-  })
-    .index('by_project', ['projectId'])
-    .index('by_keyword', ['keyword'])
-    .index('by_project_keyword', ['projectId', 'keyword'])
-    .index('by_date', ['date']),
-
-  // SEO Statistics/Reports
-  seoStatistics: defineTable({
-    clientId: v.id('clients'),
-    // Traffic metrics
-    organicTraffic: v.optional(v.number()),
-    organicKeywords: v.optional(v.number()),
-    backlinks: v.optional(v.number()),
-    referringDomains: v.optional(v.number()),
-    // Performance metrics
-    avgPosition: v.optional(v.number()),
-    clickThroughRate: v.optional(v.number()),
-    impressions: v.optional(v.number()),
-    // Date range
-    periodStart: v.number(),
-    periodEnd: v.number(),
-    createdAt: v.number(),
-  })
-    .index('by_client', ['clientId'])
-    .index('by_period', ['periodStart', 'periodEnd']),
 
   // Prospect intake (lead capture)
   prospects: defineTable({
@@ -466,7 +382,7 @@ export default defineSchema({
   contentCalendars: defineTable({
     prospectId: v.optional(v.id('prospects')),
     projectId: v.optional(v.id('projects')),
-    briefId: v.optional(v.id('briefs')), // Link to content brief
+
     title: v.string(), // "Exact Title To Use"
     contentType: v.string(),
     pageType: v.optional(v.string()), // homepage | service | blog | about | product
@@ -532,6 +448,18 @@ export default defineSchema({
     lastPaymentAt: v.optional(v.number()),
     lastPaymentFailedAt: v.optional(v.number()),
     failedPaymentCount: v.optional(v.number()),
+    // Cancellation tracking (user-initiated)
+    cancelRequestedAt: v.optional(v.number()),
+    cancelReason: v.optional(
+      v.union(
+        v.literal('too_expensive'),
+        v.literal('not_using'),
+        v.literal('missing_features'),
+        v.literal('found_alternative'),
+        v.literal('other')
+      )
+    ),
+    cancelFeedback: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -910,28 +838,7 @@ export default defineSchema({
     .index('by_project_date', ['projectId', 'date'])
     .index('by_project', ['projectId']),
 
-  // Brief Versions (version history)
-  briefVersions: defineTable({
-    briefId: v.id('briefs'),
-    versionNumber: v.number(),
-    data: v.any(), // Snapshot of brief data
-    notes: v.optional(v.string()),
-    createdAt: v.number(),
-  })
-    .index('by_brief', ['briefId'])
-    .index('by_brief_version', ['briefId', 'versionNumber']),
 
-  // Competitors
-  competitors: defineTable({
-    projectId: v.id('projects'),
-    domain: v.string(),
-    priority: v.optional(v.number()), // 1-5
-    notes: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index('by_project', ['projectId'])
-    .index('by_priority', ['priority']),
 
   // Competitor / Ad-hoc Analytics
   competitorAnalytics: defineTable({
@@ -968,18 +875,6 @@ export default defineSchema({
     .index('by_hash', ['inputHash'])
     .index('by_operation', ['operation'])
     .index('by_date', ['createdAt']),
-  // AI Personas
-  personas: defineTable({
-    name: v.string(), // Unique key e.g. "Mart"
-    role: v.string(), // e.g. "Senior SEO Analyst"
-    tone: v.string(), // e.g. "Direct, Professional"
-    systemPrompt: v.string(), // The core instructions
-    isDefault: v.optional(v.boolean()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index('by_name', ['name'])
-    .index('by_default', ['isDefault']),
 
   // Content Templates (AI prompts + SEO checklists per page type)
   contentTemplates: defineTable({

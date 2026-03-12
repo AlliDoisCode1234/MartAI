@@ -57,7 +57,7 @@ export type SubscriptionStatus =
 /**
  * User account status (separate from subscription)
  */
-export type AccountStatus = 'active' | 'inactive' | 'churned' | 'suspended';
+export type AccountStatus = 'active' | 'inactive' | 'churning' | 'churned' | 'suspended';
 
 // ============================================
 // INTERNAL HELPERS
@@ -361,6 +361,158 @@ export const cancelSubscription = internalMutation({
     });
 
     return { success: true };
+  },
+});
+
+// ============================================
+// USER-FACING MUTATIONS
+// ============================================
+
+/**
+ * Request subscription cancellation (user-initiated)
+ *
+ * Does NOT immediately cancel — sets cancel_at_period_end semantics:
+ * - Subscription stays 'active' until renewsAt date
+ * - User accountStatus transitions to 'churning'
+ * - Captures cancellation reason for product intelligence
+ * - At period end, Stripe webhook fires → internalMutation cancelSubscription executes
+ *
+ * Security: Authenticated user can only cancel their own subscription
+ */
+export const requestCancellation = mutation({
+  args: {
+    reason: v.union(
+      v.literal('too_expensive'),
+      v.literal('not_using'),
+      v.literal('missing_features'),
+      v.literal('found_alternative'),
+      v.literal('other')
+    ),
+    feedback: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Auth: Get authenticated user
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error('Unauthorized');
+
+    const user = await ctx.db
+      .query('users')
+      .withIndex('email', (q) => q.eq('email', identity.email))
+      .first();
+    if (!user) throw new Error('User not found');
+
+    // Get user's subscription
+    const subscription = await getSubscriptionByUserId(ctx, user._id);
+    if (!subscription) throw new Error('No active subscription found');
+
+    // Guard: Can only cancel active or trialing subscriptions
+    if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+      throw new Error(`Cannot cancel subscription in '${subscription.status}' state`);
+    }
+
+    // Guard: Already requested cancellation
+    if (subscription.cancelRequestedAt) {
+      throw new Error('Cancellation already requested');
+    }
+
+    const now = Date.now();
+
+    // Set cancel_at_period_end semantics:
+    // Subscription stays active until renewsAt, then Stripe webhook handles final cancellation
+    await ctx.db.patch(subscription._id, {
+      cancelRequestedAt: now,
+      cancelAt: subscription.renewsAt ?? now, // Cancel at end of billing period
+      cancelReason: args.reason,
+      cancelFeedback: args.feedback,
+      updatedAt: now,
+    });
+
+    // Transition user to 'churning' — they still have full access until period end
+    await ctx.db.patch(user._id, {
+      accountStatus: 'churning',
+    });
+
+    // Fire-and-forget HubSpot sync for win-back campaigns
+    ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncLifecycleChangeToHubspot, {
+      userId: user._id,
+      accountStatus: 'churning',
+    });
+
+    // Log without sensitive data
+    console.log(
+      `[CancelRequest] User ${user._id} requested cancellation. Reason: ${args.reason}. Effective: ${new Date(subscription.renewsAt ?? now).toISOString()}`
+    );
+
+    return {
+      success: true,
+      effectiveDate: subscription.renewsAt ?? now,
+      message: 'Your subscription will remain active until the end of your current billing period.',
+    };
+  },
+});
+
+/**
+ * Withdraw cancellation request (user changed their mind)
+ *
+ * Reverses a pending cancellation if still within the billing period.
+ * Security: Authenticated user can only modify their own subscription
+ */
+export const withdrawCancellation = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Auth: Get authenticated user
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error('Unauthorized');
+
+    const user = await ctx.db
+      .query('users')
+      .withIndex('email', (q) => q.eq('email', identity.email))
+      .first();
+    if (!user) throw new Error('User not found');
+
+    // Get user's subscription
+    const subscription = await getSubscriptionByUserId(ctx, user._id);
+    if (!subscription) throw new Error('No subscription found');
+
+    // Guard: Must have a pending cancellation
+    if (!subscription.cancelRequestedAt) {
+      throw new Error('No pending cancellation to withdraw');
+    }
+
+    // Guard: Can only withdraw if subscription is still active
+    if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+      throw new Error('Cannot withdraw cancellation — subscription is no longer active');
+    }
+
+    const now = Date.now();
+
+    // Clear cancellation fields
+    await ctx.db.patch(subscription._id, {
+      cancelRequestedAt: undefined,
+      cancelAt: undefined,
+      cancelReason: undefined,
+      cancelFeedback: undefined,
+      updatedAt: now,
+    });
+
+    // Restore user to active
+    await ctx.db.patch(user._id, {
+      accountStatus: 'active',
+    });
+
+    // Fire-and-forget HubSpot sync
+    ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncLifecycleChangeToHubspot, {
+      userId: user._id,
+      accountStatus: 'active',
+      lifecyclestage: 'customer',
+    });
+
+    console.log(`[CancelWithdraw] User ${user._id} withdrew cancellation request`);
+
+    return {
+      success: true,
+      message: 'Your cancellation has been withdrawn. Your subscription will continue as normal.',
+    };
   },
 });
 

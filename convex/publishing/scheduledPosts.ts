@@ -62,21 +62,14 @@ export const publishPost = internalMutation({
       const project = await ctx.db.get(post.projectId);
       if (!project) throw new Error('Project not found');
 
-      // 2️⃣ Find client ID from project → user → client
-      const client = await ctx.db
-        .query('clients')
-        .withIndex('by_user', (q) => q.eq('userId', project.userId))
-        .first();
-      if (!client) throw new Error('Client not found');
-
-      // 3️⃣ Query OAuth token using the correct client ID
+      // 2️⃣ Get platform connection (replaced legacy clients + oauthTokens pattern)
       const connection = await ctx.db
-        .query('oauthTokens')
-        .withIndex('by_client_platform', (q) =>
-          q.eq('clientId', client._id).eq('platform', post.platform)
+        .query('platformConnections')
+        .withIndex('by_project_platform', (q) =>
+          q.eq('projectId', post.projectId).eq('platform', post.platform as 'wordpress' | 'shopify' | 'wix' | 'webflow' | 'ghost')
         )
         .first();
-      if (!connection) throw new Error('OAuth connection not found');
+      if (!connection) throw new Error('Platform connection not found');
 
       // External publishing handled elsewhere
       await ctx.db.patch(postId, { updatedAt: Date.now() });

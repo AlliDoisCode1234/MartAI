@@ -47,10 +47,10 @@ import {
   FiBarChart2,
   FiZap,
   FiActivity,
-  FiFileText,
   FiStar,
 } from 'react-icons/fi';
-import { ContentJourney } from '@/src/components/strategy';
+// TODO: Re-enable when ContentJourney tooltip issue is fixed
+// import { ContentJourney } from '@/src/components/strategy';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useProject } from '@/lib/hooks';
@@ -412,7 +412,7 @@ export default function InsightsPage() {
           </MotionBox>
         </SimpleGrid>
 
-        {/* ── Buyer Awareness Funnel (merged from Strategy, GTM-045) ─ */}
+        {/* TODO: Re-enable ContentJourney when tooltip issue is fixed
         {stats?.byType && (
           <ContentJourney
             contentByStage={{
@@ -431,6 +431,7 @@ export default function InsightsPage() {
             totalContent={stats.total ?? 0}
           />
         )}
+        */}
 
         {/* ── Bottom Trio ────────────────────────────────────── */}
         <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={6}>

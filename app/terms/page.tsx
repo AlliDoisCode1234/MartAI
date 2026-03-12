@@ -292,7 +292,7 @@ export default function TermsOfServicePage() {
                 </ListItem>
                 <ListItem>
                   Website:{' '}
-                  <ChakraLink href="https://phoo.ai" color="#FF9D00">
+                  <ChakraLink href="https://www.phoo.ai" color="#FF9D00">
                     phoo.ai
                   </ChakraLink>
                 </ListItem>
