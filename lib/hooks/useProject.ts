@@ -30,6 +30,12 @@ interface ProjectData {
   industry?: string;
   projectType?: 'own' | 'competitor';
   serpAnalysisUsed?: boolean;
+  // Brand context fields (Phase 1)
+  brandName?: string;
+  brandVoice?: string;
+  targetAudience?: string;
+  toneKeywords?: string[];
+  defaultWordCount?: number;
 }
 
 interface UseProjectResult {

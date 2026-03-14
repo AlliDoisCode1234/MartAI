@@ -1,6 +1,24 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+/**
+ * LexicalEditorComponent
+ *
+ * Component Hierarchy:
+ * App -> StudioLayout -> ContentEditorPage -> LexicalEditorComponent
+ *
+ * Rich text editor with markdown I/O, built on Meta's Lexical framework.
+ * Supports programmatic content updates via onEditorReady callback,
+ * enabling AI revision flows (Phoo Coach) with full undo/redo support.
+ *
+ * ARCHITECTURE NOTE:
+ * This editor uses a "semi-controlled" pattern:
+ * - value prop loads content INITIALLY and when EXTERNAL sources change
+ * - onChange syncs editor changes OUT to the parent
+ * - The editor tracks its own output to avoid reload loops
+ * - For AI revision, use editor.update() directly (not the value prop)
+ */
+
+import { useEffect, useRef, useCallback } from 'react';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
@@ -13,19 +31,22 @@ import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { ListItemNode, ListNode } from '@lexical/list';
 import { LinkNode } from '@lexical/link';
-import { $getRoot, EditorState, $isTextNode } from 'lexical';
+import { $getRoot, EditorState, type LexicalEditor } from 'lexical';
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
   TRANSFORMERS,
 } from '@lexical/markdown';
-import { Box, VStack, HStack, Text } from '@chakra-ui/react';
+import { Box, VStack } from '@chakra-ui/react';
+import { Toolbar } from './Toolbar';
 import './editor.css';
 
-// Export hooks for use in parent
-export { useWordCount } from './plugins/WordCountPlugin';
-export { useSEOValidation } from './plugins/SEOValidationPlugin';
-export { useToneMetrics } from './plugins/ToneMeterPlugin';
+// Re-export type for parent component usage
+export type { LexicalEditor } from 'lexical';
+
+// Re-export markdown utilities for use in parent (AI revision flow)
+export { $getRoot } from 'lexical';
+export { $convertFromMarkdownString, TRANSFORMERS } from '@lexical/markdown';
 
 const theme = {
   heading: {
@@ -49,15 +70,17 @@ const theme = {
 };
 
 function onError(error: Error) {
-  console.error('Lexical error:', error);
+  console.error('[LexicalEditor] Error:', error);
 }
 
-interface LexicalEditorProps {
-  value: string; // Markdown content
-  onChange: (markdown: string) => void;
-  placeholder?: string;
-  isReadOnly?: boolean;
-  minHeight?: string;
+interface Props {
+  readonly value: string;
+  readonly onChange: (markdown: string) => void;
+  readonly placeholder?: string;
+  readonly isReadOnly?: boolean;
+  readonly minHeight?: string;
+  /** Called once when the editor instance is ready. Use this to get a ref for programmatic updates (e.g., AI revision). */
+  readonly onEditorReady?: (editor: LexicalEditor) => void;
 }
 
 export function LexicalEditorComponent({
@@ -66,7 +89,8 @@ export function LexicalEditorComponent({
   placeholder = 'Start typing...',
   isReadOnly = false,
   minHeight = '400px',
-}: LexicalEditorProps) {
+  onEditorReady,
+}: Props) {
   const initialConfig = {
     namespace: 'MartAIContentEditor',
     theme,
@@ -75,45 +99,67 @@ export function LexicalEditorComponent({
     nodes: [HeadingNode, ListNode, ListItemNode, QuoteNode, LinkNode],
   };
 
-  const handleChange = (editorState: EditorState) => {
+  /**
+   * Ref to track the last markdown string the editor outputted via OnChangePlugin.
+   * Used by ExternalContentSyncPlugin to distinguish "sync-back" changes
+   * (from the editor itself) vs genuine external changes (Convex data load).
+   * This prevents the reload loop where:
+   *   user types → OnChangePlugin → setContent → value prop updates
+   *   → sync plugin tries to reload → cursor resets → infinite loop
+   */
+  const lastEditorOutputRef = useRef<string>('');
+
+  const handleChange = useCallback((editorState: EditorState) => {
     editorState.read(() => {
       try {
         const markdown = $convertToMarkdownString(TRANSFORMERS);
+        lastEditorOutputRef.current = markdown;
         onChange(markdown);
       } catch (error) {
-        console.error('Error converting to markdown:', error);
-        // Fallback: get text content
+        console.error('[LexicalEditor] Error converting to markdown:', error);
         const root = $getRoot();
         const text = root.getTextContent();
+        lastEditorOutputRef.current = text;
         onChange(text);
       }
     });
-  };
+  }, [onChange]);
 
   return (
-    <VStack align="stretch" spacing={0}>
-      <Box border="1px" borderColor="gray.300" borderRadius="md" overflow="hidden" bg="white">
+    <VStack align="stretch" spacing={0} flex={1}>
+      <Box
+        border="none"
+        borderRadius="md"
+        overflow="hidden"
+        bg="transparent"
+        flex={1}
+        display="flex"
+        flexDirection="column"
+      >
         <LexicalComposer initialConfig={initialConfig}>
-          <Box position="relative">
+          {!isReadOnly && <Toolbar />}
+          <Box position="relative" flex={1}>
             <RichTextPlugin
               contentEditable={
                 <ContentEditable
                   style={{
                     minHeight,
-                    padding: '12px',
+                    padding: '24px',
                     outline: 'none',
                     fontFamily: 'system-ui, -apple-system, sans-serif',
                     fontSize: '16px',
-                    lineHeight: '1.6',
+                    lineHeight: '1.8',
+                    color: '#1a202c',
                   }}
                   className="lexical-content-editable"
+                  aria-label="Content editor"
                 />
               }
               placeholder={
                 <Box
                   position="absolute"
-                  top="12px"
-                  left="12px"
+                  top="24px"
+                  left="24px"
                   color="gray.400"
                   pointerEvents="none"
                   className="lexical-placeholder"
@@ -128,123 +174,85 @@ export function LexicalEditorComponent({
             <ListPlugin />
             <LinkPlugin />
             <OnChangePlugin onChange={handleChange} />
-            <LoadMarkdownPlugin markdown={value} />
+            <ExternalContentSyncPlugin
+              markdown={value}
+              lastEditorOutputRef={lastEditorOutputRef}
+            />
+            <EditorReadyPlugin onEditorReady={onEditorReady} />
           </Box>
         </LexicalComposer>
       </Box>
-      {/* Metrics below editor */}
-      <EditorMetrics content={value} />
     </VStack>
   );
 }
 
-// Component to show metrics outside the editor
-function EditorMetrics({ content }: { content: string }) {
-  // Calculate word count from markdown
-  const wordCount = content ? content.split(/\s+/).filter((w) => w.length > 0).length : 0;
+export default LexicalEditorComponent;
 
-  // Calculate H2 count
-  const h2Count = (content.match(/^##\s/gm) || []).length;
-  const h1Count = (content.match(/^#\s/gm) || []).length;
+/**
+ * Plugin to sync external content (from Convex/props) into the editor.
+ *
+ * CRITICAL: This plugin solves the bidirectional sync loop:
+ * - When the user types, OnChangePlugin fires → parent calls setContent → value prop changes
+ * - This plugin sees the new value BUT recognizes it came from the editor (matches lastEditorOutputRef)
+ * - So it SKIPS reloading, preventing cursor reset and infinite loops
+ *
+ * - When Convex sends new content (initial load, server refresh), the value is DIFFERENT
+ *   from what the editor last outputted → this plugin DOES reload
+ */
+function ExternalContentSyncPlugin({
+  markdown,
+  lastEditorOutputRef,
+}: {
+  readonly markdown: string;
+  readonly lastEditorOutputRef: React.RefObject<string>;
+}) {
+  const [editor] = useLexicalComposerContext();
+  const hasLoadedInitialRef = useRef(false);
 
-  // Internal links
-  const internalLinks = (content.match(/\[\[([^\]]+)\]\]/g) || []).length;
+  useEffect(() => {
+    if (!markdown || !editor) return;
 
-  // Calculate tone score from content heuristics
-  const toneScore = calculateToneScore(content);
+    // Skip if this markdown came from the editor itself (OnChangePlugin sync-back)
+    if (markdown === lastEditorOutputRef.current) return;
 
-  const seoChecks = [
-    { item: 'Word count ≥ 800', passed: wordCount >= 800, note: `${wordCount} words` },
-    { item: 'H1 present', passed: h1Count === 1, note: `${h1Count} H1` },
-    { item: 'H2 sections ≥ 5', passed: h2Count >= 5, note: `${h2Count} H2s` },
-    { item: 'Internal links ≥ 3', passed: internalLinks >= 3, note: `${internalLinks} links` },
-  ];
+    // For initial load: always load
+    // For subsequent changes: only load if it's genuinely external content
+    if (!hasLoadedInitialRef.current) {
+      hasLoadedInitialRef.current = true;
+    }
 
-  const passedCount = seoChecks.filter((c) => c.passed).length;
+    editor.update(() => {
+      try {
+        $getRoot().clear();
+        $convertFromMarkdownString(markdown, TRANSFORMERS);
+      } catch (error) {
+        console.error('[LexicalEditor] Error loading markdown:', error);
+      }
+    });
+  }, [markdown, editor, lastEditorOutputRef]);
 
-  return (
-    <HStack spacing={4} p={3} bg="gray.50" borderRadius="md" fontSize="sm">
-      <Text fontWeight="semibold">Word Count: {wordCount}</Text>
-      <Text>
-        SEO: {passedCount}/{seoChecks.length}
-      </Text>
-      <Text>Tone: {toneScore}/100</Text>
-    </HStack>
-  );
+  return null;
 }
 
 /**
- * Calculate a tone score from content heuristics.
- * Evaluates sentence length, heading structure, and engagement signals.
- * Returns 0-100 where higher = more engaging, readable tone.
+ * Plugin to expose the editor instance to the parent component.
+ * Fires onEditorReady once when mounted, giving the parent a ref
+ * for programmatic updates (e.g., AI revision via editor.update()).
  */
-function calculateToneScore(content: string): number {
-  if (!content || content.trim().length === 0) return 0;
-
-  // Strip markdown syntax for sentence analysis
-  const plainText = content
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/[*_~`]/g, '')
-    .trim();
-
-  // Split into sentences
-  const sentences = plainText.split(/[.!?]+/).filter((s) => s.trim().length > 0);
-  if (sentences.length === 0) return 0;
-
-  // 1. Sentence length score (target avg: 15-20 words = 100, penalize extremes)
-  const avgWords =
-    sentences.reduce((sum, s) => sum + s.trim().split(/\s+/).length, 0) / sentences.length;
-  const sentenceLengthScore =
-    avgWords >= 15 && avgWords <= 20
-      ? 100
-      : avgWords < 15
-        ? Math.max(0, 50 + (avgWords / 15) * 50)
-        : Math.max(0, 100 - (avgWords - 20) * 5);
-
-  // 2. Heading-to-paragraph ratio (target: 1 heading per ~150 words)
-  const headingCount = (content.match(/^#{1,6}\s/gm) || []).length;
-  const words = plainText.split(/\s+/).length;
-  const idealHeadings = Math.max(1, Math.floor(words / 150));
-  const headingScore = Math.min(100, (headingCount / idealHeadings) * 100);
-
-  // 3. Question usage (engagement signal — at least 1 per 500 words)
-  const questionCount = (content.match(/\?/g) || []).length;
-  const idealQuestions = Math.max(1, Math.floor(words / 500));
-  const questionScore = Math.min(100, (questionCount / idealQuestions) * 100);
-
-  // Weighted average
-  const score = Math.round(sentenceLengthScore * 0.5 + headingScore * 0.3 + questionScore * 0.2);
-  return Math.max(0, Math.min(100, score));
-}
-
-// Export the main component
-export default LexicalEditorComponent;
-
-// Plugin to load markdown content
-function LoadMarkdownPlugin({ markdown }: { markdown: string }) {
+function EditorReadyPlugin({
+  onEditorReady,
+}: {
+  readonly onEditorReady?: (editor: LexicalEditor) => void;
+}) {
   const [editor] = useLexicalComposerContext();
-  const loadedRef = useRef<string>('');
+  const calledRef = useRef(false);
 
   useEffect(() => {
-    if (markdown && markdown !== loadedRef.current && editor) {
-      editor.update(() => {
-        try {
-          const root = $getRoot();
-          const currentText = root.getTextContent();
-
-          // Only load if content is different
-          if (currentText.trim() === '' || markdown !== loadedRef.current) {
-            root.clear();
-            $convertFromMarkdownString(markdown, TRANSFORMERS);
-            loadedRef.current = markdown;
-          }
-        } catch (error) {
-          console.error('Error loading markdown:', error);
-        }
-      });
+    if (onEditorReady && !calledRef.current) {
+      calledRef.current = true;
+      onEditorReady(editor);
     }
-  }, [markdown, editor]);
+  }, [editor, onEditorReady]);
 
   return null;
 }

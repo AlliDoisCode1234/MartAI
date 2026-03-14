@@ -4,19 +4,19 @@
  * Brand Profile Page - Content Preferences
  *
  * Component Hierarchy:
- * App → StudioLayout → BrandProfilePage
+ * App -> StudioLayout -> BrandProfilePage
  *
  * Configure content preferences, brand voice, and publishing defaults.
+ * Persists to Convex projects table via updateProject mutation.
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Heading,
   Text,
   VStack,
   HStack,
-  SimpleGrid,
   Icon,
   Card,
   CardBody,
@@ -36,13 +36,39 @@ import {
   Tab,
   TabPanel,
   useToast,
+  Skeleton,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { StudioLayout } from '@/src/components/studio';
-import { FiTarget, FiEdit3, FiGlobe, FiLink, FiBell, FiSave, FiHelpCircle } from 'react-icons/fi';
+import { FiTarget, FiEdit3, FiGlobe, FiLink, FiBell, FiSave, FiHelpCircle, FiAlertTriangle } from 'react-icons/fi';
 import { BRAND } from '@/lib/constants/brand';
+import { useProject } from '@/lib/hooks';
 
 const MotionCard = motion(Card);
+
+// Industry options
+const INDUSTRIES = [
+  { value: 'technology', label: 'Technology & SaaS' },
+  { value: 'healthcare', label: 'Healthcare & Medical' },
+  { value: 'ecommerce', label: 'E-commerce & Retail' },
+  { value: 'finance', label: 'Finance & Banking' },
+  { value: 'legal', label: 'Legal & Compliance' },
+  { value: 'marketing', label: 'Marketing & Agencies' },
+  { value: 'education', label: 'Education' },
+  { value: 'lifestyle', label: 'Lifestyle & Wellness' },
+  { value: 'realestate', label: 'Real Estate' },
+  { value: 'other', label: 'Other' },
+];
 
 // Glass card styles
 const glassCard = {
@@ -106,51 +132,110 @@ function SettingSection({ icon, title, description, children, delay = 0 }: Setti
 
 export default function BrandProfilePage() {
   const toast = useToast();
+  const { projectId, project, isLoading } = useProject(null, { autoSelect: true });
+  const updateProject = useMutation(api.projects.projects.updateProject);
   const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
-  // Settings state
+  // Industry change confirmation modal
+  const { isOpen: isIndustryModalOpen, onOpen: onIndustryModalOpen, onClose: onIndustryModalClose } = useDisclosure();
+  const [pendingIndustry, setPendingIndustry] = useState('');
+
+  // Local settings state (hydrated from project data)
   const [settings, setSettings] = useState({
-    // Brand Voice
     brandName: '',
     brandVoice: 'professional',
     targetAudience: '',
     toneKeywords: '',
-
-    // Content Defaults
+    industry: '',
     defaultWordCount: '1500',
     includeImages: true,
     includeFaq: true,
     includeSchema: true,
     contentFormat: 'blog',
-
-    // Publishing
     autoPublish: false,
     reviewRequired: true,
     defaultCta: '',
-
-    // Notifications
     emailOnPublish: true,
     emailOnDraft: false,
     weeklyDigest: true,
   });
 
+  // Hydrate from project data on first load
+  useEffect(() => {
+    if (project) {
+      setSettings((prev) => ({
+        ...prev,
+        brandName: project.brandName || project.name || '',
+        brandVoice: project.brandVoice || 'professional',
+        targetAudience: project.targetAudience || '',
+        toneKeywords: (project.toneKeywords || []).join(', '),
+        industry: project.industry || '',
+        defaultWordCount: String(project.defaultWordCount || 1500),
+      }));
+    }
+  }, [project]);
+
+  const updateSetting = useCallback((key: string, value: string | boolean) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+    setHasChanges(true);
+  }, []);
+
   const handleSave = async () => {
+    if (!projectId) {
+      toast({
+        title: 'No project selected',
+        description: 'Please create or select a project first.',
+        status: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
+
     setSaving(true);
-    // Simulate save
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setSaving(false);
-    toast({
-      title: 'Settings saved',
-      description: 'Your preferences have been updated.',
-      status: 'success',
-      duration: 3000,
-    });
+    try {
+      await updateProject({
+        projectId,
+        brandName: settings.brandName || undefined,
+        brandVoice: settings.brandVoice || undefined,
+        targetAudience: settings.targetAudience || undefined,
+        toneKeywords: settings.toneKeywords
+          ? settings.toneKeywords.split(',').map((k) => k.trim()).filter(Boolean)
+          : undefined,
+        industry: settings.industry || undefined,
+        defaultWordCount: settings.defaultWordCount
+          ? Number(settings.defaultWordCount)
+          : undefined,
+      });
+      setHasChanges(false);
+      toast({
+        title: 'Settings saved',
+        description: 'Your brand profile has been updated.',
+        status: 'success',
+        duration: 3000,
+      });
+    } catch (err) {
+      toast({
+        title: 'Save failed',
+        description: err instanceof Error ? err.message : 'An error occurred',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateSetting = (key: string, value: any) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-  };
+  if (isLoading) {
+    return (
+      <StudioLayout>
+        <VStack spacing={6} align="stretch">
+          <Skeleton height="40px" width="300px" />
+          <Skeleton height="300px" borderRadius="xl" />
+        </VStack>
+      </StudioLayout>
+    );
+  }
 
   return (
     <StudioLayout>
@@ -166,16 +251,24 @@ export default function BrandProfilePage() {
             </HStack>
             <Text color="gray.400">Configure your brand voice and AI content defaults</Text>
           </Box>
-          <Button
-            bg="linear-gradient(135deg, #FF9D00 0%, #FF6B00 100%)"
-            color="white"
-            leftIcon={<FiSave />}
-            onClick={handleSave}
-            isLoading={saving}
-            _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-          >
-            Save Changes
-          </Button>
+          <HStack spacing={2}>
+            {hasChanges && (
+              <Badge colorScheme="orange" fontSize="xs" px={2} py={1} borderRadius="full">
+                Unsaved changes
+              </Badge>
+            )}
+            <Button
+              bg="linear-gradient(135deg, #FF9D00 0%, #FF6B00 100%)"
+              color="white"
+              leftIcon={<FiSave />}
+              onClick={handleSave}
+              isLoading={saving}
+              isDisabled={!hasChanges}
+              _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+            >
+              Save Changes
+            </Button>
+          </HStack>
         </HStack>
 
         <Tabs variant="soft-rounded" colorScheme="orange">
@@ -216,6 +309,45 @@ export default function BrandProfilePage() {
                         value={settings.brandName}
                         onChange={(e) => updateSetting('brandName', e.target.value)}
                       />
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel color="gray.600">Industry</FormLabel>
+                      {settings.industry ? (
+                        <HStack justify="space-between" p={3} bg="gray.50" borderRadius="lg">
+                          <HStack>
+                            <Badge colorScheme="orange" fontSize="sm" px={3} py={1} borderRadius="full">
+                              {INDUSTRIES.find((ind) => ind.value === settings.industry)?.label || settings.industry}
+                            </Badge>
+                          </HStack>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="orange"
+                            onClick={onIndustryModalOpen}
+                          >
+                            Change Industry
+                          </Button>
+                        </HStack>
+                      ) : (
+                        <Select
+                          {...inputStyles}
+                          value=""
+                          onChange={(e) => {
+                            updateSetting('industry', e.target.value);
+                          }}
+                          placeholder="Select your industry"
+                        >
+                          {INDUSTRIES.map((ind) => (
+                            <option key={ind.value} value={ind.value} style={{ background: '#FFFFFF' }}>
+                              {ind.label}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                      <FormHelperText color="gray.500">
+                        This calibrates content scoring to your industry standards
+                      </FormHelperText>
                     </FormControl>
 
                     <FormControl>
@@ -285,49 +417,39 @@ export default function BrandProfilePage() {
                 >
                   <VStack spacing={4} align="stretch">
                     <FormControl>
-                      <FormLabel color="gray.300">Default Word Count</FormLabel>
+                      <FormLabel color="gray.600">Default Word Count</FormLabel>
                       <Select
                         {...inputStyles}
                         value={settings.defaultWordCount}
                         onChange={(e) => updateSetting('defaultWordCount', e.target.value)}
                       >
-                        <option value="800" style={{ background: '#1e1e1e' }}>
+                        <option value="800" style={{ background: '#FFFFFF' }}>
                           Short (800 words)
                         </option>
-                        <option value="1500" style={{ background: '#1e1e1e' }}>
+                        <option value="1500" style={{ background: '#FFFFFF' }}>
                           Medium (1500 words)
                         </option>
-                        <option value="2500" style={{ background: '#1e1e1e' }}>
+                        <option value="2500" style={{ background: '#FFFFFF' }}>
                           Long (2500 words)
                         </option>
-                        <option value="4000" style={{ background: '#1e1e1e' }}>
+                        <option value="4000" style={{ background: '#FFFFFF' }}>
                           Comprehensive (4000+ words)
                         </option>
                       </Select>
                     </FormControl>
 
                     <FormControl>
-                      <FormLabel color="gray.300">Content Format</FormLabel>
+                      <FormLabel color="gray.600">Content Format</FormLabel>
                       <Select
                         {...inputStyles}
                         value={settings.contentFormat}
                         onChange={(e) => updateSetting('contentFormat', e.target.value)}
                       >
-                        <option value="blog" style={{ background: '#1e1e1e' }}>
-                          Blog Post
-                        </option>
-                        <option value="guide" style={{ background: '#1e1e1e' }}>
-                          Guide/Tutorial
-                        </option>
-                        <option value="listicle" style={{ background: '#1e1e1e' }}>
-                          Listicle
-                        </option>
-                        <option value="comparison" style={{ background: '#1e1e1e' }}>
-                          Comparison
-                        </option>
-                        <option value="howto" style={{ background: '#1e1e1e' }}>
-                          How-To
-                        </option>
+                        <option value="blog" style={{ background: '#FFFFFF' }}>Blog Post</option>
+                        <option value="guide" style={{ background: '#FFFFFF' }}>Guide/Tutorial</option>
+                        <option value="listicle" style={{ background: '#FFFFFF' }}>Listicle</option>
+                        <option value="comparison" style={{ background: '#FFFFFF' }}>Comparison</option>
+                        <option value="howto" style={{ background: '#FFFFFF' }}>How-To</option>
                       </Select>
                     </FormControl>
 
@@ -335,9 +457,7 @@ export default function BrandProfilePage() {
 
                     <FormControl display="flex" alignItems="center" justifyContent="space-between">
                       <Box>
-                        <FormLabel color="gray.300" mb={0}>
-                          Include Image Suggestions
-                        </FormLabel>
+                        <FormLabel color="gray.600" mb={0}>Include Image Suggestions</FormLabel>
                         <FormHelperText color="gray.500" mt={1}>
                           Add AI-suggested image placements
                         </FormHelperText>
@@ -351,9 +471,7 @@ export default function BrandProfilePage() {
 
                     <FormControl display="flex" alignItems="center" justifyContent="space-between">
                       <Box>
-                        <FormLabel color="gray.300" mb={0}>
-                          Include FAQ Section
-                        </FormLabel>
+                        <FormLabel color="gray.600" mb={0}>Include FAQ Section</FormLabel>
                         <FormHelperText color="gray.500" mt={1}>
                           Auto-generate FAQ from topic
                         </FormHelperText>
@@ -367,9 +485,7 @@ export default function BrandProfilePage() {
 
                     <FormControl display="flex" alignItems="center" justifyContent="space-between">
                       <Box>
-                        <FormLabel color="gray.300" mb={0}>
-                          Include Schema Markup
-                        </FormLabel>
+                        <FormLabel color="gray.600" mb={0}>Include Schema Markup</FormLabel>
                         <FormHelperText color="gray.500" mt={1}>
                           Generate JSON-LD structured data
                         </FormHelperText>
@@ -397,9 +513,7 @@ export default function BrandProfilePage() {
                   <VStack spacing={4} align="stretch">
                     <FormControl display="flex" alignItems="center" justifyContent="space-between">
                       <Box>
-                        <FormLabel color="gray.300" mb={0}>
-                          Auto-Publish
-                        </FormLabel>
+                        <FormLabel color="gray.600" mb={0}>Auto-Publish</FormLabel>
                         <FormHelperText color="gray.500" mt={1}>
                           Automatically publish to WordPress when approved
                         </FormHelperText>
@@ -413,9 +527,7 @@ export default function BrandProfilePage() {
 
                     <FormControl display="flex" alignItems="center" justifyContent="space-between">
                       <Box>
-                        <FormLabel color="gray.300" mb={0}>
-                          Require Review
-                        </FormLabel>
+                        <FormLabel color="gray.600" mb={0}>Require Review</FormLabel>
                         <FormHelperText color="gray.500" mt={1}>
                           Content must be reviewed before publishing
                         </FormHelperText>
@@ -430,7 +542,7 @@ export default function BrandProfilePage() {
                     <Divider borderColor="gray.200" />
 
                     <FormControl>
-                      <FormLabel color="gray.300">Default CTA</FormLabel>
+                      <FormLabel color="gray.600">Default CTA</FormLabel>
                       <Textarea
                         {...inputStyles}
                         placeholder="Your default call-to-action text..."
@@ -457,9 +569,7 @@ export default function BrandProfilePage() {
                         <Icon as={FiGlobe} color="blue.400" />
                         <Box>
                           <Text color="gray.700">WordPress</Text>
-                          <Text color="gray.500" fontSize="sm">
-                            Not connected
-                          </Text>
+                          <Text color="gray.500" fontSize="sm">Not connected</Text>
                         </Box>
                       </HStack>
                       <Button size="sm" variant="outline" colorScheme="orange">
@@ -486,9 +596,7 @@ export default function BrandProfilePage() {
                   <VStack spacing={4} align="stretch">
                     <FormControl display="flex" alignItems="center" justifyContent="space-between">
                       <Box>
-                        <FormLabel color="gray.300" mb={0}>
-                          Content Published
-                        </FormLabel>
+                        <FormLabel color="gray.600" mb={0}>Content Published</FormLabel>
                         <FormHelperText color="gray.500" mt={1}>
                           Get notified when content is published
                         </FormHelperText>
@@ -502,9 +610,7 @@ export default function BrandProfilePage() {
 
                     <FormControl display="flex" alignItems="center" justifyContent="space-between">
                       <Box>
-                        <FormLabel color="gray.300" mb={0}>
-                          Draft Ready for Review
-                        </FormLabel>
+                        <FormLabel color="gray.600" mb={0}>Draft Ready for Review</FormLabel>
                         <FormHelperText color="gray.500" mt={1}>
                           Get notified when AI completes a draft
                         </FormHelperText>
@@ -518,9 +624,7 @@ export default function BrandProfilePage() {
 
                     <FormControl display="flex" alignItems="center" justifyContent="space-between">
                       <Box>
-                        <FormLabel color="gray.300" mb={0}>
-                          Weekly Digest
-                        </FormLabel>
+                        <FormLabel color="gray.600" mb={0}>Weekly Digest</FormLabel>
                         <FormHelperText color="gray.500" mt={1}>
                           Weekly summary of content performance
                         </FormHelperText>
@@ -571,6 +675,64 @@ export default function BrandProfilePage() {
           </TabPanels>
         </Tabs>
       </VStack>
+
+      {/* Industry Change Confirmation Modal */}
+      <Modal isOpen={isIndustryModalOpen} onClose={onIndustryModalClose} isCentered>
+        <ModalOverlay bg="rgba(0, 0, 0, 0.5)" backdropFilter="blur(4px)" />
+        <ModalContent bg="white" borderRadius="16px" mx={4}>
+          <ModalHeader color="gray.800">
+            <HStack>
+              <Icon as={FiAlertTriangle} color="orange.400" />
+              <Text>Change Industry</Text>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton color="gray.400" />
+          <ModalBody>
+            <VStack align="stretch" spacing={4}>
+              <Text color="gray.600" fontSize="sm">
+                Changing your industry recalibrates how Phoo scores your content.
+                Existing scores in your library will update to reflect the new
+                industry standard.
+              </Text>
+              <FormControl>
+                <FormLabel color="gray.600" fontSize="sm">New Industry</FormLabel>
+                <Select
+                  {...inputStyles}
+                  value={pendingIndustry}
+                  onChange={(e) => setPendingIndustry(e.target.value)}
+                  placeholder="Select new industry"
+                >
+                  {INDUSTRIES.filter((ind) => ind.value !== settings.industry).map((ind) => (
+                    <option key={ind.value} value={ind.value} style={{ background: '#FFFFFF' }}>
+                      {ind.label}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <HStack spacing={3}>
+              <Button variant="ghost" onClick={onIndustryModalClose}>
+                Cancel
+              </Button>
+              <Button
+                bg="linear-gradient(135deg, #FF9D00 0%, #FF6B00 100%)"
+                color="white"
+                isDisabled={!pendingIndustry}
+                onClick={() => {
+                  updateSetting('industry', pendingIndustry);
+                  setPendingIndustry('');
+                  onIndustryModalClose();
+                }}
+                _hover={{ transform: 'translateY(-1px)', boxShadow: 'md' }}
+              >
+                Confirm Change
+              </Button>
+            </HStack>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </StudioLayout>
   );
 }

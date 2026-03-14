@@ -357,24 +357,6 @@ export default function InsightsPage() {
               </Box>
 
               {/* Internal Linking */}
-              <Box>
-                <HStack justify="space-between" mb={1.5}>
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700">
-                    Internal Linking
-                  </Text>
-                  <Text fontSize="sm" fontWeight="bold" color={getScoreColor(optimization.internalLinkingScore)}>
-                    {optimization.internalLinkingScore}%
-                  </Text>
-                </HStack>
-                <MetricProgressRow
-                  title=""
-                  value={optimization.internalLinkingScore}
-                  colorScheme={getScoreColorScheme(optimization.internalLinkingScore)}
-                  showHeader={false}
-                />
-                <Text fontSize="xs" color="gray.400" mt={1}>Articles with internal links</Text>
-              </Box>
-
               {/* Cluster Coverage */}
               <Box>
                 <HStack justify="space-between" mb={1.5}>
