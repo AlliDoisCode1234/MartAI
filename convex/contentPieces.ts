@@ -267,6 +267,7 @@ export const update = mutation({
     await ctx.db.patch(contentPieceId, {
       ...filteredUpdates,
       updatedAt: Date.now(),
+      lastEditedBy: userId,
     });
 
     // BI Event Tracking

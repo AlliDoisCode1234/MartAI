@@ -1,11 +1,34 @@
 'use client';
 
+/**
+ * Toolbar
+ *
+ * Component Hierarchy:
+ * App -> StudioLayout -> ContentEditorPage -> LexicalEditorComponent -> Toolbar
+ *
+ * Rich text formatting toolbar for the Lexical editor.
+ * Supports headings (H1-H3), bold, italic, and list formatting.
+ */
+
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getSelection, $isRangeSelection } from 'lexical';
-import { $isHeadingNode } from '@lexical/rich-text';
-import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND, REMOVE_LIST_COMMAND } from '@lexical/list';
-import { Button, HStack, Box } from '@chakra-ui/react';
-import { useState, useEffect } from 'react';
+import {
+  $getSelection,
+  $isRangeSelection,
+  $createParagraphNode,
+} from 'lexical';
+import { $isHeadingNode, $createHeadingNode, type HeadingTagType } from '@lexical/rich-text';
+import {
+  INSERT_UNORDERED_LIST_COMMAND,
+  INSERT_ORDERED_LIST_COMMAND,
+} from '@lexical/list';
+import { $setBlocksType } from '@lexical/selection';
+import { Button, HStack, Box, Icon, Tooltip } from '@chakra-ui/react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  FiBold,
+  FiItalic,
+  FiList,
+} from 'react-icons/fi';
 
 export function Toolbar() {
   const [editor] = useLexicalComposerContext();
@@ -18,6 +41,9 @@ export function Toolbar() {
       editorState.read(() => {
         const selection = $getSelection();
         if ($isRangeSelection(selection)) {
+          setIsBold(selection.hasFormat('bold'));
+          setIsItalic(selection.hasFormat('italic'));
+
           const node = selection.getNodes()[0];
           if (node) {
             const parent = node.getParent();
@@ -32,103 +58,138 @@ export function Toolbar() {
     });
   }, [editor]);
 
-  const formatHeading = (tag: 'h1' | 'h2' | 'h3') => {
+  const formatHeading = useCallback((tag: HeadingTagType) => {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
-        // Simple implementation - just insert heading
-        selection.insertText('');
+        if (blockType === tag) {
+          // Toggle off: convert back to paragraph
+          $setBlocksType(selection, () => $createParagraphNode());
+        } else {
+          // Convert to heading
+          $setBlocksType(selection, () => $createHeadingNode(tag));
+        }
       }
     });
-  };
+  }, [editor, blockType]);
 
-  const formatBold = () => {
+  const formatBold = useCallback(() => {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
         selection.formatText('bold');
       }
     });
-  };
+  }, [editor]);
 
-  const formatItalic = () => {
+  const formatItalic = useCallback(() => {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
         selection.formatText('italic');
       }
     });
-  };
+  }, [editor]);
 
-  const insertList = (listType: 'bullet' | 'number') => {
-    if (listType === 'bullet') {
-      editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
-    } else {
-      editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
-    }
-  };
+  const insertBulletList = useCallback(() => {
+    editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+  }, [editor]);
+
+  const insertNumberedList = useCallback(() => {
+    editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+  }, [editor]);
 
   return (
-    <HStack spacing={2} p={2} borderBottom="1px" borderColor="gray.200" bg="gray.50">
-      <Button
-        size="sm"
-        variant={blockType === 'h1' ? 'solid' : 'ghost'}
-        onClick={() => formatHeading('h1')}
-        fontSize="xs"
-      >
-        H1
-      </Button>
-      <Button
-        size="sm"
-        variant={blockType === 'h2' ? 'solid' : 'ghost'}
-        onClick={() => formatHeading('h2')}
-        fontSize="xs"
-      >
-        H2
-      </Button>
-      <Button
-        size="sm"
-        variant={blockType === 'h3' ? 'solid' : 'ghost'}
-        onClick={() => formatHeading('h3')}
-        fontSize="xs"
-      >
-        H3
-      </Button>
-      <Box w="1px" h="20px" bg="gray.300" />
-      <Button
-        size="sm"
-        variant={isBold ? 'solid' : 'ghost'}
-        onClick={formatBold}
-        fontWeight="bold"
-      >
-        B
-      </Button>
-      <Button
-        size="sm"
-        variant={isItalic ? 'solid' : 'ghost'}
-        onClick={formatItalic}
-        fontStyle="italic"
-      >
-        I
-      </Button>
-      <Box w="1px" h="20px" bg="gray.300" />
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => insertList('bullet')}
-        fontSize="xs"
-      >
-        • List
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => insertList('number')}
-        fontSize="xs"
-      >
-        1. List
-      </Button>
+    <HStack
+      spacing={1}
+      px={3}
+      py={2}
+      borderBottom="1px"
+      borderColor="gray.200"
+      bg="gray.50"
+      flexWrap="wrap"
+    >
+      <Tooltip label="Heading 1" fontSize="xs">
+        <Button
+          size="xs"
+          variant={blockType === 'h1' ? 'solid' : 'ghost'}
+          colorScheme={blockType === 'h1' ? 'purple' : 'gray'}
+          onClick={() => formatHeading('h1')}
+          fontSize="xs"
+          fontWeight="bold"
+        >
+          H1
+        </Button>
+      </Tooltip>
+      <Tooltip label="Heading 2" fontSize="xs">
+        <Button
+          size="xs"
+          variant={blockType === 'h2' ? 'solid' : 'ghost'}
+          colorScheme={blockType === 'h2' ? 'purple' : 'gray'}
+          onClick={() => formatHeading('h2')}
+          fontSize="xs"
+          fontWeight="bold"
+        >
+          H2
+        </Button>
+      </Tooltip>
+      <Tooltip label="Heading 3" fontSize="xs">
+        <Button
+          size="xs"
+          variant={blockType === 'h3' ? 'solid' : 'ghost'}
+          colorScheme={blockType === 'h3' ? 'purple' : 'gray'}
+          onClick={() => formatHeading('h3')}
+          fontSize="xs"
+          fontWeight="bold"
+        >
+          H3
+        </Button>
+      </Tooltip>
+
+      <Box w="1px" h="20px" bg="gray.300" mx={1} />
+
+      <Tooltip label="Bold (Ctrl+B)" fontSize="xs">
+        <Button
+          size="xs"
+          variant={isBold ? 'solid' : 'ghost'}
+          colorScheme={isBold ? 'purple' : 'gray'}
+          onClick={formatBold}
+        >
+          <Icon as={FiBold} boxSize={3.5} />
+        </Button>
+      </Tooltip>
+      <Tooltip label="Italic (Ctrl+I)" fontSize="xs">
+        <Button
+          size="xs"
+          variant={isItalic ? 'solid' : 'ghost'}
+          colorScheme={isItalic ? 'purple' : 'gray'}
+          onClick={formatItalic}
+        >
+          <Icon as={FiItalic} boxSize={3.5} />
+        </Button>
+      </Tooltip>
+
+      <Box w="1px" h="20px" bg="gray.300" mx={1} />
+
+      <Tooltip label="Bullet List" fontSize="xs">
+        <Button
+          size="xs"
+          variant="ghost"
+          onClick={insertBulletList}
+        >
+          <Icon as={FiList} boxSize={3.5} />
+        </Button>
+      </Tooltip>
+      <Tooltip label="Numbered List" fontSize="xs">
+        <Button
+          size="xs"
+          variant="ghost"
+          onClick={insertNumberedList}
+          fontSize="xs"
+        >
+          1.
+        </Button>
+      </Tooltip>
     </HStack>
   );
 }
-

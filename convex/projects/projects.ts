@@ -149,6 +149,11 @@ export const updateProject = mutation({
     targetAudience: v.optional(v.string()),
     businessGoals: v.optional(v.string()),
     competitors: v.optional(v.array(v.string())),
+    // Brand & Content Intelligence
+    brandName: v.optional(v.string()),
+    brandVoice: v.optional(v.string()),
+    toneKeywords: v.optional(v.array(v.string())),
+    defaultWordCount: v.optional(v.number()),
     // Generation status for onboarding visibility
     generationStatus: v.optional(
       v.union(v.literal('idle'), v.literal('generating'), v.literal('complete'), v.literal('error'))
@@ -166,11 +171,18 @@ export const updateProject = mutation({
       }
     }
 
-    const updates: any = { updatedAt: Date.now() };
+    const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (args.name !== undefined) updates.name = args.name;
     if (args.websiteUrl !== undefined) updates.websiteUrl = args.websiteUrl;
     if (args.industry !== undefined) updates.industry = args.industry;
     if (args.generationStatus !== undefined) updates.generationStatus = args.generationStatus;
+    if (args.targetAudience !== undefined) updates.targetAudience = args.targetAudience;
+    if (args.businessGoals !== undefined) updates.businessGoals = args.businessGoals;
+    if (args.competitors !== undefined) updates.competitors = args.competitors;
+    if (args.brandName !== undefined) updates.brandName = args.brandName;
+    if (args.brandVoice !== undefined) updates.brandVoice = args.brandVoice;
+    if (args.toneKeywords !== undefined) updates.toneKeywords = args.toneKeywords;
+    if (args.defaultWordCount !== undefined) updates.defaultWordCount = args.defaultWordCount;
 
     return await ctx.db.patch(args.projectId, updates);
   },

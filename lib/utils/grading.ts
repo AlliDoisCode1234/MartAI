@@ -17,9 +17,9 @@ interface GradeResult {
 export function getSeoGrade(score?: number | null): GradeResult {
   if (!score || score === 0) return { grade: '—', color: 'gray.500' };
   if (score >= 90) return { grade: 'A+', color: '#22C55E' };
-  if (score >= 80) return { grade: 'A', color: '#22C55E' };
-  if (score >= 70) return { grade: 'B+', color: '#FF9D00' };
-  if (score >= 60) return { grade: 'B', color: '#FF9D00' };
+  if (score >= 80) return { grade: 'B+', color: '#22C55E' };
+  if (score >= 70) return { grade: 'B', color: '#FF9D00' };
+  if (score >= 60) return { grade: 'C+', color: '#FF9D00' };
   if (score >= 50) return { grade: 'C', color: '#EF4444' };
   return { grade: 'D', color: '#EF4444' };
 }
