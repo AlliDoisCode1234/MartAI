@@ -10,7 +10,7 @@
  * Creates a shell content piece and immediately schedules it.
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -72,6 +72,8 @@ export function QuickCreateModal({
   const [keyword, setKeyword] = useState('');
   const [type, setType] = useState('blog');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // UX-044: Synchronous ref guard — prevents double-create from rapid clicks
+  const isSubmittingRef = useRef(false);
 
   // Mutations
   const createPiece = useMutation(api.contentPieces.create);
@@ -88,6 +90,9 @@ export function QuickCreateModal({
       return;
     }
 
+    // UX-044: Synchronous guard prevents concurrent submissions
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       // 1. Create a raw shell with generating/draft status
@@ -123,6 +128,7 @@ export function QuickCreateModal({
         status: 'error',
       });
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };

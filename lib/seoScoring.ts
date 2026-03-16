@@ -50,6 +50,8 @@ export interface SEOScoringInput {
   keywords: string[];
   /** Target word count for this content type (e.g. 1200 for blog) */
   targetWordCount?: number;
+  /** Project industry — calibrates readability thresholds */
+  industry?: string;
 }
 
 // ============================================================================
@@ -67,6 +69,51 @@ const WEIGHTS = {
   h2: 0.15,
   readability: 0.15,
 } as const;
+
+/**
+ * Industry-specific readability thresholds.
+ *
+ * floor = minimum Flesch score before content is flagged (below = issue)
+ * target = Flesch score at which readability is considered excellent (100%)
+ *
+ * Dense industries (tech, healthcare, legal) accept lower Flesch scores.
+ * Consumer-facing industries (lifestyle, ecommerce) need higher readability.
+ */
+export const INDUSTRY_READABILITY: Record<string, { floor: number; target: number }> = {
+  technology:  { floor: 30, target: 50 },
+  healthcare:  { floor: 25, target: 45 },
+  legal:       { floor: 20, target: 40 },
+  finance:     { floor: 30, target: 50 },
+  education:   { floor: 50, target: 65 },
+  lifestyle:   { floor: 60, target: 75 },
+  ecommerce:   { floor: 55, target: 70 },
+  marketing:   { floor: 50, target: 65 },
+  realestate:  { floor: 50, target: 65 },
+  other:       { floor: 40, target: 60 },
+  default:     { floor: 40, target: 60 },
+};
+
+/**
+ * Normalize raw Flesch Reading Ease score relative to industry expectations.
+ *
+ * Returns 0-100 where:
+ * - 100 = at or above industry target
+ * - 70-99 = between floor and target (acceptable)
+ * - 0-69 = below floor (needs improvement)
+ *
+ * @param rawFlesch - Raw Flesch Reading Ease score (0-100)
+ * @param industry - Project industry key from INDUSTRY_READABILITY
+ */
+export function scoreReadabilityForIndustry(rawFlesch: number, industry?: string): number {
+  const thresholds = INDUSTRY_READABILITY[industry || ''] || INDUSTRY_READABILITY.default;
+  if (rawFlesch >= thresholds.target) return 100;
+  if (rawFlesch >= thresholds.floor) {
+    return Math.round(
+      70 + ((rawFlesch - thresholds.floor) / (thresholds.target - thresholds.floor)) * 30
+    );
+  }
+  return Math.max(0, Math.round((rawFlesch / thresholds.floor) * 70));
+}
 
 // ============================================================================
 // Core Counting Functions
@@ -340,8 +387,11 @@ export function scoreContentRealTime(input: SEOScoringInput): SEOScoreResult {
   const wordCountScore = Math.min(100, (wordCount / targetWordCount) * 100);
   const h2Score = Math.min(100, (h2Count / 6) * 100);
 
-  // Real readability: Flesch Reading Ease (not hardcoded!)
-  const readabilityScore = wordCount >= 10 ? computeFleschReadingEase(safeContent) : 0;
+  // Industry-calibrated readability (Phase 2)
+  const rawFlesch = wordCount >= 10 ? computeFleschReadingEase(safeContent) : 0;
+  const readabilityScore = rawFlesch > 0
+    ? scoreReadabilityForIndustry(rawFlesch, input.industry)
+    : 0;
 
   // Outline coverage: how many outline sections appear in content
   const outlineCoverage = outline.reduce((count, section) => {

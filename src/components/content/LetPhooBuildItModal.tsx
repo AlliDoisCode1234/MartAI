@@ -37,7 +37,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { FiZap, FiCheck, FiArrowRight } from 'react-icons/fi';
-import { useAction, useQuery } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useProject } from '@/lib/hooks';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -69,7 +69,8 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
   const [isLoadingTitles, setIsLoadingTitles] = useState(false);
 
   const generateTitles = useAction(api.contentGeneration.generateContentTitle);
-  const generateContent = useAction(api.contentGeneration.generateContent);
+  // WF-005: Durable workflow trigger replaces direct useAction(generateContent)
+  const startGeneration = useMutation(api.workflowTriggers.startContentGeneration);
 
   // Fetch suggested keywords from library
   const suggestedKeywords = useQuery(
@@ -113,7 +114,10 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
     setStep('generating');
 
     try {
-      await generateContent({
+      // WF-005: Start durable workflow instead of direct action call.
+      // The workflow handles RBAC, quota checks, and step-level retry.
+      // userId is derived from auth context in the trigger mutation.
+      const { workflowId } = await startGeneration({
         projectId: projectId as Id<'projects'>,
         contentType: contentType as 'blog',
         title: selectedTitle,
@@ -121,8 +125,8 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
       });
 
       toast({
-        title: 'Content is being generated',
-        description: 'Phoo is crafting your article. Check Content Studio in a few minutes.',
+        title: 'Content generation started',
+        description: 'Phoo is crafting your article with durable workflow. Check Content Studio in a few minutes.',
         status: 'success',
         duration: 6000,
       });
@@ -130,7 +134,7 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
       onClose();
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[LetPhooBuildIt] Content generation failed:', msg);
+      console.error('[LetPhooBuildIt] Workflow start failed:', msg);
       toast({
         title: 'Generation failed',
         description: String(error),

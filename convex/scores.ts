@@ -1,11 +1,12 @@
 import { query } from './_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from './lib/rbac';
 
 /**
  * Scores Queries
  *
  * Provides SEO health scores and metrics for the Insights page.
- * Uses the phoo rating system under the hood.
+ * SEC-002-A: All queries are RBAC-gated.
  */
 
 /**
@@ -17,6 +18,13 @@ export const getProjectScore = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
+    // SEC-002-A: RBAC — verify caller has viewer access
+    try {
+      await requireProjectAccess(ctx, args.projectId, 'viewer');
+    } catch {
+      return null;
+    }
+
     // Get project
     const project = await ctx.db.get(args.projectId);
     if (!project) {

@@ -17,6 +17,7 @@ import {
   computeFleschReadingEase,
   computeKeywordDensity,
   scoreContentRealTime,
+  scoreReadabilityForIndustry,
 } from './seoScoring';
 
 // ============================================================================
@@ -336,5 +337,78 @@ describe('scoreContentRealTime', () => {
     // Coverage = 2/3 = 66.7%, score should reflect partial coverage
     expect(result.metrics.keywordScore).toBeGreaterThan(0);
     expect(result.metrics.keywordScore).toBeLessThan(100);
+  });
+});
+
+// ============================================================================
+// scoreReadabilityForIndustry (Phase 2)
+// ============================================================================
+describe('scoreReadabilityForIndustry', () => {
+  it('tech industry: Flesch 35 scores above 70 (between floor 30 and target 50)', () => {
+    const score = scoreReadabilityForIndustry(35, 'technology');
+    expect(score).toBeGreaterThanOrEqual(70);
+    expect(score).toBeLessThanOrEqual(100);
+  });
+
+  it('tech industry: Flesch 50 (at target) scores 100', () => {
+    expect(scoreReadabilityForIndustry(50, 'technology')).toBe(100);
+  });
+
+  it('tech industry: Flesch 60 (above target) scores 100', () => {
+    expect(scoreReadabilityForIndustry(60, 'technology')).toBe(100);
+  });
+
+  it('lifestyle industry: Flesch 35 scores below 70 (below floor 60)', () => {
+    const score = scoreReadabilityForIndustry(35, 'lifestyle');
+    expect(score).toBeLessThan(70);
+  });
+
+  it('lifestyle industry: Flesch 75 (at target) scores 100', () => {
+    expect(scoreReadabilityForIndustry(75, 'lifestyle')).toBe(100);
+  });
+
+  it('undefined industry uses default thresholds (floor 40, target 60)', () => {
+    // At target
+    expect(scoreReadabilityForIndustry(60, undefined)).toBe(100);
+    // Between floor and target
+    const score = scoreReadabilityForIndustry(50, undefined);
+    expect(score).toBeGreaterThanOrEqual(70);
+    expect(score).toBeLessThanOrEqual(100);
+  });
+
+  it('Flesch 0 always returns 0', () => {
+    expect(scoreReadabilityForIndustry(0, 'technology')).toBe(0);
+    expect(scoreReadabilityForIndustry(0, 'lifestyle')).toBe(0);
+    expect(scoreReadabilityForIndustry(0, undefined)).toBe(0);
+  });
+
+  it('at exact floor boundary returns 70', () => {
+    // Tech floor = 30
+    expect(scoreReadabilityForIndustry(30, 'technology')).toBe(70);
+    // Legal floor = 20
+    expect(scoreReadabilityForIndustry(20, 'legal')).toBe(70);
+  });
+
+  it('scoreContentRealTime uses industry param', () => {
+    // Simple content that has a known Flesch score range
+    const content = Array(50).fill('The cat sat on the mat.').join(' ');
+    const withoutIndustry = scoreContentRealTime({
+      content,
+      outline: [],
+      keywords: [],
+    });
+    const withTech = scoreContentRealTime({
+      content,
+      outline: [],
+      keywords: [],
+      industry: 'technology',
+    });
+
+    // Both should have non-zero readability
+    expect(withoutIndustry.metrics.readabilityScore).toBeGreaterThan(0);
+    expect(withTech.metrics.readabilityScore).toBeGreaterThan(0);
+
+    // Simple content should score well in both — readability score should be >= 70
+    expect(withTech.metrics.readabilityScore).toBeGreaterThanOrEqual(70);
   });
 });

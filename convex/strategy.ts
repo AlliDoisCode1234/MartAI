@@ -1,11 +1,12 @@
 import { query } from './_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from './lib/rbac';
 
 /**
  * Strategy Queries
  *
  * Provides strategy-related data for the Insights page.
- * TODO: Implement full strategy logic with real data aggregation.
+ * SEC-002-A: All queries are RBAC-gated.
  */
 
 /**
@@ -17,6 +18,13 @@ export const getFullStrategy = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
+    // SEC-002-A: RBAC — verify caller has viewer access
+    try {
+      await requireProjectAccess(ctx, args.projectId, 'viewer');
+    } catch {
+      return null;
+    }
+
     // Get project
     const project = await ctx.db.get(args.projectId);
     if (!project) {

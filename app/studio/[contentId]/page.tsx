@@ -19,7 +19,6 @@ import {
   Icon,
   Skeleton,
   Badge,
-  Textarea,
   useToast,
   Divider,
   Modal,
@@ -33,10 +32,12 @@ import {
   useDisclosure,
   FormControl,
   FormLabel,
+  Progress,
 } from '@chakra-ui/react';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { StudioLayout, SEOScorePanel, MarkdownPreview } from '@/src/components/studio';
+import { StudioLayout, SEOScorePanel, MarkdownPreview, ContentSuggestionsPanel } from '@/src/components/studio';
+import { RevisionReviewBanner } from '@/src/components/studio/RevisionReviewBanner';
 import { IntegrationsPanel } from '@/src/components/content';
 import {
   FiArrowLeft,
@@ -54,6 +55,9 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Id } from '@/convex/_generated/dataModel';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { LexicalEditorComponent, type LexicalEditor } from '@/src/components/LexicalEditor';
+import { $getRoot } from 'lexical';
+import { $convertFromMarkdownString, TRANSFORMERS } from '@lexical/markdown';
 import {
   scoreContentRealTime,
   countWords,
@@ -62,6 +66,25 @@ import {
   countKeywordsUsed,
 } from '@/lib/seoScoring';
 import type { SEOScoreResult } from '@/lib/seoScoring';
+import { enhanceInstruction } from '@/lib/instructionEnhancer';
+
+/** Format a timestamp as relative time (e.g. "2 min ago", "3 hours ago") */
+function formatRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(timestamp).toLocaleDateString();
+}
+import { useProject } from '@/lib/hooks';
+
+// Feedback type for persona learning
+type FeedbackType = 'suggestion_accepted' | 'suggestion_dismissed' | 'custom';
 
 export default function ContentEditorPage() {
   const params = useParams();
@@ -70,10 +93,37 @@ export default function ContentEditorPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const contentId = params.contentId as string;
 
-  // Fetch content piece
+  // Fetch content piece early so we can derive the canonical projectId
   const contentPiece = useQuery(api.contentPieces.getById, {
     contentPieceId: contentId as Id<'contentPieces'>,
   });
+
+  // SEC-001-C: Use the content piece's owning projectId — NOT autoSelect.
+  // autoSelect picks from localStorage which may be a different project.
+  const { project, projectId } = useProject(contentPiece?.projectId ?? null);
+
+  // Phase 3: Feedback mutation for persona learning
+  const submitFeedbackMutation = useMutation(api.contentFeedback.submitFeedback);
+  // Phase 3: Secure AI revision action for Phoo Coach custom input
+  const reviseWithPersonaAction = useAction(api.contentRevision.reviseWithPersona);
+
+  const handleSuggestionFeedback = useCallback(
+    (suggestionId: string | null, feedbackType: FeedbackType, customNote?: string) => {
+      if (!projectId) return;
+      submitFeedbackMutation({
+        projectId: projectId as Id<'projects'>,
+        contentPieceId: contentId as Id<'contentPieces'>,
+        feedbackType,
+        ...(suggestionId ? { suggestionId } : {}),
+        ...(customNote ? { customNote } : {}),
+      }).catch((err) => {
+        // Log failures (e.g., rate limits or RLS blocks) for observability
+        console.warn('Failed to submit suggestion feedback:', err);
+      });
+    },
+    [projectId, contentId, submitFeedbackMutation]
+  );
+
 
   // Check for CMS connections (Wave 3: CMS capability flags)
   const connections = useQuery(
@@ -90,11 +140,17 @@ export default function ContentEditorPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const lexicalEditorRef = useRef<LexicalEditor | null>(null);
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('09:00');
   const [isScheduling, setIsScheduling] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [liveScore, setLiveScore] = useState<SEOScoreResult | null>(null);
+  const [pendingRevision, setPendingRevision] = useState<{
+    revisedContent: string;
+    previousContent: string;
+    suggestionTitle: string;
+  } | null>(null);
 
   // Timer constants (ms)
   const SCORE_DEBOUNCE_MS = 300;
@@ -134,6 +190,92 @@ export default function ContentEditorPage() {
     api.publishing.wordpressActions.publishContentPieceToWordPress
   );
 
+  // Phase 3: Secure AI-powered content revision (Phoo Coach custom input)
+  // Uses Lexical's editor.update() for programmatic content insertion,
+  // which feeds through HistoryPlugin giving free Ctrl+Z undo.
+  const handleCustomRevision = useCallback(
+    async (instruction: string): Promise<{ revisedContent: string; previousContent: string } | null> => {
+      if (!projectId) return null;
+      // Guard: prevent double-submit while a revision is already pending
+      if (pendingRevision) return null;
+      const previousContent = content;
+      try {
+        // Enhance vague instructions with content context
+        const enhancedInstruction = enhanceInstruction(instruction, {
+          seoScore: liveScore,
+          wordCount: content.split(/\s+/).filter(Boolean).length,
+          targetWordCount: TARGET_WORD_COUNT,
+          keywords: contentPiece?.keywords || [],
+          content,
+          industry: project?.industry,
+        });
+        console.log('[PhooCoach] Enhanced instruction:', enhancedInstruction.slice(0, 200));
+        const result = await reviseWithPersonaAction({
+          projectId: projectId as Id<'projects'>,
+          contentPieceId: contentId as Id<'contentPieces'>,
+          instruction: enhancedInstruction,
+          currentContent: content,
+          // Pass metadata for GENERATE mode (when editor is empty/minimal)
+          title: contentPiece?.title,
+          keywords: contentPiece?.keywords,
+          contentType: contentPiece?.contentType,
+        });
+        console.log('[PhooCoach] Action result:', JSON.stringify(result)?.slice(0, 200));
+        if (result?.revisedContent) {
+          // Store as pending revision for user review instead of auto-applying
+          setPendingRevision({
+            revisedContent: result.revisedContent,
+            previousContent,
+            suggestionTitle: instruction.slice(0, 60),
+          });
+          return { revisedContent: result.revisedContent, previousContent };
+        }
+        console.warn('[PhooCoach] Action returned no revisedContent:', result);
+        return null;
+      } catch (err) {
+        console.warn('[PhooCoach] Revision action failed:', err);
+        throw err;
+      }
+    },
+    [projectId, contentId, content, liveScore, pendingRevision, reviseWithPersonaAction, contentPiece?.title, contentPiece?.keywords, contentPiece?.contentType, project?.industry]
+  );
+
+  // Accept a pending AI revision — apply to Lexical editor
+  const handleAcceptRevision = useCallback(() => {
+    if (!pendingRevision) return;
+    if (lexicalEditorRef.current) {
+      lexicalEditorRef.current.update(() => {
+        $getRoot().clear();
+        $convertFromMarkdownString(pendingRevision.revisedContent, TRANSFORMERS);
+      });
+    } else {
+      setContent(pendingRevision.revisedContent);
+    }
+    setHasChanges(true);
+    setPendingRevision(null);
+  }, [pendingRevision]);
+
+  // Reject a pending AI revision — discard
+  const handleRejectRevision = useCallback(() => {
+    setPendingRevision(null);
+  }, []);
+
+  // Undo handler: restore content to a previous snapshot
+  const handleRestoreContent = useCallback(
+    (previousContent: string) => {
+      setContent(previousContent);
+      setHasChanges(true);
+      toast({
+        title: 'Content restored',
+        description: 'Your previous content has been restored.',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
+    },
+    [toast]
+  );
+
   // Sync content from query — initial load ONLY
   // After hydration, local state owns content to prevent auto-save race condition.
   // See: Sprint 1 Remediation LDD, Fix #1
@@ -150,8 +292,9 @@ export default function ContentEditorPage() {
       outline: contentPiece?.h2Outline || [],
       keywords: contentPiece?.keywords || [],
       targetWordCount: TARGET_WORD_COUNT,
+      industry: project?.industry,
     }),
-    [contentPiece?.h2Outline, contentPiece?.keywords]
+    [contentPiece?.h2Outline, contentPiece?.keywords, project?.industry]
   );
 
   useEffect(() => {
@@ -511,6 +654,11 @@ export default function ContentEditorPage() {
               </HStack>
               <Text color="gray.500" fontSize="sm">
                 {wordCount.toLocaleString()} words
+                {contentPiece?.updatedAt && (
+                  <Text as="span" color="gray.400" ml={1}>
+                    • edited {formatRelativeTime(contentPiece.updatedAt)}
+                  </Text>
+                )}
                 {saveStatus === 'saving' && (
                   <Text as="span" color="#FF9D00" ml={1}>
                     • Saving...
@@ -610,107 +758,236 @@ export default function ContentEditorPage() {
           </HStack>
         </HStack>
 
-        {/* Editor + SEO Panel */}
-        <HStack align="start" spacing={6}>
-          {/* Editor */}
-          <Box
-            bg="white"
-            border="1px solid"
-            borderColor="gray.200"
-            borderRadius="16px"
-            boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
-            flex={1}
-            minH="600px"
-            display="flex"
-            flexDirection="column"
-          >
-            <Box p={4} borderBottom="1px solid" borderBottomColor="gray.200">
-              <HStack spacing={2} justify="space-between">
-                <HStack spacing={2}>
-                  <Badge bg="gray.100" color="gray.600">
-                    Markdown
-                  </Badge>
-                  <Divider orientation="vertical" h={4} />
-                  <Text color="gray.500" fontSize="sm">
-                    {h2Count} sections
-                  </Text>
+        {/* Editor + Sidebar — two-column layout */}
+        <HStack align="start" spacing={6} flex={1} minH={0}>
+          {/* Left Column: Editor + Review Banner + Phoo Coach */}
+          <VStack flex={1} spacing={4} align="stretch" minH={0}>
+            {/* Editor */}
+            <Box
+              bg="white"
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="16px"
+              boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
+              flex="0 0 auto"
+              minH="400px"
+              maxH="calc(100vh - 380px)"
+              display="flex"
+              flexDirection="column"
+            >
+              <Box p={4} borderBottom="1px solid" borderBottomColor="gray.200">
+                <HStack spacing={2} justify="space-between">
+                  <HStack spacing={2}>
+                    <Badge bg="gray.100" color="gray.600">
+                      Markdown
+                    </Badge>
+                    <Divider orientation="vertical" h={4} />
+                    <Text color="gray.500" fontSize="sm">
+                      {h2Count} sections
+                    </Text>
+                  </HStack>
+                  <HStack spacing={1}>
+                    <Button
+                      size="sm"
+                      variant={!showPreview ? 'solid' : 'ghost'}
+                      bg={!showPreview ? 'rgba(255, 157, 0, 0.2)' : 'transparent'}
+                      color={!showPreview ? '#FF9D00' : 'gray.500'}
+                      leftIcon={<Icon as={FiEdit3} />}
+                      onClick={() => setShowPreview(false)}
+                      _hover={{ bg: 'rgba(255, 157, 0, 0.15)' }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={showPreview ? 'solid' : 'ghost'}
+                      bg={showPreview ? 'rgba(139, 92, 246, 0.2)' : 'transparent'}
+                      color={showPreview ? '#8B5CF6' : 'gray.500'}
+                      leftIcon={<Icon as={FiEye} />}
+                      onClick={() => setShowPreview(true)}
+                      _hover={{ bg: 'rgba(139, 92, 246, 0.15)' }}
+                    >
+                      Preview
+                    </Button>
+                  </HStack>
                 </HStack>
-                <HStack spacing={1}>
-                  <Button
-                    size="sm"
-                    variant={!showPreview ? 'solid' : 'ghost'}
-                    bg={!showPreview ? 'rgba(255, 157, 0, 0.2)' : 'transparent'}
-                    color={!showPreview ? '#FF9D00' : 'gray.500'}
-                    leftIcon={<Icon as={FiEdit3} />}
-                    onClick={() => setShowPreview(false)}
-                    _hover={{ bg: 'rgba(255, 157, 0, 0.15)' }}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={showPreview ? 'solid' : 'ghost'}
-                    bg={showPreview ? 'rgba(139, 92, 246, 0.2)' : 'transparent'}
-                    color={showPreview ? '#8B5CF6' : 'gray.500'}
-                    leftIcon={<Icon as={FiEye} />}
-                    onClick={() => setShowPreview(true)}
-                    _hover={{ bg: 'rgba(139, 92, 246, 0.15)' }}
-                  >
-                    Preview
-                  </Button>
-                </HStack>
-              </HStack>
-            </Box>
-            {showPreview ? (
-              <Box flex={1} overflow="auto" maxH="600px" minH="550px">
-                <MarkdownPreview content={content} />
               </Box>
-            ) : (
-              <Textarea
-                value={content}
-                onChange={(e) => handleContentChange(e.target.value)}
-                placeholder="Start writing your content here..."
-                bg="transparent"
-                border="none"
-                _focus={{ boxShadow: 'none' }}
-                color="gray.800"
-                fontSize="md"
-                lineHeight="1.8"
-                minH="550px"
-                flex={1}
-                p={6}
-                resize="none"
-                _placeholder={{ color: 'gray.400' }}
+              {showPreview ? (
+                <Box flex={1} overflow="auto">
+                  <MarkdownPreview content={content} />
+                </Box>
+              ) : (
+                <Box flex={1} overflow="auto">
+                  <LexicalEditorComponent
+                    value={content}
+                    onChange={handleContentChange}
+                    placeholder="Start writing your content here..."
+                    minHeight="350px"
+                    onEditorReady={(editor) => {
+                      lexicalEditorRef.current = editor;
+                    }}
+                  />
+                </Box>
+              )}
+            </Box>
+
+            {/* Revision Review Banner — same width as editor */}
+            {pendingRevision && (
+              <RevisionReviewBanner
+                revisedContent={pendingRevision.revisedContent}
+                previousContent={pendingRevision.previousContent}
+                suggestionTitle={pendingRevision.suggestionTitle}
+                onAccept={handleAcceptRevision}
+                onReject={handleRejectRevision}
               />
             )}
-          </Box>
 
-          {/* Sidebar */}
-          <VStack align="stretch" spacing={4} w="280px">
-            {/* SEO Score Panel — live-updated as user types */}
-            <SEOScorePanel
-              seoScore={effectiveSeoScore}
-              wordCount={wordCount}
-              targetWordCount={TARGET_WORD_COUNT}
-              h2Count={h2Count}
-              keywordCount={countKeywordsUsed(content, contentPiece.keywords)}
-              targetKeywords={contentPiece.keywords?.length ?? 0}
-              internalLinkCount={linkCount}
-              qualityMetrics={liveScore?.metrics ?? contentPiece.qualityMetrics}
-            />
-
-            {/* Integrations Panel */}
-            <IntegrationsPanel
-              projectId={contentPiece.projectId}
-              onPublish={(platform) => {
-                toast({
-                  title: `Publishing to ${platform}...`,
-                  status: 'info',
-                  duration: 2000,
-                });
-              }}
-            />
+            {/* Phoo Coach — same width as editor, fills remaining space */}
+            {!showPreview && (
+              <Box flex="1 1 auto" minH="120px">
+                <ContentSuggestionsPanel
+                  liveScore={liveScore}
+                  content={content}
+                  keywords={contentPiece.keywords || []}
+                  targetWordCount={TARGET_WORD_COUNT}
+                  industry={project?.industry}
+                  onFeedback={handleSuggestionFeedback}
+                  onCustomRevision={handleCustomRevision}
+                  onRestoreContent={handleRestoreContent}
+                />
+              </Box>
+            )}
           </VStack>
+
+          {/* Right Sidebar — full viewport height, sticky */}
+          {!showPreview && (
+            <VStack
+              align="stretch"
+              spacing={4}
+              w="300px"
+              flexShrink={0}
+              position="sticky"
+              top="80px"
+              maxH="calc(100vh - 160px)"
+              overflow="auto"
+              sx={{
+                '&::-webkit-scrollbar': { width: '4px' },
+                '&::-webkit-scrollbar-thumb': { bg: 'gray.200', borderRadius: 'full' },
+              }}
+            >
+              {/* SEO Score Panel */}
+              <SEOScorePanel
+                seoScore={effectiveSeoScore}
+                wordCount={wordCount}
+                targetWordCount={TARGET_WORD_COUNT}
+                h2Count={h2Count}
+                keywordCount={countKeywordsUsed(content, contentPiece.keywords)}
+                targetKeywords={contentPiece.keywords?.length ?? 0}
+                qualityMetrics={liveScore?.metrics ?? contentPiece.qualityMetrics}
+              />
+
+              {/* Content Health — new value section */}
+              <Box
+                bg="white"
+                border="1px solid"
+                borderColor="gray.200"
+                borderRadius="16px"
+                p={4}
+                boxShadow="0 2px 8px rgba(0, 0, 0, 0.04)"
+              >
+                <Text fontSize="xs" fontWeight="semibold" color="gray.500" textTransform="uppercase" mb={3}>
+                  Content Health
+                </Text>
+                <VStack spacing={3} align="stretch">
+                  {/* Readability */}
+                  <Box>
+                    <HStack justify="space-between" mb={1}>
+                      <Text fontSize="xs" color="gray.600">Readability</Text>
+                      <Text fontSize="xs" fontWeight="semibold" color={
+                        (liveScore?.metrics?.readabilityScore ?? 0) >= 70 ? '#22C55E'
+                          : (liveScore?.metrics?.readabilityScore ?? 0) >= 40 ? '#FF9D00' : '#EF4444'
+                      }>
+                        {liveScore?.metrics?.readabilityScore ?? 0}/100
+                      </Text>
+                    </HStack>
+                    <Progress
+                      value={liveScore?.metrics?.readabilityScore ?? 0}
+                      size="xs"
+                      borderRadius="full"
+                      bg="gray.100"
+                      colorScheme={
+                        (liveScore?.metrics?.readabilityScore ?? 0) >= 70 ? 'green'
+                          : (liveScore?.metrics?.readabilityScore ?? 0) >= 40 ? 'orange' : 'red'
+                      }
+                    />
+                  </Box>
+
+                  {/* Title Length */}
+                  <HStack justify="space-between">
+                    <Text fontSize="xs" color="gray.600">Title Length</Text>
+                    <Text fontSize="xs" fontWeight="semibold" color={
+                      (contentPiece.title?.length ?? 0) >= 30 && (contentPiece.title?.length ?? 0) <= 60
+                        ? '#22C55E' : '#FF9D00'
+                    }>
+                      {contentPiece.title?.length ?? 0}/60
+                    </Text>
+                  </HStack>
+
+                  {/* Content Type */}
+                  <HStack justify="space-between">
+                    <Text fontSize="xs" color="gray.600">Content Type</Text>
+                    <Badge fontSize="2xs" colorScheme="purple" borderRadius="full">
+                      {contentPiece.contentType ?? 'Blog'}
+                    </Badge>
+                  </HStack>
+
+                  {/* Status */}
+                  <HStack justify="space-between">
+                    <Text fontSize="xs" color="gray.600">Status</Text>
+                    <Badge
+                      fontSize="2xs"
+                      borderRadius="full"
+                      bg={contentPiece.status === 'published' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(255, 157, 0, 0.12)'}
+                      color={contentPiece.status === 'published' ? '#22C55E' : '#FF9D00'}
+                    >
+                      {contentPiece.status ?? 'draft'}
+                    </Badge>
+                  </HStack>
+
+                  {/* Word Completion */}
+                  <Box>
+                    <HStack justify="space-between" mb={1}>
+                      <Text fontSize="xs" color="gray.600">Word Target</Text>
+                      <Text fontSize="xs" fontWeight="semibold" color={
+                        wordCount >= TARGET_WORD_COUNT ? '#22C55E' : '#FF9D00'
+                      }>
+                        {Math.min(Math.round((wordCount / TARGET_WORD_COUNT) * 100), 100)}%
+                      </Text>
+                    </HStack>
+                    <Progress
+                      value={Math.min((wordCount / TARGET_WORD_COUNT) * 100, 100)}
+                      size="xs"
+                      borderRadius="full"
+                      bg="gray.100"
+                      colorScheme={wordCount >= TARGET_WORD_COUNT ? 'green' : 'orange'}
+                    />
+                  </Box>
+                </VStack>
+              </Box>
+
+              {/* Integrations Panel */}
+              <IntegrationsPanel
+                projectId={contentPiece.projectId}
+                onPublish={(platform) => {
+                  toast({
+                    title: `Publishing to ${platform}...`,
+                    status: 'info',
+                    duration: 2000,
+                  });
+                }}
+              />
+            </VStack>
+          )}
         </HStack>
       </VStack>
 

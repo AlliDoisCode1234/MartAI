@@ -39,6 +39,7 @@ export type CompetitorId = Id<'competitors'>;
 export type SEOAuditId = Id<'seoAudits'>;
 export type GeneratedPageId = Id<'generatedPages'>;
 export type ProspectId = Id<'prospects'>;
+export type ClientId = Id<'clients'>;
 export type ProspectDetailId = Id<'prospectDetails'>;
 export type SubmittedUrlId = Id<'submittedUrls'>;
 export type AIReportId = Id<'aiReports'>;

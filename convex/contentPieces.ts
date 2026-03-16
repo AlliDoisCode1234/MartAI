@@ -2,12 +2,13 @@
  * ContentPieces CRUD Operations
  *
  * Mutations and queries for the Content Studio.
+ * SEC-002-C/D: All handlers RBAC-gated via requireProjectAccess.
  */
 
 import { mutation, query, internalQuery } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import { v } from 'convex/values';
-import { auth } from './auth';
+import { requireProjectAccess } from './lib/rbac';
 
 // ============================================================================
 // Queries
@@ -28,8 +29,12 @@ export const listByProject = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return [];
+    // SEC-002-C: RBAC — verify caller has viewer access
+    try {
+      await requireProjectAccess(ctx, args.projectId, 'viewer');
+    } catch {
+      return [];
+    }
 
     let query = ctx.db
       .query('contentPieces')
@@ -73,8 +78,10 @@ export const listByProjectPaginated = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    // SEC-002-C: RBAC — verify caller has viewer access
+    try {
+      await requireProjectAccess(ctx, args.projectId, 'viewer');
+    } catch {
       return { page: [], isDone: true, continueCursor: '' };
     }
 
@@ -102,10 +109,16 @@ export const getById = query({
     contentPieceId: v.id('contentPieces'),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return null;
+    // SEC-002-C: RBAC — verify caller has viewer access to owning project
+    const piece = await ctx.db.get(args.contentPieceId);
+    if (!piece) return null;
+    try {
+      await requireProjectAccess(ctx, piece.projectId, 'viewer');
+    } catch {
+      return null;
+    }
 
-    return await ctx.db.get(args.contentPieceId);
+    return piece;
   },
 });
 
@@ -120,8 +133,12 @@ export const listByScheduledDate = query({
     endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return [];
+    // SEC-002-C: RBAC — verify caller has viewer access
+    try {
+      await requireProjectAccess(ctx, args.projectId, 'viewer');
+    } catch {
+      return [];
+    }
 
     // Get all pieces for project with scheduled dates
     const pieces = await ctx.db
@@ -190,14 +207,8 @@ export const create = mutation({
     clusterId: v.optional(v.id('keywordClusters')),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error('Unauthorized');
-
-    // Verify project ownership
-    const project = await ctx.db.get(args.projectId);
-    if (!project || project.userId !== userId) {
-      throw new Error('Project not found');
-    }
+    // SEC-002-D: RBAC — verify caller has editor access (supports org members)
+    await requireProjectAccess(ctx, args.projectId, 'editor');
 
     const now = Date.now();
 
@@ -240,17 +251,11 @@ export const update = mutation({
     publishedUrl: v.optional(v.string()), // WordPress or other CMS published URL
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error('Unauthorized');
-
     const piece = await ctx.db.get(args.contentPieceId);
     if (!piece) throw new Error('Content not found');
 
-    // Verify project ownership
-    const project = await ctx.db.get(piece.projectId);
-    if (!project || project.userId !== userId) {
-      throw new Error('Unauthorized');
-    }
+    // SEC-002-D: RBAC — verify caller has editor access (supports org members)
+    const { userId } = await requireProjectAccess(ctx, piece.projectId, 'editor');
 
     const { contentPieceId, ...updates } = args;
     const filteredUpdates: Record<string, unknown> = Object.fromEntries(
@@ -267,6 +272,7 @@ export const update = mutation({
     await ctx.db.patch(contentPieceId, {
       ...filteredUpdates,
       updatedAt: Date.now(),
+      lastEditedBy: userId,
     });
 
     // BI Event Tracking
@@ -294,17 +300,11 @@ export const remove = mutation({
     contentPieceId: v.id('contentPieces'),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error('Unauthorized');
-
     const piece = await ctx.db.get(args.contentPieceId);
     if (!piece) throw new Error('Content not found');
 
-    // Verify project ownership
-    const project = await ctx.db.get(piece.projectId);
-    if (!project || project.userId !== userId) {
-      throw new Error('Unauthorized');
-    }
+    // SEC-002-D: RBAC — verify caller has editor access (supports org members)
+    await requireProjectAccess(ctx, piece.projectId, 'editor');
 
     await ctx.db.delete(args.contentPieceId);
     return { success: true };
@@ -319,17 +319,11 @@ export const duplicate = mutation({
     contentPieceId: v.id('contentPieces'),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error('Unauthorized');
-
     const piece = await ctx.db.get(args.contentPieceId);
     if (!piece) throw new Error('Content not found');
 
-    // Verify project ownership
-    const project = await ctx.db.get(piece.projectId);
-    if (!project || project.userId !== userId) {
-      throw new Error('Unauthorized');
-    }
+    // SEC-002-D: RBAC — verify caller has editor access (supports org members)
+    await requireProjectAccess(ctx, piece.projectId, 'editor');
 
     const now = Date.now();
 
@@ -364,8 +358,12 @@ export const getStats = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return null;
+    // SEC-002-C: RBAC — verify caller has viewer access
+    try {
+      await requireProjectAccess(ctx, args.projectId, 'viewer');
+    } catch {
+      return null;
+    }
 
     const pieces = await ctx.db
       .query('contentPieces')
@@ -436,17 +434,11 @@ export const schedule = mutation({
     publishDate: v.number(),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error('Unauthorized');
-
     const piece = await ctx.db.get(args.contentPieceId);
     if (!piece) throw new Error('Content not found');
 
-    // Verify project ownership
-    const project = await ctx.db.get(piece.projectId);
-    if (!project || project.userId !== userId) {
-      throw new Error('Unauthorized');
-    }
+    // SEC-002-D: RBAC — verify caller has editor access (supports org members)
+    const { userId } = await requireProjectAccess(ctx, piece.projectId, 'editor');
 
     // Validate publish date is in the future
     if (args.publishDate <= Date.now()) {
@@ -486,8 +478,12 @@ export const listScheduled = query({
     endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return [];
+    // SEC-002-C: RBAC — verify caller has viewer access
+    try {
+      await requireProjectAccess(ctx, args.projectId, 'viewer');
+    } catch {
+      return [];
+    }
 
     const pieces = await ctx.db
       .query('contentPieces')
@@ -520,17 +516,11 @@ export const unschedule = mutation({
     contentPieceId: v.id('contentPieces'),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error('Unauthorized');
-
     const piece = await ctx.db.get(args.contentPieceId);
     if (!piece) throw new Error('Content not found');
 
-    // Verify project ownership
-    const project = await ctx.db.get(piece.projectId);
-    if (!project || project.userId !== userId) {
-      throw new Error('Unauthorized');
-    }
+    // SEC-002-D: RBAC — verify caller has editor access (supports org members)
+    await requireProjectAccess(ctx, piece.projectId, 'editor');
 
     await ctx.db.patch(args.contentPieceId, {
       status: 'draft',

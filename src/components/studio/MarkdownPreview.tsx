@@ -2,18 +2,26 @@
  * MarkdownPreview Component
  *
  * Component Hierarchy:
- * App → StudioLayout → ContentEditorPage → MarkdownPreview
+ * App -> StudioLayout -> ContentEditorPage -> MarkdownPreview
  *
- * Renders markdown content as styled HTML with syntax highlighting.
- * Uses react-markdown for parsing and rendering.
+ * Renders markdown content as styled HTML for article preview.
+ * Uses react-markdown with explicit sanitization (rehype-sanitize)
+ * as defense-in-depth against XSS from AI-generated or user content.
+ *
+ * SECURITY:
+ * - rehype-sanitize strips ALL HTML tags, attributes, and event handlers
+ * - No dangerouslySetInnerHTML, no rehype-raw
+ * - Even if AI returns <script> or <img onerror=>, they're stripped
  */
 
 import React from 'react';
 import { Box, Text } from '@chakra-ui/react';
 import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
+import remarkGfm from 'remark-gfm';
 
 interface Props {
-  content: string;
+  readonly content: string;
 }
 
 export function MarkdownPreview({ content }: Props) {
@@ -22,44 +30,50 @@ export function MarkdownPreview({ content }: Props) {
       className="markdown-preview"
       p={6}
       color="#2d3748"
-      fontSize="md"
+      fontSize="16px"
       lineHeight="1.8"
+      fontFamily="system-ui, -apple-system, sans-serif"
       sx={{
         '& h1': {
-          fontSize: '2xl',
+          fontSize: '2rem',
           fontWeight: 'bold',
-          color: '#1a1a1a',
+          color: '#1a202c',
           mb: 4,
           mt: 6,
           pb: 2,
           borderBottom: '1px solid #e2e8f0',
+          lineHeight: '1.2',
         },
         '& h2': {
-          fontSize: 'xl',
+          fontSize: '1.5rem',
           fontWeight: 'bold',
-          color: '#1a1a1a',
+          color: '#1a202c',
           mb: 3,
           mt: 5,
+          lineHeight: '1.3',
         },
         '& h3': {
-          fontSize: 'lg',
-          fontWeight: 'semibold',
+          fontSize: '1.25rem',
+          fontWeight: '600',
           color: '#2d3748',
           mb: 2,
           mt: 4,
+          lineHeight: '1.4',
         },
         '& p': {
           mb: 4,
-          color: '#4a5568',
+          color: '#2d3748',
+          lineHeight: '1.8',
         },
         '& ul, & ol': {
           pl: 6,
           mb: 4,
-          color: '#4a5568',
+          color: '#2d3748',
         },
         '& li': {
           mb: 2,
-          color: '#4a5568',
+          color: '#2d3748',
+          lineHeight: '1.6',
         },
         '& a': {
           color: '#D97706',
@@ -68,16 +82,16 @@ export function MarkdownPreview({ content }: Props) {
         },
         '& code': {
           bg: '#f7fafc',
-          color: '#1a1a1a',
+          color: '#1a202c',
           px: 2,
           py: 0.5,
           borderRadius: 'md',
-          fontSize: 'sm',
-          fontFamily: 'mono',
+          fontSize: '0.9em',
+          fontFamily: "'Courier New', monospace",
         },
         '& pre': {
           bg: '#f7fafc',
-          color: '#1a1a1a',
+          color: '#1a202c',
           p: 4,
           borderRadius: 'lg',
           mb: 4,
@@ -96,7 +110,7 @@ export function MarkdownPreview({ content }: Props) {
           bg: 'rgba(249, 159, 42, 0.06)',
           borderRadius: '0 8px 8px 0',
           fontStyle: 'italic',
-          color: '#718096',
+          color: '#4a5568',
         },
         '& hr': {
           my: 6,
@@ -116,21 +130,33 @@ export function MarkdownPreview({ content }: Props) {
           border: '1px solid #e2e8f0',
           p: 2,
           textAlign: 'left',
-          color: '#4a5568',
+          color: '#2d3748',
         },
         '& th': {
           bg: '#f7fafc',
-          fontWeight: 'semibold',
-          color: '#2d3748',
+          fontWeight: '600',
+          color: '#1a202c',
         },
         '& strong': {
-          color: '#1a1a1a',
+          color: '#1a202c',
           fontWeight: 'bold',
+        },
+        '& em': {
+          fontStyle: 'italic',
+        },
+        '& del': {
+          textDecoration: 'line-through',
+          color: '#718096',
         },
       }}
     >
       {content ? (
-        <ReactMarkdown>{content}</ReactMarkdown>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeSanitize]}
+        >
+          {content}
+        </ReactMarkdown>
       ) : (
         <Text color="gray.600" fontStyle="italic">
           Start writing to see preview...

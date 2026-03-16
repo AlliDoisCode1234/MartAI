@@ -21,8 +21,15 @@ export const provisionTenantContainerPublic = action({
     ctx,
     args
   ): Promise<{ success: boolean; containerPublicId?: string; error?: string }> => {
-    // 1. Access check
-    const { project } = await requireProjectAccess(ctx, args.projectId, 'editor');
+    // 1. Access check — actions lack ctx.db so use internal query (CR-001)
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, {
+      projectId: args.projectId,
+    });
+    // Fetch project data separately (verifyProjectAccess only validates)
+    const project = await ctx.runQuery(api.projects.projects.getProjectById, {
+      projectId: args.projectId,
+    });
+    if (!project) throw new Error('Project not found');
 
     // 2. Validate measurement ID format
     if (!/^G-[A-Z0-9]+$/.test(args.ga4MeasurementId)) {
@@ -77,7 +84,10 @@ export const listUserContainers = action({
     containers: Array<{ name: string; publicId: string; containerId: string; accountId: string }>;
     error?: string;
   }> => {
-    await requireProjectAccess(ctx, args.projectId, 'editor');
+    // CR-001: actions lack ctx.db — use internal query for access check
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, {
+      projectId: args.projectId,
+    });
 
     const ga4Connection = await ctx.runQuery(
       internal.integrations.ga4Connections.getGA4ConnectionInternal,

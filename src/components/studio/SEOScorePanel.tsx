@@ -16,8 +16,6 @@ import {
   FiFileText,
   FiHash,
   FiType,
-  FiLink,
-  FiEdit3,
 } from 'react-icons/fi';
 import { getSeoGrade, getSeoColorScheme } from '@/lib/utils/grading';
 
@@ -28,7 +26,6 @@ interface Props {
   h2Count?: number;
   keywordCount?: number;
   targetKeywords?: number;
-  internalLinkCount?: number;
   qualityMetrics?: {
     wordCountScore: number;
     structureScore: number;
@@ -44,23 +41,9 @@ export function SEOScorePanel({
   h2Count = 0,
   keywordCount = 0,
   targetKeywords = 10,
-  internalLinkCount = 0,
   qualityMetrics,
 }: Props) {
   const { grade, color } = getSeoGrade(seoScore);
-
-  // Map readability score to plain-English label
-  const readabilityRaw = qualityMetrics?.readabilityScore ?? 0;
-  const readabilityLabel =
-    readabilityRaw >= 80
-      ? 'Easy'
-      : readabilityRaw >= 60
-        ? 'Standard'
-        : readabilityRaw >= 40
-          ? 'Difficult'
-          : readabilityRaw > 0
-            ? 'Very Difficult'
-            : '—';
 
   const metrics = [
     {
@@ -91,19 +74,6 @@ export function SEOScorePanel({
       icon: FiType,
       passed: targetKeywords === 0 || keywordCount >= targetKeywords,
       score: qualityMetrics?.keywordScore,
-    },
-    {
-      label: 'Internal Links',
-      value: internalLinkCount >= 3 ? String(internalLinkCount) : `${internalLinkCount} / 3`,
-      icon: FiLink,
-      passed: internalLinkCount >= 3,
-    },
-    {
-      label: 'Readability',
-      value: readabilityRaw > 0 ? `${readabilityRaw} — ${readabilityLabel}` : '—',
-      icon: FiEdit3,
-      passed: readabilityRaw >= 60,
-      score: readabilityRaw,
     },
   ];
 

@@ -499,6 +499,11 @@ export default defineSchema({
     targetAudience: v.optional(v.string()),
     businessGoals: v.optional(v.string()),
     competitors: v.optional(v.array(v.string())),
+    // Brand & Content Intelligence (Phase 1)
+    brandName: v.optional(v.string()),
+    brandVoice: v.optional(v.string()),       // "professional", "casual", "technical", etc.
+    toneKeywords: v.optional(v.array(v.string())), // ["expert", "data-driven"]
+    defaultWordCount: v.optional(v.number()),
     // Generation status for onboarding progress visibility
     generationStatus: v.optional(
       v.union(v.literal('idle'), v.literal('generating'), v.literal('complete'), v.literal('error'))
@@ -649,6 +654,41 @@ export default defineSchema({
     .index('by_content_piece', ['contentPieceId'])
     .index('by_project', ['projectId'])
     .index('by_status', ['status']),
+
+  // Content Feedback — Phase 3: Persona Learning
+  // Explicit signals (user clicks) + implicit signals (edit deltas after coaching)
+  // Aggregated per-project to build a persona context for AI-driven suggestions
+  contentFeedback: defineTable({
+    userId: v.id('users'),
+    projectId: v.id('projects'),
+    contentPieceId: v.optional(v.id('contentPieces')),
+    // Explicit feedback type
+    feedbackType: v.union(
+      v.literal('tone_too_formal'),
+      v.literal('tone_too_casual'),
+      v.literal('too_verbose'),
+      v.literal('too_concise'),
+      v.literal('wrong_keywords'),
+      v.literal('good_content'),
+      v.literal('suggestion_accepted'),
+      v.literal('suggestion_dismissed'),
+      v.literal('custom'),
+    ),
+    // Which suggestion triggered this feedback (if any)
+    suggestionId: v.optional(v.string()),
+    // Free-text note
+    customNote: v.optional(v.string()),
+    // Implicit feedback: edit delta after suggestion was shown
+    editDelta: v.optional(v.object({
+      readabilityBefore: v.number(),
+      readabilityAfter: v.number(),
+      wordCountBefore: v.number(),
+      wordCountAfter: v.number(),
+    })),
+    timestamp: v.float64(),
+  })
+    .index('by_project', ['projectId'])
+    .index('by_user_project', ['userId', 'projectId']),
 
   // Scheduled Posts
   // NOTE: Some legacy documents may have draftId/briefId instead of contentPieceId.
@@ -1479,6 +1519,7 @@ export default defineSchema({
 
     createdAt: v.number(),
     updatedAt: v.number(),
+    lastEditedBy: v.optional(v.id('users')),
   })
     .index('by_project', ['projectId'])
     .index('by_project_status', ['projectId', 'status'])

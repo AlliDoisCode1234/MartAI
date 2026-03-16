@@ -311,3 +311,54 @@ export const recordUsage = mutation({
     return { success: true, remaining: config.features[limitField] - nextValue };
   },
 });
+
+/**
+ * CR-005: Internal variant of recordUsage for durable workflows.
+ *
+ * Workflow steps (step.runMutation) execute in internal context.
+ * Using the public mutation() would require auth context propagation
+ * which is not guaranteed in workflow step execution.
+ *
+ * Same logic as recordUsage — accepts userId explicitly.
+ */
+export const internalRecordUsage = internalMutation({
+  args: {
+    userId: v.id('users'),
+    metric: v.union(
+      v.literal('urls'),
+      v.literal('keywordIdeas'),
+      v.literal('aiReports'),
+      v.literal('contentPieces')
+    ),
+    amount: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const subscription = await getActiveSubscription(ctx, args.userId);
+    if (!subscription || subscription.status !== 'active') {
+      throw new Error('Active subscription required');
+    }
+
+    const config = planConfig(subscription.planTier);
+    const dateObj = new Date(Date.now());
+    const start = startOfMonth(dateObj).getTime();
+    const end = endOfMonth(dateObj).getTime();
+    const usageDoc = await getUsageDoc(ctx, args.userId, start, end);
+
+    const field = metricToField[args.metric];
+    const limitField = fieldToLimit[field];
+    const increment = args.amount ?? 1;
+    const nextValue = usageDoc[field] + increment;
+
+    if (nextValue > config.features[limitField]) {
+      throw new Error(`Plan limit reached for ${args.metric}`);
+    }
+
+    await ctx.db.patch(usageDoc._id, {
+      [field]: nextValue,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, remaining: config.features[limitField] - nextValue };
+  },
+});
+
