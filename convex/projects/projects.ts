@@ -1,4 +1,4 @@
-import { mutation, query } from '../_generated/server';
+import { mutation, query, internalQuery } from '../_generated/server';
 import { v } from 'convex/values';
 
 import { planConfig } from '../subscriptions/subscriptions';
@@ -135,6 +135,18 @@ export const getProjectById = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.projectId);
+  },
+});
+
+/**
+ * SEC-001-B: Internal-only project access verification.
+ * Actions cannot use requireProjectAccess directly (it needs ctx.db).
+ * They call this via ctx.runQuery to verify access before expensive work.
+ */
+export const verifyProjectAccess = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
   },
 });
 

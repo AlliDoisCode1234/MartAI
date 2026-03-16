@@ -8,14 +8,14 @@
  * Stores per-project signals that feed into the AI persona context.
  *
  * RULES:
- * 1. All mutations are auth-gated
+ * 1. All mutations/queries are RBAC-gated via requireProjectAccess (SEC-001-A)
  * 2. Feedback capped at 50 most recent per project (BILL: storage cost control)
  * 3. No PII in feedback — only signal types and numeric deltas
  */
 
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { requireProjectAccess } from './lib/rbac';
 
 // Shared feedback type validator
 const feedbackTypeValidator = v.union(
@@ -50,17 +50,14 @@ export const submitFeedback = mutation({
     customNote: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
-
-    const user = await ctx.db.get(userId);
-    if (!user) throw new Error('User not found');
+    // SEC-001-A: RBAC — verify caller owns/has editor access to this project
+    const { userId } = await requireProjectAccess(ctx, args.projectId, 'editor');
 
     // Enforce per-project cap: delete oldest if at limit
     const existing = await ctx.db
       .query('contentFeedback')
       .withIndex('by_user_project', (q) =>
-        q.eq('userId', user._id).eq('projectId', args.projectId)
+        q.eq('userId', userId).eq('projectId', args.projectId)
       )
       .order('asc')
       .collect();
@@ -71,7 +68,7 @@ export const submitFeedback = mutation({
     }
 
     return await ctx.db.insert('contentFeedback', {
-      userId: user._id,
+      userId,
       projectId: args.projectId,
       contentPieceId: args.contentPieceId,
       feedbackType: args.feedbackType,
@@ -100,17 +97,14 @@ export const recordImplicitSignal = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
-
-    const user = await ctx.db.get(userId);
-    if (!user) throw new Error('User not found');
+    // SEC-001-A: RBAC — verify caller owns/has editor access to this project
+    const { userId } = await requireProjectAccess(ctx, args.projectId, 'editor');
 
     // Enforce per-project cap
     const existing = await ctx.db
       .query('contentFeedback')
       .withIndex('by_user_project', (q) =>
-        q.eq('userId', user._id).eq('projectId', args.projectId)
+        q.eq('userId', userId).eq('projectId', args.projectId)
       )
       .order('asc')
       .collect();
@@ -121,7 +115,7 @@ export const recordImplicitSignal = mutation({
     }
 
     return await ctx.db.insert('contentFeedback', {
-      userId: user._id,
+      userId,
       projectId: args.projectId,
       contentPieceId: args.contentPieceId,
       feedbackType: args.feedbackType,
@@ -146,16 +140,19 @@ export const getPersonaSignals = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
-
-    const user = await ctx.db.get(userId);
-    if (!user) return [];
+    // SEC-001-A: RBAC — verify caller has at least viewer access
+    let userId;
+    try {
+      ({ userId } = await requireProjectAccess(ctx, args.projectId, 'viewer'));
+    } catch {
+      // Graceful degradation: return empty array for unauthorized queries
+      return [];
+    }
 
     const signals = await ctx.db
       .query('contentFeedback')
       .withIndex('by_user_project', (q) =>
-        q.eq('userId', user._id).eq('projectId', args.projectId)
+        q.eq('userId', userId).eq('projectId', args.projectId)
       )
       .order('desc')
       .take(MAX_SIGNALS_PER_PROJECT);

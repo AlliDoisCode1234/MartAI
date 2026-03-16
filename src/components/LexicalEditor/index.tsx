@@ -210,7 +210,9 @@ function ExternalContentSyncPlugin({
   const hasLoadedInitialRef = useRef(false);
 
   useEffect(() => {
-    if (!markdown || !editor) return;
+    // UX-042: Allow empty string '' to propagate (clears editor).
+    // Only skip null/undefined — empty string is a legitimate "clear content" signal.
+    if (markdown == null || !editor) return;
 
     // Skip if this markdown came from the editor itself (OnChangePlugin sync-back)
     if (markdown === lastEditorOutputRef.current) return;
@@ -224,7 +226,10 @@ function ExternalContentSyncPlugin({
     editor.update(() => {
       try {
         $getRoot().clear();
-        $convertFromMarkdownString(markdown, TRANSFORMERS);
+        // UX-042: Only convert non-empty markdown; empty '' just clears.
+        if (markdown) {
+          $convertFromMarkdownString(markdown, TRANSFORMERS);
+        }
       } catch (error) {
         console.error('[LexicalEditor] Error loading markdown:', error);
       }

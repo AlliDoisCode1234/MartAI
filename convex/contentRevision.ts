@@ -20,7 +20,7 @@
  */
 
 import { action } from './_generated/server';
-import { api } from './_generated/api';
+import { api, internal } from './_generated/api';
 import { v } from 'convex/values';
 import { getAuthUserId } from '@convex-dev/auth/server';
 
@@ -135,6 +135,11 @@ export const reviseWithPersona = action({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
 
+    // ── SEC-001-B: Verify project access BEFORE expensive AI call ───
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, {
+      projectId: args.projectId,
+    });
+
     // ── Server-side length validation ───────────────────────────────
     if (args.instruction.length > MAX_INSTRUCTION_LENGTH) {
       throw new Error(
@@ -201,7 +206,9 @@ export const reviseWithPersona = action({
     });
 
     return {
-      revisedContent: result.content,
+      revisedContent: result.content.length > MAX_CONTENT_LENGTH
+        ? result.content.slice(0, MAX_CONTENT_LENGTH)
+        : result.content,
       tokensUsed: result.usage.totalTokens,
       mode: isGenerateMode ? 'generate' : 'revise',
     };

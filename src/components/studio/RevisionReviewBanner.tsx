@@ -227,8 +227,10 @@ export function RevisionReviewBanner({
             </HStack>
           </HStack>
 
-          {/* Inline diff content */}
-          <InlineDiff oldText={previousContent} newText={revisedContent} />
+          {/* Inline diff content — PERF-011: only compute when expanded */}
+          {showDiff && (
+            <InlineDiff oldText={previousContent} newText={revisedContent} />
+          )}
         </Box>
       </Collapse>
     </Box>

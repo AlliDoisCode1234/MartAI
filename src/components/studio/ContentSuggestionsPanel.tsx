@@ -13,7 +13,7 @@
  * Tier 2: "Fix it with Phoo" buttons trigger scoped AI improvements
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Box,
   VStack,
@@ -297,10 +297,16 @@ export function ContentSuggestionsPanel({
   const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: true });
   const [customNote, setCustomNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // UX-043: Synchronous ref guard — React state updates are async,
+  // so rapid clicks can fire before isSubmitting takes effect in the UI.
+  const isSubmittingRef = useRef(false);
   const toast = useToast();
 
   const handleCustomFeedbackSubmit = async () => {
     if (!customNote.trim()) return;
+    // UX-043: Synchronous guard prevents concurrent submissions
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       if (onCustomRevision) {
@@ -341,6 +347,7 @@ export function ContentSuggestionsPanel({
         isClosable: true,
       });
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };

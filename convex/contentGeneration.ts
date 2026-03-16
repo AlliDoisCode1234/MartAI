@@ -714,6 +714,19 @@ export const updateContentPiece = internalMutation({
   },
 });
 
+/**
+ * Internal query to read back a content piece for workflow status reporting.
+ * No auth required — only callable from internal context.
+ */
+export const getContentPieceInternal = internalQuery({
+  args: {
+    contentPieceId: v.id('contentPieces'),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.contentPieceId);
+  },
+});
+
 // ============================================================================
 // AI-Powered Content Generation
 // ============================================================================

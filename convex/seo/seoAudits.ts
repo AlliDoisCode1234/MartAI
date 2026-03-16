@@ -1,5 +1,10 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from '../lib/rbac';
+
+/**
+ * SEO Audits — SEC-002-B: All exports RBAC-gated.
+ */
 
 // Create SEO audit
 export const createAudit = mutation({
@@ -35,6 +40,9 @@ export const createAudit = mutation({
     crawlErrors: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // SEC-002-B: RBAC — verify caller has editor access
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
     return await ctx.db.insert('seoAudits', {
       projectId: args.projectId,
       website: args.website,
@@ -58,6 +66,13 @@ export const createAudit = mutation({
 export const getLatestAuditByProject = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
+    // SEC-002-B: RBAC — verify caller has viewer access
+    try {
+      await requireProjectAccess(ctx, args.projectId, 'viewer');
+    } catch {
+      return null;
+    }
+
     const audits = await ctx.db
       .query('seoAudits')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
@@ -71,6 +86,13 @@ export const getLatestAuditByProject = query({
 export const getAuditsByProject = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
+    // SEC-002-B: RBAC — verify caller has viewer access
+    try {
+      await requireProjectAccess(ctx, args.projectId, 'viewer');
+    } catch {
+      return [];
+    }
+
     return await ctx.db
       .query('seoAudits')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))

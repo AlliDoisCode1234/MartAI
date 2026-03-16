@@ -33,7 +33,7 @@ import {
   Badge,
   useToast,
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import {
@@ -69,6 +69,8 @@ export function CancellationRetentionModal({ isOpen, onClose, currentPlan, renew
   const [reason, setReason] = useState<CancelReason | ''>('');
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // UX-045: Synchronous ref guard — prevents duplicate cancellation calls
+  const isSubmittingRef = useRef(false);
   const toast = useToast();
 
   const requestCancellation = useMutation(
@@ -93,6 +95,9 @@ export function CancellationRetentionModal({ isOpen, onClose, currentPlan, renew
 
   const handleFinalCancel = async () => {
     if (!reason) return;
+    // UX-045: Synchronous guard prevents concurrent submissions
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       await requestCancellation({
@@ -116,6 +121,7 @@ export function CancellationRetentionModal({ isOpen, onClose, currentPlan, renew
         isClosable: true,
       });
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };

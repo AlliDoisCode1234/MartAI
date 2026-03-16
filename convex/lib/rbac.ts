@@ -100,6 +100,13 @@ export async function requireOrgRole(
 
 /**
  * Check if user can access a project (either owner or org member)
+ *
+ * NOTE: This function accepts ActionCtx in its type signature for backward
+ * compatibility, but it casts to QueryCtx internally (line 114: ctx.db.get).
+ * Calling this directly from an action WILL crash at runtime.
+ *
+ * @see verifyProjectAccess in projects/projects.ts — use this internalQuery
+ * from actions via ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId }).
  */
 export async function requireProjectAccess(
   ctx: QueryCtx | MutationCtx | ActionCtx,

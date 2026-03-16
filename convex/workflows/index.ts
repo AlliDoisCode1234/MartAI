@@ -4,9 +4,12 @@
  * This file exports all workflows and provides utilities for workflow management
  */
 
+// ── NEW: Durable workflows wrapping current production patterns ──────
+export { contentGenerationWorkflow } from './contentGenerationWorkflow';
+export { calendarGenerationWorkflow } from './calendarGenerationWorkflow';
+
+// ── Legacy workflow definitions (not yet wired to triggers) ──────────
 // Content Workflows
-// NOTE: contentCreationWorkflow, draftGenerationWorkflow, publishingWorkflow removed (2026-01-22)
-// They referenced non-existent briefs/drafts tables. Use contentPieces instead.
 export { articleGenerationWorkflow } from './contentWorkflows';
 
 // Keyword Workflows
@@ -17,9 +20,9 @@ export {
 } from './keywordWorkflows';
 
 // Analytics Workflows
+// NOTE: contentPerformanceWorkflow removed (WF-004) — referenced deleted briefs table
 export {
   analyticsSyncWorkflow,
-  contentPerformanceWorkflow,
   competitorAnalysisWorkflow,
 } from './analyticsWorkflows';
 
@@ -37,21 +40,18 @@ export {
  * Maps workflow names to their implementations for easy lookup
  */
 export const WORKFLOW_REGISTRY = {
-  // Content Workflows
-  // NOTE: 'content:create', 'content:generateDraft', 'content:publish' removed
-  // Use generateCalendar.ts or articleGenerationWorkflow instead
-  'article:generate': 'workflows/contentWorkflows:articleGenerationWorkflow',
+  // ── Active (wired to triggers in workflowTriggers.ts) ──────────────
+  'content:generate': 'workflows/contentGenerationWorkflow:contentGenerationWorkflow',
+  'calendar:generate': 'workflows/calendarGenerationWorkflow:calendarGenerationWorkflow',
 
-  // Keyword Workflows
+  // ── Legacy (not yet wired to triggers) ─────────────────────────────
+  'article:generate': 'workflows/contentWorkflows:articleGenerationWorkflow',
   'keywords:research': 'workflows/keywordWorkflows:keywordResearchWorkflow',
   'keywords:importGSC': 'workflows/keywordWorkflows:gscImportWorkflow',
   'keywords:refineCluster': 'workflows/keywordWorkflows:clusterRefinementWorkflow',
-
-  // Analytics Workflows
   'analytics:sync': 'workflows/analyticsWorkflows:analyticsSyncWorkflow',
-  'analytics:analyzeContent': 'workflows/analyticsWorkflows:contentPerformanceWorkflow',
   'analytics:analyzeCompetitors': 'workflows/analyticsWorkflows:competitorAnalysisWorkflow',
-  // NOTE: 'analytics:trackRankings' removed - seo/rankings module deleted
+  // NOTE: 'analytics:analyzeContent' removed (WF-004) — referenced deleted briefs table
 } as const;
 
 /**

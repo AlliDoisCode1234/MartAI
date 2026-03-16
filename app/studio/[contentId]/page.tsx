@@ -92,7 +92,15 @@ export default function ContentEditorPage() {
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const contentId = params.contentId as string;
-  const { project, projectId } = useProject(null, { autoSelect: true });
+
+  // Fetch content piece early so we can derive the canonical projectId
+  const contentPiece = useQuery(api.contentPieces.getById, {
+    contentPieceId: contentId as Id<'contentPieces'>,
+  });
+
+  // SEC-001-C: Use the content piece's owning projectId — NOT autoSelect.
+  // autoSelect picks from localStorage which may be a different project.
+  const { project, projectId } = useProject(contentPiece?.projectId ?? null);
 
   // Phase 3: Feedback mutation for persona learning
   const submitFeedbackMutation = useMutation(api.contentFeedback.submitFeedback);
@@ -116,11 +124,6 @@ export default function ContentEditorPage() {
     [projectId, contentId, submitFeedbackMutation]
   );
 
-
-  // Fetch content piece
-  const contentPiece = useQuery(api.contentPieces.getById, {
-    contentPieceId: contentId as Id<'contentPieces'>,
-  });
 
   // Check for CMS connections (Wave 3: CMS capability flags)
   const connections = useQuery(

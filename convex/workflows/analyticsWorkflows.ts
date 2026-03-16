@@ -91,47 +91,12 @@ export const analyticsSyncWorkflow = workflow.define({
 });
 
 /**
- * Content Performance Workflow
+ * NOTE: contentPerformanceWorkflow was removed (2026-03-16, WF-004)
  *
- * Analyzes individual content piece performance and suggests optimizations
+ * It referenced the deleted 'briefs' table (v.id('briefs')).
+ * Content performance analysis should be rebuilt using contentPieces
+ * when content analytics features are prioritized.
  */
-
-type ContentPerformanceWorkflowReturn = {
-  status: 'analyzed';
-  recommendations: Array<{ type: string; reason: string; action: string }>;
-};
-export const contentPerformanceWorkflow = workflow.define({
-  args: {
-    briefId: v.id('briefs'),
-    analysisType: v.union(v.literal('underperformer'), v.literal('top_gainer'), v.literal('decay')),
-  },
-  returns: v.object({
-    status: v.literal('analyzed'),
-    recommendations: v.array(
-      v.object({
-        type: v.string(),
-        reason: v.string(),
-        action: v.string(),
-      })
-    ),
-  }),
-  handler: async (step, args): Promise<ContentPerformanceWorkflowReturn> => {
-    // Step 1: Get content metrics
-    // We'll assume we can get metrics via a query or just pass empty for now
-    // In a real app, we'd query analyticsData for the specific page/url
-
-    // Step 2: Generate insights
-    const insights = await step.runAction(internal.analytics.insights.generateContentInsights, {
-      briefId: args.briefId,
-      metrics: { type: args.analysisType },
-    });
-
-    return {
-      status: 'analyzed',
-      recommendations: insights.recommendations,
-    };
-  },
-});
 
 /**
  * Competitor Analysis Workflow
