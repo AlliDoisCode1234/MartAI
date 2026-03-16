@@ -101,15 +101,14 @@ export async function requireOrgRole(
 /**
  * Check if user can access a project (either owner or org member)
  *
- * NOTE: This function accepts ActionCtx in its type signature for backward
- * compatibility, but it casts to QueryCtx internally (line 114: ctx.db.get).
- * Calling this directly from an action WILL crash at runtime.
+ * CR-001: ActionCtx removed from type signature. Actions MUST use
+ * ctx.runQuery(internal.projects.projects.verifyProjectAccess) instead.
+ * This function requires ctx.db which only exists in QueryCtx/MutationCtx.
  *
- * @see verifyProjectAccess in projects/projects.ts — use this internalQuery
- * from actions via ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId }).
+ * @see verifyProjectAccess in projects/projects.ts for action usage.
  */
 export async function requireProjectAccess(
-  ctx: QueryCtx | MutationCtx | ActionCtx,
+  ctx: QueryCtx | MutationCtx,
   projectId: Id<'projects'>,
   requiredOrgRole: OrgRole = 'viewer'
 ): Promise<{ userId: Id<'users'>; project: any; role: OrgRole | 'owner' }> {

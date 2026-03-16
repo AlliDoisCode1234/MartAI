@@ -124,7 +124,26 @@ export const calendarGenerationWorkflow = workflow.define({
       });
     }
 
-    // ── Step 5: Batch create content pieces ────────────────────────
+    // ── Step 5: Enforce subscription usage limit (CR-002) ──────────
+    // Record usage for ALL pieces BEFORE creation.
+    // If limit exceeded, fail fast before spending AI tokens.
+    try {
+      // CR-005: Use internalRecordUsage — workflow steps run in internal context
+      await step.runMutation(internal.subscriptions.subscriptions.internalRecordUsage, {
+        userId: args.userId,
+        metric: 'contentPieces' as const,
+        amount: calendarItems.length,
+      });
+    } catch {
+      return {
+        success: false,
+        industry: industryId,
+        itemsGenerated: 0,
+        message: `Monthly content limit reached. Calendar requires ${calendarItems.length} pieces. Upgrade your plan.`,
+      };
+    }
+
+    // ── Step 6: Batch create content pieces ────────────────────────
     const contentPieceIds = await step.runMutation(
       internal.contentCalendar.generateCalendar.createCalendarContentPieces,
       {
