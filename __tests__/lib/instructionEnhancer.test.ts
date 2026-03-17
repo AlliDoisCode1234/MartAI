@@ -832,5 +832,27 @@ describe('Instruction Enhancer', () => {
       expect(kwDef!.detail).toContain('"seo"');
       expect(kwDef!.detail).toContain('"marketing"');
     });
+
+    test('REGRESSION: EXPAND produced negative "words to add" when wordCount > targetWordCount', () => {
+      const result = enhanceInstruction('add more words', makeContext({
+        wordCount: 1500,
+        targetWordCount: 1200,
+      }));
+      // Must NOT contain a negative number like "add at least -300"
+      expect(result).not.toMatch(/add at least -\d+/i);
+      expect(result).not.toContain('hard requirement');
+      // Should focus on depth instead
+      expect(result.toLowerCase()).toContain('depth');
+    });
+
+    test('REGRESSION: EXPAND with wordCount === targetWordCount uses depth-focused template', () => {
+      const result = enhanceInstruction('make it longer', makeContext({
+        wordCount: 1200,
+        targetWordCount: 1200,
+      }));
+      expect(result).not.toMatch(/add at least \d+ more words/i);
+      expect(result.toLowerCase()).toContain('sufficient');
+      expect(result.toLowerCase()).toContain('depth');
+    });
   });
 });

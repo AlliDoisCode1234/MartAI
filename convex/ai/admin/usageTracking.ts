@@ -7,6 +7,8 @@
 
 import { v } from 'convex/values';
 import { internalMutation, query } from '../../_generated/server';
+import { Id } from '../../_generated/dataModel';
+import { requireSuperAdmin } from '../../lib/rbac';
 
 // Model cost rates per 1K tokens (in USD)
 const MODEL_COSTS: Record<string, { input: number; output: number }> = {
@@ -155,9 +157,11 @@ export const getMonthlyUsageSummary = query({
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startDateKey = startOfMonth.toISOString().split('T')[0];
 
-    // Get all usage records for current month
-    const allUsage = await ctx.db.query('aiUsage').collect();
-    const monthlyUsage = allUsage.filter((u) => u.dateKey >= startDateKey);
+    // Use by_dateKey index to fetch only current month records (avoids full table scan)
+    const monthlyUsage = await ctx.db
+      .query('aiUsage')
+      .withIndex('by_dateKey', (q) => q.gte('dateKey', startDateKey))
+      .collect();
 
     // Aggregate by provider
     const byProvider: Record<string, { cost: number; tokens: number; requests: number }> = {};
@@ -241,8 +245,11 @@ export const getDailyCostTrend = query({
     startDate.setDate(startDate.getDate() - days);
     const startDateKey = startDate.toISOString().split('T')[0];
 
-    const allUsage = await ctx.db.query('aiUsage').collect();
-    const recentUsage = allUsage.filter((u) => u.dateKey >= startDateKey);
+    // Use by_dateKey index to fetch only recent records (avoids full table scan)
+    const recentUsage = await ctx.db
+      .query('aiUsage')
+      .withIndex('by_dateKey', (q) => q.gte('dateKey', startDateKey))
+      .collect();
 
     // Group by date
     const byDate: Record<string, number> = {};
@@ -278,8 +285,11 @@ export const getCacheSavingsSummary = query({
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startDateKey = startOfMonth.toISOString().split('T')[0];
 
-    const allUsage = await ctx.db.query('aiUsage').collect();
-    const monthlyUsage = allUsage.filter((u) => u.dateKey >= startDateKey);
+    // Use by_dateKey index to fetch only current month records (avoids full table scan)
+    const monthlyUsage = await ctx.db
+      .query('aiUsage')
+      .withIndex('by_dateKey', (q) => q.gte('dateKey', startDateKey))
+      .collect();
 
     let totalCachedTokens = 0;
     let totalCacheCreationTokens = 0;
@@ -327,16 +337,24 @@ export const getCacheSavingsSummary = query({
  *
  * Aggregates aiUsage by userId → returns avg cost per active AI user,
  * plus top 5 users by cost. Enables CAC vs AI spend comparison.
+ *
+ * Security: Exposes user emails and spend metrics — requires super_admin role.
  */
 export const getCostPerUser = query({
   args: {},
   handler: async (ctx) => {
+    // Security: Only super_admin can view per-user cost breakdowns
+    await requireSuperAdmin(ctx);
+
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startDateKey = startOfMonth.toISOString().split('T')[0];
 
-    const allUsage = await ctx.db.query('aiUsage').collect();
-    const monthlyUsage = allUsage.filter((u) => u.dateKey >= startDateKey);
+    // Use by_dateKey index to fetch only current month records (avoids full table scan)
+    const monthlyUsage = await ctx.db
+      .query('aiUsage')
+      .withIndex('by_dateKey', (q) => q.gte('dateKey', startDateKey))
+      .collect();
 
     // Group by userId
     const byUser: Record<string, { cost: number; tokens: number; requests: number }> = {};
@@ -362,11 +380,8 @@ export const getCostPerUser = query({
 
     const topUsers = await Promise.all(
       sorted.map(async ([userId, data]) => {
-        // Query users table directly to avoid union-type issues with ctx.db.get()
-        const user = await ctx.db
-          .query('users')
-          .filter((q) => q.eq(q.field('_id'), userId))
-          .first();
+        // O(1) direct lookup by ID instead of scanning users table
+        const user = await ctx.db.get(userId as Id<'users'>);
         return {
           userId,
           email: user?.email ?? 'unknown',

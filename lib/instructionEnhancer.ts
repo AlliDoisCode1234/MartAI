@@ -245,15 +245,30 @@ function buildIntentInstruction(intent: Intent, ctx: ContentContext): string {
         'Do NOT remove entire sections — instead make each section more concise.',
       ].join('\n');
 
-    case 'EXPAND':
+    case 'EXPAND': {
+      const wordsNeeded = Math.max(0, ctx.targetWordCount - ctx.wordCount);
+      if (wordsNeeded > 0) {
+        return [
+          `Expand this content to AT LEAST ${ctx.targetWordCount} words (currently ${ctx.wordCount}).`,
+          `You MUST add at least ${wordsNeeded} more words. This is a hard requirement — do not return content shorter than ${ctx.targetWordCount} words.`,
+          'Add depth to existing sections with real-world examples, data points, and step-by-step instructions.',
+          'Add a FAQ section with 3-5 questions and detailed answers if one does not exist.',
+          'Do NOT sacrifice readability to increase word count — maintain the current quality.',
+          defText ? `\nAdditional context:\n${defText}` : '',
+        ].join('\n');
+      }
+      // Content already meets word count target — focus on depth, not length
       return [
-        `Expand this content to AT LEAST ${ctx.targetWordCount} words (currently ${ctx.wordCount}).`,
-        `You MUST add at least ${ctx.targetWordCount - ctx.wordCount} more words. This is a hard requirement — do not return content shorter than ${ctx.targetWordCount} words.`,
-        'Add depth to existing sections with real-world examples, data points, and step-by-step instructions.',
-        'Add a FAQ section with 3-5 questions and detailed answers if one does not exist.',
-        'Do NOT sacrifice readability to increase word count — maintain the current quality.',
+        `This content is ${ctx.wordCount} words (target: ${ctx.targetWordCount}). The word count is sufficient.`,
+        'Focus on adding DEPTH and QUALITY to existing sections:',
+        '- Add real-world examples, case studies, and data points to support claims.',
+        '- Add step-by-step instructions where processes are described vaguely.',
+        '- Add a FAQ section with 3-5 questions and detailed answers if one does not exist.',
+        '- Add H2/H3 subsections to break up long paragraphs for better scannability.',
+        'Do NOT pad content with filler — every addition must provide genuine value.',
         defText ? `\nAdditional context:\n${defText}` : '',
       ].join('\n');
+    }
 
     case 'ENGAGE':
       return [

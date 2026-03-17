@@ -1430,7 +1430,8 @@ export default defineSchema({
     .index('by_user_date', ['userId', 'dateKey'])
     .index('by_project', ['projectId', 'dateKey'])
     .index('by_provider', ['provider', 'dateKey'])
-    .index('by_model', ['model', 'dateKey']),
+    .index('by_model', ['model', 'dateKey'])
+    .index('by_dateKey', ['dateKey']),
 
   // ============================================================================
   // Content Studio (Phase 1) - Unified content management

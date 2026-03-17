@@ -283,15 +283,21 @@ export default function ContentEditorPage() {
     setHasChanges(true);
 
     // COACH-H-004: Record implicit signal with before/after edit deltas
+    // Compute afterScore synchronously rather than reading stale liveScore
+    // (liveScore updates via 300ms debounce — it hasn't processed the new content yet)
     if (preRevisionSnapshot && projectId) {
       const newWordCount = pendingRevision.revisedContent.split(/\s+/).filter(Boolean).length;
+      const afterScore = scoreContentRealTime({
+        content: pendingRevision.revisedContent,
+        ...scoringInput,
+      });
       recordImplicitSignalMutation({
         projectId: projectId as Id<'projects'>,
         contentPieceId: contentId as Id<'contentPieces'>,
         feedbackType: 'suggestion_accepted' as const,
         editDelta: {
           readabilityBefore: preRevisionSnapshot.readabilityScore,
-          readabilityAfter: liveScore?.metrics?.readabilityScore ?? preRevisionSnapshot.readabilityScore,
+          readabilityAfter: afterScore.metrics.readabilityScore,
           wordCountBefore: preRevisionSnapshot.wordCount,
           wordCountAfter: newWordCount,
         },
@@ -302,7 +308,7 @@ export default function ContentEditorPage() {
     }
 
     setPendingRevision(null);
-  }, [pendingRevision, preRevisionSnapshot, projectId, contentId, liveScore, recordImplicitSignalMutation]);
+  }, [pendingRevision, preRevisionSnapshot, projectId, contentId, scoringInput, recordImplicitSignalMutation]);
 
   // Reject a pending AI revision — discard + record dismissal
   const handleRejectRevision = useCallback(() => {
