@@ -78,8 +78,17 @@ export class OpenAIProvider implements AIProvider {
             totalTokens?: number;
             inputTokens?: number;
             outputTokens?: number;
+            cachedTokens?: number;
           }
         | undefined;
+
+      const cachedTokens = (usage as any)?.cachedTokens || 0;
+
+      if (cachedTokens > 0) {
+        console.log(
+          `[OpenAI] CACHE HIT: ${cachedTokens}/${usage?.promptTokens || 0} tokens cached (${modelId})`
+        );
+      }
 
       return {
         content: result.text,
@@ -88,6 +97,7 @@ export class OpenAIProvider implements AIProvider {
           completionTokens: usage?.completionTokens || usage?.outputTokens || 0,
           totalTokens:
             usage?.totalTokens || (usage?.promptTokens || 0) + (usage?.completionTokens || 0),
+          cachedTokens,
         },
         finishReason: (result.finishReason as AITextResponse['finishReason']) || 'stop',
         latencyMs: Date.now() - startTime,

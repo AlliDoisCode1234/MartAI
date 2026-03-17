@@ -37,6 +37,7 @@ export const generateWithFallback = action({
     strategy: v.optional(v.string()),
     preferredProvider: v.optional(v.string()),
     userId: v.optional(v.id('users')),
+    enableCache: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<AITextResponse> => {
     const startTime = Date.now();
@@ -47,6 +48,7 @@ export const generateWithFallback = action({
       systemPrompt: args.systemPrompt,
       maxTokens: args.maxTokens,
       temperature: args.temperature,
+      enableCache: args.enableCache,
     };
 
     const taskType = (args.taskType as TaskType) || 'chat';
@@ -94,12 +96,17 @@ export const generateWithFallback = action({
             taskType: taskType,
             inputTokens: result.usage.promptTokens,
             outputTokens: result.usage.completionTokens,
+            cachedTokens: result.usage.cachedTokens || 0,
+            cacheCreationTokens: result.usage.cacheCreationTokens || 0,
           });
         }
 
-        // Log success
+        // Log success with cache info
+        const cacheInfo = result.usage.cachedTokens
+          ? ` [CACHED: ${result.usage.cachedTokens} tokens]`
+          : '';
         console.log(
-          `[AIRouter] SUCCESS: ${provider.name}/${modelId} (${result.latencyMs}ms, ${result.usage.totalTokens} tokens)`
+          `[AIRouter] SUCCESS: ${provider.name}/${modelId} (${result.latencyMs}ms, ${result.usage.totalTokens} tokens${cacheInfo})`
         );
 
         return result;

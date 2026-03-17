@@ -203,6 +203,7 @@ ${prompt}`;
         temperature,
         strategy: 'balanced',
         userId: undefined, // Can be passed from outer context if needed
+        enableCache: true,
       });
 
       return {

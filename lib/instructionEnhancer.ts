@@ -79,14 +79,14 @@ const INTENT_PATTERNS: ReadonlyArray<{ intent: Intent; patterns: ReadonlyArray<R
     intent: 'SEO_FIX',
     patterns: [
       /\b(fix|improve|boost|optimize)\s+(the\s+)?(seo|ranking|score)\b/i,
-      /\b(seo|search\s+engine)\s+(optimiz|fix|improv)\b/i,
+      /\b(seo|search\s+engine)\s+(optimiz|fix|improv)/i,
       /\b(keyword|rank)\s+(better|higher)\b/i,
     ],
   },
   {
     intent: 'STRUCTURE',
     patterns: [
-      /\b(organiz|restructur|reorder|rearrang)\b/i,
+      /\b(organiz|restructur|reorder|rearrang)/i,
       /\b(better\s+structure|add\s+sections|more\s+headings|break\s+(it\s+)?up)\b/i,
       /\b(outline|table\s+of\s+contents)\b/i,
     ],
@@ -245,13 +245,30 @@ function buildIntentInstruction(intent: Intent, ctx: ContentContext): string {
         'Do NOT remove entire sections — instead make each section more concise.',
       ].join('\n');
 
-    case 'EXPAND':
+    case 'EXPAND': {
+      const wordsNeeded = Math.max(0, ctx.targetWordCount - ctx.wordCount);
+      if (wordsNeeded > 0) {
+        return [
+          `Expand this content to AT LEAST ${ctx.targetWordCount} words (currently ${ctx.wordCount}).`,
+          `You MUST add at least ${wordsNeeded} more words. This is a hard requirement — do not return content shorter than ${ctx.targetWordCount} words.`,
+          'Add depth to existing sections with real-world examples, data points, and step-by-step instructions.',
+          'Add a FAQ section with 3-5 questions and detailed answers if one does not exist.',
+          'Do NOT sacrifice readability to increase word count — maintain the current quality.',
+          defText ? `\nAdditional context:\n${defText}` : '',
+        ].join('\n');
+      }
+      // Content already meets word count target — focus on depth, not length
       return [
-        `Expand this content to approximately ${ctx.targetWordCount} words (currently ${ctx.wordCount}).`,
-        'Add depth to existing sections with examples, data points, step-by-step instructions.',
-        'Add a FAQ section with 3-5 questions if one doesn\'t exist.',
+        `This content is ${ctx.wordCount} words (target: ${ctx.targetWordCount}). The word count is sufficient.`,
+        'Focus on adding DEPTH and QUALITY to existing sections:',
+        '- Add real-world examples, case studies, and data points to support claims.',
+        '- Add step-by-step instructions where processes are described vaguely.',
+        '- Add a FAQ section with 3-5 questions and detailed answers if one does not exist.',
+        '- Add H2/H3 subsections to break up long paragraphs for better scannability.',
+        'Do NOT pad content with filler — every addition must provide genuine value.',
         defText ? `\nAdditional context:\n${defText}` : '',
       ].join('\n');
+    }
 
     case 'ENGAGE':
       return [
@@ -279,11 +296,13 @@ function buildIntentInstruction(intent: Intent, ctx: ContentContext): string {
 
     case 'SIMPLIFY':
       return [
-        'Simplify this content significantly.',
-        'Break every sentence over 20 words into two shorter ones.',
-        'Replace jargon with plain language. Use bullet lists for complex points.',
+        'Simplify this content significantly. You MUST make it noticeably easier to read.',
+        'Break EVERY sentence over 20 words into two shorter ones.',
+        'Replace ALL jargon with plain language equivalents.',
+        'Use bullet lists for any lists of 3+ items.',
         'Target a 6th-8th grade reading level.',
-        `Current readability: ${ctx.seoScore?.metrics?.readabilityScore ?? 'unknown'}/100.`,
+        `Current readability: ${ctx.seoScore?.metrics?.readabilityScore ?? 'unknown'}/100. You MUST raise it above 60/100.`,
+        'Do NOT reduce word count below the current level — maintain content depth while simplifying language.',
       ].join('\n');
 
     case 'SEO_FIX':

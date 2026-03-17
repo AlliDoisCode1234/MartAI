@@ -15,6 +15,8 @@ export interface AITextRequest {
   maxTokens?: number;
   temperature?: number;
   stopSequences?: string[];
+  /** Enable provider-specific prompt caching for system prompt */
+  enableCache?: boolean;
 }
 
 export interface AITextResponse {
@@ -23,6 +25,10 @@ export interface AITextResponse {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    /** Tokens read from cache (reduced cost) */
+    cachedTokens?: number;
+    /** Tokens written to cache on first call */
+    cacheCreationTokens?: number;
   };
   finishReason: 'stop' | 'length' | 'content_filter' | 'error';
   latencyMs: number;

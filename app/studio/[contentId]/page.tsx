@@ -49,6 +49,7 @@ import {
   FiEye,
   FiEdit3,
   FiExternalLink,
+  FiZap,
 } from 'react-icons/fi';
 import { FaWordpress } from 'react-icons/fa';
 import Link from 'next/link';
@@ -152,6 +153,18 @@ export default function ContentEditorPage() {
     suggestionTitle: string;
   } | null>(null);
 
+  // COACH-H-004: Snapshot scores before AI revision for implicit signal tracking
+  const [preRevisionSnapshot, setPreRevisionSnapshot] = useState<{
+    readabilityScore: number;
+    wordCount: number;
+  } | null>(null);
+
+  // FIX-002: Confirmation modal before accepting AI revision
+  const [showAcceptConfirm, setShowAcceptConfirm] = useState(false);
+
+  // Mutation for implicit edit delta tracking
+  const recordImplicitSignalMutation = useMutation(api.contentFeedback.recordImplicitSignal);
+
   // Timer constants (ms)
   const SCORE_DEBOUNCE_MS = 300;
   const AUTO_SAVE_DEBOUNCE_MS = 2000;
@@ -194,26 +207,42 @@ export default function ContentEditorPage() {
   // Uses Lexical's editor.update() for programmatic content insertion,
   // which feeds through HistoryPlugin giving free Ctrl+Z undo.
   const handleCustomRevision = useCallback(
-    async (instruction: string): Promise<{ revisedContent: string; previousContent: string } | null> => {
+    async (
+      instruction: string,
+      options?: { isPreEnhanced?: boolean }
+    ): Promise<{ revisedContent: string; previousContent: string } | null> => {
       if (!projectId) return null;
       // Guard: prevent double-submit while a revision is already pending
       if (pendingRevision) return null;
       const previousContent = content;
+
+      // COACH-H-004: Snapshot current scores before AI revision
+      setPreRevisionSnapshot({
+        readabilityScore: liveScore?.metrics?.readabilityScore ?? 0,
+        wordCount: content.split(/\s+/).filter(Boolean).length,
+      });
+
       try {
-        // Enhance vague instructions with content context
-        const enhancedInstruction = enhanceInstruction(instruction, {
-          seoScore: liveScore,
-          wordCount: content.split(/\s+/).filter(Boolean).length,
-          targetWordCount: TARGET_WORD_COUNT,
-          keywords: contentPiece?.keywords || [],
-          content,
-          industry: project?.industry,
-        });
-        console.log('[PhooCoach] Enhanced instruction:', enhancedInstruction.slice(0, 200));
+        // FIX-001: If the instruction is a pre-enhanced fixInstruction from the
+        // suggestion panel, skip enhanceInstruction — it's already a precise,
+        // crafted prompt with hard numeric targets. Running it through the
+        // enhancer would reclassify it (e.g., EXPAND) and replace the "YOU MUST"
+        // language with weaker "approximately" language.
+        const finalInstruction = options?.isPreEnhanced
+          ? instruction
+          : enhanceInstruction(instruction, {
+              seoScore: liveScore,
+              wordCount: content.split(/\s+/).filter(Boolean).length,
+              targetWordCount: TARGET_WORD_COUNT,
+              keywords: contentPiece?.keywords || [],
+              content,
+              industry: project?.industry,
+            });
+        console.log(`[PhooCoach] Instruction (preEnhanced=${!!options?.isPreEnhanced}):`, finalInstruction.slice(0, 200));
         const result = await reviseWithPersonaAction({
           projectId: projectId as Id<'projects'>,
           contentPieceId: contentId as Id<'contentPieces'>,
-          instruction: enhancedInstruction,
+          instruction: finalInstruction,
           currentContent: content,
           // Pass metadata for GENERATE mode (when editor is empty/minimal)
           title: contentPiece?.title,
@@ -252,13 +281,44 @@ export default function ContentEditorPage() {
       setContent(pendingRevision.revisedContent);
     }
     setHasChanges(true);
-    setPendingRevision(null);
-  }, [pendingRevision]);
 
-  // Reject a pending AI revision — discard
-  const handleRejectRevision = useCallback(() => {
+    // COACH-H-004: Record implicit signal with before/after edit deltas
+    // Compute afterScore synchronously rather than reading stale liveScore
+    // (liveScore updates via 300ms debounce — it hasn't processed the new content yet)
+    if (preRevisionSnapshot && projectId) {
+      const newWordCount = pendingRevision.revisedContent.split(/\s+/).filter(Boolean).length;
+      const afterScore = scoreContentRealTime({
+        content: pendingRevision.revisedContent,
+        ...scoringInput,
+      });
+      recordImplicitSignalMutation({
+        projectId: projectId as Id<'projects'>,
+        contentPieceId: contentId as Id<'contentPieces'>,
+        feedbackType: 'suggestion_accepted' as const,
+        editDelta: {
+          readabilityBefore: preRevisionSnapshot.readabilityScore,
+          readabilityAfter: afterScore.metrics.readabilityScore,
+          wordCountBefore: preRevisionSnapshot.wordCount,
+          wordCountAfter: newWordCount,
+        },
+      }).catch((err) => {
+        console.warn('[PhooCoach] Failed to record implicit signal:', err);
+      });
+      setPreRevisionSnapshot(null);
+    }
+
     setPendingRevision(null);
-  }, []);
+  }, [pendingRevision, preRevisionSnapshot, projectId, contentId, scoringInput, recordImplicitSignalMutation]);
+
+  // Reject a pending AI revision — discard + record dismissal
+  const handleRejectRevision = useCallback(() => {
+    // COACH-H-004: Record suggestion_dismissed feedback
+    if (projectId) {
+      handleSuggestionFeedback(null, 'suggestion_dismissed');
+    }
+    setPreRevisionSnapshot(null);
+    setPendingRevision(null);
+  }, [projectId, handleSuggestionFeedback]);
 
   // Undo handler: restore content to a previous snapshot
   const handleRestoreContent = useCallback(
@@ -837,7 +897,7 @@ export default function ContentEditorPage() {
                 revisedContent={pendingRevision.revisedContent}
                 previousContent={pendingRevision.previousContent}
                 suggestionTitle={pendingRevision.suggestionTitle}
-                onAccept={handleAcceptRevision}
+                onAccept={() => setShowAcceptConfirm(true)}
                 onReject={handleRejectRevision}
               />
             )}
@@ -1168,6 +1228,54 @@ export default function ContentEditorPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+      {/* FIX-002: Accept Revision Confirmation Modal */}
+      <Modal isOpen={showAcceptConfirm} onClose={() => setShowAcceptConfirm(false)} isCentered size="md">
+        <ModalOverlay bg="blackAlpha.400" backdropFilter="blur(4px)" />
+        <ModalContent bg="white" borderRadius="16px" mx={4}>
+          <ModalHeader pb={2}>
+            <HStack spacing={3}>
+              <Box bg="rgba(139, 92, 246, 0.1)" borderRadius="full" p={2}>
+                <Icon as={FiZap} color="#8B5CF6" boxSize={4} />
+              </Box>
+              <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                Apply AI Revision?
+              </Text>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody py={2}>
+            <Text color="gray.600" fontSize="sm">
+              This will replace your current content with the AI-generated version.
+            </Text>
+            <Text color="gray.400" fontSize="xs" mt={2}>
+              You can undo this action with Ctrl+Z (Cmd+Z on Mac).
+            </Text>
+          </ModalBody>
+          <ModalFooter pt={2} gap={2}>
+            <Button
+              variant="ghost"
+              color="gray.500"
+              onClick={() => setShowAcceptConfirm(false)}
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button
+              bg="linear-gradient(135deg, #8B5CF6, #7C3AED)"
+              color="white"
+              _hover={{ opacity: 0.9 }}
+              size="sm"
+              onClick={() => {
+                setShowAcceptConfirm(false);
+                handleAcceptRevision();
+              }}
+            >
+              Apply Changes
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
     </StudioLayout>
   );
 }
