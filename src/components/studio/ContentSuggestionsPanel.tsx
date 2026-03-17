@@ -9,7 +9,7 @@
  * Real-time coaching panel that analyzes SEO score breakdowns and generates
  * actionable, persona-driven writing suggestions. Updates as the user types.
  *
- * Tier 1: Deterministic rules (no AI calls)
+ * Tier 1: Deterministic rules (no AI calls) — via lib/suggestionEngine.ts
  * Tier 2: "Fix it with Phoo" buttons trigger scoped AI improvements
  */
 
@@ -45,25 +45,23 @@ import {
   FiSend,
 } from 'react-icons/fi';
 import type { SEOScoreResult } from '@/lib/seoScoring';
-import { countKeywordsUsed, INDUSTRY_READABILITY } from '@/lib/seoScoring';
+import {
+  generateSuggestions,
+  type Suggestion,
+  type SuggestionSeverity,
+  type SuggestionIconKey,
+} from '@/lib/suggestionEngine';
 
 // ============================================================================
-// Types
+// Icon + Severity Mapping (UI-only — maps engine keys to React icons)
 // ============================================================================
 
-type SuggestionSeverity = 'issue' | 'suggestion' | 'tip' | 'success';
-
-interface Suggestion {
-  id: string;
-  category: 'readability' | 'keywords' | 'structure' | 'wordcount';
-  severity: SuggestionSeverity;
-  title: string;
-  coaching: string;
-  /** AI-targeted instruction for Fix with Phoo (different from human-facing coaching) */
-  fixInstruction?: string;
-  icon: typeof FiEdit3;
-  fixable: boolean;
-}
+const ICON_MAP: Record<SuggestionIconKey, typeof FiEdit3> = {
+  edit: FiEdit3,
+  type: FiType,
+  hash: FiHash,
+  file: FiFileText,
+};
 
 interface Props {
   readonly liveScore: SEOScoreResult | null;
@@ -76,15 +74,15 @@ interface Props {
     feedbackType: 'suggestion_accepted' | 'suggestion_dismissed' | 'custom',
     customNote?: string
   ) => void;
-  /** Secure AI revision callback — calls reviseWithPersona action */
-  readonly onCustomRevision?: (instruction: string) => Promise<{ revisedContent: string; previousContent: string } | null>;
+  /** Secure AI revision callback — calls reviseWithPersona action
+   *  isPreEnhanced: skip enhanceInstruction if the instruction is already a precise fixInstruction */
+  readonly onCustomRevision?: (
+    instruction: string,
+    options?: { isPreEnhanced?: boolean }
+  ) => Promise<{ revisedContent: string; previousContent: string } | null>;
   /** Undo handler — restores content to a previous snapshot */
   readonly onRestoreContent?: (previousContent: string) => void;
 }
-
-// ============================================================================
-// Severity Styles
-// ============================================================================
 
 const SEVERITY_CONFIG: Record<
   SuggestionSeverity,
@@ -119,166 +117,6 @@ const SEVERITY_CONFIG: Record<
     label: 'Great',
   },
 };
-
-// ============================================================================
-// Suggestion Generation (Deterministic Rules)
-// ============================================================================
-
-function generateSuggestions(
-  score: SEOScoreResult,
-  content: string,
-  keywords: string[],
-  targetWordCount: number,
-  industry?: string
-): Suggestion[] {
-  const suggestions: Suggestion[] = [];
-  const { metrics } = score;
-  const wordCount = (content || '').split(/\s+/).filter((w) => w.length > 0).length;
-
-  // ── Readability (industry-calibrated) ─────────────────────────────────
-  // readabilityScore is already industry-normalized (0-100) from seoScoring.ts
-  const thresholds = INDUSTRY_READABILITY[industry || ''] || INDUSTRY_READABILITY.default;
-  const isDenseIndustry = thresholds.floor <= 35; // tech, healthcare, legal, finance
-
-  if (metrics.readabilityScore < 40) {
-    suggestions.push({
-      id: 'readability-hard',
-      category: 'readability',
-      severity: 'issue',
-      title: 'Readability needs work',
-      coaching: isDenseIndustry
-        ? 'Even for your technical audience, this is too dense. Try splitting long sentences, using bullet lists, and defining jargon on first use.'
-        : 'Your writing is dense — readers may bounce before finishing. Try splitting sentences over 20 words, swapping jargon for simpler words, and breaking up long paragraphs into 3-4 sentence chunks.',
-      fixInstruction: 'Significantly improve readability: break long sentences into shorter ones (under 20 words), replace jargon with simpler words, split long paragraphs into 3-4 sentence chunks, and add bullet lists where appropriate. Keep all the same information but make it much easier to read.',
-      icon: FiEdit3,
-      fixable: true,
-    });
-  } else if (metrics.readabilityScore < 60) {
-    suggestions.push({
-      id: 'readability-medium',
-      category: 'readability',
-      severity: 'suggestion',
-      title: isDenseIndustry ? 'Could be slightly clearer' : 'Almost readable',
-      coaching: isDenseIndustry
-        ? 'Your content is acceptably technical, but a few simpler transitions would improve flow. Your audience can handle complexity — just make sure it\'s intentional, not accidental.'
-        : 'You\'re close! A few shorter sentences and simpler word choices will make this much easier to scan. Aim for a conversational tone — write like you\'re explaining to a smart friend.',
-      fixInstruction: 'Improve readability: use shorter sentences, simpler word choices, and a more conversational tone. Write like you are explaining to a smart friend. Keep the same content but make it flow more naturally.',
-      icon: FiEdit3,
-      fixable: true,
-    });
-  } else if (metrics.readabilityScore >= 80) {
-    suggestions.push({
-      id: 'readability-great',
-      category: 'readability',
-      severity: 'success',
-      title: isDenseIndustry
-        ? 'Well-calibrated for your technical audience'
-        : 'Excellent readability',
-      coaching: isDenseIndustry
-        ? 'Your content strikes the right balance of depth and clarity for your industry.'
-        : 'Your writing flows naturally. Readers will find this easy to digest.',
-      icon: FiEdit3,
-      fixable: false,
-    });
-  }
-
-  // ── Keywords ─────────────────────────────────────────────────────
-  if (keywords.length > 0) {
-    const usedCount = countKeywordsUsed(content, keywords);
-    const missingKeywords = keywords.filter(
-      (kw) => !(content || '').toLowerCase().includes(kw.toLowerCase())
-    );
-
-    if (missingKeywords.length > 0) {
-      const severity: SuggestionSeverity =
-        missingKeywords.length > keywords.length / 2 ? 'issue' : 'suggestion';
-      suggestions.push({
-        id: 'keywords-missing',
-        category: 'keywords',
-        severity,
-        title: `${missingKeywords.length} keyword${missingKeywords.length > 1 ? 's' : ''} missing`,
-        coaching: `Weave these naturally into your writing: ${missingKeywords.slice(0, 5).map((k) => `"${k}"`).join(', ')}${missingKeywords.length > 5 ? ` and ${missingKeywords.length - 5} more` : ''}. Don't force them — find spots where they fit the flow.`,
-        fixInstruction: `Naturally weave these keywords into the content: ${missingKeywords.slice(0, 5).map((k) => `"${k}"`).join(', ')}. Add them where they fit the context naturally — in headings, topic sentences, or supporting details. Do NOT keyword-stuff. The content should read naturally.`,
-        icon: FiType,
-        fixable: true,
-      });
-    } else if (usedCount === keywords.length) {
-      suggestions.push({
-        id: 'keywords-complete',
-        category: 'keywords',
-        severity: 'success',
-        title: 'All keywords covered',
-        coaching: 'Every target keyword appears in your content. Well done.',
-        icon: FiType,
-        fixable: false,
-      });
-    }
-  }
-
-  // ── Word Count ───────────────────────────────────────────────────
-  const wordRatio = wordCount / targetWordCount;
-  if (wordRatio < 0.5) {
-    suggestions.push({
-      id: 'wordcount-low',
-      category: 'wordcount',
-      severity: 'issue',
-      title: 'Content is too short',
-      coaching: `You're at ${wordCount.toLocaleString()} words — aim for ${targetWordCount.toLocaleString()} to compete for this topic. Add depth: examples, data points, "how-to" steps, or expert quotes.`,
-      fixInstruction: `This content is only ${wordCount} words but needs to be approximately ${targetWordCount} words. Significantly expand every section with more depth, real-world examples, data points, step-by-step instructions, and expert insights. Add new subsections where needed. Add a FAQ section if one doesn't exist. The expanded content should be comprehensive and authoritative.`,
-      icon: FiFileText,
-      fixable: true,
-    });
-  } else if (wordRatio < 0.8) {
-    suggestions.push({
-      id: 'wordcount-medium',
-      category: 'wordcount',
-      severity: 'tip',
-      title: 'Almost there on word count',
-      coaching: `${(targetWordCount - wordCount).toLocaleString()} more words to hit the sweet spot. Consider expanding your weakest section or adding a FAQ.`,
-      fixInstruction: `This content needs about ${targetWordCount - wordCount} more words to reach the target of ${targetWordCount}. Expand the existing sections with more depth, add practical examples, and include a FAQ section with 3-5 common questions and detailed answers.`,
-      icon: FiFileText,
-      fixable: true,
-    });
-  } else if (wordRatio >= 1) {
-    suggestions.push({
-      id: 'wordcount-great',
-      category: 'wordcount',
-      severity: 'success',
-      title: 'Word count on target',
-      coaching: `${wordCount.toLocaleString()} words — strong depth for this topic.`,
-      icon: FiFileText,
-      fixable: false,
-    });
-  }
-
-  // ── Structure (H2s) ──────────────────────────────────────────────
-  if (metrics.h2Score < 50) {
-    suggestions.push({
-      id: 'structure-low',
-      category: 'structure',
-      severity: 'suggestion',
-      title: 'Add more sections',
-      coaching:
-        'Search engines love scannable structure. Break your content into clear H2 sections — each covering one subtopic. Aim for 5-7 sections for a comprehensive piece.',
-      fixInstruction: 'Reorganize this content into 5-7 clearly defined H2 sections, each covering a distinct subtopic. Add H3 subsections where appropriate. Make the structure scannable with clear headings that tell the reader what each section covers.',
-      icon: FiHash,
-      fixable: true,
-    });
-  } else if (metrics.structureScore < 70) {
-    suggestions.push({
-      id: 'structure-outline',
-      category: 'structure',
-      severity: 'tip',
-      title: 'Check your outline coverage',
-      coaching:
-        'Some sections from your brief outline aren\'t reflected in the content yet. Review your brief and make sure each topic is addressed.',
-      icon: FiHash,
-      fixable: false,
-    });
-  }
-
-  return suggestions;
-}
 
 // ============================================================================
 // Component
@@ -480,7 +318,7 @@ export function ContentSuggestionsPanel({
               suggestion={suggestion}
               onFeedback={onFeedback}
               onFixWithPhoo={onCustomRevision ? async (fixInstruction) => {
-                const result = await onCustomRevision(fixInstruction);
+                const result = await onCustomRevision(fixInstruction, { isPreEnhanced: true });
                 return result;
               } : undefined}
               onRestoreContent={onRestoreContent}
@@ -595,7 +433,7 @@ function SuggestionCard({ suggestion, onFeedback, onFixWithPhoo, onRestoreConten
         borderLeftColor={config.color}
       >
         <Icon
-          as={suggestion.icon}
+          as={ICON_MAP[suggestion.iconKey]}
           color={config.color}
           boxSize={4}
           mt={0.5}

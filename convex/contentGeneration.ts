@@ -401,7 +401,8 @@ export const generateContentInternal = internalAction({
       args.contentType,
       args.title,
       args.keywords,
-      personaContext
+      personaContext,
+      args.userId
     );
 
     // 3. Update with outline
@@ -434,7 +435,8 @@ export const generateContentInternal = internalAction({
         outline,
         args.keywords,
         personaContext,
-        attempt > 1 // Add quality hints on retries
+        attempt > 1, // Add quality hints on retries
+        args.userId
       );
 
       // ── Stage 2: AI Editorial Review ─────────────────────────────
@@ -444,7 +446,8 @@ export const generateContentInternal = internalAction({
         draftContent,
         args.title,
         args.keywords,
-        args.contentType
+        args.contentType,
+        args.userId
       );
 
       // ── Stage 3: AI Finalization ─────────────────────────────────
@@ -456,7 +459,8 @@ export const generateContentInternal = internalAction({
         args.title,
         args.keywords,
         args.contentType,
-        personaContext
+        personaContext,
+        args.userId
       );
 
       // Score the finalized content
@@ -556,7 +560,8 @@ export const generateContentForPiece = internalAction({
       piece.contentType,
       piece.title,
       piece.keywords || [],
-      personaContext
+      personaContext,
+      userId
     );
 
     // 4. Update with outline
@@ -588,7 +593,8 @@ export const generateContentForPiece = internalAction({
         outline,
         keywords,
         personaContext,
-        attempt > 1
+        attempt > 1,
+        userId
       );
 
       // ── Stage 2: AI Editorial Review ─────────────────────────────
@@ -598,7 +604,8 @@ export const generateContentForPiece = internalAction({
         draftContent,
         piece.title,
         keywords,
-        piece.contentType
+        piece.contentType,
+        userId
       );
 
       // ── Stage 3: AI Finalization ─────────────────────────────────
@@ -610,7 +617,8 @@ export const generateContentForPiece = internalAction({
         piece.title,
         keywords,
         piece.contentType,
-        personaContext
+        personaContext,
+        userId
       );
 
       const contentTypeConfig = CONTENT_TYPES[piece.contentType as ContentTypeId];
@@ -739,7 +747,8 @@ async function generateOutlineWithAI(
   contentType: string,
   title: string,
   keywords: string[],
-  personaContext: string = ''
+  personaContext: string = '',
+  userId?: Id<'users'>
 ): Promise<string[]> {
   const primaryKeyword = keywords[0] || 'topic';
   const targetSections = getTargetSections(contentType);
@@ -779,6 +788,8 @@ Content type: ${contentType}`;
       temperature: 0.7,
       taskType: 'analysis',
       strategy: 'best_quality',
+      enableCache: true,
+      userId,
     });
 
     // Parse response into array of section titles
@@ -805,7 +816,8 @@ async function generateFullContentWithAI(
   outline: string[],
   keywords: string[],
   personaContext: string = '',
-  enhanceQuality: boolean = false
+  enhanceQuality: boolean = false,
+  userId?: Id<'users'>
 ): Promise<string> {
   const primaryKeyword = keywords[0] || 'topic';
   const targetWords = getTargetWords(contentType);
@@ -921,6 +933,8 @@ Write the full article now, following the outline structure.`;
       temperature: enhanceQuality ? 0.6 : 0.8, // Lower temp for quality retries
       taskType: 'generation',
       strategy: 'best_quality',
+      enableCache: true,
+      userId,
     });
 
     return response.content;
@@ -953,7 +967,8 @@ async function reviewContentWithAI(
   content: string,
   title: string,
   keywords: string[],
-  contentType: string
+  contentType: string,
+  userId?: Id<'users'>
 ): Promise<string> {
   const systemPrompt = `You are a senior editorial reviewer and SEO quality analyst. Your job is to review AI-generated content and provide specific, actionable feedback.
 
@@ -1003,6 +1018,8 @@ Provide your editorial review following the checklist above.`;
       temperature: 0.3, // Low temp for consistent, analytical review
       taskType: 'analysis',
       strategy: 'best_quality',
+      enableCache: true,
+      userId,
     });
 
     return response.content;
@@ -1034,7 +1051,8 @@ async function finalizeContentWithAI(
   title: string,
   keywords: string[],
   contentType: string,
-  personaContext: string = ''
+  personaContext: string = '',
+  userId?: Id<'users'>
 ): Promise<string> {
   const primaryKeyword = keywords[0] || 'topic';
 
@@ -1081,6 +1099,8 @@ Produce the final, publication-ready version now.`;
       temperature: 0.5, // Balanced: creative enough to improve, consistent enough to not diverge
       taskType: 'generation',
       strategy: 'best_quality',
+      enableCache: true,
+      userId,
     });
 
     return response.content;

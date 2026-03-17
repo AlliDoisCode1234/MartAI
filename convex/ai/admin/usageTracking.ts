@@ -6,8 +6,7 @@
  */
 
 import { v } from 'convex/values';
-import { internalMutation, query, QueryCtx } from '../../_generated/server';
-import { Id } from '../../_generated/dataModel';
+import { internalMutation, query } from '../../_generated/server';
 
 // Model cost rates per 1K tokens (in USD)
 const MODEL_COSTS: Record<string, { input: number; output: number }> = {
@@ -26,13 +25,33 @@ const MODEL_COSTS: Record<string, { input: number; output: number }> = {
 };
 
 /**
- * Calculate cost in USD from token usage
+ * Calculate cost in USD from token usage (cache-aware)
  */
-function calculateCost(model: string, inputTokens: number, outputTokens: number): number {
-  const rates = MODEL_COSTS[model] || { input: 0.001, output: 0.002 }; // Default fallback
-  const inputCost = (inputTokens / 1000) * rates.input;
+function calculateCost(
+  model: string,
+  inputTokens: number,
+  outputTokens: number,
+  cachedTokens: number = 0,
+  cacheCreationTokens: number = 0
+): number {
+  const rates = MODEL_COSTS[model] || { input: 0.001, output: 0.002 };
+
+  // Uncached input tokens at full price
+  const uncachedInputTokens = Math.max(0, inputTokens - cachedTokens - cacheCreationTokens);
+  const inputCost = (uncachedInputTokens / 1000) * rates.input;
+
+  // Cache reads: Anthropic = 10% of input price, OpenAI = 50%, Google = implicit (free)
+  let cacheReadDiscount = 0.5; // default (OpenAI)
+  if (model.startsWith('claude')) cacheReadDiscount = 0.1;
+  else if (model.startsWith('gemini')) cacheReadDiscount = 0;
+  const cacheCost = (cachedTokens / 1000) * rates.input * cacheReadDiscount;
+
+  // Cache writes: Anthropic = 125% of input price, others = free
+  const cacheWriteMultiplier = model.startsWith('claude') ? 1.25 : 1.0;
+  const cacheWriteCost = (cacheCreationTokens / 1000) * rates.input * cacheWriteMultiplier;
+
   const outputCost = (outputTokens / 1000) * rates.output;
-  return Math.round((inputCost + outputCost) * 1000000) / 1000000; // 6 decimal precision
+  return Math.round((inputCost + cacheCost + cacheWriteCost + outputCost) * 1000000) / 1000000;
 }
 
 /**
@@ -55,10 +74,14 @@ export const recordUsage = internalMutation({
     taskType: v.string(),
     inputTokens: v.number(),
     outputTokens: v.number(),
+    cachedTokens: v.optional(v.number()),
+    cacheCreationTokens: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const dateKey = getDateKey();
-    const cost = calculateCost(args.model, args.inputTokens, args.outputTokens);
+    const cachedTokens = args.cachedTokens || 0;
+    const cacheCreationTokens = args.cacheCreationTokens || 0;
+    const cost = calculateCost(args.model, args.inputTokens, args.outputTokens, cachedTokens, cacheCreationTokens);
     const now = Date.now();
 
     // Try to find existing aggregation record for this user/project/provider/model/day
@@ -85,6 +108,8 @@ export const recordUsage = internalMutation({
         outputTokens: existing.outputTokens + args.outputTokens,
         totalTokens: existing.totalTokens + args.inputTokens + args.outputTokens,
         costUsd: existing.costUsd + cost,
+        cachedTokens: (existing.cachedTokens || 0) + cachedTokens,
+        cacheCreationTokens: (existing.cacheCreationTokens || 0) + cacheCreationTokens,
         taskBreakdown: {
           ...taskBreakdown,
           [args.taskType]: taskCount,
@@ -106,6 +131,8 @@ export const recordUsage = internalMutation({
         outputTokens: args.outputTokens,
         totalTokens: args.inputTokens + args.outputTokens,
         costUsd: cost,
+        cachedTokens,
+        cacheCreationTokens,
         taskBreakdown: {
           [args.taskType]: 1,
         },
@@ -240,3 +267,123 @@ export const getDailyCostTrend = query({
     return trend;
   },
 });
+
+/**
+ * Get prompt cache savings summary (for admin dashboard card)
+ */
+export const getCacheSavingsSummary = query({
+  args: {},
+  handler: async (ctx) => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startDateKey = startOfMonth.toISOString().split('T')[0];
+
+    const allUsage = await ctx.db.query('aiUsage').collect();
+    const monthlyUsage = allUsage.filter((u) => u.dateKey >= startDateKey);
+
+    let totalCachedTokens = 0;
+    let totalCacheCreationTokens = 0;
+    let totalInputTokens = 0;
+    let estimatedSavingsUsd = 0;
+
+    for (const usage of monthlyUsage) {
+      const cached = usage.cachedTokens || 0;
+      const cacheCreation = usage.cacheCreationTokens || 0;
+      totalCachedTokens += cached;
+      totalCacheCreationTokens += cacheCreation;
+      totalInputTokens += usage.inputTokens;
+
+      // Estimate savings: what we would have paid at full price vs what we actually paid
+      if (cached > 0) {
+        const rates = MODEL_COSTS[usage.model] || { input: 0.001 };
+        const fullPriceCost = (cached / 1000) * rates.input;
+
+        // Provider-specific cache discount
+        let discount = 0.5; // OpenAI default
+        if (usage.model.startsWith('claude')) discount = 0.1;
+        else if (usage.model.startsWith('gemini')) discount = 0;
+
+        const actualCost = (cached / 1000) * rates.input * discount;
+        estimatedSavingsUsd += fullPriceCost - actualCost;
+      }
+    }
+
+    const cacheHitRate =
+      totalInputTokens > 0 ? Math.round((totalCachedTokens / totalInputTokens) * 100) : 0;
+
+    return {
+      totalCachedTokens,
+      totalCacheCreationTokens,
+      totalInputTokens,
+      cacheHitRate, // Percentage of input tokens served from cache
+      estimatedSavingsUsd: Math.round(estimatedSavingsUsd * 100) / 100,
+      startDate: startDateKey,
+    };
+  },
+});
+
+/**
+ * FIX-003: Get AI cost per user for current month (for admin dashboard)
+ *
+ * Aggregates aiUsage by userId → returns avg cost per active AI user,
+ * plus top 5 users by cost. Enables CAC vs AI spend comparison.
+ */
+export const getCostPerUser = query({
+  args: {},
+  handler: async (ctx) => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startDateKey = startOfMonth.toISOString().split('T')[0];
+
+    const allUsage = await ctx.db.query('aiUsage').collect();
+    const monthlyUsage = allUsage.filter((u) => u.dateKey >= startDateKey);
+
+    // Group by userId
+    const byUser: Record<string, { cost: number; tokens: number; requests: number }> = {};
+
+    for (const usage of monthlyUsage) {
+      const uid = usage.userId;
+      if (!byUser[uid]) {
+        byUser[uid] = { cost: 0, tokens: 0, requests: 0 };
+      }
+      byUser[uid].cost += usage.costUsd;
+      byUser[uid].tokens += usage.totalTokens;
+      byUser[uid].requests += usage.requestCount;
+    }
+
+    const activeUsers = Object.keys(byUser).length;
+    const totalCost = Object.values(byUser).reduce((sum, u) => sum + u.cost, 0);
+    const avgCostPerUser = activeUsers > 0 ? totalCost / activeUsers : 0;
+
+    // Top 5 users by cost (fetch email for admin identification)
+    const sorted = Object.entries(byUser)
+      .sort(([, a], [, b]) => b.cost - a.cost)
+      .slice(0, 5);
+
+    const topUsers = await Promise.all(
+      sorted.map(async ([userId, data]) => {
+        // Query users table directly to avoid union-type issues with ctx.db.get()
+        const user = await ctx.db
+          .query('users')
+          .filter((q) => q.eq(q.field('_id'), userId))
+          .first();
+        return {
+          userId,
+          email: user?.email ?? 'unknown',
+          cost: Math.round(data.cost * 100) / 100,
+          tokens: data.tokens,
+          requests: data.requests,
+        };
+      })
+    );
+
+    return {
+      avgCostPerUser: Math.round(avgCostPerUser * 100) / 100,
+      activeAIUsers: activeUsers,
+      totalCost: Math.round(totalCost * 100) / 100,
+      topUsers,
+      startDate: startDateKey,
+    };
+  },
+});
+

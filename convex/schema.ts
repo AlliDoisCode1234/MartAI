@@ -1408,6 +1408,9 @@ export default defineSchema({
     outputTokens: v.number(),
     totalTokens: v.number(),
     costUsd: v.number(), // Accumulated cost in USD
+    // Prompt caching metrics
+    cachedTokens: v.optional(v.number()), // Tokens served from cache (reduced cost)
+    cacheCreationTokens: v.optional(v.number()), // Tokens written to cache (first call)
     // Task breakdown
     taskBreakdown: v.optional(
       v.object({
@@ -1415,6 +1418,9 @@ export default defineSchema({
         brief: v.optional(v.number()),
         draft: v.optional(v.number()),
         embeddings: v.optional(v.number()),
+        analysis: v.optional(v.number()),
+        generation: v.optional(v.number()),
+        structured: v.optional(v.number()),
         other: v.optional(v.number()),
       })
     ),

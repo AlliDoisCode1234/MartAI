@@ -65,21 +65,42 @@ export class AnthropicProvider implements AIProvider {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     try {
+      // Build system prompt with optional cache control
+      let systemContent: string | Array<{ type: 'text'; text: string; cache_control?: { type: 'ephemeral' } }> | undefined;
+      if (request.systemPrompt) {
+        systemContent = request.enableCache
+          ? [{ type: 'text' as const, text: request.systemPrompt, cache_control: { type: 'ephemeral' as const } }]
+          : request.systemPrompt;
+      }
+
       const result = await client.messages.create({
         model: modelId,
         max_tokens: request.maxTokens || 4096,
-        system: request.systemPrompt,
+        system: systemContent,
         messages: [{ role: 'user', content: request.prompt }],
       });
 
       const textBlock = result.content.find((c) => c.type === 'text');
 
+      // Extract cache metrics from Anthropic response
+      const usage = result.usage as unknown as Record<string, number>;
+      const cachedTokens = usage.cache_read_input_tokens || 0;
+      const cacheCreationTokens = usage.cache_creation_input_tokens || 0;
+
+      if (cachedTokens > 0) {
+        console.log(
+          `[Anthropic] CACHE HIT: ${cachedTokens}/${usage.input_tokens} tokens cached (${modelId})`
+        );
+      }
+
       return {
         content: textBlock?.text || '',
         usage: {
-          promptTokens: result.usage.input_tokens,
-          completionTokens: result.usage.output_tokens,
-          totalTokens: result.usage.input_tokens + result.usage.output_tokens,
+          promptTokens: usage.input_tokens,
+          completionTokens: usage.output_tokens,
+          totalTokens: usage.input_tokens + usage.output_tokens,
+          cachedTokens,
+          cacheCreationTokens,
         },
         finishReason: result.stop_reason === 'end_turn' ? 'stop' : 'length',
         latencyMs: Date.now() - startTime,

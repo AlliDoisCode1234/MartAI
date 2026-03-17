@@ -22,7 +22,8 @@ import {
   StatNumber,
   StatHelpText,
 } from '@chakra-ui/react';
-import { FiDollarSign, FiCpu, FiActivity, FiTrendingUp } from 'react-icons/fi';
+import { FiDollarSign, FiCpu, FiActivity, FiTrendingUp, FiUser } from 'react-icons/fi';
+import { CacheSavingsCard } from './CacheSavingsCard';
 
 interface Props {
   budget?: number; // Optional monthly budget in USD
@@ -47,6 +48,7 @@ export function AICostDashboard({ budget = 200 }: Props) {
   const dailyTrend = useQuery(api.ai.admin.usageTracking.getDailyCostTrend, { days: 7 }) as
     | DayCost[]
     | undefined;
+  const costPerUser = useQuery(api.ai.admin.usageTracking.getCostPerUser, {});
 
   if (!monthlySummary) {
     return (
@@ -154,6 +156,20 @@ export function AICostDashboard({ budget = 200 }: Props) {
           </StatNumber>
           <StatHelpText color="gray.500">Per request</StatHelpText>
         </Stat>
+
+        <Stat>
+          <StatLabel color="gray.400">
+            <Flex align="center" gap={1}>
+              <FiUser /> Cost / User
+            </Flex>
+          </StatLabel>
+          <StatNumber color="white" fontSize="2xl">
+            ${costPerUser?.avgCostPerUser.toFixed(2) ?? '0.00'}
+          </StatNumber>
+          <StatHelpText color="gray.500">
+            {costPerUser?.activeAIUsers ?? 0} active users
+          </StatHelpText>
+        </Stat>
       </SimpleGrid>
 
       {/* Cost by Provider */}
@@ -220,6 +236,11 @@ export function AICostDashboard({ budget = 200 }: Props) {
           </Flex>
         </Box>
       )}
+
+      {/* Prompt Cache Savings */}
+      <Box mt={4}>
+        <CacheSavingsCard compact />
+      </Box>
     </Box>
   );
 }

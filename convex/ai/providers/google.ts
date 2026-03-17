@@ -80,12 +80,21 @@ export class GoogleProvider implements AIProvider {
       const result = await chat.sendMessage(request.prompt);
       const response = result.response;
 
+      const cachedTokens = (response.usageMetadata as any)?.cachedContentTokenCount || 0;
+
+      if (cachedTokens > 0) {
+        console.log(
+          `[Google] CACHE HIT: ${cachedTokens}/${response.usageMetadata?.promptTokenCount || 0} tokens cached (${modelId})`
+        );
+      }
+
       return {
         content: response.text(),
         usage: {
           promptTokens: response.usageMetadata?.promptTokenCount || 0,
           completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
           totalTokens: response.usageMetadata?.totalTokenCount || 0,
+          cachedTokens,
         },
         finishReason: 'stop',
         latencyMs: Date.now() - startTime,
