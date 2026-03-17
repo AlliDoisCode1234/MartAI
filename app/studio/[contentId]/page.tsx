@@ -180,6 +180,17 @@ export default function ContentEditorPage() {
   const isSavingRef = useRef(false);
   const latestContentRef = useRef('');
 
+  // ── SEO Scoring Input (hoisted above useCallbacks that depend on it) ──
+  const scoringInput = useMemo(
+    () => ({
+      outline: contentPiece?.h2Outline || [],
+      keywords: contentPiece?.keywords || [],
+      targetWordCount: TARGET_WORD_COUNT,
+      industry: project?.industry,
+    }),
+    [contentPiece?.h2Outline, contentPiece?.keywords, project?.industry]
+  );
+
   // WordPress publishing
   const { isOpen: isWpModalOpen, onOpen: onWpModalOpen, onClose: onWpModalClose } = useDisclosure();
   const [isPublishingToWp, setIsPublishingToWp] = useState(false);
@@ -347,16 +358,6 @@ export default function ContentEditorPage() {
   }, [contentPiece?.content]);
 
   // ── Real-Time SEO Scoring (300ms debounce) ───────────────────────
-  const scoringInput = useMemo(
-    () => ({
-      outline: contentPiece?.h2Outline || [],
-      keywords: contentPiece?.keywords || [],
-      targetWordCount: TARGET_WORD_COUNT,
-      industry: project?.industry,
-    }),
-    [contentPiece?.h2Outline, contentPiece?.keywords, project?.industry]
-  );
-
   useEffect(() => {
     if (!content) {
       setLiveScore(null);
