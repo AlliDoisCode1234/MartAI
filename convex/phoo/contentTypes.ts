@@ -515,16 +515,28 @@ Return JSON: { blogContent, videoScript, metaDescription, faqs: [{question, answ
 };
 
 // ============================================================================
+// Launch Gating
+// ============================================================================
+
+import { BLOG_ONLY_MODE, LAUNCH_CONTENT_TYPES } from '../../lib/constants/featureFlags';
+
+// ============================================================================
 // Queries
 // ============================================================================
 
 /**
- * Get all content types
+ * Get all content types (filtered by launch mode)
  */
 export const getAllContentTypes = query({
   args: {},
   handler: async () => {
-    return Object.values(CONTENT_TYPES);
+    const allTypes = Object.values(CONTENT_TYPES);
+    if (BLOG_ONLY_MODE) {
+      return allTypes.filter((t) =>
+        (LAUNCH_CONTENT_TYPES as readonly string[]).includes(t.id)
+      );
+    }
+    return allTypes;
   },
 });
 
@@ -541,11 +553,17 @@ export const getContentType = query({
 });
 
 /**
- * Get content types by priority (for calendar generation)
+ * Get content types by priority (for calendar generation, filtered by launch mode)
  */
 export const getContentTypesByPriority = internalQuery({
   args: {},
   handler: async () => {
-    return Object.values(CONTENT_TYPES).sort((a, b) => a.priority - b.priority);
+    const allTypes = Object.values(CONTENT_TYPES).sort((a, b) => a.priority - b.priority);
+    if (BLOG_ONLY_MODE) {
+      return allTypes.filter((t) =>
+        (LAUNCH_CONTENT_TYPES as readonly string[]).includes(t.id)
+      );
+    }
+    return allTypes;
   },
 });

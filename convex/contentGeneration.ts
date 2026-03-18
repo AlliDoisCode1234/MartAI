@@ -149,12 +149,27 @@ export const autoGenerateContent = action({
     let resolvedTitle = args.title?.trim() || '';
 
     if (!resolvedTitle) {
+      // Fetch existing titles to avoid duplicates
+      let existingTitles: string[] = [];
+      try {
+        existingTitles = await ctx.runQuery(
+          internal.contentGeneration.getExistingTitles,
+          { projectId }
+        ) as string[];
+      } catch {
+        // Non-blocking
+      }
+
+      const dedupClause = existingTitles.length > 0
+        ? `\n\nCRITICAL: NEVER generate a title that matches or closely resembles any of these existing titles:\n${existingTitles.map((t) => `- "${t}"`).join('\n')}\nYour title MUST be completely different from all of the above.`
+        : '';
+
       try {
         const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
           prompt: `Generate 1 engaging, SEO-optimized ${contentType} title about: "${primaryKeyword}"`,
-          systemPrompt: `You are an expert SEO content strategist. Generate exactly 1 compelling, click-worthy title for a ${contentType} about "${primaryKeyword}". Requirements: include the keyword, 50-65 characters, use a proven headline formula. Respond with ONLY the title, nothing else.`,
+          systemPrompt: `You are an expert SEO content strategist. Generate exactly 1 compelling, click-worthy title for a ${contentType} about "${primaryKeyword}". Requirements: include the keyword, 50-65 characters, use a proven headline formula. Respond with ONLY the title, nothing else.${dedupClause}`,
           maxTokens: 100,
-          temperature: 0.7,
+          temperature: 0.9,
           taskType: 'analysis',
           strategy: 'balanced',
         });
@@ -169,7 +184,8 @@ export const autoGenerateContent = action({
       }
 
       if (!resolvedTitle) {
-        resolvedTitle = `The Complete Guide to ${primaryKeyword}`;
+        const suffix = existingTitles.length > 0 ? ` (${new Date().getFullYear()})` : '';
+        resolvedTitle = `The Complete Guide to ${primaryKeyword}${suffix}`;
       }
     }
 
@@ -261,6 +277,21 @@ export const generateContentTitle = action({
       ? `\n\nBRAND CONTEXT:\n${personaContext}\nApply the brand voice to your titles.`
       : '';
 
+    // Fetch existing titles to prevent duplicates
+    let existingTitles: string[] = [];
+    try {
+      existingTitles = await ctx.runQuery(
+        internal.contentGeneration.getExistingTitles,
+        { projectId: args.projectId }
+      ) as string[];
+    } catch {
+      // Non-blocking
+    }
+
+    const dedupClause = existingTitles.length > 0
+      ? `\n\nCRITICAL: NEVER generate a title that matches or closely resembles any of these existing titles:\n${existingTitles.map((t) => `- "${t}"`).join('\n')}\nAll 5 titles MUST be completely different from the above.`
+      : '';
+
     const systemPrompt = `You are an expert SEO content strategist. Generate exactly 5 engaging, click-worthy, SEO-optimized titles for a ${args.contentType} article about the keyword "${args.keyword}".
 
 Requirements:
@@ -269,7 +300,7 @@ Requirements:
 - Use proven headline formulas (How-to, Listicle, Question, Guide, Ultimate)
 - Vary the style across all 5 titles
 - Prioritize search intent match over cleverness
-${personaInstructions}
+${personaInstructions}${dedupClause}
 
 Respond with ONLY the 5 titles, one per line. No numbering, no explanations, just the titles.`;
 
@@ -304,6 +335,72 @@ Respond with ONLY the 5 titles, one per line. No numbering, no explanations, jus
         `How to Master ${args.keyword} in ${new Date().getFullYear()}`,
         `${args.keyword}: Everything You Need to Know`,
       ];
+    }
+  },
+});
+
+// ============================================================================
+// AI Keyword Suggestion — Field-Level Assist
+// ============================================================================
+
+/**
+ * Suggest SEO keyword clusters for a project.
+ * Uses project industry context to generate relevant keywords.
+ * Returns comma-separated keyword string ready for the UI.
+ */
+export const suggestKeywords = action({
+  args: {
+    projectId: v.id('projects'),
+    topic: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<string> => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    // Get project context for industry-aware suggestions
+    let industry = 'digital marketing';
+    try {
+      const project = await ctx.runQuery(internal.contentGeneration.getProjectForAutoGen, {
+        projectId: args.projectId,
+      });
+      industry = project?.industry || industry;
+    } catch {
+      // Use default
+    }
+
+    const topicHint = args.topic?.trim()
+      ? `Focus on the topic: "${args.topic}".`
+      : '';
+
+    const systemPrompt = `You are an SEO keyword strategist. Suggest 5-8 high-value, long-tail keywords for a ${industry} business.
+${topicHint}
+
+Requirements:
+- Mix of informational and commercial intent
+- Include long-tail variations (3-5 words)
+- Focus on topics with realistic ranking potential
+- Consider search volume and competition balance
+
+Respond with ONLY the keywords, one per line. No numbering, no explanations, no metrics.`;
+
+    try {
+      const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
+        prompt: `Suggest 5-8 SEO keywords for a ${industry} business${args.topic ? ` about "${args.topic}"` : ''}`,
+        systemPrompt,
+        maxTokens: 200,
+        temperature: 0.8,
+        taskType: 'analysis',
+        strategy: 'balanced',
+      });
+
+      const keywords = response.content
+        .split('\n')
+        .map((k: string) => k.trim().replace(/^[-•*\d.]+\s*/, ''))
+        .filter((k: string) => k.length > 2 && k.length < 60);
+
+      return keywords.slice(0, 8).join(', ');
+    } catch {
+      return `${industry} best practices, ${industry} tips, ${industry} guide`;
     }
   },
 });
@@ -366,22 +463,15 @@ export const generateContentInternal = internalAction({
             tierLimit.period === HOUR ? 'hour' : 'day'
           }. Please upgrade or wait.`
         );
-      }
-      // Re-throw unexpected errors (DB failures, config issues) unmolested
-      throw error;
-    }
-
-    // Get or create Writer Persona for this project
-    const persona = await ctx.runMutation(
-      internal.ai.writerPersonas.index.getOrCreatePersonaInternal,
-      {
-        projectId: args.projectId,
-        userId,
-      }
-    );
-
-    // Build persona context for prompt injection
+      }    // Build persona context for prompt injection
     const personaContext = persona ? buildPersonaContext(persona) : '';
+
+    // Fetch project name for brand protection rules
+    const project = await ctx.runQuery(
+      internal.contentGeneration.getProjectForAutoGen,
+      { projectId: args.projectId }
+    );
+    const brandName = project?.name || 'our brand';
 
     // 1. Create content piece with "generating" status
     const contentPieceId: Id<'contentPieces'> = await ctx.runMutation(
@@ -426,7 +516,19 @@ export const generateContentInternal = internalAction({
       attempt++;
       console.log(`[ContentGeneration] Pipeline attempt ${attempt}/${MAX_GENERATION_ATTEMPTS}`);
 
-      // ── Stage 1: Content Creation ────────────────────────────────
+      // ── Stage 1: Content Creation ──────────────────────────────
+      console.log(`[ContentGeneration] Stage 1: Creating draft...`);
+      const draftContent = await generateFullContentWithAI(
+        ctx,
+        args.contentType,
+        args.title,
+        outline,
+        args.keywords,
+        personaContext,
+        attempt > 1, // Add quality hints on retries
+        args.userId,
+        brandName
+      );��─────────────────────────
       console.log(`[ContentGeneration] Stage 1: Creating draft...`);
       const draftContent = await generateFullContentWithAI(
         ctx,
@@ -817,7 +919,8 @@ async function generateFullContentWithAI(
   keywords: string[],
   personaContext: string = '',
   enhanceQuality: boolean = false,
-  userId?: Id<'users'>
+  userId?: Id<'users'>,
+  brandName: string = 'our brand'
 ): Promise<string> {
   const primaryKeyword = keywords[0] || 'topic';
   const targetWords = getTargetWords(contentType);
@@ -843,28 +946,33 @@ CRITICAL - CONTENT UNIQUENESS RULES:
 - Every paragraph must add NEW information the reader hasn't seen earlier in the article
 
 BRAND PROTECTION RULES (NON-NEGOTIABLE — VIOLATION = INSTANT REJECTION):
-This content is published on the USER'S OWN WEBSITE. The user's brand MUST WIN. ALWAYS.
+This content is published on ${brandName}'s OWN WEBSITE. ${brandName} MUST WIN. ALWAYS.
+
+BRAND IDENTITY:
+- The client's brand name is: "${brandName}"
+- You are writing FOR ${brandName} — they are YOUR client, YOUR employer.
+- Every piece of content must make ${brandName} look like the BEST option in their space.
 
 HARD RULES:
-- The user's brand/product MUST be positioned as the SUPERIOR choice in EVERY section, EVERY comparison, and EVERY conclusion.
-- Competitors should be acknowledged briefly but ALWAYS shown as inferior, limited, or outdated compared to the user's brand.
-- The CONCLUSION MUST recommend the user's brand as the best choice. No exceptions.
-- NEVER use phrases like "[Competitor] is better for...", "[Competitor] excels at...", "[Competitor] leads the pack", "[Competitor] is the superior choice"
-- NEVER position the user's brand as "simpler", "more basic", or "less capable" than a competitor.
-- In comparison articles, the user's brand gets MORE positive coverage (60%+ of the article) and the competitor gets brief, factual mentions.
-- Frame competitor features as "basic" or "expected" while the user's features are "innovative", "advanced", or "game-changing".
-- If comparing pricing, the user's offering is ALWAYS better value, never "more expensive".
+- ${brandName} MUST be positioned as the SUPERIOR choice in EVERY section, EVERY comparison, and EVERY conclusion.
+- Competitors should be acknowledged briefly but ALWAYS shown as inferior, limited, or outdated compared to ${brandName}.
+- The CONCLUSION MUST recommend ${brandName} as the best choice. No exceptions.
+- NEVER use phrases like "[Competitor] is better than ${brandName}", "[Competitor] excels over ${brandName}", "[Competitor] leads the pack", "[Competitor] is the superior choice"
+- NEVER position ${brandName} as "simpler", "more basic", or "less capable" than a competitor.
+- In comparison articles, ${brandName} gets MORE positive coverage (60%+ of the article) and the competitor gets brief, factual mentions.
+- Frame competitor features as "basic" or "expected" while ${brandName}'s features are "innovative", "advanced", or "game-changing".
+- If comparing pricing, ${brandName}'s offering is ALWAYS better value, never "more expensive".
 
 EXAMPLES OF FORBIDDEN PATTERNS:
-- BAD: "SEMrush leads the pack with advanced features" → GOOD: "While SEMrush offers standard features, [User's Brand] goes further with AI-driven automation"
-- BAD: "SEMrush emerges as the superior choice" → GOOD: "[User's Brand] emerges as the smarter, more innovative choice"
-- BAD: "If you need depth, choose SEMrush" → GOOD: "[User's Brand] delivers both depth AND simplicity—the best of both worlds"
+- BAD: "SEMrush leads the pack with advanced features" → GOOD: "While SEMrush offers standard features, ${brandName} goes further with AI-driven automation"
+- BAD: "SEMrush emerges as the superior choice" → GOOD: "${brandName} emerges as the smarter, more innovative choice"
+- BAD: "If you need depth, choose SEMrush" → GOOD: "${brandName} delivers both depth AND simplicity—the best of both worlds"
 
 BRAND SAFETY CHECKLIST (verify before submitting):
-1. Does the conclusion recommend the user's brand? If not, REWRITE.
-2. Is any competitor called "superior", "better", or "leading"? If yes, REWRITE.
-3. Does the user's brand get the most positive coverage? If not, REWRITE.
-4. Would a reader finish this article wanting to buy FROM the user? If not, REWRITE.`;
+1. Does the conclusion recommend ${brandName}? If not, REWRITE.
+2. Is any competitor called "superior", "better", or "leading" over ${brandName}? If yes, REWRITE.
+3. Does ${brandName} get the most positive coverage? If not, REWRITE.
+4. Would a reader finish this article wanting to buy FROM ${brandName}? If not, REWRITE.`;
 
   // Extra boost for retry attempts
   const retryBoost = enhanceQuality
@@ -1420,6 +1528,18 @@ export const getProjectForAutoGen = internalQuery({
       industry: project.industry,
       name: project.name,
     };
+  },
+});
+
+/** Get existing content titles for a project — used to prevent AI from generating duplicates. */
+export const getExistingTitles = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const pieces = await ctx.db
+      .query('contentPieces')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .collect();
+    return pieces.map((p) => p.title).filter(Boolean);
   },
 });
 

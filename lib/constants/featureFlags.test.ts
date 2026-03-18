@@ -14,7 +14,15 @@ import {
   LAUNCHED_PRICING_HREF,
   BYPASS_PAYMENT,
   DEBUG_ONBOARDING,
+  BLOG_ONLY_MODE,
+  LAUNCH_CONTENT_TYPES,
 } from './featureFlags';
+import {
+  ENABLED_CONTENT_TYPE_IDS,
+  getEnabledContentTypes,
+  getEnabledContentTypesByCategory,
+  CONTENT_TYPE_IDS,
+} from './contentTypes';
 
 // ============================================================================
 // IS_LAUNCHED Contract
@@ -152,27 +160,94 @@ describe('HREF constant safety', () => {
   const allHrefs = [BETA_JOIN_HREF, LAUNCHED_SIGNUP_HREF, LAUNCHED_PRICING_HREF];
 
   it('no HREF contains javascript: protocol', () => {
-    allHrefs.forEach((href) => {
+    for (const href of allHrefs) {
       expect(href.toLowerCase()).not.toContain('javascript:');
-    });
+    }
   });
 
   it('no HREF contains data: protocol', () => {
-    allHrefs.forEach((href) => {
+    for (const href of allHrefs) {
       expect(href.toLowerCase()).not.toContain('data:');
-    });
+    }
   });
 
   it('no HREF starts with protocol-relative //', () => {
-    allHrefs.forEach((href) => {
+    for (const href of allHrefs) {
       expect(href.startsWith('//')).toBe(false);
-    });
+    }
   });
 
   it('all HREFs are relative paths', () => {
-    allHrefs.forEach((href) => {
+    for (const href of allHrefs) {
       expect(href.startsWith('/')).toBe(true);
       expect(href).not.toMatch(/^https?:/);
-    });
+    }
+  });
+});
+
+// ============================================================================
+// BLOG_ONLY_MODE — Content Type Feature Flag
+// ============================================================================
+
+describe('BLOG_ONLY_MODE feature flag', () => {
+  it('is a boolean value', () => {
+    expect(typeof BLOG_ONLY_MODE).toBe('boolean');
+  });
+
+  it('is currently set to true (launch mode)', () => {
+    // TODO: Update this test when expanding content types post-launch
+    expect(BLOG_ONLY_MODE).toBe(true);
+  });
+});
+
+describe('LAUNCH_CONTENT_TYPES', () => {
+  it('is a non-empty array', () => {
+    expect(Array.isArray(LAUNCH_CONTENT_TYPES)).toBe(true);
+    expect(LAUNCH_CONTENT_TYPES.length).toBeGreaterThan(0);
+  });
+
+  it('contains only "blog" at launch', () => {
+    expect(LAUNCH_CONTENT_TYPES).toEqual(['blog']);
+  });
+
+  it('every entry is a valid ContentTypeId', () => {
+    for (const id of LAUNCH_CONTENT_TYPES) {
+      expect(CONTENT_TYPE_IDS).toContain(id);
+    }
+  });
+});
+
+describe('Content type gating helpers', () => {
+  it('ENABLED_CONTENT_TYPE_IDS contains only blog when BLOG_ONLY_MODE is true', () => {
+    if (BLOG_ONLY_MODE) {
+      expect(ENABLED_CONTENT_TYPE_IDS).toEqual(['blog']);
+    } else {
+      expect(ENABLED_CONTENT_TYPE_IDS.length).toBe(17);
+    }
+  });
+
+  it('getEnabledContentTypes returns only blog configs', () => {
+    const enabled = getEnabledContentTypes();
+    if (BLOG_ONLY_MODE) {
+      expect(enabled.length).toBe(1);
+      expect(enabled[0].id).toBe('blog');
+    } else {
+      expect(enabled.length).toBe(17);
+    }
+  });
+
+  it('getEnabledContentTypesByCategory returns only Blog Content category', () => {
+    const grouped = getEnabledContentTypesByCategory();
+    if (BLOG_ONLY_MODE) {
+      const categories = Object.keys(grouped);
+      expect(categories.length).toBe(1);
+      expect(categories[0]).toBe('Blog Content');
+      expect(grouped['Blog Content'].length).toBe(1);
+    }
+  });
+
+  it('full registry still has all 17 types (data is preserved)', () => {
+    // The registry is not modified, only the filter
+    expect(CONTENT_TYPE_IDS.length).toBe(17);
   });
 });
