@@ -405,17 +405,18 @@ Respond with ONLY the keywords, one per line. No numbering, no explanations, no 
   },
 });
 
-export const generateContentInternal = internalAction({
+export const generateContentInternalHandler = async (
+  ctx: ActionCtx,
   args: {
-    projectId: v.id('projects'),
-    contentType: contentTypeValidator,
-    title: v.string(),
-    keywords: v.array(v.string()),
-    clusterId: v.optional(v.id('keywordClusters')),
-    userId: v.id('users'),
-  },
-  handler: async (ctx, args) => {
-    const { userId } = args;
+    projectId: Id<'projects'>;
+    contentType: ContentTypeId;
+    title: string;
+    keywords: string[];
+    clusterId?: Id<'keywordClusters'>;
+    userId: Id<'users'>;
+  }
+) => {
+  const { userId } = args;
 
     // 1. Fetch user to determine rate limit tier
     const user = await ctx.runQuery(internal.users.getUser, { userId });
@@ -463,15 +464,17 @@ export const generateContentInternal = internalAction({
             tierLimit.period === HOUR ? 'hour' : 'day'
           }. Please upgrade or wait.`
         );
-      }    // Build persona context for prompt injection
-    const personaContext = persona ? buildPersonaContext(persona) : '';
+      }
+      throw error; // Re-throw if it's not a rate limit error
+    }
 
-    // Fetch project name for brand protection rules
+    // Fetch project context for brand protection & persona
     const project = await ctx.runQuery(
       internal.contentGeneration.getProjectForAutoGen,
       { projectId: args.projectId }
     );
     const brandName = project?.name || 'our brand';
+    const personaContext = project ? buildPersonaContext(project as any) : '';
 
     // 1. Create content piece with "generating" status
     const contentPieceId: Id<'contentPieces'> = await ctx.runMutation(
@@ -528,17 +531,6 @@ export const generateContentInternal = internalAction({
         attempt > 1, // Add quality hints on retries
         args.userId,
         brandName
-      );��─────────────────────────
-      console.log(`[ContentGeneration] Stage 1: Creating draft...`);
-      const draftContent = await generateFullContentWithAI(
-        ctx,
-        args.contentType,
-        args.title,
-        outline,
-        args.keywords,
-        personaContext,
-        attempt > 1, // Add quality hints on retries
-        args.userId
       );
 
       // ── Stage 2: AI Editorial Review ─────────────────────────────
@@ -549,7 +541,8 @@ export const generateContentInternal = internalAction({
         args.title,
         args.keywords,
         args.contentType,
-        args.userId
+        args.userId,
+        brandName
       );
 
       // ── Stage 3: AI Finalization ─────────────────────────────────
@@ -609,12 +602,22 @@ export const generateContentInternal = internalAction({
       generationAttempts: attempt,
       status: 'draft',
     });
-
     console.log(
       `[ContentGeneration] Complete. Final score: ${bestScore} after ${attempt} attempt(s)`
     );
     return contentPieceId;
+};
+
+export const generateContentInternal = internalAction({
+  args: {
+    projectId: v.id('projects'),
+    contentType: contentTypeValidator,
+    title: v.string(),
+    keywords: v.array(v.string()),
+    clusterId: v.optional(v.id('keywordClusters')),
+    userId: v.id('users'),
   },
+  handler: generateContentInternalHandler,
 });
 
 /**
@@ -655,6 +658,12 @@ export const generateContentForPiece = internalAction({
       }
     );
     const personaContext = persona ? buildPersonaContext(persona) : '';
+
+    const project = await ctx.runQuery(internal.projects.getProjectForAutoGen, {
+      projectId: piece.projectId,
+      userId,
+    });
+    const brandName = project?.name || 'the brand';
 
     // 3. Generate outline using AI
     const outline = await generateOutlineWithAI(
@@ -707,7 +716,8 @@ export const generateContentForPiece = internalAction({
         piece.title,
         keywords,
         piece.contentType,
-        userId
+        userId,
+        brandName
       );
 
       // ── Stage 3: AI Finalization ─────────────────────────────────
@@ -1076,8 +1086,10 @@ async function reviewContentWithAI(
   title: string,
   keywords: string[],
   contentType: string,
-  userId?: Id<'users'>
+  userId?: Id<'users'>,
+  brandName?: string
 ): Promise<string> {
+  const actualBrand = brandName || 'the brand';
   const systemPrompt = `You are a senior editorial reviewer and SEO quality analyst. Your job is to review AI-generated content and provide specific, actionable feedback.
 
 You are NOT rewriting the content — you are providing a critical review. Be honest and specific.
@@ -1086,7 +1098,7 @@ REVIEW CHECKLIST:
 1. **READABILITY**: Is this written for humans? Does it flow naturally? Are paragraphs varied in length? Is the tone conversational yet professional?
 2. **KEYWORD INTEGRATION**: Are the target keywords woven naturally into the text? Or do they feel forced/stuffed? Are they in strategic positions (headings, first paragraph, conclusion)?
 3. **SECTION UNIQUENESS**: Does each H2 section provide UNIQUE, distinct value? Flag any sections that repeat the same ideas, examples, or phrasing under different headings.
-4. **BRAND FAVORABILITY**: This content will be published on the user's own website. Does the content position the user's brand/product favorably? In comparison articles, does the user's offering come out as the recommended choice? Flag as CRITICAL if any competitor is positioned as superior, easier, or more recommended than the user's brand.
+4. **BRAND FAVORABILITY**: This content will be published on the user's own website. Does the content position the user's brand/product favorably? In comparison articles, does the user's offering come out as the recommended choice? Flag as CRITICAL if any competitor is positioned as superior, easier, or more recommended than ${actualBrand}.
 5. **ACTIONABILITY**: Does each section offer specific, practical advice? Or is it vague filler? Flag any thin or generic sections.
 6. **E-E-A-T SIGNALS**: Does the content demonstrate Experience, Expertise, Authoritativeness, and Trustworthiness? Are there specific examples, data points, or case studies?
 7. **STRUCTURE**: Is there a strong introduction that hooks the reader? Does the conclusion summarize key takeaways and include a call-to-action?
