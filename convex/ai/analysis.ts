@@ -88,7 +88,7 @@ export const runPipeline = action({
     if (user.role === 'admin' || user.role === 'super_admin') {
       tier = 'admin';
     } else {
-      tier = (user.membershipTier as MembershipTier) || 'free';
+      tier = (user.membershipTier as MembershipTier) || 'starter';
     }
 
     // Check rate limit
@@ -102,7 +102,7 @@ export const runPipeline = action({
       const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
       throw new ConvexError({
         kind: 'RateLimitError',
-        message: `Rate limit exceeded. You can generate ${tier === 'free' ? '2 reports per day' : tier === 'admin' ? '50 reports per day' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
+        message: `Rate limit exceeded. You can generate ${tier === 'starter' ? '2 reports per day' : tier === 'admin' ? '50 reports per day' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
         retryAfter,
       });
     }
@@ -311,7 +311,7 @@ function scoreConfidence(crawl: CrawlResult, fusion: FusionResult) {
 }
 
 function generateKeywordIdeas(target: TargetInfo, fusion: FusionResult): KeywordIdeaCandidate[] {
-  const base = target.hints.companyName?.toLowerCase().includes('chef') ? 'culinary' : 'growth';
+  const base = target.hints.companyName?.toLowerCase().includes('chef') ? 'culinary' : 'engine';
   const intents = ['informational', 'commercial', 'transactional'];
   return intents.map((intent, index) => ({
     primaryKeyword: `${base} ${intent} strategy ${index + 1}`,

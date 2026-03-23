@@ -13,7 +13,7 @@ import { internal } from '../_generated/api';
 export const provisionSubscription = mutation({
   args: {
     targetUserId: v.id('users'),
-    planTier: v.string(), // 'team', 'enterprise', 'growth', 'active'
+    planTier: v.string(), // 'team', 'enterprise', 'engine', 'active'
     status: v.union(
       v.literal('active'),
       v.literal('trialing'),

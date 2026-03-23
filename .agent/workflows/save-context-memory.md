@@ -46,4 +46,5 @@ When a user invokes this workflow (e.g., via `/save-context-memory`):
 1. **Analyze** the current chat history, extracting the key objectives, architectural decisions, and hazards discovered.
 2. **Determine** the next `[XXXXX]` incremental number by using `list_dir` or `find_by_name` to check existing `docs/personas/bot_persona_*` files. If none exist, start at `00001`.
 3. **Write** the synthesized markdown to `docs/personas/bot_persona_[RELEVANT_CONTEXT]_[XXXXX]_PERSONA.md`.
-4. **Notify** the user that the context memory persona has been successfully integrated into the Board of Directors, ensuring safe passage of context into the next chat session.
+4. **Update** the `@[/bod]` workflow document (`.agent/workflows/bod.md` or `.agents/workflows/bod.md`) by explicitly adding the new Context Memory Node under the `### Session Context Memory` section.
+5. **Notify** the user that the context memory persona has been successfully integrated into the Board of Directors, ensuring safe passage of context into the next chat session.

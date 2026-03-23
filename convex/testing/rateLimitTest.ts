@@ -6,10 +6,10 @@ import { RATE_LIMIT_TIERS } from '../rateLimits';
 export const verifyRateLimit = internalAction({
   args: {
     tier: v.union(
-      v.literal('free'),
       v.literal('starter'),
-      v.literal('growth'),
-      v.literal('pro'),
+      v.literal('engine'),
+      v.literal('agency'),
+      v.literal('enterprise'),
       v.literal('admin')
     ),
     concurrentRequests: v.number(),
@@ -96,19 +96,20 @@ export const verifyRateLimit = internalAction({
 export const setupTestUser = internalMutation({
   args: {
     tier: v.union(
-      v.literal('free'),
-      v.literal('starter'), // maps to solo/starter
-      v.literal('growth'),
-      v.literal('pro'),
+      v.literal('starter'),
+      v.literal('engine'),
+      v.literal('agency'),
+      v.literal('enterprise'),
       v.literal('admin')
     ),
   },
   handler: async (ctx, args) => {
     // Map test tier to valid schema membershipTier
-    let membershipTier: 'free' | 'starter' | 'growth' | 'pro' | 'enterprise' = 'free';
+    let membershipTier: 'starter' | 'engine' | 'agency' | 'enterprise' = 'starter';
     if (args.tier === 'starter') membershipTier = 'starter';
-    if (args.tier === 'growth') membershipTier = 'growth';
-    if (args.tier === 'pro') membershipTier = 'pro';
+    if (args.tier === 'engine') membershipTier = 'engine';
+    if (args.tier === 'agency') membershipTier = 'agency';
+    if (args.tier === 'enterprise') membershipTier = 'enterprise';
     if (args.tier === 'admin') membershipTier = 'enterprise'; // Admins get enterprise features
 
     const userId = await ctx.db.insert('users', {

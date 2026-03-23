@@ -11,14 +11,6 @@ const DAY = 24 * HOUR;
 // This exists to handle edge cases (trial users, migration, testing).
 // Do NOT expose 'free' tier in UI or marketing materials.
 export const RATE_LIMIT_TIERS = {
-  // Legacy fallback - restricted limits for edge cases only
-  free: {
-    briefGeneration: { rate: 3, period: DAY },
-    draftGeneration: { rate: 3, period: DAY },
-    keywordClusters: { rate: 5, period: DAY },
-    quarterlyPlans: { rate: 1, period: DAY },
-    aiAnalysis: { rate: 2, period: DAY },
-  },
   starter: {
     briefGeneration: { rate: 5, period: HOUR },
     draftGeneration: { rate: 5, period: HOUR },
@@ -26,22 +18,28 @@ export const RATE_LIMIT_TIERS = {
     quarterlyPlans: { rate: 2, period: DAY },
     aiAnalysis: { rate: 3, period: DAY },
   },
-  growth: {
+  engine: {
     briefGeneration: { rate: 10, period: HOUR },
     draftGeneration: { rate: 10, period: HOUR },
     keywordClusters: { rate: 20, period: HOUR },
     quarterlyPlans: { rate: 5, period: DAY },
     aiAnalysis: { rate: 10, period: DAY },
   },
-  pro: {
+  agency: {
     briefGeneration: { rate: 20, period: HOUR },
     draftGeneration: { rate: 20, period: HOUR },
     keywordClusters: { rate: 50, period: HOUR },
     quarterlyPlans: { rate: 10, period: DAY },
     aiAnalysis: { rate: 20, period: DAY },
   },
+  enterprise: {
+    briefGeneration: { rate: 100, period: HOUR },
+    draftGeneration: { rate: 100, period: HOUR },
+    keywordClusters: { rate: 200, period: HOUR },
+    quarterlyPlans: { rate: 50, period: DAY },
+    aiAnalysis: { rate: 100, period: DAY },
+  },
   admin: {
-    // Generous limits for testing
     briefGeneration: { rate: 100, period: HOUR },
     draftGeneration: { rate: 100, period: HOUR },
     keywordClusters: { rate: 200, period: HOUR },
@@ -55,29 +53,29 @@ export const RATE_LIMIT_TIERS = {
 // dynamic rate limit names (tier-based keys like 'generateBrief_free')
 export const rateLimits = new RateLimiter(components.rateLimiter as any, {
   // Brief generation - token bucket for smooth usage
-  generateBrief_free: {
-    kind: 'token bucket',
-    rate: RATE_LIMIT_TIERS.free.briefGeneration.rate,
-    period: RATE_LIMIT_TIERS.free.briefGeneration.period,
-    capacity: 1,
-  },
   generateBrief_starter: {
     kind: 'token bucket',
     rate: RATE_LIMIT_TIERS.starter.briefGeneration.rate,
     period: RATE_LIMIT_TIERS.starter.briefGeneration.period,
     capacity: 2,
   },
-  generateBrief_growth: {
+  generateBrief_engine: {
     kind: 'token bucket',
-    rate: RATE_LIMIT_TIERS.growth.briefGeneration.rate,
-    period: RATE_LIMIT_TIERS.growth.briefGeneration.period,
+    rate: RATE_LIMIT_TIERS.engine.briefGeneration.rate,
+    period: RATE_LIMIT_TIERS.engine.briefGeneration.period,
     capacity: 3,
   },
-  generateBrief_pro: {
+  generateBrief_agency: {
     kind: 'token bucket',
-    rate: RATE_LIMIT_TIERS.pro.briefGeneration.rate,
-    period: RATE_LIMIT_TIERS.pro.briefGeneration.period,
+    rate: RATE_LIMIT_TIERS.agency.briefGeneration.rate,
+    period: RATE_LIMIT_TIERS.agency.briefGeneration.period,
     capacity: 5,
+  },
+  generateBrief_enterprise: {
+    kind: 'token bucket',
+    rate: RATE_LIMIT_TIERS.enterprise.briefGeneration.rate,
+    period: RATE_LIMIT_TIERS.enterprise.briefGeneration.period,
+    capacity: 20,
   },
   generateBrief_admin: {
     kind: 'token bucket',
@@ -87,29 +85,29 @@ export const rateLimits = new RateLimiter(components.rateLimiter as any, {
   },
 
   // Draft generation
-  generateDraft_free: {
-    kind: 'token bucket',
-    rate: RATE_LIMIT_TIERS.free.draftGeneration.rate,
-    period: RATE_LIMIT_TIERS.free.draftGeneration.period,
-    capacity: 1,
-  },
   generateDraft_starter: {
     kind: 'token bucket',
     rate: RATE_LIMIT_TIERS.starter.draftGeneration.rate,
     period: RATE_LIMIT_TIERS.starter.draftGeneration.period,
     capacity: 2,
   },
-  generateDraft_growth: {
+  generateDraft_engine: {
     kind: 'token bucket',
-    rate: RATE_LIMIT_TIERS.growth.draftGeneration.rate,
-    period: RATE_LIMIT_TIERS.growth.draftGeneration.period,
+    rate: RATE_LIMIT_TIERS.engine.draftGeneration.rate,
+    period: RATE_LIMIT_TIERS.engine.draftGeneration.period,
     capacity: 3,
   },
-  generateDraft_pro: {
+  generateDraft_agency: {
     kind: 'token bucket',
-    rate: RATE_LIMIT_TIERS.pro.draftGeneration.rate,
-    period: RATE_LIMIT_TIERS.pro.draftGeneration.period,
+    rate: RATE_LIMIT_TIERS.agency.draftGeneration.rate,
+    period: RATE_LIMIT_TIERS.agency.draftGeneration.period,
     capacity: 5,
+  },
+  generateDraft_enterprise: {
+    kind: 'token bucket',
+    rate: RATE_LIMIT_TIERS.enterprise.draftGeneration.rate,
+    period: RATE_LIMIT_TIERS.enterprise.draftGeneration.period,
+    capacity: 20,
   },
   generateDraft_admin: {
     kind: 'token bucket',
@@ -119,29 +117,29 @@ export const rateLimits = new RateLimiter(components.rateLimiter as any, {
   },
 
   // Keyword clustering
-  generateKeywordClusters_free: {
-    kind: 'token bucket',
-    rate: RATE_LIMIT_TIERS.free.keywordClusters.rate,
-    period: RATE_LIMIT_TIERS.free.keywordClusters.period,
-    capacity: 2,
-  },
   generateKeywordClusters_starter: {
     kind: 'token bucket',
     rate: RATE_LIMIT_TIERS.starter.keywordClusters.rate,
     period: RATE_LIMIT_TIERS.starter.keywordClusters.period,
     capacity: 3,
   },
-  generateKeywordClusters_growth: {
+  generateKeywordClusters_engine: {
     kind: 'token bucket',
-    rate: RATE_LIMIT_TIERS.growth.keywordClusters.rate,
-    period: RATE_LIMIT_TIERS.growth.keywordClusters.period,
+    rate: RATE_LIMIT_TIERS.engine.keywordClusters.rate,
+    period: RATE_LIMIT_TIERS.engine.keywordClusters.period,
     capacity: 5,
   },
-  generateKeywordClusters_pro: {
+  generateKeywordClusters_agency: {
     kind: 'token bucket',
-    rate: RATE_LIMIT_TIERS.pro.keywordClusters.rate,
-    period: RATE_LIMIT_TIERS.pro.keywordClusters.period,
+    rate: RATE_LIMIT_TIERS.agency.keywordClusters.rate,
+    period: RATE_LIMIT_TIERS.agency.keywordClusters.period,
     capacity: 10,
+  },
+  generateKeywordClusters_enterprise: {
+    kind: 'token bucket',
+    rate: RATE_LIMIT_TIERS.enterprise.keywordClusters.rate,
+    period: RATE_LIMIT_TIERS.enterprise.keywordClusters.period,
+    capacity: 50,
   },
   generateKeywordClusters_admin: {
     kind: 'token bucket',
@@ -151,25 +149,25 @@ export const rateLimits = new RateLimiter(components.rateLimiter as any, {
   },
 
   // Quarterly planning - fixed window
-  createQuarterlyPlan_free: {
-    kind: 'fixed window',
-    rate: RATE_LIMIT_TIERS.free.quarterlyPlans.rate,
-    period: RATE_LIMIT_TIERS.free.quarterlyPlans.period,
-  },
   createQuarterlyPlan_starter: {
     kind: 'fixed window',
     rate: RATE_LIMIT_TIERS.starter.quarterlyPlans.rate,
     period: RATE_LIMIT_TIERS.starter.quarterlyPlans.period,
   },
-  createQuarterlyPlan_growth: {
+  createQuarterlyPlan_engine: {
     kind: 'fixed window',
-    rate: RATE_LIMIT_TIERS.growth.quarterlyPlans.rate,
-    period: RATE_LIMIT_TIERS.growth.quarterlyPlans.period,
+    rate: RATE_LIMIT_TIERS.engine.quarterlyPlans.rate,
+    period: RATE_LIMIT_TIERS.engine.quarterlyPlans.period,
   },
-  createQuarterlyPlan_pro: {
+  createQuarterlyPlan_agency: {
     kind: 'fixed window',
-    rate: RATE_LIMIT_TIERS.pro.quarterlyPlans.rate,
-    period: RATE_LIMIT_TIERS.pro.quarterlyPlans.period,
+    rate: RATE_LIMIT_TIERS.agency.quarterlyPlans.rate,
+    period: RATE_LIMIT_TIERS.agency.quarterlyPlans.period,
+  },
+  createQuarterlyPlan_enterprise: {
+    kind: 'fixed window',
+    rate: RATE_LIMIT_TIERS.enterprise.quarterlyPlans.rate,
+    period: RATE_LIMIT_TIERS.enterprise.quarterlyPlans.period,
   },
   createQuarterlyPlan_admin: {
     kind: 'fixed window',
@@ -178,25 +176,25 @@ export const rateLimits = new RateLimiter(components.rateLimiter as any, {
   },
 
   // AI analysis - fixed window
-  aiAnalysis_free: {
-    kind: 'fixed window',
-    rate: RATE_LIMIT_TIERS.free.aiAnalysis.rate,
-    period: RATE_LIMIT_TIERS.free.aiAnalysis.period,
-  },
   aiAnalysis_starter: {
     kind: 'fixed window',
     rate: RATE_LIMIT_TIERS.starter.aiAnalysis.rate,
     period: RATE_LIMIT_TIERS.starter.aiAnalysis.period,
   },
-  aiAnalysis_growth: {
+  aiAnalysis_engine: {
     kind: 'fixed window',
-    rate: RATE_LIMIT_TIERS.growth.aiAnalysis.rate,
-    period: RATE_LIMIT_TIERS.growth.aiAnalysis.period,
+    rate: RATE_LIMIT_TIERS.engine.aiAnalysis.rate,
+    period: RATE_LIMIT_TIERS.engine.aiAnalysis.period,
   },
-  aiAnalysis_pro: {
+  aiAnalysis_agency: {
     kind: 'fixed window',
-    rate: RATE_LIMIT_TIERS.pro.aiAnalysis.rate,
-    period: RATE_LIMIT_TIERS.pro.aiAnalysis.period,
+    rate: RATE_LIMIT_TIERS.agency.aiAnalysis.rate,
+    period: RATE_LIMIT_TIERS.agency.aiAnalysis.period,
+  },
+  aiAnalysis_enterprise: {
+    kind: 'fixed window',
+    rate: RATE_LIMIT_TIERS.enterprise.aiAnalysis.rate,
+    period: RATE_LIMIT_TIERS.enterprise.aiAnalysis.period,
   },
   aiAnalysis_admin: {
     kind: 'fixed window',
@@ -271,7 +269,7 @@ export type RateLimitName =
   | 'aiAnalysis';
 
 // Helper type for membership tiers
-export type MembershipTier = 'free' | 'starter' | 'growth' | 'pro' | 'admin';
+export type MembershipTier = 'starter' | 'engine' | 'agency' | 'enterprise' | 'admin';
 
 // API Rate limit names
 export type ApiRateLimitName =

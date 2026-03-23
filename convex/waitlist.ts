@@ -99,7 +99,7 @@ export const joinWaitlist = mutation({
         // Beta user fields - skip pricing/payment in onboarding
         // betaExpiresAt set when onboarding completes (6 months from then)
         isBetaUser: true,
-        membershipTier: 'solo',
+        membershipTier: 'starter',
       });
     }
 

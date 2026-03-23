@@ -159,9 +159,9 @@ export const getSeatUsage = query({
     // Get owner's membership tier to calculate max seats dynamically
     const owner = await ctx.db.get(org.ownerId);
     let maxSeats = 1; // Default for starter
-    if (owner?.membershipTier === 'engine' || owner?.membershipTier === 'growth') {
+    if (owner?.membershipTier === 'engine') {
       maxSeats = 5;
-    } else if (owner?.membershipTier === 'agency' || owner?.membershipTier === 'team') {
+    } else if (owner?.membershipTier === 'agency') {
       maxSeats = 25;
     } else if (owner?.membershipTier === 'enterprise') {
       maxSeats = org.seatsPurchased ?? org.maxMembers ?? 999;
@@ -230,9 +230,9 @@ export const createOrganization = mutation({
 
     // Determine max members based on user's membership tier
     let maxMembers = 1; // Default for starter
-    if (user?.membershipTier === 'engine' || user?.membershipTier === 'growth') {
+    if (user?.membershipTier === 'engine') {
       maxMembers = 5;
-    } else if (user?.membershipTier === 'agency' || user?.membershipTier === 'team') {
+    } else if (user?.membershipTier === 'agency') {
       maxMembers = 25;
     } else if (user?.membershipTier === 'enterprise') {
       maxMembers = 999;
@@ -287,9 +287,9 @@ export const syncSeatsWithTier = mutation({
 
     // Determine max members based on membership tier
     let maxMembers = 1;
-    if (user.membershipTier === 'engine' || user.membershipTier === 'growth') {
+    if (user.membershipTier === 'engine') {
       maxMembers = 5;
-    } else if (user.membershipTier === 'agency' || user.membershipTier === 'team') {
+    } else if (user.membershipTier === 'agency') {
       maxMembers = 25;
     } else if (user.membershipTier === 'enterprise') {
       maxMembers = 999;

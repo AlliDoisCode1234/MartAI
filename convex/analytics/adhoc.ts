@@ -26,7 +26,7 @@ export const analyzeCompetitor = action({
     if (user.role === 'admin' || user.role === 'super_admin') {
       tier = 'admin';
     } else {
-      tier = (user.membershipTier as MembershipTier) || 'free';
+      tier = (user.membershipTier as MembershipTier) || 'starter';
     }
 
     // Check Rate Limit (aiAnalysis limit)
