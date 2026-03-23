@@ -4,6 +4,12 @@
  * Initializes @convex-dev/stripe component and exports helpers
  * for checkout, subscriptions, and customer portal.
  *
+/**
+ * Stripe Integration Module
+ *
+ * Initializes @convex-dev/stripe component and exports helpers
+ * for checkout, subscriptions, and customer portal.
+ *
  * Security:
  * - STRIPE_SECRET_KEY stored in Convex dashboard (never in code)
  * - Webhook signatures validated by component automatically

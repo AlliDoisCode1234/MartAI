@@ -80,6 +80,7 @@ export const autoGenerateContent = action({
     if (!userId) throw new Error('Unauthorized');
 
     const { projectId } = args;
+    await ctx.runQuery(internal.projects.verifyProjectAccess, { projectId });
 
     // ── Step 1: Resolve content type ────────────────────────────────
     const contentType: ContentTypeId = args.contentType ?? 'blog';
@@ -149,12 +150,29 @@ export const autoGenerateContent = action({
     let resolvedTitle = args.title?.trim() || '';
 
     if (!resolvedTitle) {
+      // Fetch existing titles to avoid duplicates
+      let existingTitles: string[] = [];
+      try {
+        existingTitles = await ctx.runQuery(
+          internal.contentGeneration.getExistingTitles,
+          { projectId }
+        ) as string[];
+      } catch {
+        // Non-blocking
+      }
+
+      let dedupLines = existingTitles.map((t) => `- "${t}"`).join('\n');
+      if (dedupLines.length > 1000) { dedupLines = dedupLines.slice(0, 1000) + '\n... [truncated]'; }
+      const dedupClause = existingTitles.length > 0
+        ? `\n\nCRITICAL: NEVER generate a title that matches or closely resembles any of these existing titles:\n${dedupLines}\nYour title MUST be completely different from all of the above.`
+        : '';
+
       try {
         const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
           prompt: `Generate 1 engaging, SEO-optimized ${contentType} title about: "${primaryKeyword}"`,
-          systemPrompt: `You are an expert SEO content strategist. Generate exactly 1 compelling, click-worthy title for a ${contentType} about "${primaryKeyword}". Requirements: include the keyword, 50-65 characters, use a proven headline formula. Respond with ONLY the title, nothing else.`,
+          systemPrompt: `You are an expert SEO content strategist. Generate exactly 1 compelling, click-worthy title for a ${contentType} about "${primaryKeyword}". Requirements: include the keyword, 50-65 characters, use a proven headline formula. Respond with ONLY the title, nothing else.${dedupClause}`,
           maxTokens: 100,
-          temperature: 0.7,
+          temperature: 0.9,
           taskType: 'analysis',
           strategy: 'balanced',
         });
@@ -169,7 +187,8 @@ export const autoGenerateContent = action({
       }
 
       if (!resolvedTitle) {
-        resolvedTitle = `The Complete Guide to ${primaryKeyword}`;
+        const suffix = existingTitles.length > 0 ? ` (${new Date().getFullYear()})` : '';
+        resolvedTitle = `The Complete Guide to ${primaryKeyword}${suffix}`;
       }
     }
 
@@ -209,6 +228,8 @@ export const generateContentTitle = action({
   handler: async (ctx, args): Promise<string[]> => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error('Unauthorized');
+
+    await ctx.runQuery(internal.projects.verifyProjectAccess, { projectId: args.projectId });
 
     // Rate limit: Fetch user tier and enforce AI analysis limits
     const user = await ctx.runQuery(internal.users.getUser, { userId });
@@ -261,6 +282,23 @@ export const generateContentTitle = action({
       ? `\n\nBRAND CONTEXT:\n${personaContext}\nApply the brand voice to your titles.`
       : '';
 
+    // Fetch existing titles to prevent duplicates
+    let existingTitles: string[] = [];
+    try {
+      existingTitles = await ctx.runQuery(
+        internal.contentGeneration.getExistingTitles,
+        { projectId: args.projectId }
+      ) as string[];
+    } catch {
+      // Non-blocking
+    }
+
+    let dedupLines = existingTitles.map((t) => `- "${t}"`).join('\n');
+    if (dedupLines.length > 1000) { dedupLines = dedupLines.slice(0, 1000) + '\n... [truncated]'; }
+    const dedupClause = existingTitles.length > 0
+      ? `\n\nCRITICAL: NEVER generate a title that matches or closely resembles any of these existing titles:\n${dedupLines}\nAll 5 titles MUST be completely different from the above.`
+      : '';
+
     const systemPrompt = `You are an expert SEO content strategist. Generate exactly 5 engaging, click-worthy, SEO-optimized titles for a ${args.contentType} article about the keyword "${args.keyword}".
 
 Requirements:
@@ -269,7 +307,7 @@ Requirements:
 - Use proven headline formulas (How-to, Listicle, Question, Guide, Ultimate)
 - Vary the style across all 5 titles
 - Prioritize search intent match over cleverness
-${personaInstructions}
+${personaInstructions}${dedupClause}
 
 Respond with ONLY the 5 titles, one per line. No numbering, no explanations, just the titles.`;
 
@@ -308,17 +346,86 @@ Respond with ONLY the 5 titles, one per line. No numbering, no explanations, jus
   },
 });
 
-export const generateContentInternal = internalAction({
+// ============================================================================
+// AI Keyword Suggestion — Field-Level Assist
+// ============================================================================
+
+/**
+ * Suggest SEO keyword clusters for a project.
+ * Uses project industry context to generate relevant keywords.
+ * Returns comma-separated keyword string ready for the UI.
+ */
+export const suggestKeywords = action({
   args: {
     projectId: v.id('projects'),
-    contentType: contentTypeValidator,
-    title: v.string(),
-    keywords: v.array(v.string()),
-    clusterId: v.optional(v.id('keywordClusters')),
-    userId: v.id('users'),
+    topic: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const { userId } = args;
+  handler: async (ctx, args): Promise<string> => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    await ctx.runQuery(internal.projects.verifyProjectAccess, { projectId: args.projectId });
+
+    // Get project context for industry-aware suggestions
+    let industry = 'digital marketing';
+    try {
+      const project = await ctx.runQuery(internal.contentGeneration.getProjectForAutoGen, {
+        projectId: args.projectId,
+      });
+      industry = project?.industry || industry;
+    } catch {
+      // Use default
+    }
+
+    const topicHint = args.topic?.trim()
+      ? `Focus on the topic: "${args.topic}".`
+      : '';
+
+    const systemPrompt = `You are an SEO keyword strategist. Suggest 5-8 high-value, long-tail keywords for a ${industry} business.
+${topicHint}
+
+Requirements:
+- Mix of informational and commercial intent
+- Include long-tail variations (3-5 words)
+- Focus on topics with realistic ranking potential
+- Consider search volume and competition balance
+
+Respond with ONLY the keywords, one per line. No numbering, no explanations, no metrics.`;
+
+    try {
+      const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
+        prompt: `Suggest 5-8 SEO keywords for a ${industry} business${args.topic ? ` about "${args.topic}"` : ''}`,
+        systemPrompt,
+        maxTokens: 200,
+        temperature: 0.8,
+        taskType: 'analysis',
+        strategy: 'balanced',
+      });
+
+      const keywords = response.content
+        .split('\n')
+        .map((k: string) => k.trim().replace(/^[-•*\d.]+\s*/, ''))
+        .filter((k: string) => k.length > 2 && k.length < 60);
+
+      return keywords.slice(0, 8).join(', ');
+    } catch {
+      return `${industry} best practices, ${industry} tips, ${industry} guide`;
+    }
+  },
+});
+
+export const generateContentInternalHandler = async (
+  ctx: ActionCtx,
+  args: {
+    projectId: Id<'projects'>;
+    contentType: ContentTypeId;
+    title: string;
+    keywords: string[];
+    clusterId?: Id<'keywordClusters'>;
+    userId: Id<'users'>;
+  }
+) => {
+  const { userId } = args;
 
     // 1. Fetch user to determine rate limit tier
     const user = await ctx.runQuery(internal.users.getUser, { userId });
@@ -367,20 +474,19 @@ export const generateContentInternal = internalAction({
           }. Please upgrade or wait.`
         );
       }
-      // Re-throw unexpected errors (DB failures, config issues) unmolested
-      throw error;
+      throw error; // Re-throw if it's not a rate limit error
     }
 
-    // Get or create Writer Persona for this project
+    // Fetch project context for brand protection & persona
+    const project = await ctx.runQuery(
+      internal.contentGeneration.getProjectForAutoGen,
+      { projectId: args.projectId }
+    );
+    const brandName = project?.name || 'our brand';
     const persona = await ctx.runMutation(
       internal.ai.writerPersonas.index.getOrCreatePersonaInternal,
-      {
-        projectId: args.projectId,
-        userId,
-      }
+      { projectId: args.projectId, userId }
     );
-
-    // Build persona context for prompt injection
     const personaContext = persona ? buildPersonaContext(persona) : '';
 
     // 1. Create content piece with "generating" status
@@ -426,7 +532,7 @@ export const generateContentInternal = internalAction({
       attempt++;
       console.log(`[ContentGeneration] Pipeline attempt ${attempt}/${MAX_GENERATION_ATTEMPTS}`);
 
-      // ── Stage 1: Content Creation ────────────────────────────────
+      // ── Stage 1: Content Creation ──────────────────────────────
       console.log(`[ContentGeneration] Stage 1: Creating draft...`);
       const draftContent = await generateFullContentWithAI(
         ctx,
@@ -436,7 +542,8 @@ export const generateContentInternal = internalAction({
         args.keywords,
         personaContext,
         attempt > 1, // Add quality hints on retries
-        args.userId
+        args.userId,
+        brandName
       );
 
       // ── Stage 2: AI Editorial Review ─────────────────────────────
@@ -447,7 +554,8 @@ export const generateContentInternal = internalAction({
         args.title,
         args.keywords,
         args.contentType,
-        args.userId
+        args.userId,
+        brandName
       );
 
       // ── Stage 3: AI Finalization ─────────────────────────────────
@@ -507,12 +615,22 @@ export const generateContentInternal = internalAction({
       generationAttempts: attempt,
       status: 'draft',
     });
-
     console.log(
       `[ContentGeneration] Complete. Final score: ${bestScore} after ${attempt} attempt(s)`
     );
     return contentPieceId;
+};
+
+export const generateContentInternal = internalAction({
+  args: {
+    projectId: v.id('projects'),
+    contentType: contentTypeValidator,
+    title: v.string(),
+    keywords: v.array(v.string()),
+    clusterId: v.optional(v.id('keywordClusters')),
+    userId: v.id('users'),
   },
+  handler: generateContentInternalHandler,
 });
 
 /**
@@ -554,6 +672,11 @@ export const generateContentForPiece = internalAction({
     );
     const personaContext = persona ? buildPersonaContext(persona) : '';
 
+    const project = await ctx.runQuery(internal.contentGeneration.getProjectForAutoGen, {
+      projectId: piece.projectId,
+    });
+    const brandName = project?.name || 'the brand';
+
     // 3. Generate outline using AI
     const outline = await generateOutlineWithAI(
       ctx,
@@ -594,7 +717,8 @@ export const generateContentForPiece = internalAction({
         keywords,
         personaContext,
         attempt > 1,
-        userId
+        userId,
+        brandName
       );
 
       // ── Stage 2: AI Editorial Review ─────────────────────────────
@@ -605,7 +729,8 @@ export const generateContentForPiece = internalAction({
         piece.title,
         keywords,
         piece.contentType,
-        userId
+        userId,
+        brandName
       );
 
       // ── Stage 3: AI Finalization ─────────────────────────────────
@@ -817,7 +942,8 @@ async function generateFullContentWithAI(
   keywords: string[],
   personaContext: string = '',
   enhanceQuality: boolean = false,
-  userId?: Id<'users'>
+  userId?: Id<'users'>,
+  brandName: string = 'our brand'
 ): Promise<string> {
   const primaryKeyword = keywords[0] || 'topic';
   const targetWords = getTargetWords(contentType);
@@ -843,28 +969,33 @@ CRITICAL - CONTENT UNIQUENESS RULES:
 - Every paragraph must add NEW information the reader hasn't seen earlier in the article
 
 BRAND PROTECTION RULES (NON-NEGOTIABLE — VIOLATION = INSTANT REJECTION):
-This content is published on the USER'S OWN WEBSITE. The user's brand MUST WIN. ALWAYS.
+This content is published on ${brandName}'s OWN WEBSITE. ${brandName} MUST WIN. ALWAYS.
+
+BRAND IDENTITY:
+- The client's brand name is: "${brandName}"
+- You are writing FOR ${brandName} — they are YOUR client, YOUR employer.
+- Every piece of content must make ${brandName} look like the BEST option in their space.
 
 HARD RULES:
-- The user's brand/product MUST be positioned as the SUPERIOR choice in EVERY section, EVERY comparison, and EVERY conclusion.
-- Competitors should be acknowledged briefly but ALWAYS shown as inferior, limited, or outdated compared to the user's brand.
-- The CONCLUSION MUST recommend the user's brand as the best choice. No exceptions.
-- NEVER use phrases like "[Competitor] is better for...", "[Competitor] excels at...", "[Competitor] leads the pack", "[Competitor] is the superior choice"
-- NEVER position the user's brand as "simpler", "more basic", or "less capable" than a competitor.
-- In comparison articles, the user's brand gets MORE positive coverage (60%+ of the article) and the competitor gets brief, factual mentions.
-- Frame competitor features as "basic" or "expected" while the user's features are "innovative", "advanced", or "game-changing".
-- If comparing pricing, the user's offering is ALWAYS better value, never "more expensive".
+- ${brandName} MUST be positioned as the SUPERIOR choice in EVERY section, EVERY comparison, and EVERY conclusion.
+- Competitors should be acknowledged briefly but ALWAYS shown as inferior, limited, or outdated compared to ${brandName}.
+- The CONCLUSION MUST recommend ${brandName} as the best choice. No exceptions.
+- NEVER use phrases like "[Competitor] is better than ${brandName}", "[Competitor] excels over ${brandName}", "[Competitor] leads the pack", "[Competitor] is the superior choice"
+- NEVER position ${brandName} as "simpler", "more basic", or "less capable" than a competitor.
+- In comparison articles, ${brandName} gets MORE positive coverage (60%+ of the article) and the competitor gets brief, factual mentions.
+- Frame competitor features as "basic" or "expected" while ${brandName}'s features are "innovative", "advanced", or "game-changing".
+- If comparing pricing, ${brandName}'s offering is ALWAYS better value, never "more expensive".
 
 EXAMPLES OF FORBIDDEN PATTERNS:
-- BAD: "SEMrush leads the pack with advanced features" → GOOD: "While SEMrush offers standard features, [User's Brand] goes further with AI-driven automation"
-- BAD: "SEMrush emerges as the superior choice" → GOOD: "[User's Brand] emerges as the smarter, more innovative choice"
-- BAD: "If you need depth, choose SEMrush" → GOOD: "[User's Brand] delivers both depth AND simplicity—the best of both worlds"
+- BAD: "SEMrush leads the pack with advanced features" → GOOD: "While SEMrush offers standard features, ${brandName} goes further with AI-driven automation"
+- BAD: "SEMrush emerges as the superior choice" → GOOD: "${brandName} emerges as the smarter, more innovative choice"
+- BAD: "If you need depth, choose SEMrush" → GOOD: "${brandName} delivers both depth AND simplicity—the best of both worlds"
 
 BRAND SAFETY CHECKLIST (verify before submitting):
-1. Does the conclusion recommend the user's brand? If not, REWRITE.
-2. Is any competitor called "superior", "better", or "leading"? If yes, REWRITE.
-3. Does the user's brand get the most positive coverage? If not, REWRITE.
-4. Would a reader finish this article wanting to buy FROM the user? If not, REWRITE.`;
+1. Does the conclusion recommend ${brandName}? If not, REWRITE.
+2. Is any competitor called "superior", "better", or "leading" over ${brandName}? If yes, REWRITE.
+3. Does ${brandName} get the most positive coverage? If not, REWRITE.
+4. Would a reader finish this article wanting to buy FROM ${brandName}? If not, REWRITE.`;
 
   // Extra boost for retry attempts
   const retryBoost = enhanceQuality
@@ -968,8 +1099,10 @@ async function reviewContentWithAI(
   title: string,
   keywords: string[],
   contentType: string,
-  userId?: Id<'users'>
+  userId?: Id<'users'>,
+  brandName?: string
 ): Promise<string> {
+  const actualBrand = brandName || 'the brand';
   const systemPrompt = `You are a senior editorial reviewer and SEO quality analyst. Your job is to review AI-generated content and provide specific, actionable feedback.
 
 You are NOT rewriting the content — you are providing a critical review. Be honest and specific.
@@ -978,7 +1111,7 @@ REVIEW CHECKLIST:
 1. **READABILITY**: Is this written for humans? Does it flow naturally? Are paragraphs varied in length? Is the tone conversational yet professional?
 2. **KEYWORD INTEGRATION**: Are the target keywords woven naturally into the text? Or do they feel forced/stuffed? Are they in strategic positions (headings, first paragraph, conclusion)?
 3. **SECTION UNIQUENESS**: Does each H2 section provide UNIQUE, distinct value? Flag any sections that repeat the same ideas, examples, or phrasing under different headings.
-4. **BRAND FAVORABILITY**: This content will be published on the user's own website. Does the content position the user's brand/product favorably? In comparison articles, does the user's offering come out as the recommended choice? Flag as CRITICAL if any competitor is positioned as superior, easier, or more recommended than the user's brand.
+4. **BRAND FAVORABILITY**: This content will be published on the user's own website. Does the content position the user's brand/product favorably? In comparison articles, does the user's offering come out as the recommended choice? Flag as CRITICAL if any competitor is positioned as superior, easier, or more recommended than ${actualBrand}.
 5. **ACTIONABILITY**: Does each section offer specific, practical advice? Or is it vague filler? Flag any thin or generic sections.
 6. **E-E-A-T SIGNALS**: Does the content demonstrate Experience, Expertise, Authoritativeness, and Trustworthiness? Are there specific examples, data points, or case studies?
 7. **STRUCTURE**: Is there a strong introduction that hooks the reader? Does the conclusion summarize key takeaways and include a call-to-action?
@@ -1408,7 +1541,10 @@ export const getKeywordsForAutoGen = internalQuery({
   },
 });
 
-/** Get project data for auto-gen (filtered — only returns needed fields). */
+/**
+ * Get project data for auto-gen (filtered — only returns needed fields).
+ * @internal Requires prior access verification (e.g. verifyProjectAccess) if exposed.
+ */
 export const getProjectForAutoGen = internalQuery({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
@@ -1420,6 +1556,22 @@ export const getProjectForAutoGen = internalQuery({
       industry: project.industry,
       name: project.name,
     };
+  },
+});
+
+/**
+ * Get existing content titles for a project — used to prevent AI from generating duplicates.
+ * @internal Requires prior access verification (e.g. verifyProjectAccess) if exposed.
+ */
+export const getExistingTitles = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    const pieces = await ctx.db
+      .query('contentPieces')
+      .withIndex('by_project_created', (q) => q.eq('projectId', args.projectId))
+      .order('desc')
+      .take(25);
+    return Array.from(new Set(pieces.map((p) => p.title).filter(Boolean))).map(t => t.length > 100 ? t.slice(0, 100) + '...' : t);
   },
 });
 

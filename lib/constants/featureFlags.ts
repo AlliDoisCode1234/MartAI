@@ -48,3 +48,24 @@ export const LAUNCHED_SIGNUP_HREF = '/auth/signup';
 
 /** Launched pricing CTA destination used when IS_LAUNCHED is true */
 export const LAUNCHED_PRICING_HREF = '/pricing';
+
+/**
+ * Content type gating for launch.
+ *
+ * BLOG_ONLY_MODE (true):
+ *   - Only 'blog' content type is available in all UI surfaces
+ *   - Calendar generation only schedules blog entries
+ *   - ContentTypeSelector shows only Blog Post
+ *   - QuickCreateModal dropdown shows only Blog Post
+ *
+ * Full mode (false):
+ *   - All 17 content types unlocked
+ *   - Calendar generates full industry-template calendar
+ *   - All content type selectors show complete taxonomy
+ *
+ * TODO: Set to false when ready to expand content types post-launch
+ */
+export const BLOG_ONLY_MODE = true;
+
+/** Content types enabled at launch — expand this array to unlock more */
+export const LAUNCH_CONTENT_TYPES = ['blog'] as const;

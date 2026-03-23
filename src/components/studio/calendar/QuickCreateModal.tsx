@@ -32,9 +32,10 @@ import { FiCalendar, FiPlus } from 'react-icons/fi';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
+import { BLOG_ONLY_MODE, LAUNCH_CONTENT_TYPES } from '@/lib/constants/featureFlags';
 
 // Content Types mapped exactly from convex/phoo/contentTypes.ts
-const CONTENT_TYPES = [
+const ALL_CONTENT_TYPES = [
   { value: 'blog', label: 'Blog Post' },
   { value: 'blogVersus', label: 'Comparison Post' },
   { value: 'blogVideo', label: 'Video Post' },
@@ -53,6 +54,13 @@ const CONTENT_TYPES = [
   { value: 'partner', label: 'Partner' },
   { value: 'program', label: 'Program' },
 ];
+
+// Launch gating: filter to only enabled types
+const CONTENT_TYPES = BLOG_ONLY_MODE
+  ? ALL_CONTENT_TYPES.filter((ct) =>
+      (LAUNCH_CONTENT_TYPES as readonly string[]).includes(ct.value)
+    )
+  : ALL_CONTENT_TYPES;
 
 export interface QuickCreateModalProps {
   isOpen: boolean;
@@ -177,26 +185,29 @@ export function QuickCreateModal({
               />
             </FormControl>
 
-            <FormControl>
-              <FormLabel color="gray.600" fontSize="sm">
-                Content Type
-              </FormLabel>
-              <Select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                bg="gray.50"
-                border="1px solid"
-                borderColor="gray.200"
-                color="gray.800"
-                _focus={{ borderColor: '#F99F2A', boxShadow: '0 0 0 1px #F99F2A' }}
-              >
-                {CONTENT_TYPES.map((ct) => (
-                  <option key={ct.value} value={ct.value} style={{ background: 'white' }}>
-                    {ct.label}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
+            {/* Hide type selector when only one type is available */}
+            {!BLOG_ONLY_MODE && (
+              <FormControl>
+                <FormLabel color="gray.600" fontSize="sm">
+                  Content Type
+                </FormLabel>
+                <Select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  bg="gray.50"
+                  border="1px solid"
+                  borderColor="gray.200"
+                  color="gray.800"
+                  _focus={{ borderColor: '#F99F2A', boxShadow: '0 0 0 1px #F99F2A' }}
+                >
+                  {CONTENT_TYPES.map((ct) => (
+                    <option key={ct.value} value={ct.value} style={{ background: 'white' }}>
+                      {ct.label}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </VStack>
         </ModalBody>
 

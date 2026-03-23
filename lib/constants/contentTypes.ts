@@ -255,6 +255,39 @@ export function getContentTypesByCategory(): Record<ContentCategory, ContentType
 // All content type IDs (for validation)
 export const CONTENT_TYPE_IDS = Object.keys(CONTENT_TYPE_CONFIG) as ContentTypeId[];
 
+// ============================================================================
+// Launch Gating — Blog-Only Mode
+// ============================================================================
+
+import { BLOG_ONLY_MODE, LAUNCH_CONTENT_TYPES } from './featureFlags';
+
+/** Content type IDs enabled for the current launch mode */
+export const ENABLED_CONTENT_TYPE_IDS: ContentTypeId[] = BLOG_ONLY_MODE
+  ? (LAUNCH_CONTENT_TYPES.filter((id) =>
+      CONTENT_TYPE_IDS.includes(id as ContentTypeId)
+    ) as ContentTypeId[])
+  : CONTENT_TYPE_IDS;
+
+/** Get only the content types enabled by the current feature flag */
+export function getEnabledContentTypes(): ContentTypeConfig[] {
+  return ENABLED_CONTENT_TYPE_IDS.map((id) => CONTENT_TYPE_CONFIG[id]);
+}
+
+/** Get enabled content types grouped by category (for UI dropdowns) */
+export function getEnabledContentTypesByCategory(): Record<ContentCategory, ContentTypeConfig[]> {
+  const grouped = {} as Record<ContentCategory, ContentTypeConfig[]>;
+
+  for (const id of ENABLED_CONTENT_TYPE_IDS) {
+    const config = CONTENT_TYPE_CONFIG[id];
+    if (!grouped[config.category]) {
+      grouped[config.category] = [];
+    }
+    grouped[config.category].push(config);
+  }
+
+  return grouped;
+}
+
 // Default SEO Checklist (from Content Intelligence)
 export const DEFAULT_SEO_CHECKLIST = {
   wordCount: 750,
