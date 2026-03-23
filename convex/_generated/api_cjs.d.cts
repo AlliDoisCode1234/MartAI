@@ -148,6 +148,7 @@ import type * as seo_serpAnalysis from "../seo/serpAnalysis.js";
 import type * as strategy from "../strategy.js";
 import type * as stripe_checkout from "../stripe/checkout.js";
 import type * as stripe_index from "../stripe/index.js";
+import type * as stripe_sync from "../stripe/sync.js";
 import type * as subscriptions_subscriptionLifecycle from "../subscriptions/subscriptionLifecycle.js";
 import type * as subscriptions_subscriptionMetrics from "../subscriptions/subscriptionMetrics.js";
 import type * as subscriptions_subscriptions from "../subscriptions/subscriptions.js";
@@ -320,6 +321,7 @@ declare const fullApi: ApiFromModules<{
   strategy: typeof strategy;
   "stripe/checkout": typeof stripe_checkout;
   "stripe/index": typeof stripe_index;
+  "stripe/sync": typeof stripe_sync;
   "subscriptions/subscriptionLifecycle": typeof subscriptions_subscriptionLifecycle;
   "subscriptions/subscriptionMetrics": typeof subscriptions_subscriptionMetrics;
   "subscriptions/subscriptions": typeof subscriptions_subscriptions;

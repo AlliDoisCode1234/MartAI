@@ -96,7 +96,7 @@ export const inviteMember = mutation({
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .collect();
 
-    if (org.maxMembers && currentMembers.length >= org.maxMembers) {
+    if (org.maxMembers !== undefined && org.maxMembers !== 999999 && currentMembers.length >= org.maxMembers) {
       throw new Error(`Organization has reached the maximum of ${org.maxMembers} members`);
     }
 

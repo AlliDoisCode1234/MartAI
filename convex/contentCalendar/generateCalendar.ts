@@ -11,6 +11,7 @@ import { internal, api } from '../_generated/api';
 import { Id } from '../_generated/dataModel';
 import { INDUSTRY_TEMPLATES, IndustryId, ContentPlanItem } from '../phoo/industryTemplates';
 import { CONTENT_TYPES, ContentTypeId } from '../phoo/contentTypes';
+import { BLOG_ONLY_MODE, LAUNCH_CONTENT_TYPES } from '../../lib/constants/featureFlags';
 
 // ============================================================================
 // Types
@@ -108,6 +109,12 @@ export const generateFullCalendar = action({
 
       for (const planItem of template.contentPlan) {
         if (planItem.month > months) continue;
+
+        // Launch gating: skip non-enabled content types
+        if (BLOG_ONLY_MODE && !(LAUNCH_CONTENT_TYPES as readonly string[]).includes(planItem.contentType)) {
+          console.log(`[generateFullCalendar] Skipping ${planItem.contentType} (BLOG_ONLY_MODE)`);
+          continue;
+        }
 
         const contentType = CONTENT_TYPES[planItem.contentType];
         if (!contentType) continue;
