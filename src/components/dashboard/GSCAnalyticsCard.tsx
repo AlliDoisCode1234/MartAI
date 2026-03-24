@@ -170,7 +170,7 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
               See your real search performance data
             </Text>
           </VStack>
-          <Link href="/settings/integrations">
+          <Link href="/settings?tab=integrations">
             <Button
               size="sm"
               bg="orange.500"
@@ -225,7 +225,7 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
           </Text>
           {gscStats.lastSyncDate && (
             <Text color="gray.600" fontSize="xs">
-              Updated {new Date(gscStats.lastSyncDate).toLocaleDateString()}
+              Synced {new Date(gscStats.lastSyncDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
             </Text>
           )}
         </HStack>

@@ -80,7 +80,7 @@ export const autoGenerateContent = action({
     if (!userId) throw new Error('Unauthorized');
 
     const { projectId } = args;
-    await ctx.runQuery(internal.projects.verifyProjectAccess, { projectId });
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId });
 
     // ── Step 1: Resolve content type ────────────────────────────────
     const contentType: ContentTypeId = args.contentType ?? 'blog';
@@ -229,7 +229,7 @@ export const generateContentTitle = action({
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error('Unauthorized');
 
-    await ctx.runQuery(internal.projects.verifyProjectAccess, { projectId: args.projectId });
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId: args.projectId });
 
     // Rate limit: Fetch user tier and enforce AI analysis limits
     const user = await ctx.runQuery(internal.users.getUser, { userId });
@@ -369,7 +369,7 @@ export const suggestKeywords = action({
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error('Unauthorized');
 
-    await ctx.runQuery(internal.projects.verifyProjectAccess, { projectId: args.projectId });
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId: args.projectId });
 
     // Get project context for industry-aware suggestions
     let industry = 'digital marketing';

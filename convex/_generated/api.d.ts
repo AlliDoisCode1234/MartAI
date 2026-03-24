@@ -132,7 +132,6 @@ import type * as resources_seedGeo from "../resources/seedGeo.js";
 import type * as resources_seedGoogleAnalytics from "../resources/seedGoogleAnalytics.js";
 import type * as resources_updateRatings from "../resources/updateRatings.js";
 import type * as scores from "../scores.js";
-import type * as scripts_migrateTiers from "../scripts/migrateTiers.js";
 import type * as scripts_seedKeywordLibrary from "../scripts/seedKeywordLibrary.js";
 import type * as scripts_seedStaging from "../scripts/seedStaging.js";
 import type * as scripts_seeds_testContentMedSpa from "../scripts/seeds/testContentMedSpa.js";
@@ -306,7 +305,6 @@ declare const fullApi: ApiFromModules<{
   "resources/seedGoogleAnalytics": typeof resources_seedGoogleAnalytics;
   "resources/updateRatings": typeof resources_updateRatings;
   scores: typeof scores;
-  "scripts/migrateTiers": typeof scripts_migrateTiers;
   "scripts/seedKeywordLibrary": typeof scripts_seedKeywordLibrary;
   "scripts/seedStaging": typeof scripts_seedStaging;
   "scripts/seeds/testContentMedSpa": typeof scripts_seeds_testContentMedSpa;
