@@ -1,4 +1,4 @@
-import { components } from '../../_generated/api';
+import { api, components } from '../../_generated/api';
 import { ActionCtx } from '../../_generated/server';
 
 export interface GenerationOptions {
@@ -68,10 +68,7 @@ export class IntelligenceService {
     context: string = '',
     options: GenerationOptions & { userId?: string } = {}
   ): Promise<GenerationResult> {
-    // Dynamic import for api to avoid circular dependencies if needed, or simply use the top-level import
-    // In Convex actions, top level import of `api` is fine usually, but let's stick to the pattern if it was there for a reason.
-    // However, `api` is usually imported from `../../_generated/api`.
-    const { api } = require('../../_generated/api');
+    // Dynamic import replaced by static import.
     const traceId = crypto.randomUUID();
     const modelName = options.model || 'gpt-4o';
     const temperature = options.temperature || 0.7;
@@ -194,7 +191,7 @@ ${prompt}`;
     temperature: number,
     _maxRetries: number = 3
   ): Promise<{ text: string; usage: any; modelUsed: string }> {
-    const { api } = require('../../_generated/api');
+
 
     try {
       // Use the multi-agent router for automatic failover

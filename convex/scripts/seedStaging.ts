@@ -29,11 +29,11 @@ export const seedTestData = mutation({
       };
     }
 
-    // Create test user (Growth tier)
+    // Create test user (Engine tier)
     const testUserId = await ctx.db.insert('users', {
       email: 'test@phoo.ai',
       name: 'Test User',
-      membershipTier: 'growth',
+      membershipTier: 'engine',
       role: 'user',
       createdAt: Date.now(),
       onboardingStatus: 'completed',

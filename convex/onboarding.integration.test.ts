@@ -61,7 +61,7 @@ describe('Onboarding: Step Tracking', () => {
       const userId = await ctx.db.insert('users', {
         email: 'onboard-test@example.com',
         role: 'user',
-        membershipTier: 'growth', // Add tier to pass project creation limits
+        membershipTier: 'engine', // Add tier to pass project creation limits
         onboardingStatus: 'not_started',
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -76,9 +76,10 @@ describe('Onboarding: Step Tracking', () => {
 
   test('should update single onboarding step', async () => {
     // Use planSelected to avoid nested createOrganization mutation
+    // @ts-ignore TS2589: convex-test + union types deep instantiation limit
     await authT.mutation(api.onboarding.updateOnboardingStep, {
       step: 'planSelected',
-      value: 'pro',
+      value: 'agency',
     });
 
     // Verify via internal query
@@ -86,15 +87,16 @@ describe('Onboarding: Step Tracking', () => {
       return await ctx.db.get(testUserId);
     });
 
-    expect(user?.onboardingSteps?.planSelected).toBe('pro');
+    expect(user?.onboardingSteps?.planSelected).toBe('agency');
     expect(user?.onboardingSteps?.planSelectedAt).toBeDefined();
   });
 
   test('should update multiple steps in one write', async () => {
+    // @ts-ignore TS2589: convex-test + union types deep instantiation limit
     await authT.mutation(api.onboarding.updateMultipleSteps, {
       steps: [
         { step: 'signupCompleted', value: true },
-        { step: 'planSelected', value: 'pro' },
+        { step: 'planSelected', value: 'agency' },
         { step: 'paymentCompleted', value: true },
       ],
     });
@@ -104,7 +106,7 @@ describe('Onboarding: Step Tracking', () => {
     });
 
     expect(user?.onboardingSteps?.signupCompleted).toBe(true);
-    expect(user?.onboardingSteps?.planSelected).toBe('pro');
+    expect(user?.onboardingSteps?.planSelected).toBe('agency');
     expect(user?.onboardingSteps?.paymentCompleted).toBe(true);
   });
 
@@ -129,6 +131,7 @@ describe('Onboarding: Step Tracking', () => {
 
   test('should complete full happy path onboarding', async () => {
     // Simulate complete onboarding flow
+    // @ts-ignore TS2589: convex-test + union types deep instantiation limit
     await authT.mutation(api.onboarding.updateMultipleSteps, {
       steps: [
         { step: 'signupCompleted', value: true },
@@ -155,6 +158,7 @@ describe('Onboarding: Step Tracking', () => {
 
   test('should complete onboarding WITHOUT GA4/GSC (required steps only)', async () => {
     // Only required steps (no analytics connections)
+    // @ts-ignore TS2589: convex-test + union types deep instantiation limit
     await authT.mutation(api.onboarding.updateMultipleSteps, {
       steps: [
         { step: 'signupCompleted', value: true },
@@ -196,7 +200,7 @@ describe('Onboarding: Project Creation', () => {
       const userId = await ctx.db.insert('users', {
         email: 'project-test@example.com',
         role: 'user',
-        membershipTier: 'growth', // Add tier to pass project creation limits
+        membershipTier: 'engine', // Add tier to pass project creation limits
         onboardingStatus: 'in_progress',
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -265,7 +269,7 @@ describe('Onboarding: Keyword Generation Paths', () => {
       const userId = await ctx.db.insert('users', {
         email: 'keyword-test@example.com',
         role: 'user',
-        membershipTier: 'growth', // Add tier to pass project creation limits
+        membershipTier: 'engine', // Add tier to pass project creation limits
         onboardingStatus: 'in_progress',
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -485,7 +489,7 @@ describe('Onboarding: Edge Cases', () => {
       const userId = await ctx.db.insert('users', {
         email: 'edge-onboarding@example.com',
         role: 'user',
-        membershipTier: 'growth', // Add tier to pass project creation limits
+        membershipTier: 'engine', // Add tier to pass project creation limits
         onboardingStatus: 'not_started',
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -502,19 +506,19 @@ describe('Onboarding: Edge Cases', () => {
     // Update same step twice - use planSelected to avoid nested createOrg mutation
     await authT.mutation(api.onboarding.updateOnboardingStep, {
       step: 'planSelected',
-      value: 'pro',
+      value: 'agency',
     });
 
     await authT.mutation(api.onboarding.updateOnboardingStep, {
       step: 'planSelected',
-      value: 'pro',
+      value: 'agency',
     });
 
     const user = await t.run(async (ctx) => {
       return await ctx.db.get(testUserId);
     });
 
-    expect(user?.onboardingSteps?.planSelected).toBe('pro');
+    expect(user?.onboardingSteps?.planSelected).toBe('agency');
   });
 
   test('should preserve previous steps when updating new one', async () => {
@@ -527,7 +531,7 @@ describe('Onboarding: Edge Cases', () => {
     // Update second step
     await authT.mutation(api.onboarding.updateOnboardingStep, {
       step: 'planSelected',
-      value: 'pro',
+      value: 'agency',
     });
 
     const user = await t.run(async (ctx) => {
@@ -536,7 +540,7 @@ describe('Onboarding: Edge Cases', () => {
 
     // Both should exist
     expect(user?.onboardingSteps?.paymentCompleted).toBe(true);
-    expect(user?.onboardingSteps?.planSelected).toBe('pro');
+    expect(user?.onboardingSteps?.planSelected).toBe('agency');
   });
 
   test('should reject unauthenticated requests', async () => {
@@ -546,7 +550,7 @@ describe('Onboarding: Edge Cases', () => {
     await expect(
       unauthT.mutation(api.onboarding.updateOnboardingStep, {
         step: 'planSelected', // Use planSelected to avoid nested mutation
-        value: 'pro',
+        value: 'agency',
       })
     ).rejects.toThrow('Unauthorized');
   });

@@ -194,12 +194,9 @@ export function PaymentStep({ selectedPlan, onNext, onBack, loading }: Props) {
           </VStack>
 
           {/* Navigation */}
-          <HStack justify="space-between" w="full" pt={2}>
+          <HStack justify="flex-start" w="full" pt={2}>
             <Button variant="ghost" leftIcon={<FiArrowLeft />} onClick={onBack} size="sm">
               Back
-            </Button>
-            <Button variant="link" color="gray.400" fontSize="xs" onClick={onNext}>
-              Skip for now
             </Button>
           </HStack>
         </VStack>

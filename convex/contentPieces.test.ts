@@ -18,12 +18,17 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 vi.mock('./_generated/server', () => ({
   query: vi.fn((config) => config),
   mutation: vi.fn((config) => config),
+  internalQuery: vi.fn((config) => config),
 }));
 
 vi.mock('./auth', () => ({
   auth: {
     getUserId: vi.fn(),
   },
+}));
+
+vi.mock('./lib/rbac', () => ({
+  requireProjectAccess: vi.fn().mockResolvedValue({ userId: 'test-user-id', role: 'admin' })
 }));
 
 vi.mock('convex/values', () => ({

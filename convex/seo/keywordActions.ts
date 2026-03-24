@@ -123,7 +123,10 @@ export const generateClusters = action({
     if (user.role === 'admin' || user.role === 'super_admin') {
       tier = 'admin';
     } else {
-      tier = (user.membershipTier as MembershipTier) || 'free';
+      tier = (user.membershipTier as MembershipTier) || 'starter';
+      if (!['starter', 'engine', 'agency', 'enterprise', 'admin'].includes(tier)) {
+        tier = 'starter';
+      }
     }
 
     // DEV MODE: Skip rate limiting for development/testing
@@ -141,7 +144,7 @@ export const generateClusters = action({
         const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
         throw new ConvexError({
           kind: 'RateLimitError',
-          message: `Rate limit exceeded. You can generate ${tier === 'free' ? '5 clusters per day' : tier === 'admin' ? '200 clusters per hour' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
+          message: `Rate limit exceeded. You can generate ${tier === 'starter' ? '5 clusters per day' : tier === 'admin' ? '200 clusters per hour' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
           retryAfter,
         });
       }

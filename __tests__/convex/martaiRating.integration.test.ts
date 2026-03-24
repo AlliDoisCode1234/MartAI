@@ -10,7 +10,7 @@ describe('MartAI Rating (MR)', () => {
 
     // Call the MR calculator action
     // In a fresh test project, GA4/GSC stats are missing, so it should default to the lowest tier safely.
-    const result = await t.action(internal.analytics.martaiRating.calculateMartAIRating, {
+    const result = await t.action(internal.analytics.martaiRating.calculatePhooRating, {
       projectId,
     });
 

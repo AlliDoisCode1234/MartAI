@@ -92,19 +92,15 @@ export const THRESHOLDS = {
    * Rate Limiting (per tier)
    */
   rateLimits: {
-    free: {
-      aiGenerationsPerDay: 5,
-      syncsPerDay: 1,
-    },
     starter: {
       aiGenerationsPerDay: 50,
       syncsPerDay: 4,
     },
-    growth: {
+    engine: {
       aiGenerationsPerDay: 200,
       syncsPerDay: 12,
     },
-    pro: {
+    agency: {
       aiGenerationsPerDay: 1000,
       syncsPerDay: 48,
     },

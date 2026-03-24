@@ -50,16 +50,10 @@ export default defineSchema({
     ),
     membershipTier: v.optional(
       v.union(
-        v.literal('free'),
         v.literal('starter'), // Canonical entry tier ($197/mo)
         v.literal('engine'), // Canonical mid tier ($397/mo)
         v.literal('agency'), // Canonical top tier ($697/mo)
-        v.literal('enterprise'), // Custom pricing
-        // Legacy aliases (kept for backward compat with existing records)
-        v.literal('solo'), // Legacy → starter
-        v.literal('growth'), // Legacy → engine
-        v.literal('team'), // Legacy → agency
-        v.literal('pro') // Legacy → engine
+        v.literal('enterprise') // Custom pricing
       )
     ),
     bio: v.optional(v.string()),

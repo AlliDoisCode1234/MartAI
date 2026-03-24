@@ -265,7 +265,22 @@ export const getDashboardKPIs = query({
       },
       hasGA4Data,
       hasGSCData,
-      lastSyncDate: latestGA4?.date ?? latestGSC?.date ?? null,
+      // Read actual user sync time from connections (NOT from data bucket dates)
+      // ga4Connections.lastSync / gscConnections.lastSync are set by updateLastSync
+      // after each successful sync, reflecting the real time the user synced.
+      lastSyncDate: await (async () => {
+        const ga4Conn = await ctx.db
+          .query('ga4Connections')
+          .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+          .first();
+        if (ga4Conn?.lastSync) return ga4Conn.lastSync;
+
+        const gscConn = await ctx.db
+          .query('gscConnections')
+          .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+          .first();
+        return gscConn?.lastSync ?? null;
+      })(),
     };
   },
 });

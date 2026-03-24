@@ -368,7 +368,7 @@ describe('Subscription Metrics (super_admin only)', () => {
       await ctx.db.insert('subscriptions', {
         userId: admin,
         status: 'active',
-        planTier: 'growth',
+        planTier: 'engine',
         billingCycle: 'monthly',
         features: {
           maxUrls: 10,

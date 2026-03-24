@@ -61,7 +61,7 @@ export const createBetaUser = internalMutation({
       acquisitionSource: 'waitlist_beta',
       isBetaUser: true,
       betaExpiresAt: now + SIX_MONTHS_MS,
-      membershipTier: 'solo',
+      membershipTier: 'starter',
       createdAt: now,
       updatedAt: now,
     });
@@ -276,11 +276,11 @@ export const runBetaE2E = action({
     console.log(`[E2E] Step 1: Beta User created: ${userId}`);
 
     // =========================================================================
-    // STEP 2: Provision Solo Tier (Beta users get solo)
+    // STEP 2: Provision Starter Tier (Beta users get starter)
     // =========================================================================
     await ctx.runMutation(internal.subscriptions.subscriptions.upsertSubscription, {
       userId,
-      planTier: 'solo',
+      planTier: 'starter',
       status: 'active',
       oneTimeFeePaid: false,
       startsAt: Date.now(),
@@ -452,7 +452,7 @@ export const runPersonaE2E = internalAction({
     // Provision subscription
     await ctx.runMutation(internal.subscriptions.subscriptions.upsertSubscription, {
       userId,
-      planTier: 'solo',
+      planTier: 'starter',
       status: 'active',
       oneTimeFeePaid: false,
       startsAt: Date.now(),

@@ -130,6 +130,33 @@ And what are our standards at all?
 
 ---
 
+### Session Context Memory
+
+These personas act as historical anchors, representing definitive architectural decisions and technical edge-case discoveries from past sessions. Consult them to avoid repeating past mistakes or reverting established fixes.
+
+#### Context Node 00001 (docs/personas/bot_persona_ANALYTICS_PIPELINE_HARDENING_00001_PERSONA.md)
+- Ask: "What decisions were made regarding analytics pipeline hardening?"
+
+#### Context Node 00002 (docs/personas/bot_persona_TOKEN_SECURITY_HARDENING_00002_PERSONA.md)
+- Ask: "What decisions were made regarding token security hardening?"
+
+#### Context Node 00003 (docs/personas/bot_persona_DATA_INTEGRITY_GTM_IDEM_00003_PERSONA.md)
+- Ask: "What decisions were made regarding data integrity and GTM idempotency?"
+
+#### Context Node 00004 (docs/personas/bot_persona_SALES_PAGE_LDD_00004_PERSONA.md)
+- Ask: "What decisions were made regarding the Sales Page LDD architecture?"
+
+#### Context Node 00005 (docs/personas/bot_persona_UI_POLISH_SUBMENUS_00005_PERSONA.md)
+- Ask: "What decisions were made regarding UI polish and submenu behavior?"
+
+#### Context Node 00006 (docs/personas/bot_persona_WORKFLOW_ACTIVATION_00006_PERSONA.md)
+- Ask: "What decisions were made regarding workflow activation?"
+
+#### Context Node 00007 (docs/personas/bot_persona_SUBSCRIPTION_SYNC_00007_PERSONA.md)
+- Ask: "What decisions were made regarding Stripe subscription synchronization and RBAC limits?"
+
+---
+
 ## Consultation Process
 
 1. **State the decision** you need to make

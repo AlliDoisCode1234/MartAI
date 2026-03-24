@@ -2,7 +2,10 @@
  * Marketing Pages — SEO & Metadata Test Suite
  *
  * Tests that all marketing pages have complete, valid SEO metadata
- * by reading the layout source files directly (Node env, no JSX transform).
+ * by reading source files directly (Node env, no JSX transform).
+ *
+ * NOTE: Some routes export metadata from layout.tsx (when they have sub-pages),
+ * others export from page.tsx (server wrapper pattern). The helper checks both.
  *
  * Per KENT: "Test use cases, not implementation. Mostly integration."
  * Use case: When Google crawls any marketing page, it should find
@@ -13,13 +16,21 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Helper: read layout file content
-function readLayout(routePath: string): string {
-  const filePath = path.resolve(__dirname, `../../app${routePath}/layout.tsx`);
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Layout file not found: ${filePath}`);
+// Helper: read the file that exports metadata for a route.
+// Checks page.tsx first (server wrapper pattern), then layout.tsx (sub-route pattern).
+function readMetadataFile(routePath: string): string {
+  const pagePath = path.resolve(__dirname, `../../app${routePath}/page.tsx`);
+  const layoutPath = path.resolve(__dirname, `../../app${routePath}/layout.tsx`);
+
+  if (fs.existsSync(pagePath)) {
+    const content = fs.readFileSync(pagePath, 'utf-8');
+    if (content.includes('export const metadata')) return content;
   }
-  return fs.readFileSync(filePath, 'utf-8');
+  if (fs.existsSync(layoutPath)) {
+    const content = fs.readFileSync(layoutPath, 'utf-8');
+    if (content.includes('export const metadata')) return content;
+  }
+  throw new Error(`No metadata export found for route: ${routePath}`);
 }
 
 // Helper: read root layout (special case — no subdirectory)
@@ -77,7 +88,7 @@ describe('Marketing SEO Metadata', () => {
   describe.each(CHILD_ROUTES)(
     '$route page metadata',
     ({ route, expectedTitle, expectedCanonical }) => {
-      const content = readLayout(route);
+      const content = readMetadataFile(route);
 
       it(`should have title containing "${expectedTitle}"`, () => {
         expect(content.toLowerCase()).toContain(expectedTitle);
@@ -98,10 +109,10 @@ describe('Marketing SEO Metadata', () => {
   );
 
   describe('Completeness checks', () => {
-    it('should have layout files for all 6 child marketing routes', () => {
+    it('should have metadata exports for all 6 child marketing routes', () => {
       for (const { route } of CHILD_ROUTES) {
-        const filePath = path.resolve(__dirname, `../../app${route}/layout.tsx`);
-        expect(fs.existsSync(filePath)).toBe(true);
+        // Metadata can be in either page.tsx or layout.tsx
+        expect(() => readMetadataFile(route)).not.toThrow();
       }
     });
 

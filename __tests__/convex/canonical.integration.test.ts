@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createTestContext, seedUser, seedProject } from './testHelpers';
-import { api } from '../../convex/_generated/api';
+import { api, internal } from '../../convex/_generated/api';
 
 (globalThis as any).vi = vi;
 
@@ -87,10 +87,12 @@ describe('Canonical Data Layer', () => {
       const userId = await seedUser(t);
       const projectId = await seedProject(t, userId);
 
+      const authT = t.withIdentity({ subject: userId });
+
       // When no data exists, rating should be low
-      const initialRating = await t.query(api.canonical.rating.getCanonicalRating, { projectId });
+      const initialRating = await authT.query(api.canonical.rating.getCanonicalRating, { projectId });
       expect(initialRating.rating).toBeLessThan(50);
-      expect(initialRating.breakdown.length).toBe(5); // SEO, Keywords, Clusters, Content, GEO
+      expect(initialRating.breakdown.length).toBe(8); // Updated to 8 components from PhooRating
 
       // Seed data to boost score
       await t.run(async (ctx) => {
@@ -117,15 +119,15 @@ describe('Canonical Data Layer', () => {
           });
         }
       });
-
-      const boostedRating = await t.query(api.canonical.rating.getCanonicalRating, { projectId });
+      await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId });
+      const boostedRating = await authT.query(api.canonical.rating.getCanonicalRating, { projectId });
       expect(boostedRating.rating).toBeGreaterThan(initialRating.rating);
 
       const seoComponent = boostedRating.breakdown.find((b) => b.component === 'SEO Audit');
       expect(seoComponent?.score).toBe(90); // Avg of 90, 95, 85
 
-      const keywordsComponent = boostedRating.breakdown.find((b) => b.component === 'Keywords');
-      expect(keywordsComponent?.score).toBe(100); // Because >= 50 keywords seeded
+      const keywordsComponent = boostedRating.breakdown.find((b) => b.component === 'Keyword Strategy');
+      expect(keywordsComponent?.score).toBe(50); // With 50 approved keywords, coverage=30, curation=20, quality=0 => 50
 
       await t.finishAllScheduledFunctions(() => vi.runAllTimers());
     });

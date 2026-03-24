@@ -64,7 +64,7 @@ export type Intent = 'informational' | 'commercial' | 'transactional' | 'navigat
 export type UserRole = 'user' | 'admin' | 'super_admin';
 
 /** Membership tiers (must match schema) */
-export type MembershipTier = 'free' | 'starter' | 'growth' | 'pro' | 'enterprise';
+export type MembershipTier = 'starter' | 'engine' | 'agency' | 'enterprise';
 
 /** WordPress post status (matches lib/integrations/wordpress) */
 export type WordPressStatus = 'publish' | 'draft' | 'private';

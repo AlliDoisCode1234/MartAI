@@ -8,7 +8,7 @@
  * └── Tab: Account (accordion: Profile, Security, Billing Summary)
  * └── Tab: Brand (accordion: Brand Identity, Content Defaults, Publishing)
  * └── Tab: Integrations (analytics, CMS platforms)
- * └── Tab: Team (links to /settings/team for full management)
+ * └── Tab: Team (inline TeamManagementPanel)
  *
  * Support is a footer link, not a tab.
  * Billing lives at /subscription, linked from Account tab.
@@ -55,6 +55,7 @@ import { ShopifyConnect } from '@/src/components/settings/ShopifyConnect';
 import { WixConnect } from '@/src/components/settings/WixConnect';
 import { GoogleConnect } from '@/src/components/settings/GoogleConnect';
 import { ChangePasswordForm } from '@/src/components/settings/ChangePasswordForm';
+import { TeamManagementPanel } from '@/src/components/settings/TeamManagementPanel';
 import { useProject } from '@/lib/hooks';
 import { useMe } from '@/lib/useMe';
 import Link from 'next/link';
@@ -96,7 +97,8 @@ const INDEX_TO_TAB = ['account', 'brand', 'integrations', 'team'];
 // Tier badge colors
 const tierColors: Record<string, string> = {
   starter: 'gray',
-  growth: 'purple',
+  engine: 'purple',
+  agency: 'blue',
   enterprise: 'orange',
 };
 
@@ -144,7 +146,7 @@ export default function SettingsPage() {
   const organization = myOrganizations && myOrganizations.length > 0 ? myOrganizations[0] : null;
   const userRole = organization?.role || 'owner';
 
-  const canManageTeam = me?.membershipTier && ['growth', 'enterprise'].includes(me.membershipTier);
+  const canManageTeam = me?.membershipTier && ['engine', 'agency', 'enterprise'].includes(me.membershipTier);
 
   // URL-synced tab state
   const tabParam = searchParams?.get('tab') || 'account';
@@ -201,8 +203,8 @@ export default function SettingsPage() {
     });
   };
 
-  const tier = me?.subscriptionTier || 'starter';
-  const isStarter = tier === 'starter' || tier === 'solo';
+  const tier = me?.membershipTier || 'starter';
+  const isStarter = tier === 'starter';
   const initials = me ? getInitials(me.name, me.email) : 'U';
   const memberSince = me?._creationTime ? formatLongDate(me._creationTime) : 'Unknown';
 
@@ -708,33 +710,17 @@ export default function SettingsPage() {
 
                 {/* ═══ Team Tab ═══ */}
                 <TabPanel p={6}>
-                  <VStack align="stretch" spacing={6}>
-                    <HStack justify="space-between" align="start">
+                  {canManageTeam ? (
+                    <TeamManagementPanel />
+                  ) : (
+                    <VStack align="stretch" spacing={6}>
                       <Box>
                         <Heading size="md" mb={1}>Team</Heading>
                         <Text color="gray.600" fontSize="sm">
-                          {canManageTeam
-                            ? 'Invite team members to collaborate on your projects'
-                            : 'Upgrade to Growth to invite team members'}
+                          Upgrade to Growth Engine to invite team members
                         </Text>
                       </Box>
-                      {canManageTeam && (
-                        <Badge colorScheme="purple" textTransform="capitalize">{me?.membershipTier}</Badge>
-                      )}
-                    </HStack>
-                    <Divider />
-                    {canManageTeam ? (
-                      <VStack align="stretch" spacing={4}>
-                        <Text color="gray.600">
-                          Manage your team members, invite new collaborators, and control access permissions.
-                        </Text>
-                        <Link href="/settings/team" passHref>
-                          <Button colorScheme="orange" rightIcon={<FiArrowRight />} size="lg">
-                            Manage Team Members
-                          </Button>
-                        </Link>
-                      </VStack>
-                    ) : (
+                      <Divider />
                       <Box p={6} bg="orange.50" borderRadius="lg" borderWidth="1px" borderColor="orange.200">
                         <VStack align="start" spacing={3}>
                           <HStack spacing={2}>
@@ -744,15 +730,15 @@ export default function SettingsPage() {
                             </Text>
                           </HStack>
                           <Text color="gray.600">
-                            Upgrade to Growth to invite up to 3 team members. Enterprise plans support unlimited seats with advanced permissions.
+                            Upgrade to Growth Engine to invite up to 5 team members. Agency plans support up to 25 seats.
                           </Text>
                           <Link href="/subscription" passHref>
                             <Button colorScheme="orange" size="md" mt={2}>Upgrade Plan</Button>
                           </Link>
                         </VStack>
                       </Box>
-                    )}
-                  </VStack>
+                    </VStack>
+                  )}
                 </TabPanel>
               </TabPanels>
             </Tabs>

@@ -80,7 +80,7 @@ export const autoGenerateContent = action({
     if (!userId) throw new Error('Unauthorized');
 
     const { projectId } = args;
-    await ctx.runQuery(internal.projects.verifyProjectAccess, { projectId });
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId });
 
     // ── Step 1: Resolve content type ────────────────────────────────
     const contentType: ContentTypeId = args.contentType ?? 'blog';
@@ -229,32 +229,37 @@ export const generateContentTitle = action({
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error('Unauthorized');
 
-    await ctx.runQuery(internal.projects.verifyProjectAccess, { projectId: args.projectId });
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId: args.projectId });
 
     // Rate limit: Fetch user tier and enforce AI analysis limits
     const user = await ctx.runQuery(internal.users.getUser, { userId });
     if (!user) throw new Error('User not found');
 
-    let tier: 'free' | 'starter' | 'growth' | 'pro' | 'admin' = 'free';
-    if (user.role === 'admin' || user.role === 'super_admin') {
-      tier = 'admin';
-    } else {
-      const membership = user.membershipTier || 'free';
-      switch (membership) {
-        case 'solo':
-        case 'starter':
-          tier = 'starter';
-          break;
-        case 'growth':
-        case 'team':
-          tier = 'growth';
-          break;
-        case 'pro':
-        case 'enterprise':
-          tier = 'pro';
-          break;
-        default:
-          tier = 'free';
+    let tier: 'starter' | 'engine' | 'agency' | 'enterprise' | 'admin' = 'starter';
+    if (user) {
+      if (user.role === 'admin' || user.role === 'super_admin') {
+        tier = 'admin';
+      } else {
+        const membership = user.membershipTier || 'starter';
+        switch (membership) {
+          case 'solo':
+          case 'starter':
+            tier = 'starter';
+            break;
+          case 'engine':
+          case 'pro': // Legacy alias handling just in case
+            tier = 'engine';
+            break;
+          case 'agency':
+          case 'team': // Legacy alias handling
+            tier = 'agency';
+            break;
+          case 'enterprise':
+            tier = 'enterprise';
+            break;
+          default:
+            tier = 'starter';
+        }
       }
     }
 
@@ -364,7 +369,7 @@ export const suggestKeywords = action({
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error('Unauthorized');
 
-    await ctx.runQuery(internal.projects.verifyProjectAccess, { projectId: args.projectId });
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId: args.projectId });
 
     // Get project context for industry-aware suggestions
     let industry = 'digital marketing';
@@ -430,30 +435,31 @@ export const generateContentInternalHandler = async (
     // 1. Fetch user to determine rate limit tier
     const user = await ctx.runQuery(internal.users.getUser, { userId });
     if (!user) throw new Error('User not found');
-
-    // Map schema tier to rate limit tier
-    let tier: 'free' | 'starter' | 'growth' | 'pro' | 'admin' = 'free';
-
-    // Admins get admin limits
-    if (user.role === 'admin' || user.role === 'super_admin') {
-      tier = 'admin';
-    } else {
-      const membership = user.membershipTier || 'free';
-      switch (membership) {
-        case 'solo':
-        case 'starter':
-          tier = 'starter';
-          break;
-        case 'growth':
-        case 'team': // Map team to growth for now
-          tier = 'growth';
-          break;
-        case 'pro':
-        case 'enterprise':
-          tier = 'pro';
-          break;
-        default:
-          tier = 'free';
+    let tier: 'starter' | 'engine' | 'agency' | 'enterprise' | 'admin' = 'starter';
+    if (user) {
+      if (user.role === 'admin' || user.role === 'super_admin') {
+        tier = 'admin';
+      } else {
+        const membership = user.membershipTier || 'starter';
+        switch (membership) {
+          case 'solo':
+          case 'starter':
+            tier = 'starter';
+            break;
+          case 'engine':
+          case 'pro': // Legacy alias handling just in case
+            tier = 'engine';
+            break;
+          case 'agency':
+          case 'team': // Legacy alias handling
+            tier = 'agency';
+            break;
+          case 'enterprise':
+            tier = 'enterprise';
+            break;
+          default:
+            tier = 'starter';
+        }
       }
     }
 

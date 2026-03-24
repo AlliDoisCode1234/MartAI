@@ -155,7 +155,7 @@ const EMAIL_TEMPLATES: Record<
         <h1 style="color: #F99F2A;">New Team Member!</h1>
         <p>Great news! <strong>${data.memberName || 'A new member'}</strong> (${data.memberEmail || 'email'}) has accepted your invitation to join <strong>${data.orgName || 'your team'}</strong>.</p>
         <p>They've been assigned the <strong>${data.role || 'team member'}</strong> role.</p>
-        <a href="${APP_URL}/settings/team" style="display: inline-block; background: #F99F2A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 16px;">
+        <a href="${APP_URL}/settings?tab=team" style="display: inline-block; background: #F99F2A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 16px;">
           View Your Team
         </a>
         <p style="color: #999; font-size: 12px; margin-top: 24px;">

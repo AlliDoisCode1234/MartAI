@@ -1,5 +1,5 @@
 import { convexTest } from 'convex-test';
-import { expect, test, describe, beforeEach, afterEach } from 'vitest';
+import { expect, test, describe, beforeEach, afterEach, vi } from 'vitest';
 import { api } from './_generated/api';
 import schema from './schema';
 
@@ -21,15 +21,18 @@ describe('joinWaitlist', () => {
   let t: ReturnType<typeof convexTest>;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     t = convexTest(schema);
   });
 
   afterEach(async () => {
-    // Cleanup any remaining scheduled functions
+    // Cleanup any remaining scheduled functions safely
     try {
-      await t.finishInProgressScheduledFunctions();
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
     } catch {
       // Ignore errors from scheduled Node.js actions (e.g., HubSpot without API key)
+    } finally {
+      vi.useRealTimers();
     }
   });
 
@@ -146,14 +149,17 @@ describe('getWaitlistCount', () => {
   let t: ReturnType<typeof convexTest>;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     t = convexTest(schema);
   });
 
   afterEach(async () => {
     try {
-      await t.finishInProgressScheduledFunctions();
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
     } catch {
       // Ignore errors from scheduled Node.js actions
+    } finally {
+      vi.useRealTimers();
     }
   });
 

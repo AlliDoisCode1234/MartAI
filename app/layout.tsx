@@ -69,7 +69,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
-        {/* JSON-LD Structured Data — Organization + App + FAQ + Breadcrumbs */}
+        {/* JSON-LD Structured Data — Organization + App + Breadcrumbs */}
+        {/* NOTE: FAQPage schema removed from root @graph (March 2026).
+            It was duplicating the pricing page's FAQPage, causing Google Search Console
+            "Duplicate field FAQPage" critical error. FAQ schemas belong ONLY on pages
+            that display FAQ content (e.g. /pricing/page.tsx). */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -108,53 +112,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     availability: 'https://schema.org/InStock',
                   },
                   publisher: { '@id': 'https://www.phoo.ai/#organization' },
-                },
-                // FAQ schema — triggers rich result dropdowns AND feeds AI citations
-                {
-                  '@type': 'FAQPage',
-                  '@id': 'https://www.phoo.ai/#faq',
-                  mainEntity: [
-                    {
-                      '@type': 'Question',
-                      name: 'What is Phoo?',
-                      acceptedAnswer: {
-                        '@type': 'Answer',
-                        text: 'Phoo is an AI-powered SEO and lead generation platform that replaces your marketing agency. It creates optimized content, tracks keywords, and publishes to your CMS — all for a fraction of agency costs.',
-                      },
-                    },
-                    {
-                      '@type': 'Question',
-                      name: 'How much does Phoo cost compared to a marketing agency?',
-                      acceptedAnswer: {
-                        '@type': 'Answer',
-                        text: 'Phoo starts at $164/month compared to $2,500+/month for a typical marketing agency. You get AI content creation, keyword intelligence, analytics, CMS publishing, and GEO optimization in one platform.',
-                      },
-                    },
-                    {
-                      '@type': 'Question',
-                      name: 'What is GEO optimization and why does it matter?',
-                      acceptedAnswer: {
-                        '@type': 'Answer',
-                        text: 'Over 1 in 4 Google searches now show AI-generated answers (Google AI Overviews, ChatGPT, Perplexity). GEO (Generative Engine Optimization) ensures your content gets cited by these AI systems, not just ranked in traditional search results. Studies show GEO can boost content visibility by up to 40%.',
-                      },
-                    },
-                    {
-                      '@type': 'Question',
-                      name: 'What CMS platforms does Phoo integrate with?',
-                      acceptedAnswer: {
-                        '@type': 'Answer',
-                        text: 'Phoo integrates with WordPress, Shopify, and Webflow for one-click publishing. Content is automatically formatted with SEO meta tags, schema markup, and responsive images.',
-                      },
-                    },
-                    {
-                      '@type': 'Question',
-                      name: 'How does Phoo differ from other SEO tools?',
-                      acceptedAnswer: {
-                        '@type': 'Answer',
-                        text: 'Unlike standalone SEO tools, Phoo is an all-in-one platform that handles content creation, keyword research, analytics, publishing, AND GEO optimization. It replaces 5-6 separate tools and an agency.',
-                      },
-                    },
-                  ],
                 },
                 // Breadcrumbs — gets breadcrumb trail in search results
                 {

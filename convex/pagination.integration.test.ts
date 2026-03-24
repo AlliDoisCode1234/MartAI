@@ -16,6 +16,7 @@ import { Id } from './_generated/dataModel';
 describe('Content Pieces: Pagination & Filtering', () => {
   let t: ReturnType<typeof convexTest>;
   let testProjectId: Id<'projects'>;
+  let testUserId: Id<'users'>;
 
   beforeEach(async () => {
     t = convexTest(schema);
@@ -57,15 +58,12 @@ describe('Content Pieces: Pagination & Filtering', () => {
     });
 
     testProjectId = result.projectId;
+    testUserId = result.userId;
   });
 
   test('should paginate content pieces', async () => {
     // Set up authenticated context for this test
-    const authT = t.withIdentity({
-      name: 'Pagination Test User',
-      email: 'pagination-test@example.com',
-      subject: 'test-pagination-user',
-    });
+    const authT = t.withIdentity({ subject: testUserId });
 
     const result = await authT.query(api.contentPieces.listByProjectPaginated, {
       projectId: testProjectId,
@@ -78,11 +76,7 @@ describe('Content Pieces: Pagination & Filtering', () => {
   });
 
   test('should filter by status', async () => {
-    const authT = t.withIdentity({
-      name: 'Test User',
-      email: 'test@example.com',
-      subject: 'test-user',
-    });
+    const authT = t.withIdentity({ subject: testUserId });
     const draftResult = await authT.query(api.contentPieces.listByProjectPaginated, {
       projectId: testProjectId,
       status: 'draft',
@@ -94,11 +88,7 @@ describe('Content Pieces: Pagination & Filtering', () => {
   });
 
   test('should return empty for status with no matches', async () => {
-    const authT = t.withIdentity({
-      name: 'Test User',
-      email: 'test@example.com',
-      subject: 'test-user',
-    });
+    const authT = t.withIdentity({ subject: testUserId });
     const generatingResult = await authT.query(api.contentPieces.listByProjectPaginated, {
       projectId: testProjectId,
       status: 'generating',
@@ -109,11 +99,7 @@ describe('Content Pieces: Pagination & Filtering', () => {
   });
 
   test('should order by creation date descending', async () => {
-    const authT = t.withIdentity({
-      name: 'Test User',
-      email: 'test@example.com',
-      subject: 'test-user',
-    });
+    const authT = t.withIdentity({ subject: testUserId });
     const result = await authT.query(api.contentPieces.listByProjectPaginated, {
       projectId: testProjectId,
       paginationOpts: { numItems: 5, cursor: null },

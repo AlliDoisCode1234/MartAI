@@ -1,6 +1,6 @@
 import { convexTest } from 'convex-test';
 import { expect, test, describe, beforeEach } from 'vitest';
-import { api } from '../_generated/api';
+import { api, internal } from '../_generated/api';
 import { Id } from '../_generated/dataModel';
 import schema from '../schema';
 
@@ -207,6 +207,7 @@ describe('Canonical Metrics Query', () => {
 describe('Canonical Rating Query', () => {
   let t: ReturnType<typeof convexTest>;
   let testProjectId: Id<'projects'>;
+  let testUserId: Id<'users'>;
 
   beforeEach(async () => {
     t = convexTest(schema);
@@ -227,14 +228,18 @@ describe('Canonical Rating Query', () => {
         updatedAt: Date.now(),
       });
 
-      return { projectId };
+      return { projectId, userId };
     });
 
     testProjectId = result.projectId;
+    testUserId = result.userId;
   });
 
   test('should return low rating for empty project', async () => {
-    const rating = await t.query(api.canonical.rating.getCanonicalRating, {
+    await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId: testProjectId });
+
+    const authT = t.withIdentity({ subject: testUserId });
+    const rating = await authT.query(api.canonical.rating.getCanonicalRating, {
       projectId: testProjectId,
     });
 
@@ -258,15 +263,18 @@ describe('Canonical Rating Query', () => {
       }
     });
 
-    const rating = await t.query(api.canonical.rating.getCanonicalRating, {
+    await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId: testProjectId });
+
+    const authT = t.withIdentity({ subject: testUserId });
+    const rating = await authT.query(api.canonical.rating.getCanonicalRating, {
       projectId: testProjectId,
     });
 
-    // Keywords component should show 75 (25+ keywords)
+    // Keywords Strategy component should show 60 (25 items + search volume)
     const keywordBreakdown = rating.breakdown.find(
-      (b: { component: string }) => b.component === 'Keywords'
+      (b: { component: string }) => b.component === 'Keyword Strategy'
     );
-    expect(keywordBreakdown?.score).toBe(75);
+    expect(keywordBreakdown?.score).toBe(60);
     expect(rating.rating).toBeGreaterThan(0);
   });
 
@@ -286,7 +294,9 @@ describe('Canonical Rating Query', () => {
       });
     });
 
-    const rating = await t.query(api.canonical.rating.getCanonicalRating, {
+    await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId: testProjectId });
+    const authT = t.withIdentity({ subject: testUserId });
+    const rating = await authT.query(api.canonical.rating.getCanonicalRating, {
       projectId: testProjectId,
     });
 
@@ -326,12 +336,16 @@ describe('Canonical Rating Query', () => {
       }
     });
 
+    await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId: testProjectId });
+
+    const authT = t.withIdentity({ subject: testUserId });
+
     // Query twice (simulating Dashboard and Ask Phoo)
-    const dashboardRating = await t.query(api.canonical.rating.getCanonicalRating, {
+    const dashboardRating = await authT.query(api.canonical.rating.getCanonicalRating, {
       projectId: testProjectId,
     });
 
-    const askPhooRating = await t.query(api.canonical.rating.getCanonicalRating, {
+    const askPhooRating = await authT.query(api.canonical.rating.getCanonicalRating, {
       projectId: testProjectId,
     });
 
@@ -341,7 +355,9 @@ describe('Canonical Rating Query', () => {
   });
 
   test('should provide actionable top opportunity', async () => {
-    const rating = await t.query(api.canonical.rating.getCanonicalRating, {
+    await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId: testProjectId });
+    const authT = t.withIdentity({ subject: testUserId });
+    const rating = await authT.query(api.canonical.rating.getCanonicalRating, {
       projectId: testProjectId,
     });
 
@@ -350,7 +366,9 @@ describe('Canonical Rating Query', () => {
   });
 
   test('should include insights for improvement', async () => {
-    const rating = await t.query(api.canonical.rating.getCanonicalRating, {
+    await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId: testProjectId });
+    const authT = t.withIdentity({ subject: testUserId });
+    const rating = await authT.query(api.canonical.rating.getCanonicalRating, {
       projectId: testProjectId,
     });
 
@@ -366,6 +384,7 @@ describe('Canonical Rating Query', () => {
 describe('Data Consistency Verification', () => {
   let t: ReturnType<typeof convexTest>;
   let testProjectId: Id<'projects'>;
+  let testUserId: Id<'users'>;
 
   beforeEach(async () => {
     t = convexTest(schema);
@@ -426,18 +445,23 @@ describe('Data Consistency Verification', () => {
         });
       }
 
-      return { projectId };
+      return { projectId, userId };
     });
 
     testProjectId = result.projectId;
+    testUserId = result.userId;
   });
 
   test('metrics and rating should calculate from same data source', async () => {
-    const metrics = await t.query(api.canonical.metrics.getCanonicalMetrics, {
+    await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId: testProjectId });
+
+    const authT = t.withIdentity({ subject: testUserId });
+
+    const metrics = await authT.query(api.canonical.metrics.getCanonicalMetrics, {
       projectId: testProjectId,
     });
 
-    const rating = await t.query(api.canonical.rating.getCanonicalRating, {
+    const rating = await authT.query(api.canonical.rating.getCanonicalRating, {
       projectId: testProjectId,
     });
 
@@ -448,10 +472,12 @@ describe('Data Consistency Verification', () => {
 
     // Rating should reflect the data we seeded
     expect(rating.rating).toBeGreaterThan(0);
-    expect(rating.breakdown.length).toBe(5); // SEO, Keywords, Clusters, Content, GEO
+    expect(rating.breakdown.length).toBe(8); // Now tracks 8 components
   });
 
   test('should never show zero when data exists (P0 bug)', async () => {
+    await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId: testProjectId });
+
     const metrics = await t.query(api.canonical.metrics.getCanonicalMetrics, {
       projectId: testProjectId,
     });

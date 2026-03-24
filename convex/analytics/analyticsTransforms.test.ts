@@ -99,16 +99,43 @@ describe('parseGA4Response', () => {
     expect(result!.bounceRate).toBe(0.6523);
   });
 
-  it('returns null for empty GA4 response', () => {
-    expect(parseGA4Response({ rows: [] })).toBeNull();
-    expect(parseGA4Response({})).toBeNull();
+  it('returns zeroed metrics for empty GA4 response', () => {
+    const result = parseGA4Response({});
+    expect(result).toEqual({
+      sessions: 0,
+      users: 0,
+      engagementDuration: 0,
+      pageViews: 0,
+      bounceRate: 0,
+      avgSessionDuration: 0,
+      newUsers: 0,
+      engagedSessions: 0,
+      eventCount: 0,
+      conversions: 0,
+    });
   });
 
-  it('returns null for response with insufficient metric values', () => {
+  it('returns zeroed metrics for response with empty rows array', () => {
+    const result = parseGA4Response({ rows: [] });
+    expect(result).toEqual({
+      sessions: 0,
+      users: 0,
+      engagementDuration: 0,
+      pageViews: 0,
+      bounceRate: 0,
+      avgSessionDuration: 0,
+      newUsers: 0,
+      engagedSessions: 0,
+      eventCount: 0,
+      conversions: 0,
+    });
+  });
+
+  it('throws error for response with insufficient metric values', () => {
     const incomplete: RawGA4Response = {
       rows: [{ metricValues: [{ value: '100' }, { value: '50' }] }],
     };
-    expect(parseGA4Response(incomplete)).toBeNull();
+    expect(() => parseGA4Response(incomplete)).toThrow('GA4 Schema Mismatch');
   });
 
   it('handles missing metric values with default 0', () => {

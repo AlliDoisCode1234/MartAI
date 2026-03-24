@@ -74,8 +74,7 @@ function AccountShellInner({ children }: Props) {
   const isActive = (item: AccountNavItem): boolean => {
     // Tab-based matching
     if (item.matchTab) {
-      // Team has its own route at /settings/team
-      if (item.matchTab === 'team' && pathname === '/settings/team') return true;
+      // Tab-based matching only — all settings sections use ?tab= pattern
       // Tab matching: pathname must be /settings and tab param must match
       const rawTab = searchParams?.get('tab') || 'account';
       // Normalize: treat 'profile' as alias for 'account', unknown tabs default to 'account'
