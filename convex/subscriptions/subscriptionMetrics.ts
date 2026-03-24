@@ -26,7 +26,7 @@ export const getSubscriptionMetrics = query({
 
     // Calculate MRR from active subscriptions
     const mrr = activeSubscriptions.reduce((sum, sub) => {
-      const tier = sub.planTier?.toLowerCase() || 'solo';
+      const tier = sub.planTier?.toLowerCase() || 'starter';
       const plan = PLAN_LIMITS[tier as keyof typeof PLAN_LIMITS];
       const price = plan?.priceMonthly ?? 0;
       // Adjust for annual billing (if applicable)

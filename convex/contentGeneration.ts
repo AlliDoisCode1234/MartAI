@@ -252,8 +252,10 @@ export const generateContentTitle = action({
             break;
           case 'agency':
           case 'team': // Legacy alias handling
-          case 'enterprise':
             tier = 'agency';
+            break;
+          case 'enterprise':
+            tier = 'enterprise';
             break;
           default:
             tier = 'starter';
@@ -450,8 +452,10 @@ export const generateContentInternalHandler = async (
             break;
           case 'agency':
           case 'team': // Legacy alias handling
-          case 'enterprise':
             tier = 'agency';
+            break;
+          case 'enterprise':
+            tier = 'enterprise';
             break;
           default:
             tier = 'starter';

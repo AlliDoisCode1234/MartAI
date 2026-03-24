@@ -123,7 +123,10 @@ export const generateClusters = action({
     if (user.role === 'admin' || user.role === 'super_admin') {
       tier = 'admin';
     } else {
-      tier = (user.membershipTier as MembershipTier) || 'free';
+      tier = (user.membershipTier as MembershipTier) || 'starter';
+      if (!['starter', 'engine', 'agency', 'enterprise', 'admin'].includes(tier)) {
+        tier = 'starter';
+      }
     }
 
     // DEV MODE: Skip rate limiting for development/testing

@@ -17,6 +17,11 @@ vi.mock('../../_generated/api', () => ({
       personas: {
         getPersona: 'ai:personas:getPersona',
       },
+      router: {
+        router: {
+          generateWithFallback: 'ai:router:router:generateWithFallback',
+        },
+      },
     },
   },
   components: {
@@ -138,7 +143,7 @@ describe('IntelligenceService', () => {
       expect(ctx.runAction).toHaveBeenCalled();
     });
 
-    it.skip('should use persona context if provided (TODO: fix mock format issue)', async () => {
+    it('should use persona context if provided', async () => {
       ctx.runAction.mockResolvedValue(mockRouterResponse('Persona content'));
 
       // Mock persona fetch
@@ -161,7 +166,6 @@ describe('IntelligenceService', () => {
 
       const result = await service.generate('Prompt', '', { useReflection: true });
 
-      // Final result should be the refined text
       expect(result.content).toBe('Refined Draft');
       expect(result.issues).toEqual(['Critique: Improve X']);
     });

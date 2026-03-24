@@ -139,7 +139,7 @@ describe('Marketing Barrel Exports', () => {
 });
 
 describe('Product Page Structure', () => {
-  const pagePath = path.resolve(__dirname, '../../app/product/page.tsx');
+  const pagePath = path.resolve(__dirname, '../../app/product/ProductPageClient.tsx');
   const pageContent = fs.readFileSync(pagePath, 'utf-8');
 
   it('should have component hierarchy comment', () => {

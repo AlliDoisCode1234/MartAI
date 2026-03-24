@@ -21,6 +21,7 @@ import {
   createMockM1Flow,
   resetMockIds,
 } from './testSetup';
+import { createTestContext } from './testHelpers';
 
 // Import Convex functions to test
 import { api } from '../../convex/_generated/api';
@@ -221,8 +222,8 @@ describe('M1 Flow: Edge Cases', () => {
 // Note: convexTest(schema) requires additional Convex module setup.
 // The mock data factories above provide the testing value for now.
 describe('M1 Flow: Convex Backend Integration', () => {
-  test.skip('can initialize convex-test with schema (requires Convex modules setup)', async () => {
-    const t = convexTest(schema);
+  test('can initialize convex-test with schema (requires Convex modules setup)', async () => {
+    const t = createTestContext();
 
     // Verify test environment initializes
     expect(t).toBeDefined();

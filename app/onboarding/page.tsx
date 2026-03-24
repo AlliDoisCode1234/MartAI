@@ -43,7 +43,7 @@ export default function OnboardingPage() {
   // State
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('growth');
+  const [selectedPlan, setSelectedPlan] = useState('starter');
   const [formData, setFormData] = useState({ businessName: '', website: '' });
   const [projectId, setProjectId] = useState<string | null>(null);
   const [ga4Connected, setGa4Connected] = useState(false);
@@ -399,6 +399,15 @@ export default function OnboardingPage() {
 
   // Step 2: Track plan and advance
   const handleStep2Next = async () => {
+    if (!['starter', 'engine', 'agency', 'enterprise'].includes(selectedPlan)) {
+      toast({
+        title: 'Invalid Plan Selection',
+        description: 'Please select a valid membership plan.',
+        status: 'error',
+        duration: 3000,
+      });
+      return;
+    }
     await updateOnboardingStep({ step: 'planSelected', value: selectedPlan }).catch(console.error);
     nextStep();
   };

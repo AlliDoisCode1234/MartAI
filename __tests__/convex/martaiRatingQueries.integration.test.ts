@@ -18,8 +18,11 @@ describe('MartAI Rating Queries', () => {
       trafficHealth: 90,
       ctrPerformance: 70,
       engagementQuality: 60,
-      quickWinPotential: 90,
-      contentVelocity: 100,
+      seoAudit: 80,
+      keywordStrategy: 80,
+      contentExecution: 80,
+      geoReadiness: 80,
+      rawMetrics: {},
     });
 
     const authT = t.withIdentity({ subject: userId });
@@ -43,8 +46,10 @@ describe('MartAI Rating Queries', () => {
     const userId = await seedUser(t);
     const projectId = await seedProject(t, userId);
 
+    const authT = t.withIdentity({ subject: userId });
+
     // With 0 keywords/clusters, the preliminary score should just be the base 10 + 5 + 5
-    const prelim = await t.mutation(api.analytics.martaiRatingQueries.generatePreliminaryScore, {
+    const prelim = await authT.mutation(api.analytics.martaiRatingQueries.generatePreliminaryScore, {
       projectId,
     });
 
@@ -52,7 +57,7 @@ describe('MartAI Rating Queries', () => {
     expect(prelim.tier).toBe('needs_work');
 
     // Generating again should return the existing non-overwritten score
-    const prelim2 = await t.mutation(api.analytics.martaiRatingQueries.generatePreliminaryScore, {
+    const prelim2 = await authT.mutation(api.analytics.martaiRatingQueries.generatePreliminaryScore, {
       projectId,
     });
     expect(prelim2.overall).toBe(20);

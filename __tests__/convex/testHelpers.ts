@@ -33,6 +33,7 @@ export async function seedUser(
       email: overrides.email ?? `test_${Date.now()}@test.com`,
       name: overrides.name ?? 'Test User',
       role: overrides.role ?? 'user',
+      membershipTier: 'starter',
       onboardingStatus: overrides.onboardingStatus ?? 'completed',
       createdAt: Date.now(),
       updatedAt: Date.now(),

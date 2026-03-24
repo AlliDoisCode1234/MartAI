@@ -48,7 +48,7 @@ export const HUBSPOT_CUSTOM_PROPERTIES = {
     label: 'Phoo Plan',
     description: 'Current subscription tier',
     type: 'enumeration',
-    options: ['free', 'solo', 'starter', 'growth', 'pro', 'enterprise'],
+    options: ['starter', 'engine', 'agency', 'enterprise'],
   },
   phoo_subscription_status: {
     label: 'Phoo Subscription Status',

@@ -4,6 +4,11 @@
  * Tests that the homepage JSON-LD schema is valid and contains
  * all required entities for rich search results and AI citations.
  *
+ * IMPORTANT: FAQPage schema must NOT be in root layout @graph.
+ * FAQ schemas belong on the specific page displaying FAQ content
+ * (e.g. /pricing). Having it in root layout causes Google's
+ * "Duplicate field FAQPage" error that blocks indexing.
+ *
  * Per MART (SEO Expert): "FAQ schema is the highest-ROI SEO change."
  * Per KENT: "Test use cases — does the structured data tell Google what we need?"
  */
@@ -11,21 +16,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-
-// Read the layout file and extract JSON-LD content
-function extractJsonLdFromLayout(): Record<string, unknown> | null {
-  const layoutPath = path.resolve(__dirname, '../../app/layout.tsx');
-  const content = fs.readFileSync(layoutPath, 'utf-8');
-
-  // Extract the JSON structure from the JSON.stringify call
-  // Look for the @graph array pattern
-  const graphMatch = content.match(/'@graph':\s*\[([\s\S]*?)\],\s*\}\)/);
-  if (!graphMatch) return null;
-
-  // Instead of parsing raw TSX, we'll validate the structure by checking
-  // for required schema types in the source code
-  return { raw: content };
-}
 
 describe('JSON-LD Structured Data', () => {
   const layoutPath = path.resolve(__dirname, '../../app/layout.tsx');
@@ -44,8 +34,11 @@ describe('JSON-LD Structured Data', () => {
       expect(layoutContent).toContain("'@type': 'SoftwareApplication'");
     });
 
-    it('should contain FAQPage schema', () => {
-      expect(layoutContent).toContain("'@type': 'FAQPage'");
+    it('should NOT contain FAQPage in root layout (causes duplicate schema)', () => {
+      // FAQPage was removed from root @graph in March 2026.
+      // It duplicated the pricing page's FAQPage, causing Google Search Console
+      // "Duplicate field FAQPage" critical indexing error.
+      expect(layoutContent).not.toContain("'@type': 'FAQPage'");
     });
 
     it('should contain BreadcrumbList schema', () => {
@@ -59,7 +52,7 @@ describe('JSON-LD Structured Data', () => {
     });
 
     it('should have organization URL', () => {
-      expect(layoutContent).toContain("url: 'https://phoo.ai'");
+      expect(layoutContent).toContain("url: 'https://www.phoo.ai'");
     });
 
     it('should have founding date', () => {
@@ -67,7 +60,7 @@ describe('JSON-LD Structured Data', () => {
     });
 
     it('should have unique @id for cross-referencing', () => {
-      expect(layoutContent).toContain("'@id': 'https://phoo.ai/#organization'");
+      expect(layoutContent).toContain("'@id': 'https://www.phoo.ai/#organization'");
     });
   });
 
@@ -83,34 +76,22 @@ describe('JSON-LD Structured Data', () => {
     });
 
     it('should link to Organization publisher', () => {
-      expect(layoutContent).toContain("publisher: { '@id': 'https://phoo.ai/#organization' }");
+      expect(layoutContent).toContain("publisher: { '@id': 'https://www.phoo.ai/#organization' }");
     });
   });
 
-  describe('FAQPage Schema', () => {
-    it('should have at least 3 questions', () => {
-      const questionMatches =
-        layoutContent.match(/"@type': 'Question'/g) || layoutContent.match(/'@type': 'Question'/g);
-      expect(questionMatches).toBeDefined();
-      expect(questionMatches!.length).toBeGreaterThanOrEqual(3);
+  describe('FAQPage Schema (Pricing Page)', () => {
+    const pricingPath = path.resolve(__dirname, '../../app/pricing/PricingPageClient.tsx');
+    const pricingContent = fs.readFileSync(pricingPath, 'utf-8');
+
+    it('should exist on pricing page, not root layout', () => {
+      expect(pricingContent).toContain('faq-schema');
+      expect(pricingContent).toContain('application/ld+json');
     });
 
-    it('should have matching answers for each question', () => {
-      const answerMatches = layoutContent.match(/'@type': 'Answer'/g);
-      const questionMatches = layoutContent.match(/'@type': 'Question'/g);
-      expect(answerMatches?.length).toBe(questionMatches?.length);
-    });
-
-    it('should include "What is Phoo?" question', () => {
-      expect(layoutContent).toContain("name: 'What is Phoo?'");
-    });
-
-    it('should include pricing comparison question', () => {
-      expect(layoutContent).toContain('marketing agency');
-    });
-
-    it('should include GEO question for AI citation coverage', () => {
-      expect(layoutContent).toContain('GEO');
+    it('should use schemas.ts FAQ generator', () => {
+      expect(pricingContent).toContain('getFaqSchema');
+      expect(pricingContent).toContain('PRICING_FAQ_ITEMS');
     });
   });
 
@@ -121,7 +102,7 @@ describe('JSON-LD Structured Data', () => {
 
     it('should include Product breadcrumb', () => {
       expect(layoutContent).toContain("name: 'Product'");
-      expect(layoutContent).toContain("item: 'https://phoo.ai/product'");
+      expect(layoutContent).toContain("item: 'https://www.phoo.ai/product'");
     });
 
     it('should include Pricing breadcrumb', () => {

@@ -202,8 +202,8 @@ export default function SettingsPage() {
     });
   };
 
-  const tier = me?.subscriptionTier || 'starter';
-  const isStarter = tier === 'starter' || tier === 'solo';
+  const tier = me?.membershipTier || 'starter';
+  const isStarter = tier === 'starter';
   const initials = me ? getInitials(me.name, me.email) : 'U';
   const memberSince = me?._creationTime ? formatLongDate(me._creationTime) : 'Unknown';
 
