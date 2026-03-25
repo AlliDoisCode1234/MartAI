@@ -67,6 +67,7 @@ const STANDALONE_ROUTES = [
   '/features',
   '/solutions',
   '/product',
+  '/invite',
 ];
 
 // Standalone routes that should NOT show PhooFab either

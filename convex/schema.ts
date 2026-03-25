@@ -64,6 +64,14 @@ export default defineSchema({
         timezone: v.optional(v.string()),
       })
     ),
+    // AI Content Coach steering inputs
+    coachPreferences: v.optional(
+      v.object({
+        tone: v.optional(v.string()), // e.g., 'Professional', 'Conversational'
+        audienceExpertise: v.optional(v.string()), // e.g., 'Beginner', 'Executive'
+        customConstraints: v.optional(v.string()), // Specific negative constraints or formatting rules
+      })
+    ),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
     // Onboarding status - optional since Convex Auth creates users automatically
@@ -169,7 +177,8 @@ export default defineSchema({
     .index('email', ['email'])
     .index('by_role', ['role'])
     .index('by_account_status', ['accountStatus'])
-    .index('by_acquisition_source', ['acquisitionSource']),
+    .index('by_acquisition_source', ['acquisitionSource'])
+    .index('by_stripe_customer_id', ['stripeCustomerId']),
 
   // Beta Access Codes - Gates login for closed beta
   betaCodes: defineTable({

@@ -8,6 +8,7 @@
 
 import { mutation, query, internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
+import { internal } from '../_generated/api';
 import { auth } from '../auth';
 import { requireSuperAdmin } from '../lib/rbac';
 import { biEventValidator } from '../lib/eventTypes';
@@ -40,6 +41,13 @@ export const internalTrackBiEvent = internalMutation({
       properties: args.properties,
       timestamp: Date.now(),
     });
+
+    if (args.userId) {
+      await ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncFunnelEventToHubspot, {
+        userId: args.userId,
+        eventName: args.event,
+      });
+    }
   },
 });
 
@@ -65,7 +73,7 @@ export const trackEvent = mutation({
     // Try to get userId from auth (optional - tracks work without auth)
     const userId = await auth.getUserId(ctx);
 
-    return await ctx.db.insert('analyticsEvents', {
+    const result = await ctx.db.insert('analyticsEvents', {
       userId: userId ?? undefined,
       sessionId: args.sessionId,
       event: args.event,
@@ -76,6 +84,15 @@ export const trackEvent = mutation({
       trackId: args.trackId,
       timestamp: Date.now(),
     });
+
+    if (userId) {
+      await ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncFunnelEventToHubspot, {
+        userId,
+        eventName: args.event,
+      });
+    }
+
+    return result;
   },
 });
 

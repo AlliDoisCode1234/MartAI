@@ -37,6 +37,7 @@ import {
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { StudioLayout, SEOScorePanel, MarkdownPreview, ContentSuggestionsPanel } from '@/src/components/studio';
+import { CoachTrainingOverlay } from '@/src/components/studio/CoachTrainingOverlay';
 import { RevisionReviewBanner } from '@/src/components/studio/RevisionReviewBanner';
 import { IntegrationsPanel } from '@/src/components/content';
 import {
@@ -636,22 +637,11 @@ export default function ContentEditorPage() {
     );
   }
 
-  // Generating state
+  // Generating state — Render the Coach Training Overlay for live AI steering
   if (contentPiece.status === 'generating') {
     return (
       <StudioLayout>
-        <VStack spacing={8} py={20} textAlign="center">
-          <Box bg="rgba(255, 157, 0, 0.1)" borderRadius="full" p={6} animation="pulse 2s infinite">
-            <Icon as={FiRefreshCw} boxSize={12} color="#FF9D00" />
-          </Box>
-          <Heading size="lg" color="gray.800">
-            Generating Content...
-          </Heading>
-          <Text color="gray.500">{contentPiece.title}</Text>
-          <Text color="gray.600" fontSize="sm">
-            This may take a minute. Refresh the page to check progress.
-          </Text>
-        </VStack>
+        <CoachTrainingOverlay contentTitle={contentPiece.title} />
       </StudioLayout>
     );
   }

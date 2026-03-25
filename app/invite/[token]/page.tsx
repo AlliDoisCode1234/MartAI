@@ -33,6 +33,7 @@ import { useAuthActions } from '@convex-dev/auth/react';
 import { api } from '@/convex/_generated/api';
 import { FiMail, FiUsers, FiCheckCircle, FiAlertTriangle, FiLogIn, FiLogOut } from 'react-icons/fi';
 import Link from 'next/link';
+import { MegaMenuHeader } from '@/src/components/marketing';
 
 const MotionBox = motion(Box);
 
@@ -196,15 +197,17 @@ export default function InviteAcceptPage() {
   }
 
   return (
-    <Box
-      minH="100vh"
-      bg="linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)"
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      position="relative"
-    >
-      {/* Ambient glow */}
+    <>
+      <MegaMenuHeader />
+      <Box
+        minH="100vh"
+        bg="linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        position="relative"
+      >
+        {/* Ambient glow */}
       <Box
         position="absolute"
         top="20%"
@@ -357,5 +360,6 @@ export default function InviteAcceptPage() {
         </MotionBox>
       </Container>
     </Box>
+    </>
   );
 }

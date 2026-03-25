@@ -22,7 +22,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { UserDropdown } from './UserDropdown';
 import { MobileNav } from './MobileNav';
-import { FiArrowLeft, FiMessageCircle, FiMenu, FiHome, FiEdit3 } from 'react-icons/fi';
+import { FiArrowLeft, FiMessageCircle, FiMenu } from 'react-icons/fi';
 import { Icon } from '@chakra-ui/react';
 
 interface NavItem {
@@ -31,11 +31,8 @@ interface NavItem {
   icon?: React.ElementType;
 }
 
-// Public navigation (not logged in) - Logo links to home, so no "Home" item needed
-const publicNavItems: NavItem[] = [
-  { label: 'How It Works', path: '/how-it-works' },
-  { label: 'Pricing', path: '/pricing' },
-];
+// Public navigation removed per BOD - public routes now use MegaMenuHeader inside STANDALONE_ROUTES
+const publicNavItems: NavItem[] = [];
 
 // User navigation (logged in)
 const userNavItems: NavItem[] = [

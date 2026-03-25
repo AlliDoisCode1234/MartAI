@@ -47,6 +47,7 @@ export const me = query({
       createdAt: user.createdAt ?? user._creationTime,
       onboardingStatus: user.onboardingStatus,
       onboardingSteps: user.onboardingSteps,
+      coachPreferences: user.coachPreferences,
       // Boolean flag for password (never return actual hash)
       hasPassword: !!user.passwordHash,
     };
@@ -169,5 +170,40 @@ export const listAll = query({
 
     const users = await ctx.db.query('users').collect();
     return users.map(filterUserFields);
+  },
+});
+
+/**
+ * Update the user's AI Coach steering preferences.
+ */
+export const updateCoachPreferences = mutation({
+  args: {
+    tone: v.optional(v.string()),
+    audienceExpertise: v.optional(v.string()),
+    customConstraints: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      throw new Error('Not authenticated');
+    }
+
+    // We do a merge with existing preferences if we only want to update one field,
+    // but the schema object requires all or nothing unless we fetch first or define them all.
+    // Since args has optional fields, let's fetch first to merge.
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error('User not found');
+
+    const existingPrefs = user.coachPreferences || {};
+
+    await ctx.db.patch(userId, {
+      coachPreferences: {
+        tone: args.tone !== undefined ? args.tone : existingPrefs.tone,
+        audienceExpertise: args.audienceExpertise !== undefined ? args.audienceExpertise : existingPrefs.audienceExpertise,
+        customConstraints: args.customConstraints !== undefined ? args.customConstraints : existingPrefs.customConstraints,
+      },
+    });
+
+    return { success: true };
   },
 });

@@ -473,7 +473,8 @@ export const resendInvitation = mutation({
     }
 
     // Create new invite with fresh token and expiry
-    const newToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+    const newToken = generateSecureToken();
+    const tokenHash = await hashToken(newToken);
     const now = Date.now();
     const expiresAt = now + 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -482,7 +483,7 @@ export const resendInvitation = mutation({
       email: oldInvite.email,
       role: oldInvite.role,
       invitedBy: userId,
-      token: newToken,
+      token: tokenHash,
       expiresAt,
       status: 'pending',
       createdAt: now,
@@ -491,7 +492,7 @@ export const resendInvitation = mutation({
     // Send email notification
     const inviter = await ctx.db.get(userId);
 
-    await ctx.scheduler.runAfter(0, internal.email.emailActions.sendEmail, {
+    await ctx.scheduler.runAfter(0, api.email.emailActions.sendEmail, {
       to: oldInvite.email,
       template: 'team_invite',
       data: {

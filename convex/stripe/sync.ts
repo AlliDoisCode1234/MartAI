@@ -19,9 +19,16 @@ export const handleSubscriptionUpdate = internalMutation({
     cancelAtPeriodEnd: v.boolean(),
   },
   handler: async (ctx, args) => {
-    // 1. Find the user by casting stripeUserId to a typed users Id
-    const userId = args.stripeUserId as Id<'users'>;
-    const user = await ctx.db.get(userId);
+    // 1. Find the user by casting stripeUserId to a typed users Id or retrieving via Stripe Customer ID
+    let user = null;
+    if (args.stripeUserId.startsWith('cus_')) {
+      user = await ctx.db.query('users')
+        .withIndex('by_stripe_customer_id', q => q.eq('stripeCustomerId', args.stripeUserId))
+        .first();
+    } else {
+      user = await ctx.db.get(args.stripeUserId as Id<'users'>);
+    }
+
     if (!user) {
       console.warn(`[Webhook Sync] User ${args.stripeUserId} not found for subscription ${args.stripeSubscriptionId}`);
       return;
@@ -72,7 +79,7 @@ export const handleSubscriptionUpdate = internalMutation({
     if (user.organizationId) {
       const org = await ctx.db.get(user.organizationId);
       if (org && org.ownerId === user._id) {
-        const maxMembers = getMaxSeatsForTier(mappedTier);
+        const maxMembers = getMaxSeatsForTier(mappedTier, org.seatsPurchased);
 
         await ctx.db.patch(user.organizationId, {
           plan: mappedTier as 'starter' | 'engine' | 'agency' | 'enterprise',

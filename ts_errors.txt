@@ -1,0 +1,13 @@
+convex/analytics/activation.ts(52,58): error TS2304: Cannot find name 'Id'.
+convex/analytics/activation.ts(63,58): error TS2304: Cannot find name 'Id'.
+convex/analytics/eventTracking.ts(45,39): error TS2304: Cannot find name 'internal'.
+convex/analytics/eventTracking.ts(88,39): error TS2304: Cannot find name 'internal'.
+convex/contentGeneration.ts(637,9): error TS2345: Argument of type '{ score: number; metrics: Record<string, number>; }' is not assignable to parameter of type 'SEOScoreResult'.
+  Types of property 'metrics' are incompatible.
+    Type 'Record<string, number>' is missing the following properties from type 'SEOMetrics': wordCountScore, h2Score, keywordScore, structureScore, readabilityScore
+convex/contentGeneration.ts(873,9): error TS2345: Argument of type '{ score: number; metrics: Record<string, number>; }' is not assignable to parameter of type 'SEOScoreResult'.
+  Types of property 'metrics' are incompatible.
+    Type 'Record<string, number>' is missing the following properties from type 'SEOMetrics': wordCountScore, h2Score, keywordScore, structureScore, readabilityScore
+src/components/shared/BetaFeedbackForm.tsx(32,18): error TS2339: Property 'hbspt' does not exist on type 'Window & typeof globalThis'.
+src/components/shared/BetaFeedbackForm.tsx(57,17): error TS2339: Property 'hbspt' does not exist on type 'Window & typeof globalThis'.
+src/components/shared/BetaFeedbackForm.tsx(60,14): error TS2339: Property 'hbspt' does not exist on type 'Window & typeof globalThis'.

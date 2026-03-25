@@ -9,6 +9,7 @@
  */
 
 import { query } from '../_generated/server';
+import { Id } from '../_generated/dataModel';
 import { requireSuperAdmin } from '../lib/rbac';
 
 /**
@@ -38,14 +39,18 @@ export const getActivationMetrics = query({
       };
     }
 
+    const onboardedUserSet = new Set(onboardedUsers.map(u => u._id));
+
     // Find users who have generated content (via analyticsEvents)
     const contentEvents = await ctx.db
       .query('analyticsEvents')
-      .filter((q) => q.eq(q.field('event'), 'content_generated'))
+      .withIndex('by_event', (q) => q.eq('event', 'content_generated'))
       .collect();
 
     const activatedUserIds = new Set(
-      contentEvents.map((e) => e.userId).filter(Boolean)
+      contentEvents
+        .map((e) => e.userId)
+        .filter((id) => id && onboardedUserSet.has(id as Id<'users'>))
     );
 
     // Recent activations (last 7 days)
@@ -54,7 +59,9 @@ export const getActivationMetrics = query({
       (e) => e.timestamp && e.timestamp >= sevenDaysAgo
     );
     const recentActivatedUserIds = new Set(
-      recentEvents.map((e) => e.userId).filter(Boolean)
+      recentEvents
+        .map((e) => e.userId)
+        .filter((id) => id && onboardedUserSet.has(id as Id<'users'>))
     );
 
     const totalOnboarded = onboardedUsers.length;

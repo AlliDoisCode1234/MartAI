@@ -17,7 +17,14 @@
 
 import { v } from 'convex/values';
 import { mutation, query, internalMutation } from '../../_generated/server';
-import { Id } from '../../_generated/dataModel';
+
+/** Immutable Global Guidelines ensuring strictly high-authority generated content */
+export const GLOBAL_AI_CONSTRAINTS = [
+  "Never use emojis under any circumstances.",
+  "Never apologize or say 'As an AI' or 'Here is the article'.",
+  "Never use the words: delve, tapestry, testament, orchestrate, in conclusion, realm, crucial, vital, elevate.",
+  "Maintain a direct, authoritative, and professional tone at all times."
+];
 
 // Default persona settings for new projects
 const DEFAULT_PERSONA = {
@@ -450,7 +457,16 @@ export function buildPersonaContext(persona: {
   const highConfidenceRules = persona.learnedRules?.filter((r) => (r.confidence ?? 1) >= 0.7) || [];
   if (highConfidenceRules.length > 0) {
     sections.push('\nLEARNED WRITING RULES (follow these strictly):');
-    highConfidenceRules.forEach((r) => sections.push(`- ${r.rule}`));
+    for (const r of highConfidenceRules) {
+      sections.push(`- ${r.rule}`);
+    }
+  }
+
+  // Inject Global AI Constraints (Rollback Protected via Dashboard ENV)
+  if (process.env.STRICT_PERSONA_RULES_ENABLED !== 'false') {
+    const strictRules = '\nGLOBAL SYSTEM CONSTRAINTS (CRITICAL - OVERRIDE ALL OTHER RULES):\n' +
+      GLOBAL_AI_CONSTRAINTS.map(c => `- ${c}`).join('\n');
+    sections.unshift(strictRules);
   }
 
   return sections.join('\n');

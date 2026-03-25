@@ -136,6 +136,48 @@ export const HUBSPOT_CUSTOM_PROPERTIES = {
     description: 'Whether enterprise API access was requested',
     type: 'booleancheckbox',
   },
+
+  // Admin User Funnel Milestones
+  phoo_funnel_signup_started: {
+    label: 'Funnel: Signup Started',
+    description: 'User initiated the signup flow',
+    type: 'booleancheckbox',
+  },
+  phoo_funnel_signup_completed: {
+    label: 'Funnel: Signup Completed',
+    description: 'User successfully created an account',
+    type: 'booleancheckbox',
+  },
+  phoo_funnel_project_created: {
+    label: 'Funnel: Project Created',
+    description: 'User created their first SEO project',
+    type: 'booleancheckbox',
+  },
+  phoo_funnel_gsc_connected: {
+    label: 'Funnel: GSC Connected',
+    description: 'User connected Google Search Console during onboarding',
+    type: 'booleancheckbox',
+  },
+  phoo_funnel_keywords_imported: {
+    label: 'Funnel: Keywords Imported',
+    description: 'User successfully imported initial target keywords',
+    type: 'booleancheckbox',
+  },
+  phoo_funnel_clusters_generated: {
+    label: 'Funnel: Clusters Generated',
+    description: 'User grouped keywords into semantic clusters',
+    type: 'booleancheckbox',
+  },
+  phoo_funnel_brief_created: {
+    label: 'Funnel: Brief Created',
+    description: 'User generated or manually created a requested content brief',
+    type: 'booleancheckbox',
+  },
+  phoo_funnel_content_published: {
+    label: 'Funnel: Content Published',
+    description: 'User successfully generated and published their first AI piece',
+    type: 'booleancheckbox',
+  },
 } as const;
 
 // ============================================================================
