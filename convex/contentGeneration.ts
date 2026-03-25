@@ -21,10 +21,68 @@ import {
 import { buildPersonaContext } from './ai/writerPersonas/index';
 import { rateLimits, RATE_LIMIT_TIERS } from './rateLimits';
 import { HOUR } from '@convex-dev/rate-limiter';
+import { BI_EVENTS } from './lib/eventTypes';
+import { INDUSTRY_TEMPLATES, type IndustryId } from './phoo/industryTemplates';
 
 // Quality threshold for A+ grade — 95% minimum for production content
 const QUALITY_THRESHOLD = 95;
 const MAX_GENERATION_ATTEMPTS = 3;
+
+// ============================================================================
+// Industry Context Builder (CQ-1, CQ-3, CQ-6)
+// Transforms static industry templates into prompt-ready context
+// ============================================================================
+
+function buildIndustryContext(industry?: string): string {
+  if (!industry) return '';
+
+  // Try exact match first, then fuzzy match via detection patterns
+  const normalizedIndustry = industry.toLowerCase().trim();
+  let matchedTemplate = INDUSTRY_TEMPLATES[normalizedIndustry as IndustryId];
+
+  if (!matchedTemplate) {
+    // Fuzzy match via detection patterns
+    for (const [, template] of Object.entries(INDUSTRY_TEMPLATES)) {
+      if (template.detectionPatterns.some((p: string) => normalizedIndustry.includes(p))) {
+        matchedTemplate = template;
+        break;
+      }
+    }
+  }
+
+  if (!matchedTemplate) return '';
+
+  const industryKeywords = matchedTemplate.keywords.slice(0, 5).join(', ');
+  const audienceHint = `${matchedTemplate.name} professionals and their customers`;
+
+  return `
+INDUSTRY CONTEXT (from ${matchedTemplate.name} research):
+- Industry: ${matchedTemplate.name} — ${matchedTemplate.description}
+- Industry keywords to reference naturally: ${industryKeywords}
+- Target audience: ${audienceHint}
+- Write with ${matchedTemplate.name}-specific expertise. Use industry terminology accurately.
+- Reference real challenges, trends, and solutions specific to this industry.
+- Avoid generic advice that could apply to any industry. Be specific to ${matchedTemplate.name}.`;
+}
+
+// ============================================================================
+// Content Inventory Builder (CQ-4)
+// Prevents duplicate topic generation by injecting existing content titles
+// ============================================================================
+
+function buildContentInventory(existingTitles: string[]): string {
+  if (!existingTitles || existingTitles.length === 0) return '';
+
+  const numbered = existingTitles
+    .slice(0, 20) // Cap at 20 for prompt token budget
+    .map((t, i) => `${i + 1}. "${t}"`);
+
+  return `
+EXISTING CONTENT INVENTORY (do NOT repeat these topics):
+${numbered.join('\n')}
+
+Your new article MUST cover a DIFFERENT angle from all of the above. Do not repeat advice or topics already covered.`;
+}
 
 // ============================================================================
 // Content Generation Action with Quality Guarantee
@@ -495,6 +553,21 @@ export const generateContentInternalHandler = async (
     );
     const personaContext = persona ? buildPersonaContext(persona) : '';
 
+    // Build industry context for prompt enrichment (CQ-1, CQ-3)
+    const industryContext = buildIndustryContext(project?.industry);
+
+    // Build content inventory for de-duplication (CQ-4)
+    let inventoryContext = '';
+    try {
+      const existingTitles = await ctx.runQuery(
+        internal.contentGeneration.getExistingTitles,
+        { projectId: args.projectId }
+      );
+      inventoryContext = buildContentInventory(existingTitles);
+    } catch {
+      // Non-critical: proceed without inventory context
+    }
+
     // 1. Create content piece with "generating" status
     const contentPieceId: Id<'contentPieces'> = await ctx.runMutation(
       internal.contentGeneration.createContentPiece,
@@ -549,7 +622,9 @@ export const generateContentInternalHandler = async (
         personaContext,
         attempt > 1, // Add quality hints on retries
         args.userId,
-        brandName
+        brandName,
+        industryContext,
+        inventoryContext
       );
 
       // ── Stage 2: AI Editorial Review ─────────────────────────────
@@ -624,6 +699,35 @@ export const generateContentInternalHandler = async (
     console.log(
       `[ContentGeneration] Complete. Final score: ${bestScore} after ${attempt} attempt(s)`
     );
+
+    // BI Event: content_generated (BI-3)
+    try {
+      await ctx.runMutation(internal.analytics.eventTracking.internalTrackBiEvent, {
+        event: BI_EVENTS.CONTENT_GENERATED,
+        userId,
+        properties: {
+          projectId: args.projectId,
+          contentType: args.contentType,
+          score: bestScore,
+          attempts: attempt,
+        },
+      });
+    } catch (e) {
+      // Fire-and-forget: never let event emission break content generation
+      console.warn('[ContentGeneration] BI event emission failed:', e);
+    }
+
+    // Track draft milestone (DATA-2)
+    try {
+      await ctx.runMutation(internal.lib.engagementMilestones.trackEngagement, {
+        userId,
+        milestone: 'draft',
+        incrementTotal: true,
+      });
+    } catch {
+      // Fire-and-forget
+    }
+
     return contentPieceId;
 };
 
@@ -949,7 +1053,9 @@ async function generateFullContentWithAI(
   personaContext: string = '',
   enhanceQuality: boolean = false,
   userId?: Id<'users'>,
-  brandName: string = 'our brand'
+  brandName: string = 'our brand',
+  industryContext: string = '',
+  inventoryContext: string = ''
 ): Promise<string> {
   const primaryKeyword = keywords[0] || 'topic';
   const targetWords = getTargetWords(contentType);
@@ -1041,7 +1147,7 @@ Writing guidelines:
 - Avoid jargon unless defining it immediately
 - Use active voice, not passive voice
 - Start sentences with simple subjects, not long dependent clauses
-${baseQualityRequirements}${retryBoost}${personaInstructions}
+${baseQualityRequirements}${retryBoost}${personaInstructions}${industryContext}${inventoryContext}
 
 Format the content as Markdown with:
 - H1 title at the top

@@ -20,6 +20,8 @@ export const upsertGSCConnection = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    // Security: require editor access to create/update connections
+    await requireProjectAccess(ctx, args.projectId, 'editor');
     console.log('[GoogleOAuth][Mutation] upsertGSCConnection called with:', {
       projectId: args.projectId,
       siteUrl: args.siteUrl,
@@ -115,8 +117,8 @@ export const getGSCConnectionInternal = internalQuery({
   },
 });
 
-// Update last sync time
-export const updateLastSync = mutation({
+// Update last sync time (internal only — called from sync.ts/keywordActions.ts/analyticsWorkflows.ts)
+export const updateLastSync = internalMutation({
   args: {
     connectionId: v.id('gscConnections'),
   },

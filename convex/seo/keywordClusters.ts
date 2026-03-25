@@ -1,4 +1,5 @@
 import { action, mutation, query } from '../_generated/server';
+import { internal } from '../_generated/api';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
 import { requireProjectAccess } from '../lib/rbac';
@@ -29,7 +30,7 @@ export const createCluster = mutation({
   },
   handler: async (ctx, args) => {
     // Security: Require project access
-    await requireProjectAccess(ctx, args.projectId, 'editor');
+    const { userId } = await requireProjectAccess(ctx, args.projectId, 'editor');
 
     // Upsert: check for existing cluster with same name in this project
     const existing = await ctx.db
@@ -54,7 +55,7 @@ export const createCluster = mutation({
       return existing._id;
     }
 
-    return await ctx.db.insert('keywordClusters', {
+    const clusterId = await ctx.db.insert('keywordClusters', {
       projectId: args.projectId,
       clusterName: args.clusterName,
       keywords: args.keywords,
@@ -67,6 +68,17 @@ export const createCluster = mutation({
       createdAt: args.createdAt || Date.now(),
       updatedAt: Date.now(),
     });
+
+    // Track cluster milestone (DATA-2)
+    try {
+      await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
+        userId,
+        milestone: 'cluster',
+        incrementTotal: true,
+      });
+    } catch { /* fire-and-forget */ }
+
+    return clusterId;
   },
 });
 

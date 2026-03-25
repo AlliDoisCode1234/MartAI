@@ -68,7 +68,7 @@ type TrackingEvent = {
  */
 export function useTracking(options: { enabled?: boolean } = {}) {
   const { enabled = true } = options;
-  const trackEventMutation = useMutation(api.analytics.events.trackEvent);
+  const trackEventMutation = useMutation(api.analytics.eventTracking.trackEvent);
   const lastClickTime = useRef<number>(0);
   const lastTrackId = useRef<string | null>(null);
 

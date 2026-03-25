@@ -1,7 +1,8 @@
 import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
-import { Id } from '../_generated/dataModel';
+
 import { getAuthUserId } from '@convex-dev/auth/server';
+import { getMaxSeatsForTier } from '../lib/tierLimits';
 
 /**
  * Team Management Mutations
@@ -95,6 +96,30 @@ export const getMyOrganization = query({
 });
 
 /**
+ * Get current user's role in their organization
+ * Returns null if not authenticated or not in an org
+ */
+export const getMyTeamRole = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) return null;
+
+    const membership = await ctx.db
+      .query('teamMembers')
+      .withIndex('by_user_org', (q) =>
+        q.eq('userId', userId).eq('organizationId', user.organizationId!)
+      )
+      .first();
+
+    return membership?.role ?? null;
+  },
+});
+
+/**
  * Get team members for an organization
  */
 export const getTeamMembers = query({
@@ -158,14 +183,7 @@ export const getSeatUsage = query({
 
     // Get owner's membership tier to calculate max seats dynamically
     const owner = await ctx.db.get(org.ownerId);
-    let maxSeats = 1; // Default for starter
-    if (owner?.membershipTier === 'engine') {
-      maxSeats = 5;
-    } else if (owner?.membershipTier === 'agency') {
-      maxSeats = 25;
-    } else if (owner?.membershipTier === 'enterprise') {
-      maxSeats = org.seatsPurchased ?? org.maxMembers ?? 999;
-    }
+    const maxSeats = getMaxSeatsForTier(owner?.membershipTier, org.seatsPurchased);
 
     const activeMembers = await ctx.db
       .query('teamMembers')
@@ -176,7 +194,12 @@ export const getSeatUsage = query({
     const pendingInvites = await ctx.db
       .query('organizationInvitations')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-      .filter((q) => q.eq(q.field('status'), 'pending'))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field('status'), 'pending'),
+          q.gt(q.field('expiresAt'), Date.now()) // GAP-7: exclude expired invites from seat count
+        )
+      )
       .collect();
 
     return {
@@ -229,14 +252,7 @@ export const createOrganization = mutation({
     const now = Date.now();
 
     // Determine max members based on user's membership tier
-    let maxMembers = 1; // Default for starter
-    if (user?.membershipTier === 'engine') {
-      maxMembers = 5;
-    } else if (user?.membershipTier === 'agency') {
-      maxMembers = 25;
-    } else if (user?.membershipTier === 'enterprise') {
-      maxMembers = 999;
-    }
+    const maxMembers = getMaxSeatsForTier(user?.membershipTier);
 
     // Create organization
     const orgId = await ctx.db.insert('organizations', {
@@ -286,14 +302,7 @@ export const syncSeatsWithTier = mutation({
     }
 
     // Determine max members based on membership tier
-    let maxMembers = 1;
-    if (user.membershipTier === 'engine') {
-      maxMembers = 5;
-    } else if (user.membershipTier === 'agency') {
-      maxMembers = 25;
-    } else if (user.membershipTier === 'enterprise') {
-      maxMembers = 999;
-    }
+    const maxMembers = getMaxSeatsForTier(user.membershipTier, org.seatsPurchased);
 
     await ctx.db.patch(user.organizationId, {
       plan: user.membershipTier || 'starter',
@@ -355,7 +364,7 @@ export const updateOrganizationName = mutation({
 
 /**
  * Update member role
- * Security: Owner only
+ * Security: Owner or Admin (admins can't change other admins)
  */
 export const updateMemberRole = mutation({
   args: {
@@ -367,7 +376,7 @@ export const updateMemberRole = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
 
-    // Check ownership
+    // Check caller permissions
     const callerMembership = await ctx.db
       .query('teamMembers')
       .withIndex('by_user_org', (q) =>
@@ -375,8 +384,8 @@ export const updateMemberRole = mutation({
       )
       .first();
 
-    if (!callerMembership || callerMembership.role !== 'owner') {
-      throw new Error('Only the owner can change member roles');
+    if (!callerMembership || !['owner', 'admin'].includes(callerMembership.role)) {
+      throw new Error('Only owners and admins can change member roles');
     }
 
     const targetMember = await ctx.db.get(args.targetMemberId);
@@ -389,6 +398,10 @@ export const updateMemberRole = mutation({
       throw new Error("Cannot change the owner's role");
     }
 
+    // Admins can't change other admins (only owner can)
+    if (callerMembership.role === 'admin' && targetMember.role === 'admin') {
+      throw new Error('Admins cannot change other admin roles');
+    }
     // Note: Can't promote to owner - type system prevents it (newRole is 'admin' | 'editor' | 'viewer')
 
     const previousRole = targetMember.role;
@@ -447,9 +460,14 @@ export const removeMember = mutation({
       throw new Error('Cannot remove the owner from the organization');
     }
 
-    // Can't remove yourself
+    // Can't remove yourself (use leaveOrganization instead)
     if (targetMember.userId === userId) {
-      throw new Error('Cannot remove yourself. Leave the organization instead.');
+      throw new Error('Cannot remove yourself. Use the leave organization option instead.');
+    }
+
+    // Admins can't remove other admins
+    if (callerMembership.role === 'admin' && targetMember.role === 'admin') {
+      throw new Error('Admins cannot remove other admins');
     }
 
     const targetUser = await ctx.db.get(targetMember.userId);
@@ -470,6 +488,111 @@ export const removeMember = mutation({
       action: 'member_removed',
       details: { email: targetUser?.email },
       createdAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Leave organization (self-removal for non-owner members)
+ * Security: Authenticated member, cannot be owner
+ */
+export const leaveOrganization = mutation({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+
+    const membership = await ctx.db
+      .query('teamMembers')
+      .withIndex('by_user_org', (q) =>
+        q.eq('userId', userId).eq('organizationId', args.organizationId)
+      )
+      .first();
+
+    if (!membership) {
+      throw new Error('You are not a member of this organization');
+    }
+
+    if (membership.role === 'owner') {
+      throw new Error('Owners cannot leave. Transfer ownership first.');
+    }
+
+    // Remove membership
+    await ctx.db.delete(membership._id);
+
+    // Clear organizationId
+    await ctx.db.patch(userId, { organizationId: undefined });
+
+    // Audit log
+    const user = await ctx.db.get(userId);
+    await ctx.db.insert('teamAuditLogs', {
+      organizationId: args.organizationId,
+      actorId: userId,
+      action: 'member_left',
+      details: { email: user?.email },
+      createdAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Transfer organization ownership
+ * Security: Current owner only
+ */
+export const transferOwnership = mutation({
+  args: {
+    organizationId: v.id('organizations'),
+    targetMemberId: v.id('teamMembers'),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+
+    // Verify caller is the owner
+    const callerMembership = await ctx.db
+      .query('teamMembers')
+      .withIndex('by_user_org', (q) =>
+        q.eq('userId', userId).eq('organizationId', args.organizationId)
+      )
+      .first();
+
+    if (!callerMembership || callerMembership.role !== 'owner') {
+      throw new Error('Only the owner can transfer ownership');
+    }
+
+    const targetMember = await ctx.db.get(args.targetMemberId);
+    if (!targetMember || targetMember.organizationId !== args.organizationId) {
+      throw new Error('Target member not found in this organization');
+    }
+
+    if (targetMember.userId === userId) {
+      throw new Error('You already own this organization');
+    }
+
+    const now = Date.now();
+
+    // Promote target to owner
+    await ctx.db.patch(args.targetMemberId, { role: 'owner', updatedAt: now });
+
+    // Demote current owner to admin
+    await ctx.db.patch(callerMembership._id, { role: 'admin', updatedAt: now });
+
+    // Update org.ownerId
+    await ctx.db.patch(args.organizationId, { ownerId: targetMember.userId, updatedAt: now });
+
+    // Audit log
+    const targetUser = await ctx.db.get(targetMember.userId);
+    await ctx.db.insert('teamAuditLogs', {
+      organizationId: args.organizationId,
+      actorId: userId,
+      targetUserId: targetMember.userId,
+      action: 'ownership_transferred',
+      details: { newOwnerEmail: targetUser?.email },
+      createdAt: now,
     });
 
     return { success: true };

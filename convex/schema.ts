@@ -1055,9 +1055,11 @@ export default defineSchema({
       v.literal('member_invited'),
       v.literal('member_joined'),
       v.literal('member_removed'),
+      v.literal('member_left'),
       v.literal('role_changed'),
       v.literal('invite_revoked'),
-      v.literal('org_name_changed')
+      v.literal('org_name_changed'),
+      v.literal('ownership_transferred')
     ),
     details: v.optional(
       v.object({
@@ -1066,6 +1068,7 @@ export default defineSchema({
         previousName: v.optional(v.string()),
         newName: v.optional(v.string()),
         email: v.optional(v.string()),
+        newOwnerEmail: v.optional(v.string()),
       })
     ),
     createdAt: v.number(),
@@ -1271,7 +1274,8 @@ export default defineSchema({
     .index('by_session', ['sessionId'])
     .index('by_event', ['event'])
     .index('by_timestamp', ['timestamp'])
-    .index('by_track_id', ['trackId']),
+    .index('by_track_id', ['trackId'])
+    .index('by_user_event', ['userId', 'event']),
 
   // ========================================
   // PASSWORD RESET TOKENS

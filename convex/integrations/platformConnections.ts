@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query, internalMutation } from '../_generated/server';
+import { internal } from '../_generated/api';
 import {
   encryptPlatformCredentials,
   decryptPlatformCredentials,
@@ -129,7 +130,7 @@ export const saveConnection = mutation({
       return existing._id;
     } else {
       // Create new
-      return await ctx.db.insert('platformConnections', {
+      const connectionId = await ctx.db.insert('platformConnections', {
         projectId: args.projectId,
         platform: args.platform,
         siteUrl: args.siteUrl,
@@ -141,6 +142,22 @@ export const saveConnection = mutation({
         createdAt: now,
         updatedAt: now,
       });
+
+      // Track integration milestone for new connections (DATA-2)
+      if (args.platform === 'wordpress') {
+        try {
+          const project = await ctx.db.get(args.projectId);
+          if (project?.userId) {
+            await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
+              userId: project.userId,
+              milestone: 'wordpress',
+              incrementTotal: false,
+            });
+          }
+        } catch { /* fire-and-forget */ }
+      }
+
+      return connectionId;
     }
   },
 });

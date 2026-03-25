@@ -44,7 +44,7 @@ export const analyticsSyncWorkflow = workflow.define({
     if (ga4Connection) {
       // In a real app, we would call an action to fetch data here
       // For now, we just update the last sync time
-      await step.runMutation(api.integrations.ga4Connections.updateLastSync, {
+      await step.runMutation(internal.integrations.ga4Connections.updateLastSync, {
         connectionId: ga4Connection._id,
       });
     }
@@ -55,7 +55,7 @@ export const analyticsSyncWorkflow = workflow.define({
     });
 
     if (gscConnection) {
-      await step.runMutation(api.integrations.gscConnections.updateLastSync, {
+      await step.runMutation(internal.integrations.gscConnections.updateLastSync, {
         connectionId: gscConnection._id,
       });
     }

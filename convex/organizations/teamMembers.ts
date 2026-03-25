@@ -96,8 +96,19 @@ export const inviteMember = mutation({
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .collect();
 
-    if (org.maxMembers !== undefined && org.maxMembers !== 999999 && currentMembers.length >= org.maxMembers) {
-      throw new Error(`Organization has reached the maximum of ${org.maxMembers} members`);
+    // Dynamically calculate max seats from owner's current tier (not stale org.maxMembers)
+    const owner = await ctx.db.get(org.ownerId);
+    let maxMembers = 1; // Default for starter
+    if (owner?.membershipTier === 'engine') {
+      maxMembers = 5;
+    } else if (owner?.membershipTier === 'agency') {
+      maxMembers = 25;
+    } else if (owner?.membershipTier === 'enterprise') {
+      maxMembers = org.seatsPurchased ?? org.maxMembers ?? 999;
+    }
+
+    if (currentMembers.length >= maxMembers) {
+      throw new Error(`Organization has reached the maximum of ${maxMembers} members`);
     }
 
     // Check if already invited
