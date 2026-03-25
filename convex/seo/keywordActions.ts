@@ -193,7 +193,7 @@ export const generateClusters = action({
         const imported = importKeywordsFromGSC(gscData);
         if (imported.length > 0) {
           keywordInputs = keywordInputs.concat(imported);
-          await ctx.runMutation(api.integrations.gscConnections.updateLastSync, {
+          await ctx.runMutation(internal.integrations.gscConnections.updateLastSync, {
             connectionId: connection._id,
           });
           console.log(

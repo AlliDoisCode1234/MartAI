@@ -21,10 +21,77 @@ import {
 import { buildPersonaContext } from './ai/writerPersonas/index';
 import { rateLimits, RATE_LIMIT_TIERS } from './rateLimits';
 import { HOUR } from '@convex-dev/rate-limiter';
+import { BI_EVENTS } from './lib/eventTypes';
+import { INDUSTRY_TEMPLATES, type IndustryId } from './phoo/industryTemplates';
+import { generateSuggestions } from '../lib/suggestionEngine';
+import type { SEOScoreResult, SEOMetrics } from '../lib/seoScoring';
 
 // Quality threshold for A+ grade — 95% minimum for production content
 const QUALITY_THRESHOLD = 95;
 const MAX_GENERATION_ATTEMPTS = 3;
+
+// ============================================================================
+// Industry Context Builder (CQ-1, CQ-3, CQ-6)
+// Transforms static industry templates into prompt-ready context
+// ============================================================================
+
+function buildIndustryContext(industry?: string): string {
+  if (!industry) return '';
+
+  // Try exact match first, then fuzzy match via detection patterns
+  const normalizedIndustry = industry.toLowerCase().trim();
+  let matchedTemplate = INDUSTRY_TEMPLATES[normalizedIndustry as IndustryId];
+
+  if (!matchedTemplate) {
+    // Fuzzy match via detection patterns
+    for (const [, template] of Object.entries(INDUSTRY_TEMPLATES)) {
+      if (template.detectionPatterns.some((p: string) => normalizedIndustry.includes(p))) {
+        matchedTemplate = template;
+        break;
+      }
+    }
+  }
+
+  if (!matchedTemplate) return '';
+
+  const industryKeywords = matchedTemplate.keywords.slice(0, 5).join(', ');
+  const audienceHint = `${matchedTemplate.name} professionals and their customers`;
+
+  return `
+INDUSTRY CONTEXT (from ${matchedTemplate.name} research):
+- Industry: ${matchedTemplate.name} — ${matchedTemplate.description}
+- Industry keywords to reference naturally: ${industryKeywords}
+- Target audience: ${audienceHint}
+- Write with ${matchedTemplate.name}-specific expertise. Use industry terminology accurately.
+- Reference real challenges, trends, and solutions specific to this industry.
+- Avoid generic advice that could apply to any industry. Be specific to ${matchedTemplate.name}.`;
+}
+
+// ============================================================================
+// Content Inventory Builder (CQ-4)
+// Prevents duplicate topic generation by injecting existing content titles
+// ============================================================================
+function buildContentInventory(existingPieces: { title: string, h2Outline: string[] }[]): string {
+  if (!existingPieces || existingPieces.length === 0) return '';
+
+  const isEnabled = process.env.SEMANTIC_WINDOW_ENABLED !== 'false';
+
+  const numbered = existingPieces
+    .slice(0, isEnabled ? 10 : 20) // Cap at 10 for full semantic H2 context, 20 if falling back
+    .map((p, i) => {
+      let msg = `${i + 1}. Title: "${p.title}"`;
+      if (isEnabled && p.h2Outline && p.h2Outline.length > 0) {
+        msg += `\n   Key Sections: ${p.h2Outline.slice(0, 3).map(h2 => h2.replace(/^#+\s/, '')).join(' | ')}`;
+      }
+      return msg;
+    });
+
+  return `
+EXISTING CONTENT INVENTORY (do NOT repeat these topics${isEnabled ? ' or structural arguments' : ''}):
+${numbered.join('\n')}
+
+Your new article MUST cover a DIFFERENT angle from all of the above. Do not repeat advice or topics already covered.`;
+}
 
 // ============================================================================
 // Content Generation Action with Quality Guarantee
@@ -495,6 +562,21 @@ export const generateContentInternalHandler = async (
     );
     const personaContext = persona ? buildPersonaContext(persona) : '';
 
+    // Build industry context for prompt enrichment (CQ-1, CQ-3)
+    const industryContext = buildIndustryContext(project?.industry);
+
+    // Build content inventory for de-duplication (CQ-4)
+    let inventoryContext = '';
+    try {
+      const existingPieces = await ctx.runQuery(
+        internal.contentGeneration.getExistingTitles,
+        { projectId: args.projectId }
+      );
+      inventoryContext = buildContentInventory(existingPieces);
+    } catch {
+      // Non-critical: proceed without inventory context
+    }
+
     // 1. Create content piece with "generating" status
     const contentPieceId: Id<'contentPieces'> = await ctx.runMutation(
       internal.contentGeneration.createContentPiece,
@@ -532,7 +614,7 @@ export const generateContentInternalHandler = async (
     let attempt = 0;
     let bestContent = '';
     let bestScore = 0;
-    let bestMetrics: Record<string, number> = {};
+    let bestMetrics: SEOMetrics | Record<string, number> = {};
 
     while (attempt < MAX_GENERATION_ATTEMPTS) {
       attempt++;
@@ -549,20 +631,40 @@ export const generateContentInternalHandler = async (
         personaContext,
         attempt > 1, // Add quality hints on retries
         args.userId,
-        brandName
+        brandName,
+        industryContext,
+        inventoryContext
       );
 
-      // ── Stage 2: AI Editorial Review ─────────────────────────────
-      console.log(`[ContentGeneration] Stage 2: Reviewing content...`);
-      const reviewFeedback = await reviewContentWithAI(
-        ctx,
+      // ── Stage 2: Deterministic Editorial Review ──────────────────
+      console.log(`[ContentGeneration] Stage 2: Reviewing content deterministically...`);
+      const contentTypeConfigForReview = CONTENT_TYPES[args.contentType as ContentTypeId];
+      const targetWordCountForReview = contentTypeConfigForReview?.wordCount || 1200;
+      const initialScore = scoreContent(draftContent, outline, args.keywords, targetWordCountForReview);
+      const suggestions = generateSuggestions(
+        initialScore,
         draftContent,
-        args.title,
         args.keywords,
-        args.contentType,
-        args.userId,
-        brandName
+        targetWordCountForReview,
+        project?.industry
       );
+      const fixableSuggestions = suggestions.filter((s) => s.fixable && s.fixInstruction);
+
+      let reviewFeedback = '';
+      if (fixableSuggestions.length > 0) {
+        reviewFeedback = fixableSuggestions
+          .map((s) => `ISSUE: ${s.title}\nFIX INSTRUCTION: ${s.fixInstruction}`)
+          .join('\n\n---\n\n');
+      } else {
+        reviewFeedback = 'The content is excellent and meets all requirements. No further revisions needed.';
+        console.log(`[ContentGeneration] Draft is already perfect.`);
+        if (initialScore.score >= QUALITY_THRESHOLD) {
+           bestContent = draftContent;
+           bestScore = initialScore.score;
+           bestMetrics = initialScore.metrics;
+           break;
+        }
+      }
 
       // ── Stage 3: AI Finalization ─────────────────────────────────
       console.log(`[ContentGeneration] Stage 3: Finalizing content...`);
@@ -624,6 +726,35 @@ export const generateContentInternalHandler = async (
     console.log(
       `[ContentGeneration] Complete. Final score: ${bestScore} after ${attempt} attempt(s)`
     );
+
+    // BI Event: content_generated (BI-3)
+    try {
+      await ctx.runMutation(internal.analytics.eventTracking.internalTrackBiEvent, {
+        event: BI_EVENTS.CONTENT_GENERATED,
+        userId,
+        properties: {
+          projectId: args.projectId,
+          contentType: args.contentType,
+          score: bestScore,
+          attempts: attempt,
+        },
+      });
+    } catch (e) {
+      // Fire-and-forget: never let event emission break content generation
+      console.warn('[ContentGeneration] BI event emission failed:', e);
+    }
+
+    // Track draft milestone (DATA-2)
+    try {
+      await ctx.runMutation(internal.lib.engagementMilestones.trackEngagement, {
+        userId,
+        milestone: 'draft',
+        incrementTotal: true,
+      });
+    } catch {
+      // Fire-and-forget
+    }
+
     return contentPieceId;
 };
 
@@ -682,6 +813,18 @@ export const generateContentForPiece = internalAction({
       projectId: piece.projectId,
     });
     const brandName = project?.name || 'the brand';
+    const industryContext = buildIndustryContext(project?.industry);
+    
+    let inventoryContext = '';
+    try {
+      const existingPieces = await ctx.runQuery(
+        internal.contentGeneration.getExistingTitles,
+        { projectId: piece.projectId }
+      );
+      inventoryContext = buildContentInventory(existingPieces);
+    } catch {
+      // Non-critical: proceed without inventory context
+    }
 
     // 3. Generate outline using AI
     const outline = await generateOutlineWithAI(
@@ -704,7 +847,7 @@ export const generateContentForPiece = internalAction({
     let attempt = 0;
     let bestContent = '';
     let bestScore = 0;
-    let bestMetrics: Record<string, number> = {};
+    let bestMetrics: SEOMetrics | Record<string, number> = {};
     const keywords = piece.keywords || [];
 
     while (attempt < MAX_GENERATION_ATTEMPTS) {
@@ -724,20 +867,40 @@ export const generateContentForPiece = internalAction({
         personaContext,
         attempt > 1,
         userId,
-        brandName
+        brandName,
+        industryContext,
+        inventoryContext
       );
 
-      // ── Stage 2: AI Editorial Review ─────────────────────────────
+      // ── Stage 2: Deterministic Editorial Review ──────────────────
       console.log(`[generateContentForPiece] Stage 2: Reviewing content...`);
-      const reviewFeedback = await reviewContentWithAI(
-        ctx,
+      const contentTypeConfigForReview = CONTENT_TYPES[piece.contentType as ContentTypeId];
+      const targetWordCountForReview = contentTypeConfigForReview?.wordCount || 1200;
+      const initialScore = scoreContent(draftContent, outline, keywords, targetWordCountForReview);
+      const suggestions = generateSuggestions(
+        initialScore,
         draftContent,
-        piece.title,
         keywords,
-        piece.contentType,
-        userId,
-        brandName
+        targetWordCountForReview,
+        project?.industry
       );
+      const fixableSuggestions = suggestions.filter((s) => s.fixable && s.fixInstruction);
+
+      let reviewFeedback = '';
+      if (fixableSuggestions.length > 0) {
+        reviewFeedback = fixableSuggestions
+          .map((s) => `ISSUE: ${s.title}\nFIX INSTRUCTION: ${s.fixInstruction}`)
+          .join('\n\n---\n\n');
+      } else {
+        reviewFeedback = 'The content is excellent and meets all requirements. No further revisions needed.';
+        console.log(`[generateContentForPiece] Draft is already perfect.`);
+        if (initialScore.score >= QUALITY_THRESHOLD) {
+           bestContent = draftContent;
+           bestScore = initialScore.score;
+           bestMetrics = initialScore.metrics;
+           break;
+        }
+      }
 
       // ── Stage 3: AI Finalization ─────────────────────────────────
       console.log(`[generateContentForPiece] Stage 3: Finalizing content...`);
@@ -949,7 +1112,9 @@ async function generateFullContentWithAI(
   personaContext: string = '',
   enhanceQuality: boolean = false,
   userId?: Id<'users'>,
-  brandName: string = 'our brand'
+  brandName: string = 'our brand',
+  industryContext: string = '',
+  inventoryContext: string = ''
 ): Promise<string> {
   const primaryKeyword = keywords[0] || 'topic';
   const targetWords = getTargetWords(contentType);
@@ -1041,7 +1206,7 @@ Writing guidelines:
 - Avoid jargon unless defining it immediately
 - Use active voice, not passive voice
 - Start sentences with simple subjects, not long dependent clauses
-${baseQualityRequirements}${retryBoost}${personaInstructions}
+${baseQualityRequirements}${retryBoost}${personaInstructions}${industryContext}${inventoryContext}
 
 Format the content as Markdown with:
 - H1 title at the top
@@ -1079,94 +1244,6 @@ Write the full article now, following the outline structure.`;
     const safeMessage = error instanceof Error ? error.message : 'Unknown error';
     console.warn('[ContentGeneration] AI content failed, using fallback:', safeMessage);
     return generateFallbackContent(title, outline, keywords);
-  }
-}
-
-// ============================================================================
-// Stage 2: AI Content Review — "Editor Pass"
-// ============================================================================
-
-/**
- * Stage 2 of the 3-stage pipeline: AI-powered content review.
- *
- * A separate AI call acts as an independent editor, reviewing the
- * generated content for:
- * - Human readability (natural flow, no robotic phrasing)
- * - Keyword integration (used naturally, not stuffed)
- * - Section uniqueness (no repetitive content under different H2s)
- * - Factual coherence and actionability
- * - E-E-A-T principles alignment
- *
- * Returns structured review feedback that Stage 3 uses to finalize.
- */
-async function reviewContentWithAI(
-  ctx: ActionCtx,
-  content: string,
-  title: string,
-  keywords: string[],
-  contentType: string,
-  userId?: Id<'users'>,
-  brandName?: string
-): Promise<string> {
-  const actualBrand = brandName || 'the brand';
-  const systemPrompt = `You are a senior editorial reviewer and SEO quality analyst. Your job is to review AI-generated content and provide specific, actionable feedback.
-
-You are NOT rewriting the content — you are providing a critical review. Be honest and specific.
-
-REVIEW CHECKLIST:
-1. **READABILITY**: Is this written for humans? Does it flow naturally? Are paragraphs varied in length? Is the tone conversational yet professional?
-2. **KEYWORD INTEGRATION**: Are the target keywords woven naturally into the text? Or do they feel forced/stuffed? Are they in strategic positions (headings, first paragraph, conclusion)?
-3. **SECTION UNIQUENESS**: Does each H2 section provide UNIQUE, distinct value? Flag any sections that repeat the same ideas, examples, or phrasing under different headings.
-4. **BRAND FAVORABILITY**: This content will be published on the user's own website. Does the content position the user's brand/product favorably? In comparison articles, does the user's offering come out as the recommended choice? Flag as CRITICAL if any competitor is positioned as superior, easier, or more recommended than ${actualBrand}.
-5. **ACTIONABILITY**: Does each section offer specific, practical advice? Or is it vague filler? Flag any thin or generic sections.
-6. **E-E-A-T SIGNALS**: Does the content demonstrate Experience, Expertise, Authoritativeness, and Trustworthiness? Are there specific examples, data points, or case studies?
-7. **STRUCTURE**: Is there a strong introduction that hooks the reader? Does the conclusion summarize key takeaways and include a call-to-action?
-
-FORMAT YOUR RESPONSE AS:
-## Review Summary
-[2-3 sentence overview of content quality]
-
-## Issues Found
-- [CRITICAL] Issue description (must fix)
-- [MODERATE] Issue description (should fix)
-- [MINOR] Issue description (nice to fix)
-
-## Section-by-Section Notes
-### [H2 Title]
-- Specific feedback for this section
-
-## Recommended Improvements
-- Numbered list of specific changes to make`;
-
-  const prompt = `Review the following ${contentType} article for quality and readability.
-
-Title: ${title}
-Target Keywords: ${keywords.join(', ')}
-
----CONTENT START---
-${content}
----CONTENT END---
-
-Provide your editorial review following the checklist above.`;
-
-  try {
-    const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
-      prompt,
-      systemPrompt,
-      maxTokens: 2000,
-      temperature: 0.3, // Low temp for consistent, analytical review
-      taskType: 'analysis',
-      strategy: 'best_quality',
-      enableCache: true,
-      userId,
-    });
-
-    return response.content;
-  } catch (error) {
-    const safeMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.warn('[ContentGeneration] Stage 2 review failed:', safeMessage);
-    // If review fails, return a minimal review so Stage 3 still has something to work with
-    return 'Review unavailable. Please ensure all sections have unique content, keywords are used naturally, and the tone is conversational.';
   }
 }
 
@@ -1363,7 +1440,7 @@ function scoreContent(
   outline: string[],
   keywords: string[],
   targetWordCount: number = 1200
-): { score: number; metrics: Record<string, number> } {
+): SEOScoreResult {
   const safeContent = content || '';
   const wordCount = countWords(safeContent);
   const h2Count = (safeContent.match(/^## /gm) || []).length;
@@ -1576,8 +1653,20 @@ export const getExistingTitles = internalQuery({
       .query('contentPieces')
       .withIndex('by_project_created', (q) => q.eq('projectId', args.projectId))
       .order('desc')
-      .take(25);
-    return Array.from(new Set(pieces.map((p) => p.title).filter(Boolean))).map(t => t.length > 100 ? t.slice(0, 100) + '...' : t);
+      .take(15);
+      
+    // Deduplicate by title to ensure a clean sliding window
+    const uniqueMap = new Map<string, { title: string, h2Outline: string[] }>();
+    pieces.filter(p => p.title).forEach(p => {
+      if (!uniqueMap.has(p.title)) {
+        uniqueMap.set(p.title, {
+          title: p.title.length > 100 ? p.title.slice(0, 100) + '...' : p.title,
+          h2Outline: p.h2Outline || []
+        });
+      }
+    });
+
+    return Array.from(uniqueMap.values());
   },
 });
 

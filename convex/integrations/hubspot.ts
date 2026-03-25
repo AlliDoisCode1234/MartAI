@@ -639,3 +639,56 @@ export const syncLifecycleChangeToHubspot = internalAction({
     }
   },
 });
+
+/**
+ * Sync an admin analytics funnel event to HubSpot as a boolean flag.
+ * Used by the central analyticsEvent dispatcher.
+ */
+export const syncFunnelEventToHubspot = internalAction({
+  args: {
+    userId: v.id('users'),
+    eventName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!isHubSpotEnabled()) {
+      return { success: false, reason: 'no_api_key' };
+    }
+
+    const user = await ctx.runQuery(api.users.getById, { userId: args.userId });
+    if (!user || !user.email) {
+      return { success: false, reason: 'no_email' };
+    }
+
+    // Map the eventName to the correct HubSpot property
+    const propertyMap: Record<string, string> = {
+      'signup_started': 'phoo_funnel_signup_started',
+      'signup_completed': 'phoo_funnel_signup_completed',
+      'project_created': 'phoo_funnel_project_created',
+      'gsc_connected': 'phoo_funnel_gsc_connected',
+      'keywords_imported': 'phoo_funnel_keywords_imported',
+      'clusters_generated': 'phoo_funnel_clusters_generated',
+      'brief_created': 'phoo_funnel_brief_created',
+      'content_published': 'phoo_funnel_content_published',
+    };
+
+    const propertyName = propertyMap[args.eventName];
+    if (!propertyName) {
+      // Not a tracked HubSpot funnel event — ignore silently
+      return { success: false, reason: 'unmapped_event' };
+    }
+
+    try {
+      const properties: Record<string, string | number | boolean> = {
+        [propertyName]: true,
+      };
+
+      await upsertContact(user.email, properties);
+      console.log(`[HubSpot] Funnel Event Synced: ${args.eventName} for ${user.email}`);
+      return { success: true };
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      console.error(`[HubSpot] Failed to sync funnel event ${args.eventName} for ${user.email}`, errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  },
+});

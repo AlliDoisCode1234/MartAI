@@ -20,7 +20,7 @@ And what are our standards at all?
 > [!CAUTION]
 > **RLS Security Checkpoint**: If this feature adds a new schema table, RLS rules **MUST** be added to `convex/lib/rls.ts`. See `/security-rules` workflow for access control decisions.
 
-## The Board Members (15 Total)
+## The Board Members (17 Total)
 
 ### C-Suite Leadership
 
@@ -106,6 +106,19 @@ And what are our standards at all?
 - Frameworks: Query/Mutation/Action decisions, Component tree, Index strategy, RLS rules
 - Ask: "Is there a Convex component for this? Should this be a query or action? **Does the new table have RLS rules in lib/rls.ts?**"
 
+#### DANE - Staff Data Engineer (docs/DANE_PERSONA.md)
+
+- Focus: Data modeling, schema governance, event taxonomy, pipeline reliability, cost-aware queries
+- Frameworks: Medallion Architecture (Bronze/Silver/Gold), Data Contracts, dbt Testing Taxonomy, Data Mesh domains, Event-Driven Architecture
+- Ask: "Which table does this write to? Did you verify the schema contract? What's the data lineage? Who owns this table?"
+
+#### SHERLOCK - Debugging Process Enforcer (docs/personas/SHERLOCK_PERSONA.md)
+
+- Focus: Root cause investigation, systematic debugging, preventing guess-and-fix cycles
+- Frameworks: The Iron Law (no fixes without root cause), Four-Phase Debugging, 3-Strike Architecture Rule
+- Auto-activates on: test failures, bugs, unexpected behavior, performance issues, build failures
+- Ask: "Did you read the full error message? Can you reproduce? What changed? How many fix attempts so far?"
+
 ---
 
 ### Design & GTM
@@ -154,6 +167,12 @@ These personas act as historical anchors, representing definitive architectural 
 
 #### Context Node 00007 (docs/personas/bot_persona_SUBSCRIPTION_SYNC_00007_PERSONA.md)
 - Ask: "What decisions were made regarding Stripe subscription synchronization and RBAC limits?"
+
+#### Context Node 00008 (docs/personas/bot_persona_PRODUCT_HARDENING_00008_PERSONA.md)
+- Ask: "What gaps were found during the product-wide audit? What decisions were made about BI event taxonomy, content intelligence pipeline, and user engagement architecture?"
+
+#### Context Node 00009 (docs/personas/bot_persona_DATA_ARCHITECTURE_HARDENING_00009_PERSONA.md)
+- Ask: "What decisions were made during data architecture hardening? What's the mandatory LDD→Tickets→Blast Radius→Execute workflow?"
 
 ---
 

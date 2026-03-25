@@ -22,7 +22,7 @@ import {
   Icon,
   Box,
 } from '@chakra-ui/react';
-import { FiUser, FiSettings, FiCreditCard, FiShield, FiLogOut } from 'react-icons/fi';
+import { FiUser, FiSettings, FiCreditCard, FiShield, FiLogOut, FiMessageSquare } from 'react-icons/fi';
 import Link from 'next/link';
 import { useAuth } from '@/lib/useAuth';
 import { getUserDisplayName } from '@/lib/funNames';
@@ -82,6 +82,14 @@ export const UserDropdown: FC<Props> = ({ triggerElement }) => {
           <MenuItem as={Link} href="/subscription" icon={<Icon as={FiCreditCard} />}>
             Billing
           </MenuItem>
+        )}
+        {isActiveBetaUser && (
+          <>
+            <MenuDivider />
+            <MenuItem as={Link} href="/studio/feedback" icon={<Icon as={FiMessageSquare} />} color="brand.orange">
+              Give Feedback
+            </MenuItem>
+          </>
         )}
         {isAdmin && (
           <>

@@ -1,8 +1,10 @@
 import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
-import { api } from '../_generated/api';
+import { api, internal } from '../_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { hashToken, generateSecureToken } from '../lib/hashing';
+import { getMaxSeatsForTier } from '../lib/tierLimits';
+import { BI_EVENTS } from '../lib/eventTypes';
 
 /**
  * Team Invitation Mutations
@@ -151,10 +153,25 @@ export const createInvitation = mutation({
     const pendingInvites = await ctx.db
       .query('organizationInvitations')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-      .filter((q) => q.eq(q.field('status'), 'pending'))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field('status'), 'pending'),
+          q.gt(q.field('expiresAt'), Date.now()) // GAP-7: exclude expired invites from seat count
+        )
+      )
       .collect();
 
-    const maxSeats = org.seatsPurchased ?? org.maxMembers ?? 1;
+    // Dynamically calculate max seats from owner's current tier (not stale org.maxMembers)
+    // This matches the same logic as getSeatUsage in teams.ts
+    const owner = await ctx.db.get(org.ownerId);
+    let maxSeats = 1; // Default for starter
+    if (owner?.membershipTier === 'engine') {
+      maxSeats = 5;
+    } else if (owner?.membershipTier === 'agency') {
+      maxSeats = 25;
+    } else if (owner?.membershipTier === 'enterprise') {
+      maxSeats = org.seatsPurchased ?? org.maxMembers ?? 999;
+    }
     const usedSeats = activeMembers.length + pendingInvites.length;
 
     if (usedSeats >= maxSeats) {
@@ -232,6 +249,13 @@ export const createInvitation = mutation({
       orgName: org.name,
       role: args.role,
       token, // Send original token to user
+    });
+
+    // BI Event: team_invite_sent (BI-5)
+    ctx.scheduler.runAfter(0, internal.analytics.eventTracking.internalTrackBiEvent, {
+      event: BI_EVENTS.TEAM_INVITE_SENT,
+      userId,
+      properties: { organizationId: args.organizationId, email: args.email.toLowerCase(), role: args.role },
     });
 
     return { inviteId, token }; // Return original token for UI/testing
@@ -334,6 +358,13 @@ export const acceptInvitation = mutation({
       userId,
     });
 
+    // BI Event: team_invite_accepted (BI-5)
+    ctx.scheduler.runAfter(0, internal.analytics.eventTracking.internalTrackBiEvent, {
+      event: BI_EVENTS.TEAM_INVITE_ACCEPTED,
+      userId,
+      properties: { organizationId: invitation.organizationId, role: invitation.role },
+    });
+
     return { success: true, organizationId: invitation.organizationId };
   },
 });
@@ -378,6 +409,98 @@ export const revokeInvitation = mutation({
       action: 'invite_revoked',
       details: { email: invitation.email },
       createdAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Resend invitation (creates new token, revokes old one)
+ * Security: Owner or Admin only
+ */
+export const resendInvitation = mutation({
+  args: {
+    invitationId: v.id('organizationInvitations'),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+
+    const oldInvite = await ctx.db.get(args.invitationId);
+    if (!oldInvite) throw new Error('Invitation not found');
+
+    // Check caller permissions
+    const callerMembership = await ctx.db
+      .query('teamMembers')
+      .withIndex('by_user_org', (q) =>
+        q.eq('userId', userId).eq('organizationId', oldInvite.organizationId)
+      )
+      .first();
+
+    if (!callerMembership || !['owner', 'admin'].includes(callerMembership.role)) {
+      throw new Error('Only owners and admins can resend invitations');
+    }
+
+    // Can only resend pending/expired invites
+    if (oldInvite.status === 'accepted') {
+      throw new Error('This invitation has already been accepted');
+    }
+
+    // Revoke old invite
+    await ctx.db.patch(args.invitationId, { status: 'revoked' });
+
+    // Re-check seat limits before creating new invite
+    const org = await ctx.db.get(oldInvite.organizationId);
+    if (!org) throw new Error('Organization not found');
+    const owner = await ctx.db.get(org.ownerId);
+    const maxSeats = getMaxSeatsForTier(owner?.membershipTier, org.seatsPurchased);
+    const activeMembers = await ctx.db
+      .query('teamMembers')
+      .withIndex('by_org', (q) => q.eq('organizationId', oldInvite.organizationId))
+      .filter((q) => q.eq(q.field('status'), 'active'))
+      .collect();
+    const activePending = await ctx.db
+      .query('organizationInvitations')
+      .withIndex('by_org', (q) => q.eq('organizationId', oldInvite.organizationId))
+      .filter((q) => q.and(
+        q.eq(q.field('status'), 'pending'),
+        q.gt(q.field('expiresAt'), Date.now())
+      ))
+      .collect();
+    if (activeMembers.length + activePending.length >= maxSeats) {
+      throw new Error(`Seat limit reached (${activeMembers.length + activePending.length}/${maxSeats}). Upgrade your plan.`);
+    }
+
+    // Create new invite with fresh token and expiry
+    const newToken = generateSecureToken();
+    const tokenHash = await hashToken(newToken);
+    const now = Date.now();
+    const expiresAt = now + 7 * 24 * 60 * 60 * 1000; // 7 days
+
+    await ctx.db.insert('organizationInvitations', {
+      organizationId: oldInvite.organizationId,
+      email: oldInvite.email,
+      role: oldInvite.role,
+      invitedBy: userId,
+      token: tokenHash,
+      expiresAt,
+      status: 'pending',
+      createdAt: now,
+    });
+
+    // Send email notification
+    const inviter = await ctx.db.get(userId);
+
+    await ctx.scheduler.runAfter(0, api.email.emailActions.sendEmail, {
+      to: oldInvite.email,
+      template: 'team_invite',
+      data: {
+        orgName: org?.name || 'your team',
+        inviterName: inviter?.name || 'Your teammate',
+        role: oldInvite.role,
+        token: newToken,
+      },
     });
 
     return { success: true };

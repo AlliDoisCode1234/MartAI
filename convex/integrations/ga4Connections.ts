@@ -13,6 +13,8 @@ export const upsertGA4Connection = mutation({
     refreshToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Security: require editor access to create/update connections
+    await requireProjectAccess(ctx, args.projectId, 'editor');
     console.log('[GoogleOAuth][Mutation] upsertGA4Connection called:', {
       hasAccessToken: !!args.accessToken,
       hasRefreshToken: !!args.refreshToken,
@@ -107,8 +109,8 @@ export const getGA4ConnectionInternal = internalQuery({
   },
 });
 
-// Update last sync time
-export const updateLastSync = mutation({
+// Update last sync time (internal only — called from sync.ts/analyticsWorkflows.ts)
+export const updateLastSync = internalMutation({
   args: {
     connectionId: v.id('ga4Connections'),
   },

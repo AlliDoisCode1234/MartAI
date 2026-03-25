@@ -18,10 +18,9 @@ export const createOrganization = mutation({
     logoUrl: v.optional(v.string()),
     plan: v.optional(
       v.union(
-        v.literal('free'),
         v.literal('starter'),
-        v.literal('growth'),
-        v.literal('pro'),
+        v.literal('engine'),
+        v.literal('agency'),
         v.literal('enterprise')
       )
     ),
@@ -44,14 +43,29 @@ export const createOrganization = mutation({
 
     const now = Date.now();
 
+    // Determine limits based on plan tier
+    const plan = args.plan || 'starter';
+    let maxProjects = 5;
+    let maxMembers = 1;
+    if (plan === 'engine') {
+      maxProjects = 10;
+      maxMembers = 5;
+    } else if (plan === 'agency') {
+      maxProjects = 50;
+      maxMembers = 25;
+    } else if (plan === 'enterprise') {
+      maxProjects = 100;
+      maxMembers = 999;
+    }
+
     // Create the organization
     const orgId = await ctx.db.insert('organizations', {
       name: args.name,
       slug: args.slug,
       logoUrl: args.logoUrl,
-      plan: args.plan || 'free',
-      maxProjects: args.plan === 'enterprise' ? 100 : args.plan === 'pro' ? 20 : 5,
-      maxMembers: args.plan === 'enterprise' ? 50 : args.plan === 'pro' ? 10 : 3,
+      plan,
+      maxProjects,
+      maxMembers,
       ownerId: userId,
       createdAt: now,
       updatedAt: now,

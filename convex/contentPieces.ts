@@ -6,6 +6,7 @@
  */
 
 import { mutation, query, internalQuery } from './_generated/server';
+import { internal } from './_generated/api';
 import { paginationOptsValidator } from 'convex/server';
 import { v } from 'convex/values';
 import { requireProjectAccess } from './lib/rbac';
@@ -289,6 +290,15 @@ export const update = mutation({
         },
         timestamp: Date.now(),
       });
+
+      // Track published milestone (DATA-2)
+      try {
+        await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
+          userId,
+          milestone: 'published',
+          incrementTotal: true,
+        });
+      } catch { /* fire-and-forget */ }
     }
 
     return contentPieceId;

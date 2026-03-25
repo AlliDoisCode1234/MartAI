@@ -77,7 +77,7 @@ export const syncProjectData = internalAction({
           `[GA4 Sync] Normalized: sessions=${ga4Data.sessions}, pageViews=${ga4Data.pageViews}, bounceRate=${ga4Data.bounceRate.toFixed(1)}%`
         );
 
-        await ctx.runMutation(api.integrations.ga4Connections.updateLastSync, {
+        await ctx.runMutation(internal.integrations.ga4Connections.updateLastSync, {
           connectionId: ga4Connection._id,
         });
       } catch (e) {
@@ -283,7 +283,7 @@ export const syncProjectData = internalAction({
           console.warn(`[GSC Sync] No keyword rows returned from GSC API for ${projectId}`);
         }
 
-        await ctx.runMutation(api.integrations.gscConnections.updateLastSync, {
+        await ctx.runMutation(internal.integrations.gscConnections.updateLastSync, {
           connectionId: gscConnection._id,
         });
       } catch (e) {

@@ -1,14 +1,59 @@
 /**
  * Analytics Event Tracking
  *
- * Mutations and queries for BI event tracking.
+ * Canonical module for BI event tracking.
  * Used by admin dashboard for funnel analysis.
+ * Backend code should use internalTrackBiEvent for typed event emission.
  */
 
-import { mutation, query } from '../_generated/server';
+import { mutation, query, internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
+import { internal } from '../_generated/api';
 import { auth } from '../auth';
 import { requireSuperAdmin } from '../lib/rbac';
+import { biEventValidator } from '../lib/eventTypes';
+
+// ════════════════════════════════════════
+// INTERNAL: Typed BI Event Emitter (for backend use)
+// ════════════════════════════════════════
+
+/**
+ * Fire-and-forget internal mutation for backend event emission.
+ * Callers should wrap in try/catch so event failures don't break business logic.
+ *
+ * Usage in actions/mutations:
+ *   await ctx.runMutation(internal.analytics.eventTracking.internalTrackBiEvent, {
+ *     event: BI_EVENTS.CONTENT_GENERATED,
+ *     userId,
+ *     properties: { projectId, contentType },
+ *   });
+ */
+export const internalTrackBiEvent = internalMutation({
+  args: {
+    event: biEventValidator,
+    userId: v.optional(v.id('users')),
+    properties: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert('analyticsEvents', {
+      userId: args.userId,
+      event: args.event,
+      properties: args.properties,
+      timestamp: Date.now(),
+    });
+
+    if (args.userId) {
+      await ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncFunnelEventToHubspot, {
+        userId: args.userId,
+        eventName: args.event,
+      });
+    }
+  },
+});
+
+// ════════════════════════════════════════
+// PUBLIC: Client-Side Event Tracker
+// ════════════════════════════════════════
 
 /**
  * Track an analytics event
@@ -16,7 +61,7 @@ import { requireSuperAdmin } from '../lib/rbac';
  */
 export const trackEvent = mutation({
   args: {
-    event: v.string(),
+    event: v.string(), // Keep v.string() for backward compat with existing client calls
     properties: v.optional(v.any()),
     sessionId: v.optional(v.string()),
     url: v.optional(v.string()),
@@ -28,7 +73,7 @@ export const trackEvent = mutation({
     // Try to get userId from auth (optional - tracks work without auth)
     const userId = await auth.getUserId(ctx);
 
-    return await ctx.db.insert('analyticsEvents', {
+    const result = await ctx.db.insert('analyticsEvents', {
       userId: userId ?? undefined,
       sessionId: args.sessionId,
       event: args.event,
@@ -39,6 +84,15 @@ export const trackEvent = mutation({
       trackId: args.trackId,
       timestamp: Date.now(),
     });
+
+    if (userId) {
+      await ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncFunnelEventToHubspot, {
+        userId,
+        eventName: args.event,
+      });
+    }
+
+    return result;
   },
 });
 
