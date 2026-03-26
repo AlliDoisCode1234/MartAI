@@ -36,13 +36,18 @@ export const me = query({
     const user = await ctx.db.get(userId);
     if (!user) return null;
 
+    const internalAdmin = await ctx.db
+      .query('internalAdmins')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .first();
+
     // Return safe fields only - never expose passwordHash
     return {
       _id: user._id,
       name: user.name,
       email: user.email,
       image: user.image,
-      role: user.role,
+      role: internalAdmin?.role || 'user',
       membershipTier: user.membershipTier,
       createdAt: user.createdAt ?? user._creationTime,
       onboardingStatus: user.onboardingStatus,
@@ -67,9 +72,15 @@ export const getUser = internalQuery({
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user) return null;
+    
+    const internalAdmin = await ctx.db
+      .query('internalAdmins')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .first();
+
     return {
       _id: user._id,
-      role: user.role,
+      role: internalAdmin?.role || 'user',
       membershipTier: user.membershipTier,
       accountStatus: user.accountStatus,
     };
@@ -113,7 +124,11 @@ export const resetOnboarding = mutation({
       throw new Error('Not authenticated');
     }
     const viewer = await ctx.db.get(viewerId);
-    if (!viewer || (viewer.role !== 'admin' && viewer.role !== 'super_admin')) {
+    if (!viewer) {
+      throw new Error('User not found');
+    }
+    const isAdmin = await checkAdminRole(ctx, 'admin');
+    if (!isAdmin) {
       throw new Error('Unauthorized: Admin access required');
     }
     await ctx.db.patch(args.userId, { onboardingStatus: 'in_progress' });
@@ -164,7 +179,8 @@ export const listAll = query({
     }
 
     const user = await ctx.db.get(userId);
-    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+    const isAdmin = await checkAdminRole(ctx, 'admin');
+    if (!isAdmin) {
       return [];
     }
 

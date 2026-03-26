@@ -28,8 +28,15 @@ async function getUserContext(ctx: QueryCtx) {
   if (!userId) return { userId: null, user: null, isAdmin: false, isSuperAdmin: false };
 
   const user = await ctx.db.get(userId);
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  const isSuperAdmin = user?.role === 'super_admin';
+  
+  // Directly query the internalAdmins table via the raw ctx.db to prevent RLS loops
+  const internalAdmin = await ctx.db
+    .query('internalAdmins')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .first();
+
+  const isAdmin = internalAdmin?.role === 'admin' || internalAdmin?.role === 'super_admin';
+  const isSuperAdmin = internalAdmin?.role === 'super_admin';
 
   return { userId, user, isAdmin, isSuperAdmin };
 }
@@ -49,6 +56,12 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
         if (isSuperAdmin) return true;
         return targetUser._id === userId;
       },
+    },
+
+    // Internal Admins: admin readable, super_admin modifiable
+    internalAdmins: {
+      read: async () => isAdmin,
+      modify: async () => isSuperAdmin,
     },
 
     // Projects: owner or admin

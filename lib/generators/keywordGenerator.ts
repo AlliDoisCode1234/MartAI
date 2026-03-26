@@ -14,12 +14,20 @@ export interface KeywordSuggestion {
   relatedKeywords?: string[];
 }
 
+export interface GscKeywordData {
+  keyword: string;
+  clicks: number;
+  impressions: number;
+  position: number;
+}
+
 export async function generateKeywords(
   companyName: string,
   industry: string,
   targetAudience: string,
   website: string,
-  existingContent?: string[]
+  existingContent?: string[],
+  gscData?: GscKeywordData[]
 ): Promise<KeywordSuggestion[]> {
   // Note: Retrier, rate limiting, and caching are implemented in the Convex layer
   // See: convex/lib/services/intelligence.ts and convex/rateLimits.ts
@@ -46,37 +54,32 @@ export async function generateKeywords(
         priority: 'medium',
         reasoning: 'Trending topic for authority (Mock Data)',
       },
-      {
-        keyword: `how to choose ${industry}`,
-        intent: 'informational',
-        priority: 'medium',
-        reasoning: 'Educational content for top of funnel (Mock Data)',
-      },
-      {
-        keyword: `${industry} pricing`,
-        intent: 'transactional',
-        priority: 'high',
-        reasoning: 'Bottom of funnel intent (Mock Data)',
-      },
     ];
   }
 
   const model = openai('gpt-4o');
 
-  const prompt = `You are an expert SEO keyword researcher. Generate a comprehensive list of 20-30 high-value keywords for ${companyName}, a ${industry} company targeting ${targetAudience}.
+  const isOptimizationMode = gscData && gscData.length > 0;
+  
+  const basePrompt = isOptimizationMode 
+    ? `You are an expert SEO Optimization Analyst. I am providing you with exact, real-world Google Search Console data for ${companyName}, a ${industry} company targeting ${targetAudience}.\nWebsite: ${website}\n\nAnalyze these real queries, group them into tight semantic clusters, and output the top priority keywords we should create dedicated Content Calendars for to boost our rankings (Quick Wins). Focus on keywords that have high impressions but need content optimization.`
+    : `You are an expert SEO keyword researcher. Generate a comprehensive list of 20-30 high-value Discovery keywords for ${companyName}, a ${industry} company targeting ${targetAudience}.\nWebsite: ${website}`;
 
-Website: ${website}
+  const gscContext = isOptimizationMode 
+    ? `\n\nCRITICAL CONTEXT - REAL GSC DATA (Do NOT hallucinate keywords outside of this relevancy scope):\n${JSON.stringify(gscData, null, 2)}\n\n`
+    : '';
+
+  const prompt = `${basePrompt}${gscContext}
 
 Consider:
 1. Primary service/product keywords
 2. Long-tail keywords with buyer intent
 3. Local SEO keywords if applicable
-4. Competitor analysis keywords
-5. Content gap opportunities
+${isOptimizationMode ? '4. Low-hanging fruit (high impressions, suboptimal clicks/position)\n5. Related clusters found within the GSC data' : '4. Competitor analysis keywords\n5. Content gap opportunities'}
 6. Commercial and transactional intent keywords
 
 For each keyword, provide:
-- The keyword phrase
+- The exact keyword phrase
 - Estimated search intent (informational, commercial, transactional, navigational)
 - Priority level (high, medium, low) based on relevance and opportunity
 - Brief reasoning for why this keyword is valuable

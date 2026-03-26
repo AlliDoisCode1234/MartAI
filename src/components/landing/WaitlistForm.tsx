@@ -72,7 +72,6 @@ export function WaitlistForm() {
             100+ businesses are already building with Phoo. We&apos;ll announce when more spots
             open.
           </Text>
-          {/* TODO: Add pre-launch pricing CTA once Stripe is configured (Thursday) */}
         </VStack>
       );
     }

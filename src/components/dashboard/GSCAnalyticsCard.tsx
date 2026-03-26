@@ -35,6 +35,7 @@ import {
   FiArrowDown,
 } from 'react-icons/fi';
 import Link from 'next/link';
+import { CompactEmptyState } from '../feedback/EmptyState';
 
 const MotionBox = motion(Box);
 
@@ -196,14 +197,10 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <VStack spacing={2}>
-          <Text color="gray.400" fontSize="sm">
-            GSC connected - waiting for data sync
-          </Text>
-          <Text color="gray.600" fontSize="xs">
-            Data syncs automatically every 24 hours
-          </Text>
-        </VStack>
+        <CompactEmptyState 
+          icon={FiTrendingUp}
+          message="GSC connected - waiting for data sync. Data syncs automatically every 24 hours." 
+        />
       </MotionBox>
     );
   }

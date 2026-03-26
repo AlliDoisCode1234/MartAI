@@ -49,12 +49,21 @@ export async function requireAdminRole(
     throw new Error('Unauthorized: Not logged in');
   }
 
-  const user = await (ctx as QueryCtx).db.get(userId);
-  if (!user) {
-    throw new Error('Unauthorized: User not found');
+  const internalAdmin = await (ctx as QueryCtx).db
+    .query('internalAdmins')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .first();
+
+  let userRole = (internalAdmin?.role as AdminRole) || 'viewer';
+
+  // Issue #1: Temporary bootstrap fallback
+  if (!internalAdmin) {
+    const user = await (ctx as QueryCtx).db.get(userId);
+    if ((user as any)?.role === 'admin' || (user as any)?.role === 'super_admin') {
+      userRole = (user as any).role as AdminRole;
+    }
   }
 
-  const userRole = (user.role as AdminRole) || 'viewer';
   const userLevel = ADMIN_ROLE_LEVEL[userRole] || 0;
   const requiredLevel = ADMIN_ROLE_LEVEL[requiredRole];
 
@@ -203,7 +212,7 @@ export async function canAccessFeature(
     .withIndex('by_user', (q) => q.eq('userId', userId))
     .first();
 
-  // No subscription = no access (unless feature is free tier)
+  // No subscription = no access
   if (!subscription || subscription.status !== 'active') {
     return false;
   }

@@ -16,14 +16,21 @@ import { internal } from '../_generated/api';
 export const createUser = internalMutation({
   args: { name: v.string(), email: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db.insert('users', {
+    const userId = await ctx.db.insert('users', {
       name: args.name,
       email: args.email,
-      role: 'admin',
+      role: 'user',
       onboardingStatus: 'completed',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
+    await ctx.db.insert('internalAdmins', {
+      userId,
+      role: 'admin',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    return userId;
   },
 });
 

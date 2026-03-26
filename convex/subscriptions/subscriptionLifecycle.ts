@@ -20,7 +20,7 @@ import {
   internalQuery,
 } from '../_generated/server';
 import { v } from 'convex/values';
-import { requireAdmin, requireSuperAdmin } from '../lib/rbac';
+import { requireAdmin, requireSuperAdmin, checkAdminRole } from '../lib/rbac';
 import type { Id } from '../_generated/dataModel';
 import { internal } from '../_generated/api';
 
@@ -99,9 +99,11 @@ export const getEffectiveLimits = query({
     }
 
     // RLS: Must be own user OR admin
-    const isAdmin = callerUser.role === 'admin' || callerUser.role === 'super_admin';
-    if (callerUser._id !== userId && !isAdmin) {
-      throw new Error('Access denied');
+    let isAdmin = false;
+    if (callerUser._id !== userId) {
+      const adminRole = await checkAdminRole(ctx, 'admin');
+      isAdmin = adminRole !== null;
+      if (!isAdmin) throw new Error('Access denied');
     }
 
     const subscription = await getSubscriptionByUserId(ctx, userId);
@@ -194,9 +196,11 @@ export const canPerformAction = query({
       throw new Error('User not found');
     }
 
-    const isAdmin = callerUser.role === 'admin' || callerUser.role === 'super_admin';
-    if (callerUser._id !== userId && !isAdmin) {
-      throw new Error('Access denied');
+    let isAdmin = false;
+    if (callerUser._id !== userId) {
+      const adminRole = await checkAdminRole(ctx, 'admin');
+      isAdmin = adminRole !== null;
+      if (!isAdmin) throw new Error('Access denied');
     }
 
     const subscription = await getSubscriptionByUserId(ctx, userId);

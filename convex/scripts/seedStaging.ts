@@ -55,9 +55,16 @@ export const seedTestData = mutation({
       email: 'admin@phoo.ai',
       name: 'Admin User',
       membershipTier: 'enterprise',
-      role: 'super_admin',
+      role: 'user',
       createdAt: Date.now(),
       onboardingStatus: 'completed',
+    });
+
+    await ctx.db.insert('internalAdmins', {
+      userId: adminUserId,
+      role: 'super_admin',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
     });
 
     // Create viewer user for RBAC testing

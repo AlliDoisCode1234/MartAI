@@ -213,7 +213,7 @@ export function CancellationRetentionModal({ isOpen, onClose, currentPlan, renew
                 variant="ghost"
                 color="gray.500"
                 size="sm"
-                onClick={() => setStep(2)}
+                onClick={() => setStep(3)}
                 isDisabled={!reason}
                 _hover={{ color: 'gray.700' }}
               >
@@ -223,80 +223,7 @@ export function CancellationRetentionModal({ isOpen, onClose, currentPlan, renew
           </>
         )}
 
-        {/* ─── Step 2: Retention Offer ─── */}
-        {step === 2 && (
-          <>
-            <ModalHeader pb={2}>
-              <HStack spacing={3}>
-                <Icon as={FiGift} color="green.400" boxSize={5} />
-                <Text>Before you go...</Text>
-              </HStack>
-            </ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              <VStack align="stretch" spacing={5}>
-                <Box
-                  bg="linear-gradient(135deg, #48BB78 0%, #38A169 100%)"
-                  p={6}
-                  borderRadius="xl"
-                  color="white"
-                  textAlign="center"
-                >
-                  <Badge
-                    bg="whiteAlpha.300"
-                    color="white"
-                    fontSize="xs"
-                    px={3}
-                    py={1}
-                    borderRadius="full"
-                    mb={3}
-                  >
-                    Special Offer
-                  </Badge>
-                  <Text fontSize="xl" fontWeight="bold" mb={2}>
-                    20% off for 3 months
-                  </Text>
-                  <Text opacity={0.9} fontSize="sm">
-                    We&apos;d love another chance to prove our value.
-                    <br />
-                    Stay on your {currentPlan} plan at a reduced rate.
-                  </Text>
-                </Box>
 
-                <Text color="gray.500" fontSize="xs" textAlign="center">
-                  Discount will be applied to your next 3 billing cycles automatically.
-                </Text>
-              </VStack>
-            </ModalBody>
-            <ModalFooter gap={3} flexDirection="column" alignItems="stretch">
-              <Button
-                colorScheme="green"
-                size="lg"
-                onClick={() => {
-                  // TODO: Wire to Stripe coupon when client provides coupon ID
-                  toast({
-                    title: 'Offer accepted!',
-                    description: 'Your discount will be applied to your next billing cycle.',
-                    status: 'success',
-                    duration: 5000,
-                  });
-                  handleClose();
-                }}
-              >
-                Accept Offer
-              </Button>
-              <Button
-                variant="ghost"
-                color="gray.400"
-                size="sm"
-                onClick={() => setStep(3)}
-                _hover={{ color: 'gray.600' }}
-              >
-                No thanks, continue cancellation
-              </Button>
-            </ModalFooter>
-          </>
-        )}
 
         {/* ─── Step 3: Final Confirmation ─── */}
         {step === 3 && (

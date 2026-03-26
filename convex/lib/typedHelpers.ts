@@ -61,7 +61,7 @@ export type ContentStatus = 'draft' | 'in_progress' | 'approved' | 'published' |
 export type Intent = 'informational' | 'commercial' | 'transactional' | 'navigational';
 
 /** User roles */
-export type UserRole = 'user' | 'admin' | 'super_admin';
+export type UserRole = 'user' | 'viewer';
 
 /** Membership tiers (must match schema) */
 export type MembershipTier = 'starter' | 'engine' | 'agency' | 'enterprise';

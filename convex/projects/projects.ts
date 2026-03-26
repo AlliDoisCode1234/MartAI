@@ -231,10 +231,16 @@ export const createTestProject = mutation({
       const userId = await ctx.db.insert('users', {
         email,
         name: 'Dogfood Tester',
-        role: 'admin',
+        role: 'user',
         membershipTier: 'enterprise', // Startup with high limits
         onboardingStatus: 'completed',
         createdAt: Date.now(),
+      });
+      await ctx.db.insert('internalAdmins', {
+        userId,
+        role: 'admin',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
       });
       user = await ctx.db.get(userId);
     }

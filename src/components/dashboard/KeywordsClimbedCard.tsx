@@ -12,8 +12,9 @@
 
 import { Box, VStack, HStack, Text, Icon } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { FiTrendingUp, FiArrowRight, FiZap } from 'react-icons/fi';
+import { FiTrendingUp, FiArrowRight, FiZap, FiSearch } from 'react-icons/fi';
 import Link from 'next/link';
+import { CompactEmptyState } from '../feedback/EmptyState';
 
 const MotionBox = motion(Box);
 const MAX_SLOTS = 5;
@@ -69,14 +70,12 @@ export function KeywordsClimbedCard({ keywords, suggestedKeywords, totalCount, h
         <VStack align="stretch" spacing={3} flex={1}>
           {/* No data at all */}
           {!hasData && suggestions.length === 0 && (
-            <VStack py={6} spacing={2}>
-              <Text color="gray.500" fontSize="sm" textAlign="center">
-                No keyword data yet
-              </Text>
-              <Text color="gray.600" fontSize="xs" textAlign="center">
-                Click &quot;Sync Data&quot; after connecting Google
-              </Text>
-            </VStack>
+            <Box py={4}>
+              <CompactEmptyState 
+                icon={FiSearch} 
+                message="No keyword data yet. Click 'Sync Data' after connecting Google." 
+              />
+            </Box>
           )}
 
           {/* Tracked keywords — solid styling */}

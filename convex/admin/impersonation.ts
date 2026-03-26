@@ -13,6 +13,7 @@
 import { v } from 'convex/values';
 import { mutation, query, internalMutation } from '../_generated/server';
 import { Id } from '../_generated/dataModel';
+import { requireSuperAdmin, checkAdminRole } from '../lib/rbac';
 import { rateLimits } from '../rateLimits';
 
 // Session duration: 1 hour
@@ -45,7 +46,8 @@ export const startImpersonation = mutation({
     }
 
     // Verify super_admin role
-    if (adminUser.role !== 'super_admin') {
+    const isSuperAdmin = await checkAdminRole(ctx, 'super_admin');
+    if (!isSuperAdmin) {
       throw new Error('Unauthorized');
     }
 
@@ -77,7 +79,12 @@ export const startImpersonation = mutation({
     }
 
     // Prevent impersonating other super_admins (safety measure)
-    if (targetUser.role === 'super_admin' && targetUser._id !== adminUser._id) {
+    const targetInternalAdmin = await ctx.db
+      .query('internalAdmins')
+      .withIndex('by_user', (q) => q.eq('userId', targetUser._id))
+      .first();
+
+    if (targetInternalAdmin?.role === 'super_admin' && targetUser._id !== adminUser._id) {
       throw new Error('Unauthorized');
     }
 
@@ -258,7 +265,16 @@ export const getImpersonationHistory = query({
       .filter((q) => q.eq(q.field('email'), identity.email))
       .first();
 
-    if (!adminUser || adminUser.role !== 'super_admin') {
+    if (!adminUser) {
+      return [];
+    }
+
+    const internalAdmin = await ctx.db
+      .query('internalAdmins')
+      .withIndex('by_user', (q) => q.eq('userId', adminUser._id))
+      .first();
+
+    if (internalAdmin?.role !== 'super_admin') {
       return [];
     }
 

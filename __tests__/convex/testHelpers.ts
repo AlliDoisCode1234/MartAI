@@ -29,15 +29,26 @@ export async function seedUser(
   }> = {}
 ): Promise<Id<'users'>> {
   return await t.run(async (ctx) => {
-    return await ctx.db.insert('users', {
+    const userId = await ctx.db.insert('users', {
       email: overrides.email ?? `test_${Date.now()}@test.com`,
       name: overrides.name ?? 'Test User',
-      role: overrides.role ?? 'user',
+      role: (overrides.role === 'admin' || overrides.role === 'super_admin') ? 'user' : (overrides.role ?? 'user'),
       membershipTier: 'starter',
       onboardingStatus: overrides.onboardingStatus ?? 'completed',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
+
+    if (overrides.role === 'admin' || overrides.role === 'super_admin') {
+      await ctx.db.insert('internalAdmins', {
+        userId,
+        role: overrides.role,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    }
+
+    return userId;
   });
 }
 

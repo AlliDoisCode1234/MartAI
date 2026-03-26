@@ -20,12 +20,12 @@ import { requireAdmin, requireSuperAdmin } from '../lib/rbac';
 /**
  * Fields for user table row (minimal)
  */
-function filterUserTableFields(user: any, subscription: any | null) {
+function filterUserTableFields(user: any, subscription: any | null, internalRole?: string) {
   return {
     _id: user._id,
     name: user.name,
     email: user.email,
-    role: user.role,
+    role: internalRole || 'user',
     accountStatus: user.accountStatus ?? 'active',
     subscriptionStatus: subscription?.status ?? null,
     subscriptionPlan: subscription?.planTier ?? null,
@@ -39,14 +39,14 @@ function filterUserTableFields(user: any, subscription: any | null) {
  * Fields for user detail page (comprehensive)
  * Excludes: passwordHash, tokens, internal IDs
  */
-function filterUserDetailFields(user: any, subscription: any | null, projects: any[]) {
+function filterUserDetailFields(user: any, subscription: any | null, projects: any[], internalRole?: string) {
   return {
     // Basic info
     _id: user._id,
     name: user.name,
     email: user.email,
     image: user.image,
-    role: user.role,
+    role: internalRole || 'user',
     membershipTier: user.membershipTier,
     bio: user.bio,
     preferences: user.preferences,
@@ -142,7 +142,12 @@ export const listUsers = query({
           .withIndex('by_user', (q) => q.eq('userId', user._id))
           .first();
 
-        return filterUserTableFields(user, subscription);
+        const internalAdmin = await ctx.db
+          .query('internalAdmins')
+          .withIndex('by_user', (q) => q.eq('userId', user._id))
+          .first();
+
+        return filterUserTableFields(user, subscription, internalAdmin?.role);
       })
     );
 
@@ -178,7 +183,12 @@ export const getUserDetails = query({
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .collect();
 
-    return filterUserDetailFields(user, subscription, projects);
+    const internalAdmin = await ctx.db
+      .query('internalAdmins')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .first();
+
+    return filterUserDetailFields(user, subscription, projects, internalAdmin?.role);
   },
 });
 
@@ -204,7 +214,12 @@ export const getUserByEmail = query({
       .withIndex('by_user', (q) => q.eq('userId', user._id))
       .first();
 
-    return filterUserTableFields(user, subscription);
+    const internalAdmin = await ctx.db
+      .query('internalAdmins')
+      .withIndex('by_user', (q) => q.eq('userId', user._id))
+      .first();
+
+    return filterUserTableFields(user, subscription, internalAdmin?.role);
   },
 });
 
@@ -216,20 +231,23 @@ export const listAdmins = query({
   handler: async (ctx) => {
     await requireAdmin(ctx);
 
-    const admins = await ctx.db
-      .query('users')
-      .filter((q) => q.or(q.eq(q.field('role'), 'admin'), q.eq(q.field('role'), 'super_admin')))
-      .collect();
+    const internalAdmins = await ctx.db.query('internalAdmins').collect();
+    const admins = (await Promise.all(internalAdmins.map(a => ctx.db.get(a.userId)))).filter(Boolean);
 
-    return Promise.all(
+    const result = await Promise.all(
       admins.map(async (user) => {
+        if (!user) return null; // Should not happen due to filter(Boolean) above, but good for type safety
         const subscription = await ctx.db
           .query('subscriptions')
           .withIndex('by_user', (q) => q.eq('userId', user._id))
           .first();
-        return filterUserTableFields(user, subscription);
+          
+        const internalAdmin = internalAdmins.find(a => a.userId === user._id);
+        
+        return filterUserTableFields(user, subscription, internalAdmin?.role);
       })
     );
+    return result.filter(Boolean);
   },
 });
 
@@ -258,10 +276,20 @@ export const updateUserRole = mutation({
       throw new Error('User not found');
     }
 
-    await ctx.db.patch(args.userId, {
-      role: args.role,
-      updatedAt: Date.now(),
-    });
+    const existingInternal = await ctx.db
+      .query('internalAdmins')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .first();
+
+    if (args.role === 'user' || args.role === 'viewer') {
+      if (existingInternal) await ctx.db.delete(existingInternal._id);
+    } else {
+      if (existingInternal) {
+        await ctx.db.patch(existingInternal._id, { role: args.role, updatedAt: Date.now() });
+      } else {
+        await ctx.db.insert('internalAdmins', { userId: args.userId, role: args.role, createdAt: Date.now(), updatedAt: Date.now() });
+      }
+    }
 
     console.log(`[AdminRoleChange] User ${args.userId} role changed to ${args.role}`);
 
