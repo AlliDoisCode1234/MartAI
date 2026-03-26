@@ -32,7 +32,7 @@ export async function seedUser(
     const userId = await ctx.db.insert('users', {
       email: overrides.email ?? `test_${Date.now()}@test.com`,
       name: overrides.name ?? 'Test User',
-      role: overrides.role ?? 'user',
+      role: (overrides.role === 'admin' || overrides.role === 'super_admin') ? 'user' : (overrides.role ?? 'user'),
       membershipTier: 'starter',
       onboardingStatus: overrides.onboardingStatus ?? 'completed',
       createdAt: Date.now(),

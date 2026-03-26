@@ -51,6 +51,7 @@ export const getRawGA4Feed = query({
     return await ctx.db
       .query('analyticsData')
       .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
+      .filter((q) => q.eq(q.field('source'), 'ga4'))
       .order('desc')
       .paginate(args.paginationOpts);
   },

@@ -124,7 +124,11 @@ export const resetOnboarding = mutation({
       throw new Error('Not authenticated');
     }
     const viewer = await ctx.db.get(viewerId);
-    if (!viewer || (viewer.role !== 'admin' && viewer.role !== 'super_admin')) {
+    if (!viewer) {
+      throw new Error('User not found');
+    }
+    const isAdmin = await checkAdminRole(ctx, 'admin');
+    if (!isAdmin) {
       throw new Error('Unauthorized: Admin access required');
     }
     await ctx.db.patch(args.userId, { onboardingStatus: 'in_progress' });
@@ -175,12 +179,8 @@ export const listAll = query({
     }
 
     const user = await ctx.db.get(userId);
-    const internalAdmin = await ctx.db
-      .query('internalAdmins')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .first();
-
-    if (!internalAdmin || (internalAdmin.role !== 'admin' && internalAdmin.role !== 'super_admin')) {
+    const isAdmin = await checkAdminRole(ctx, 'admin');
+    if (!isAdmin) {
       return [];
     }
 

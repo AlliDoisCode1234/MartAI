@@ -46,7 +46,7 @@ export default defineSchema({
     emailVerificationTime: v.optional(v.float64()), // For @convex-dev/auth OAuth
     // Custom fields
     role: v.optional(
-      v.union(v.literal('super_admin'), v.literal('admin'), v.literal('user'), v.literal('viewer'))
+      v.union(v.literal('user'), v.literal('viewer'))
     ),
     membershipTier: v.optional(
       v.union(
@@ -188,7 +188,8 @@ export default defineSchema({
     updatedAt: v.number(),
     lastActiveAt: v.optional(v.number()),
   })
-    .index('by_user', ['userId']),
+    .index('by_user', ['userId'])
+    .index('by_role', ['role']),
 
   // Beta Access Codes - Gates login for closed beta
   betaCodes: defineTable({

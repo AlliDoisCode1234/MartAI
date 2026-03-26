@@ -25,7 +25,7 @@ describe('Admin Impersonation', () => {
         return await ctx.db.insert('users', {
           email: 'admin@example.com',
           name: 'Super Admin',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });
@@ -62,7 +62,7 @@ describe('Admin Impersonation', () => {
         return await ctx.db.insert('users', {
           email: 'regular-admin@example.com',
           name: 'Regular Admin',
-          role: 'admin', // Not super_admin
+          undefined, // Not super_admin
           createdAt: Date.now(),
         });
       });
@@ -94,7 +94,7 @@ describe('Admin Impersonation', () => {
         return await ctx.db.insert('users', {
           email: 'admin1@example.com',
           name: 'Super Admin 1',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });
@@ -103,7 +103,7 @@ describe('Admin Impersonation', () => {
         return await ctx.db.insert('users', {
           email: 'admin2@example.com',
           name: 'Super Admin 2',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });
@@ -126,7 +126,7 @@ describe('Admin Impersonation', () => {
         return await ctx.db.insert('users', {
           email: 'admin@example.com',
           name: 'Super Admin',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });
@@ -187,7 +187,7 @@ describe('Admin Impersonation', () => {
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           email: 'admin@example.com',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });
@@ -237,7 +237,7 @@ describe('Admin Impersonation', () => {
       const admin1Id = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           email: 'admin1@example.com',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });
@@ -245,7 +245,7 @@ describe('Admin Impersonation', () => {
       const admin2Id = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           email: 'admin2@example.com',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });
@@ -291,7 +291,7 @@ describe('Admin Impersonation', () => {
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           email: 'admin@example.com',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });
@@ -343,7 +343,7 @@ describe('Admin Impersonation', () => {
       const admin1Id = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           email: 'admin1@example.com',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });
@@ -351,7 +351,7 @@ describe('Admin Impersonation', () => {
       const admin2Id = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           email: 'admin2@example.com',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });
@@ -395,7 +395,7 @@ describe('Admin Impersonation', () => {
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           email: 'admin@example.com',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });
@@ -443,7 +443,7 @@ describe('Admin Impersonation', () => {
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           email: 'admin@example.com',
-          role: 'super_admin',
+          undefined,
           createdAt: Date.now(),
         });
       });

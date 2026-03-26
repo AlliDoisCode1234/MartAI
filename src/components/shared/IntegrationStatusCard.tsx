@@ -48,6 +48,7 @@ const PLATFORM_CONFIG: Record<
     icon: React.ElementType;
     color: string;
     description: string;
+    comingSoon?: boolean;
   }
 > = {
   wordpress: {
@@ -61,12 +62,14 @@ const PLATFORM_CONFIG: Record<
     icon: SiShopify,
     color: '#96BF48',
     description: 'Publish to your store blog',
+    comingSoon: true,
   },
   wix: {
     name: 'Wix',
     icon: SiWix,
     color: '#0C6EFC',
     description: 'Publish to your Wix blog',
+    comingSoon: true,
   },
 };
 
@@ -156,13 +159,23 @@ export function IntegrationStatusCard({
       <Box p={3} borderWidth="1px" borderRadius="lg" borderColor="gray.200" bg="gray.50">
         <HStack justify="space-between">
           <HStack spacing={2}>
-            <Icon as={PlatformIcon} boxSize={5} color="gray.400" />
-            <Text fontWeight="medium" fontSize="sm" color="gray.600">
+            <Icon as={PlatformIcon} boxSize={5} color={config.comingSoon ? 'gray.300' : 'gray.400'} />
+            <Text fontWeight="medium" fontSize="sm" color={config.comingSoon ? 'gray.400' : 'gray.600'}>
               {config.name}
             </Text>
+            {config.comingSoon && (
+              <Badge colorScheme="orange" variant="subtle" size="sm">
+                Coming Soon
+              </Badge>
+            )}
           </HStack>
-          <Button size="xs" colorScheme="blue" onClick={onConnect}>
-            Connect to publish
+          <Button 
+            size="xs" 
+            colorScheme={config.comingSoon ? 'gray' : 'blue'} 
+            onClick={onConnect}
+            isDisabled={config.comingSoon}
+          >
+            {config.comingSoon ? 'Disabled' : 'Connect to publish'}
           </Button>
         </HStack>
       </Box>
@@ -225,11 +238,18 @@ export function IntegrationStatusCard({
     <Box p={4} borderWidth="1px" borderRadius="lg" borderColor="gray.200">
       <HStack justify="space-between">
         <HStack spacing={3}>
-          <Icon as={PlatformIcon} boxSize={6} color="gray.400" />
+          <Icon as={PlatformIcon} boxSize={6} color={config.comingSoon ? "gray.300" : "gray.400"} />
           <VStack align="start" spacing={0}>
-            <Text fontWeight="bold" color="gray.700">
-              {config.name}
-            </Text>
+            <HStack>
+              <Text fontWeight="bold" color={config.comingSoon ? "gray.400" : "gray.700"}>
+                {config.name}
+              </Text>
+              {config.comingSoon && (
+                <Badge colorScheme="orange" variant="subtle" size="sm">
+                  Coming Soon
+                </Badge>
+              )}
+            </HStack>
             <Text fontSize="sm" color="gray.500">
               {config.description}
             </Text>

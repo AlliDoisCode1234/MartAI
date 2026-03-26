@@ -12,7 +12,7 @@
 
 import { query } from '../_generated/server';
 import { v } from 'convex/values';
-import { requireAdmin } from '../lib/rbac';
+import { requireAdmin, checkAdminRole } from '../lib/rbac';
 import type { Id } from '../_generated/dataModel';
 
 // ============================================
@@ -166,9 +166,11 @@ export const computeUserHealth = query({
       throw new Error('User not found');
     }
 
-    const isAdmin = callerUser.role === 'admin' || callerUser.role === 'super_admin';
-    if (callerUser._id !== userId && !isAdmin) {
-      throw new Error('Access denied');
+    let isAdmin = false;
+    if (callerUser._id !== userId) {
+      const adminRole = await checkAdminRole(ctx, 'admin');
+      isAdmin = adminRole !== null;
+      if (!isAdmin) throw new Error('Access denied');
     }
 
     // Get user and subscription data

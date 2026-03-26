@@ -72,18 +72,6 @@ export function WaitlistForm() {
             100+ businesses are already building with Phoo. We&apos;ll announce when more spots
             open.
           </Text>
-          <Button
-            as="a"
-            href="/api/checkout?plan=starter-prelaunch"
-            size="lg"
-            bg="brand.orange"
-            color="white"
-            _hover={{ bg: 'orange.500' }}
-            mt={4}
-            rightIcon={<Icon as={ArrowRight} boxSize={5} />}
-          >
-            Lock in Pre-Launch Pricing ($29/mo)
-          </Button>
         </VStack>
       );
     }

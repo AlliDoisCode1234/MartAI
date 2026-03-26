@@ -72,8 +72,7 @@ export function KeywordsLayout({ children, activeTab = 'library', onTabChange }:
                   size="md"
                   onClick={() => {
                     if (activeTab === 'clusters') {
-                      // TODO: Open cluster creation modal
-                    } else {
+                      router.push('/content/new');
                       router.push('/keywords/import');
                     }
                   }}

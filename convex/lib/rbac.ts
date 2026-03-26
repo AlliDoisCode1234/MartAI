@@ -54,7 +54,16 @@ export async function requireAdminRole(
     .withIndex('by_user', (q) => q.eq('userId', userId))
     .first();
 
-  const userRole = (internalAdmin?.role as AdminRole) || 'viewer';
+  let userRole = (internalAdmin?.role as AdminRole) || 'viewer';
+
+  // Issue #1: Temporary bootstrap fallback
+  if (!internalAdmin) {
+    const user = await (ctx as QueryCtx).db.get(userId);
+    if ((user as any)?.role === 'admin' || (user as any)?.role === 'super_admin') {
+      userRole = (user as any).role as AdminRole;
+    }
+  }
+
   const userLevel = ADMIN_ROLE_LEVEL[userRole] || 0;
   const requiredLevel = ADMIN_ROLE_LEVEL[requiredRole];
 

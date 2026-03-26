@@ -1,7 +1,6 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { requireSuperAdmin } from '../lib/rbac';
-import { Id } from '../_generated/dataModel';
 
 /**
  * Get all internal staff
@@ -96,6 +95,18 @@ export const revokeAccess = mutation({
     // Prevent self-lockout
     if (targetAdmin.userId === callerId) {
       throw new Error('Action blocked: You cannot revoke your own super_admin privileges this way.');
+    }
+
+    // Prevent revoking the last super_admin
+    if (targetAdmin.role === 'super_admin') {
+      const superAdmins = await ctx.db
+        .query('internalAdmins')
+        .withIndex('by_role', (q) => q.eq('role', 'super_admin'))
+        .collect();
+      
+      if (superAdmins.length <= 1) {
+        throw new Error('Action blocked: Cannot revoke the last super_admin.');
+      }
     }
 
     await ctx.db.delete(args.adminId);

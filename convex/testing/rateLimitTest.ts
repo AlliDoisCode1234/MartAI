@@ -115,8 +115,16 @@ export const setupTestUser = internalMutation({
     const userId = await ctx.db.insert('users', {
       email: `test_ratelimit_${Date.now()}@test.com`,
       membershipTier,
-      role: args.tier === 'admin' ? 'admin' : 'user',
+      role: 'user',
     });
+    if (args.tier === 'admin') {
+      await ctx.db.insert('internalAdmins', {
+        userId,
+        role: 'admin',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    }
     const projectId = await ctx.db.insert('projects', {
       userId,
       name: 'Rate Limit Test Project',

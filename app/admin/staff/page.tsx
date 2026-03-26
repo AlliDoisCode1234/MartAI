@@ -44,7 +44,10 @@ import { Id } from '@/convex/_generated/dataModel';
 
 export default function InternalStaffPage() {
   const me = useQuery(api.users.me);
-  const staffArray = useQuery(api.admin.internalStaff.listStaff);
+  const staffArray = useQuery(
+    api.admin.internalStaff.listStaff,
+    me?.role === 'super_admin' ? {} : 'skip'
+  );
   const promoteUser = useMutation(api.admin.internalStaff.promoteUser);
   const revokeAccess = useMutation(api.admin.internalStaff.revokeAccess);
 
@@ -56,7 +59,7 @@ export default function InternalStaffPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Security check: Route level protection
-  if (me === undefined || staffArray === undefined) {
+  if (me === undefined) {
     return <Container mt={10}><Text>Loading security context...</Text></Container>;
   }
 
@@ -74,6 +77,10 @@ export default function InternalStaffPage() {
         </Alert>
       </Container>
     );
+  }
+
+  if (staffArray === undefined) {
+    return <Container mt={10}><Text>Loading staff roster...</Text></Container>;
   }
 
   const handlePromote = async () => {
@@ -94,10 +101,11 @@ export default function InternalStaffPage() {
       });
       setTargetEmail('');
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Validation failed. Ensure exact email match.';
       toast({
         title: 'Promotion Failed',
-        description: err.message || 'Validation failed. Ensure exact email match.',
+        description: errorMessage,
         status: 'error',
         duration: 6000,
         isClosable: true,
@@ -112,8 +120,9 @@ export default function InternalStaffPage() {
       try {
         await revokeAccess({ adminId });
         toast({ title: 'Access Revoked', status: 'success' });
-      } catch (err: any) {
-        toast({ title: 'Error', description: err.message, status: 'error' });
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+        toast({ title: 'Error', description: errorMessage, status: 'error' });
       }
     }
   };
@@ -221,7 +230,7 @@ export default function InternalStaffPage() {
 
               <FormControl isRequired>
                 <FormLabel>Initial Internal Role</FormLabel>
-                <Select value={targetRole} onChange={(e) => setTargetRole(e.target.value as any)}>
+                <Select value={targetRole} onChange={(e) => setTargetRole(e.target.value as 'super_admin' | 'admin' | 'sales')}>
                   <option value="admin">Admin (Standard Engineering/Support)</option>
                   <option value="sales">Sales (Read-Only Prospecting)</option>
                   <option value="super_admin">Super Admin (God-Mode + Staff Management)</option>

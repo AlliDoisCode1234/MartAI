@@ -15,6 +15,8 @@ import type * as admin_costs from "../admin/costs.js";
 import type * as admin_dashboard from "../admin/dashboard.js";
 import type * as admin_enterpriseCheckout from "../admin/enterpriseCheckout.js";
 import type * as admin_impersonation from "../admin/impersonation.js";
+import type * as admin_internalStaff from "../admin/internalStaff.js";
+import type * as admin_projectAnalytics from "../admin/projectAnalytics.js";
 import type * as admin_provisioning from "../admin/provisioning.js";
 import type * as admin_users from "../admin/users.js";
 import type * as aiStorage from "../aiStorage.js";
@@ -190,6 +192,8 @@ declare const fullApi: ApiFromModules<{
   "admin/dashboard": typeof admin_dashboard;
   "admin/enterpriseCheckout": typeof admin_enterpriseCheckout;
   "admin/impersonation": typeof admin_impersonation;
+  "admin/internalStaff": typeof admin_internalStaff;
+  "admin/projectAnalytics": typeof admin_projectAnalytics;
   "admin/provisioning": typeof admin_provisioning;
   "admin/users": typeof admin_users;
   aiStorage: typeof aiStorage;
