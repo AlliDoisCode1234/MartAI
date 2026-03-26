@@ -223,8 +223,9 @@ export function ShopifyConnect({ projectId }: Props) {
             isLoading={isConnecting}
             loadingText="Redirecting to Shopify..."
             leftIcon={<FiCheck />}
+            isDisabled={true}
           >
-            Connect with Shopify
+            Connect with Shopify (Coming Soon)
           </Button>
         </VStack>
       </Collapse>

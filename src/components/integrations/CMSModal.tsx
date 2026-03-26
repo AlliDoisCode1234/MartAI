@@ -186,8 +186,14 @@ export function CMSModal({
           <Button variant="ghost" mr={3} onClick={onClose}>
             Cancel
           </Button>
-          <Button bg="brand.orange" color="white" onClick={onTest} isLoading={loading}>
-            Test Connection
+          <Button 
+            bg="brand.orange" 
+            color="white" 
+            onClick={onTest} 
+            isLoading={loading}
+            isDisabled={platform === 'shopify' || platform === 'webflow'}
+          >
+            {platform === 'shopify' || platform === 'webflow' ? 'Coming Soon' : 'Test Connection'}
           </Button>
         </ModalFooter>
       </ModalContent>

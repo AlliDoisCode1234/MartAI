@@ -174,6 +174,9 @@ These personas act as historical anchors, representing definitive architectural 
 #### Context Node 00009 (docs/personas/bot_persona_DATA_ARCHITECTURE_HARDENING_00009_PERSONA.md)
 - Ask: "What decisions were made during data architecture hardening? What's the mandatory LDD→Tickets→Blast Radius→Execute workflow?"
 
+#### Context Node 00010 (docs/personas/bot_persona_AI_CONTENT_HARDENING_00010_PERSONA.md)
+- Ask: "What decisions were made regarding AI Content Perfection, the Semantic Sliding Window, and the Hubspot funnel synchronization?"
+
 ---
 
 ## Consultation Process

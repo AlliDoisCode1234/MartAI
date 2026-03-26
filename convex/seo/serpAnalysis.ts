@@ -89,7 +89,7 @@ export const canAnalyze = query({
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .collect();
 
-    // Free tier: 1 SERP analysis per project
+    // Limit: 1 SERP analysis per project
     const limit = 1;
     const remaining = Math.max(0, limit - analyses.length);
 

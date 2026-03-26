@@ -5,8 +5,6 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 /**
  * Pricing Tiers with Cost Analysis
  *
- * CANONICAL TIER NAMES (as of Feb 2026 — Lead Generation System pivot):
- *   - free: No subscription (default for new users)
  *   - starter: Lead Starter ($197/mo) - Solopreneurs, 1 website
  *   - engine: Growth Engine ($397/mo) - SMBs scaling, 3 websites
  *   - agency: Agency ($697/mo) - Agencies, multi-location, 10 websites
@@ -36,17 +34,6 @@ import { startOfMonth, endOfMonth } from 'date-fns';
  *   - Enterprise = relationship, not sticker price
  */
 export const PLAN_LIMITS = {
-  // Free: No subscription - used for feature gating only
-  free: {
-    priceMonthly: 0,
-    features: {
-      maxUrls: 0,
-      maxKeywordIdeas: 0,
-      maxAiReports: 0,
-      maxContentPieces: 0,
-      maxTeamMembers: 0,
-    },
-  },
   // Lead Starter: $197/mo
   // "Your in-house lead engine for less than the cost of one freelancer."
   // Target: Solopreneurs, 1 website, predictable lead generation

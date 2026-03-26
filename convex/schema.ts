@@ -180,6 +180,16 @@ export default defineSchema({
     .index('by_acquisition_source', ['acquisitionSource'])
     .index('by_stripe_customer_id', ['stripeCustomerId']),
 
+  // Internal Phoo Staff (Admin Portal Access)
+  internalAdmins: defineTable({
+    userId: v.id('users'),
+    role: v.union(v.literal('super_admin'), v.literal('admin'), v.literal('sales')),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    lastActiveAt: v.optional(v.number()),
+  })
+    .index('by_user', ['userId']),
+
   // Beta Access Codes - Gates login for closed beta
   betaCodes: defineTable({
     code: v.string(), // Unique access code (e.g., "PHOO-A1B2C3")

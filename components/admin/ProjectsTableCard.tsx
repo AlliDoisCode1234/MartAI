@@ -22,8 +22,11 @@ import {
   Td,
   Text,
   IconButton,
+  HStack,
+  Tooltip,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon } from '@chakra-ui/icons';
+import { FiDatabase } from 'react-icons/fi';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -70,14 +73,29 @@ export function ProjectsTableCard({ projects }: Props) {
                     {p.createdAt ? format(p.createdAt, 'MMM d, yyyy') : '—'}
                   </Td>
                   <Td>
-                    <IconButton
-                      as={Link}
-                      href={`/projects/${p._id}`}
-                      aria-label="View"
-                      icon={<ExternalLinkIcon />}
-                      size="xs"
-                      variant="ghost"
-                    />
+                    <HStack spacing={1} justify="flex-end">
+                      <Tooltip label="Raw Data Firehose" placement="top">
+                        <IconButton
+                          as={Link}
+                          href={`/admin/projects/${p._id}`}
+                          aria-label="Intelligence Firehose"
+                          icon={<FiDatabase />}
+                          size="xs"
+                          colorScheme="red"
+                          variant="ghost"
+                        />
+                      </Tooltip>
+                      <Tooltip label="View Project as User" placement="top">
+                        <IconButton
+                          as={Link}
+                          href={`/projects/${p._id}`}
+                          aria-label="View"
+                          icon={<ExternalLinkIcon />}
+                          size="xs"
+                          variant="ghost"
+                        />
+                      </Tooltip>
+                    </HStack>
                   </Td>
                 </Tr>
               ))}

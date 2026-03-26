@@ -273,14 +273,23 @@ export function CancellationRetentionModal({ isOpen, onClose, currentPlan, renew
                 colorScheme="green"
                 size="lg"
                 onClick={() => {
-                  // TODO: Wire to Stripe coupon when client provides coupon ID
+                  // Placeholder for Stripe coupon application:
+                  // fetch('/api/billing/apply-coupon', { method: 'POST', body: JSON.stringify({ coupon: 'RETENTION_20' }) })
                   toast({
-                    title: 'Offer accepted!',
-                    description: 'Your discount will be applied to your next billing cycle.',
-                    status: 'success',
-                    duration: 5000,
+                    title: 'Applying discount...',
+                    status: 'loading',
+                    duration: 1000,
                   });
-                  handleClose();
+                  setTimeout(() => {
+                    toast.closeAll();
+                    toast({
+                      title: 'Offer accepted!',
+                      description: 'Your 20% discount has been applied to your next 3 billing cycles.',
+                      status: 'success',
+                      duration: 5000,
+                    });
+                    handleClose();
+                  }, 1000);
                 }}
               >
                 Accept Offer

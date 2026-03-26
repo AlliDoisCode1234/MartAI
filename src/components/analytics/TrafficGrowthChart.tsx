@@ -18,8 +18,9 @@ import {
   Text,
   Box,
   Badge,
-  Button,
 } from '@chakra-ui/react';
+import { FiTrendingUp } from 'react-icons/fi';
+import { CompactEmptyState } from '../feedback/EmptyState';
 import {
   LineChart,
   Line,
@@ -126,28 +127,12 @@ export function TrafficGrowthChart({ data, onSync }: Props) {
               border="2px dashed"
               borderColor="brand.orange"
             >
-              <VStack spacing={4}>
-                <Text fontSize="4xl" color="brand.orange">
-                  ●
-                </Text>
-                <VStack spacing={2}>
-                  <Text fontWeight="semibold" color="gray.700">
-                    No data available
-                  </Text>
-                  <Text fontSize="sm" color="gray.600" textAlign="center">
-                    Sync your GA4 and GSC data to see traffic trends
-                  </Text>
-                </VStack>
-                <Button
-                  onClick={onSync}
-                  bg="brand.orange"
-                  color="white"
-                  _hover={{ bg: '#E8851A' }}
-                  size="sm"
-                >
-                  Sync Data
-                </Button>
-              </VStack>
+              <CompactEmptyState
+                icon={FiTrendingUp}
+                message="Sync your GA4 and GSC data to see traffic trends"
+                actionLabel="Sync Data"
+                onAction={onSync}
+              />
             </Box>
           )}
         </VStack>
