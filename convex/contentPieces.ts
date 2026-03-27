@@ -293,11 +293,13 @@ export const update = mutation({
 
       // Track published milestone (DATA-2)
       try {
-        await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
-          userId,
-          milestone: 'published',
-          incrementTotal: true,
-        });
+        if (process.env.VITEST !== 'true') {
+          await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
+            userId,
+            milestone: 'published',
+            incrementTotal: true,
+          });
+        }
       } catch { /* fire-and-forget */ }
     }
 

@@ -57,9 +57,13 @@ describe('RBAC Security', () => {
       const regularUser = await seedUser(t, { email: 'user@test.com', role: 'user' });
       const viewer = await seedUser(t, { email: 'viewer@test.com', role: 'viewer' });
 
-      // Verify roles are stored correctly
-      const superAdminRecord = await t.run(async (ctx) => ctx.db.get(superAdmin));
-      const adminRecord = await t.run(async (ctx) => ctx.db.get(admin));
+      // Verify roles are stored correctly in internalAdmins
+      const superAdminRecord = await t.run(async (ctx) => {
+        return await ctx.db.query('internalAdmins').withIndex('by_user', q => q.eq('userId', superAdmin)).first();
+      });
+      const adminRecord = await t.run(async (ctx) => {
+        return await ctx.db.query('internalAdmins').withIndex('by_user', q => q.eq('userId', admin)).first();
+      });
       const userRecord = await t.run(async (ctx) => ctx.db.get(regularUser));
       const viewerRecord = await t.run(async (ctx) => ctx.db.get(viewer));
 
@@ -77,8 +81,8 @@ describe('RBAC Security', () => {
       await seedUser(t, { email: 'user1@test.com', role: 'user' });
 
       const admins = await t.run(async (ctx) => {
-        const allUsers = await ctx.db.query('users').collect();
-        return allUsers.filter((u) => u.role === 'admin');
+        const adminRecords = await ctx.db.query('internalAdmins').collect();
+        return adminRecords.filter((u) => u.role === 'admin');
       });
 
       expect(admins).toHaveLength(2);

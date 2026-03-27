@@ -46,7 +46,7 @@ export default defineSchema({
     emailVerificationTime: v.optional(v.float64()), // For @convex-dev/auth OAuth
     // Custom fields
     role: v.optional(
-      v.union(v.literal('user'), v.literal('viewer'))
+      v.union(v.literal('user'), v.literal('viewer'), v.literal('admin'), v.literal('super_admin'))
     ),
     membershipTier: v.optional(
       v.union(
@@ -545,7 +545,8 @@ export default defineSchema({
     projectId: v.id('projects'),
     propertyId: v.string(),
     propertyName: v.string(),
-    // OAuth fields
+    // OAuth fields (Encrypted at rest)
+    isEncrypted: v.optional(v.boolean()), // Legacy marker
     accessToken: v.optional(v.string()),
     refreshToken: v.optional(v.string()),
     // Service account fields
@@ -562,6 +563,8 @@ export default defineSchema({
   gscConnections: defineTable({
     projectId: v.id('projects'),
     siteUrl: v.string(),
+    // OAuth fields (Encrypted at rest)
+    isEncrypted: v.optional(v.boolean()), // Legacy marker
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
     // All sites available in this Google account (for property picker)
@@ -740,7 +743,8 @@ export default defineSchema({
     siteUrl: v.string(),
     siteName: v.optional(v.string()),
     credentials: v.object({
-      _encrypted: v.optional(v.literal(true)), // Encryption marker
+      isEncrypted: v.optional(v.literal(true)), // Legacy encryption marker
+      _encrypted: v.optional(v.boolean()), // New standardized marker (Swarm-19)
       username: v.optional(v.string()),
       applicationPassword: v.optional(v.string()), // WordPress App Password
       apiKey: v.optional(v.string()), // Shopify/other APIs

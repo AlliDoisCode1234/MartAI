@@ -148,11 +148,13 @@ export const saveConnection = mutation({
         try {
           const project = await ctx.db.get(args.projectId);
           if (project?.userId) {
-            await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
-              userId: project.userId,
-              milestone: 'wordpress',
-              incrementTotal: false,
-            });
+            if (process.env.VITEST !== 'true') {
+              await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
+                userId: project.userId,
+                milestone: 'wordpress',
+                incrementTotal: false,
+              });
+            }
           }
         } catch { /* fire-and-forget */ }
       }

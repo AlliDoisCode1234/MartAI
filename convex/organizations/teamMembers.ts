@@ -183,6 +183,31 @@ export const acceptInvitation = mutation({
       throw new Error('Invitation email does not match your account');
     }
 
+    // TKT-01: Re-verify organization seat capacity BEFORE redemption
+    const org = await ctx.db.get(invitation.organizationId);
+    if (!org) {
+      throw new Error('Organization not found');
+    }
+
+    const currentMembers = await ctx.db
+      .query('teamMembers')
+      .withIndex('by_org', (q) => q.eq('organizationId', invitation.organizationId))
+      .collect();
+
+    const owner = await ctx.db.get(org.ownerId);
+    let maxMembers = 1; // Default for starter
+    if (owner?.membershipTier === 'engine') {
+      maxMembers = 5;
+    } else if (owner?.membershipTier === 'agency') {
+      maxMembers = 25;
+    } else if (owner?.membershipTier === 'enterprise') {
+      maxMembers = org.seatsPurchased ?? org.maxMembers ?? 999;
+    }
+
+    if (currentMembers.length >= maxMembers) {
+      throw new Error('Organization has reached its maximum seat capacity');
+    }
+
     const now = Date.now();
 
     // Create team membership

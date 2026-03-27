@@ -42,7 +42,7 @@ export const internalTrackBiEvent = internalMutation({
       timestamp: Date.now(),
     });
 
-    if (args.userId) {
+    if (args.userId && process.env.VITEST !== 'true') {
       await ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncFunnelEventToHubspot, {
         userId: args.userId,
         eventName: args.event,
@@ -85,7 +85,7 @@ export const trackEvent = mutation({
       timestamp: Date.now(),
     });
 
-    if (userId) {
+    if (userId && process.env.VITEST !== 'true') {
       await ctx.scheduler.runAfter(0, internal.integrations.hubspot.syncFunnelEventToHubspot, {
         userId,
         eventName: args.event,

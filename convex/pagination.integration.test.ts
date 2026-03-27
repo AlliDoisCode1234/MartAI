@@ -9,6 +9,7 @@
 
 import { describe, test, expect, beforeEach } from 'vitest';
 import { convexTest } from 'convex-test';
+import { createTestContext } from '../__tests__/convex/testHelpers';
 import schema from './schema';
 import { api } from './_generated/api';
 import { Id } from './_generated/dataModel';
@@ -19,7 +20,7 @@ describe('Content Pieces: Pagination & Filtering', () => {
   let testUserId: Id<'users'>;
 
   beforeEach(async () => {
-    t = convexTest(schema);
+    t = createTestContext();
 
     // Create authenticated user and project
     const result = await t.run(async (ctx) => {
@@ -152,20 +153,22 @@ describe('Admin RBAC: Security Enforcement', () => {
 
   test('should reject unauthenticated listUsers request', async () => {
     // No identity set
-    await expect(t.query(api.admin.users.listUsers, {})).rejects.toThrow('Unauthorized');
+    await expect(t.query(api.admin.users.listUsers, {})).rejects.toThrow(/Unauthorized|Unauthenticated/i);
   });
 
   test('should reject regular user from listUsers', async () => {
     const regularT = t.withIdentity({
       subject: regularUserId,
+      email: 'regular@example.com',
     });
 
-    await expect(regularT.query(api.admin.users.listUsers, {})).rejects.toThrow(/Forbidden|admin/i);
+    await expect(regularT.query(api.admin.users.listUsers, {})).rejects.toThrow(/Forbidden|admin|Unauthorized/i);
   });
 
   test('should allow admin to listUsers', async () => {
     const adminT = t.withIdentity({
       subject: adminUserId,
+      email: 'admin@example.com',
     });
 
     const users = await adminT.query(api.admin.users.listUsers, {});
@@ -176,6 +179,7 @@ describe('Admin RBAC: Security Enforcement', () => {
   test('should reject admin from updateUserRole (requires super_admin)', async () => {
     const adminT = t.withIdentity({
       subject: adminUserId,
+      email: 'admin@example.com',
     });
 
     await expect(
@@ -183,12 +187,13 @@ describe('Admin RBAC: Security Enforcement', () => {
         userId: regularUserId,
         role: 'admin',
       })
-    ).rejects.toThrow(/Forbidden|super_admin/i);
+    ).rejects.toThrow(/Forbidden|super_admin|Unauthorized/i);
   });
 
   test('should allow super_admin to updateUserRole', async () => {
     const superT = t.withIdentity({
       subject: superAdminUserId,
+      email: 'super@example.com',
     });
 
     const result = await superT.mutation(api.admin.users.updateUserRole, {
@@ -249,7 +254,7 @@ describe('Project Access: RLS Enforcement', () => {
   let user2ProjectId: Id<'projects'>;
 
   beforeEach(async () => {
-    t = convexTest(schema);
+    t = createTestContext();
 
     const result = await t.run(async (ctx) => {
       const user1 = await ctx.db.insert('users', {

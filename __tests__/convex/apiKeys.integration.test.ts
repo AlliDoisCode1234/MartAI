@@ -15,7 +15,8 @@ describe('API Keys', () => {
 
   it('should prevent non-enterprise users from creating keys', async () => {
     const t = createTestContext();
-    const userId = await seedUser(t);
+    const email = `test_regular_${Date.now()}@test.com`;
+    const userId = await seedUser(t, { email });
     const projectId = await seedProject(t, userId);
 
     // Seed a standard subscription
@@ -39,7 +40,7 @@ describe('API Keys', () => {
       });
     });
 
-    const authT = t.withIdentity({ email: `test_${Date.now()}@test.com` }); // Won't match
+    const authT = t.withIdentity({ subject: userId, email }); // Will match user, won't match tier
     await expectMutationToThrow(
       () =>
         authT.mutation(api.apiKeys.createApiKey, {
@@ -87,7 +88,7 @@ describe('API Keys', () => {
       });
     });
 
-    const authT = t.withIdentity({ email });
+    const authT = t.withIdentity({ subject: userId, email });
 
     // 1. Create Key
     const created = await authT.mutation(api.apiKeys.createApiKey, {
