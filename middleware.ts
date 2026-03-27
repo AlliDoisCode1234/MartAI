@@ -18,44 +18,30 @@ function isPhooAiDomain(request: NextRequest): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Public routes - always accessible
+  const publicRoutes = [
+    '/',
+    '/join',
+    '/auth',
+    '/privacy',
+    '/terms',
+    '/resources',
+    '/how-it-works',
+    '/pricing',
+    '/features',
+    '/solutions',
+  ];
+  const isPublicRoute = publicRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + '/')
+  );
+
+  // API routes - always accessible (needed for app functionality)
+  const isApiRoute = pathname.startsWith('/api');
+
   // ==========================================================================
-  // Phoo.ai Domain Routing
-  //
-  // Architecture (Beta Launch - Feb 2026):
-  // - / → Public landing page (no redirect, renders directly)
-  // - /join → Public waitlist page (for marketing)
-  // - /auth/* → Public auth routes (login, callback)
-  // - /api/* → API routes (needed for app to function)
-  // - Everything else → Let Layout handle auth gating
-  //   (Layout redirects unauthenticated users to /)
+  // Phoo.ai Domain Routing (Beta Launch - Feb 2026)
   // ==========================================================================
   if (isPhooAiDomain(request)) {
-    // BETA LAUNCH: Root path renders directly - no redirect to /join
-    // Users see landing page at phoo.ai/ for Google OAuth compliance
-
-    // Public routes - always accessible
-    const publicRoutes = [
-      '/',
-      '/join',
-      '/auth',
-      '/privacy',
-      '/terms',
-      '/resources',
-      '/how-it-works',
-      '/pricing',
-      '/features',
-      '/solutions',
-    ];
-    const isPublicRoute = publicRoutes.some(
-      (route) => pathname === route || pathname.startsWith(route + '/')
-    );
-
-    // API routes - always accessible (needed for app functionality)
-    const isApiRoute = pathname.startsWith('/api');
-
-    // All other routes pass through - Layout handles auth gating
-    // If user is authenticated (via OAuth), they can access the product
-    // If not authenticated, Layout redirects them to /
     if (!isPublicRoute && !isApiRoute) {
       // Fall through to security headers
       // Layout component will check auth and redirect to / if needed
@@ -63,17 +49,20 @@ export function middleware(request: NextRequest) {
   }
 
   // ==========================================================================
-  //                                                                                    Security Headers
+  // Security Headers
   // ==========================================================================
   const response = NextResponse.next();
 
-  // Security headers for all responses
-  const securityHeaders = {
+  // Dynamic Clickjacking Protection
+  // - Public routes: Allow markup.io framing via CSP
+  // - Private routes: Strict CSP + fallback X-Frame-Options
+  const frameAncestors = isPublicRoute
+    ? "frame-ancestors 'self' https://app.markup.io https://*.markup.io"
+    : "frame-ancestors 'self'";
+
+  const securityHeaders: Record<string, string> = {
     // Prevent MIME type sniffing
     'X-Content-Type-Options': 'nosniff',
-
-    // X-Frame-Options is disabled to allow Markup.io embedding. Relying on CSP frame-ancestors instead.
-    // 'X-Frame-Options': 'DENY',
 
     // Enable XSS protection (legacy but still useful)
     'X-XSS-Protection': '1; mode=block',
@@ -93,38 +82,44 @@ export function middleware(request: NextRequest) {
       'accelerometer=()',
     ].join(', '),
 
-    // Content Security Policy
-    // Note: CSP can be strict in production, but needs to allow Next.js development features
-    // Adjust based on your needs
-    ...(process.env.NODE_ENV === 'production' && {
-      'Content-Security-Policy': [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://www.googletagmanager.com", // Google OAuth + GA4
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
-        "font-src 'self' https://fonts.gstatic.com data:",
-        "img-src 'self' data: https: blob:",
-        "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://api.openai.com https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com",
-        'frame-src https://accounts.google.com', // Google OAuth popup
-        "object-src 'none'",
-        "base-uri 'self'",
-        "form-action 'self' https://accounts.google.com",
-        "frame-ancestors 'self' https://app.markup.io https://*.markup.io",
-        'upgrade-insecure-requests',
-      ].join('; '),
-    }),
-
-    // Strict Transport Security (HTTPS only in production)
-    ...(process.env.NODE_ENV === 'production' && {
-      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-    }),
-
-    // Cross-Origin policies (skip for auth routes to allow OAuth popups/redirects)
-    ...(!pathname.startsWith('/auth') && {
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-      'Cross-Origin-Opener-Policy': 'same-origin',
-    }),
+    // Cross-Origin Resource Policy
     'Cross-Origin-Resource-Policy': 'cross-origin',
   };
+
+  // Legacy fallback for browsers that don't support CSP frame-ancestors
+  if (!isPublicRoute) {
+    securityHeaders['X-Frame-Options'] = 'DENY';
+  }
+
+  // Cross-Origin policies (skip for auth routes to allow OAuth popups/redirects)
+  if (!pathname.startsWith('/auth')) {
+    securityHeaders['Cross-Origin-Embedder-Policy'] = 'require-corp';
+    securityHeaders['Cross-Origin-Opener-Policy'] = 'same-origin';
+  }
+
+  // Content Security Policy
+  if (process.env.NODE_ENV === 'production') {
+    securityHeaders['Content-Security-Policy'] = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://www.googletagmanager.com", // Google OAuth + GA4
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: https: blob:",
+      "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://api.openai.com https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com",
+      "frame-src https://accounts.google.com", // Google OAuth popup
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self' https://accounts.google.com",
+      frameAncestors,
+      "upgrade-insecure-requests",
+    ].join('; ');
+
+    // Strict Transport Security (HTTPS only in production)
+    securityHeaders['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload';
+  } else {
+    // In non-production, always enforce at least frame-ancestors to prevent clickjacking regressions
+    securityHeaders['Content-Security-Policy'] = frameAncestors;
+  }
 
   // Apply security headers
   Object.entries(securityHeaders).forEach(([key, value]) => {

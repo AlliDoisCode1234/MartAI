@@ -14,7 +14,7 @@
  * 5. Full content generation kicks off
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -76,7 +76,7 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
   // Interactive Coach State
   const [coachInput, setCoachInput] = useState('');
   const [coachMessages, setCoachMessages] = useState<{ role: 'phoo' | 'user'; text: string }[]>([]);
-  const submitFeedbackMsg = useMutation(api.contentFeedback.submitFeedback);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const generateTitles = useAction(api.contentGeneration.generateContentTitle);
   // WF-005: Durable workflow trigger replaces direct useAction(generateContent)
@@ -127,7 +127,7 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
     setCoachMessages([
       {
         role: 'phoo',
-        text: `I'm writing your article on "${selectedTitle}" right now. While we wait (usually 1-2 minutes), is there any specific call-to-action or tone you want me to emphasize? Anything you tell me will be saved to your custom Persona for future writing!`,
+        text: `I'm writing your article on "${selectedTitle}" right now. While we wait (usually 1-2 minutes), is there any specific call-to-action or tone you want me to emphasize for this generation?`,
       },
     ]);
 
@@ -164,6 +164,7 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
   };
 
   const handleReset = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setStep('keyword');
     setSelectedKeyword('');
     setTitles([]);
@@ -177,6 +178,12 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
     handleReset();
     onClose();
   };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="lg" isCentered>
@@ -423,17 +430,12 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
                       if (!val) return;
                       setCoachInput('');
                       setCoachMessages((prev) => [...prev, { role: 'user', text: val }]);
-                      submitFeedbackMsg({
-                        projectId: projectId as Id<'projects'>,
-                        feedbackType: 'custom',
-                        customNote: `Pre-generation context: ${val}`,
-                      }).catch((err) => console.error(err));
-                      setTimeout(() => {
+                      timeoutRef.current = setTimeout(() => {
                         setCoachMessages((prev) => [
                           ...prev,
                           {
                             role: 'phoo',
-                            text: 'Got it! I\'ve saved that into your customized Writer Persona. I\'ll seamlessly apply these learnings to your future content.',
+                            text: 'Got it! I\'ve noted those preferences for this session.',
                           },
                         ]);
                       }, 1000);
@@ -458,17 +460,12 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
                       if (!val) return;
                       setCoachInput('');
                       setCoachMessages((prev) => [...prev, { role: 'user', text: val }]);
-                      submitFeedbackMsg({
-                        projectId: projectId as Id<'projects'>,
-                        feedbackType: 'custom',
-                        customNote: `Pre-generation context: ${val}`,
-                      }).catch((err) => console.error(err));
-                      setTimeout(() => {
+                      timeoutRef.current = setTimeout(() => {
                         setCoachMessages((prev) => [
                           ...prev,
                           {
                             role: 'phoo',
-                            text: 'Got it! I\'ve saved that into your customized Writer Persona. I\'ll seamlessly apply these learnings to your future content.',
+                            text: 'Got it! I\'ve noted those preferences for this session.',
                           },
                         ]);
                       }, 1000);

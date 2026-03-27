@@ -246,7 +246,7 @@ export const switchOrganization = mutation({
       )
       .first();
 
-    if (!membership || membership.status !== 'active') {
+    if (!membership || (membership.status && membership.status !== 'active')) {
       throw new Error('You are not an active member of this organization');
     }
 
