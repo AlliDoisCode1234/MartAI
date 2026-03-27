@@ -1,0 +1,58 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.16 [39m[90mC:/Users/josia/Desktop/Anti_MartAI/MartAI[39m
+
+[90mstdout[2m | __tests__/convex/security/impersonation.test.ts[2m > [22m[2mAdmin Impersonation[2m > [22m[2mcleanupExpiredSessions[2m > [22m[2mshould mark expired sessions as expired
+[22m[39m[ImpersonationCleanup] Marked 1 expired sessions
+
+ [31m❯[39m __tests__/convex/security/impersonation.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 64[2mms[22m[39m
+       [32m✓[39m should allow super_admin to impersonate regular user[32m 43[2mms[22m[39m
+[31m       [31m×[31m should reject non-super_admin from impersonating[39m[32m 3[2mms[22m[39m
+       [32m✓[39m should prevent impersonating other super_admins[32m 2[2mms[22m[39m
+       [32m✓[39m should end existing session when starting new one[32m 2[2mms[22m[39m
+       [32m✓[39m should end active session[32m 1[2mms[22m[39m
+       [32m✓[39m should prevent ending another admin session[32m 1[2mms[22m[39m
+       [32m✓[39m should increment action count for session owner[32m 2[2mms[22m[39m
+       [32m✓[39m should reject tracking from non-session-owner[32m 2[2mms[22m[39m
+       [32m✓[39m should mark expired sessions as expired[32m 2[2mms[22m[39m
+[31m       [31m×[31m should return history for super_admin only[39m[32m 4[2mms[22m[39m
+       [32m✓[39m should return empty for non-super_admin[32m 1[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m __tests__/convex/security/impersonation.test.ts[2m > [22mAdmin Impersonation[2m > [22mstartImpersonation[2m > [22mshould reject non-super_admin from impersonating
+[31m[1mReferenceError[22m: regularAdminId is not defined[39m
+[36m [2m❯[22m __tests__/convex/security/impersonation.test.ts:[2m83:36[22m[39m
+    [90m 81| [39m      [35mawait[39m [34mexpect[39m(
+    [90m 82| [39m        t
+    [90m 83| [39m          .withIdentity({ subject: regularAdminId, email: 'regular-adm…
+    [90m   | [39m                                   [31m^[39m
+    [90m 84| [39m          [33m.[39m[34mmutation[39m(api[33m.[39madmin[33m.[39mimpersonation[33m.[39mstartImpersonation[33m,[39m {
+    [90m 85| [39m            targetUserId[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m __tests__/convex/security/impersonation.test.ts[2m > [22mAdmin Impersonation[2m > [22mgetImpersonationHistory[2m > [22mshould return history for super_admin only
+[31m[1mAssertionError[22m: expected [] to have a length of 1 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m __tests__/convex/security/impersonation.test.ts:[2m483:23[22m[39m
+    [90m481| [39m
+    [90m482| [39m      [90m// Assert[39m
+    [90m483| [39m      [34mexpect[39m(history)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m484| [39m      [34mexpect[39m(history[[34m0[39m][33m.[39madminEmail)[33m.[39m[34mtoBe[39m([32m'admin@example.com'[39m)[33m;[39m
+    [90m485| [39m      [34mexpect[39m(history[[34m0[39m][33m.[39mtargetEmail)[33m.[39m[34mtoBe[39m([32m'user@example.com'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m9 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 15:55:52
+[2m   Duration [22m 414ms[2m (transform 162ms, setup 0ms, import 253ms, tests 64ms, environment 0ms)[22m
+
