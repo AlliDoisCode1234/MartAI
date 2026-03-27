@@ -7,18 +7,15 @@
 
 export const METRIC_DESCRIPTIONS: Record<string, string> = {
   // Dashboard KPIs
-  'phoo-rating':
-    'Your SEO health score (0-100) based on visibility, keyword strategy, content execution, topic clusters, and GEO readiness. Higher is better.',
-  'leads-generated':
-    'Conversion events attributed to your organic content, tracked via your GTM Measurement ID.',
-  'site-traffic': 'Total unique organic visitors to your site in the last 30 days (from GA4).',
-  sessions:
-    'Total organic visits in the last 30 days. A single user can generate multiple sessions (from GA4).',
-  'avg-session': 'Average time a visitor spends on your site per visit. Longer usually means more engaged users.',
-  'avg-rank':
-    'Your average position in Google search results. Lower is better — position 1 means you appear first.',
-  'click-rate':
-    'The percentage of people who click your link after seeing it in Google search results.',
+  'phoo-rating': 'Your SEO health score (0-100). Higher is better.',
+  'leads-generated': 'How many people contacted you or bought something because of your organic content.',
+  'site-traffic': 'How many people visited your website directly from Google search.',
+  sessions: 'How many times people looked around your website after finding it on Google.',
+  'avg-session': 'How long people stay on your website. Longer means they like your content.',
+  'avg-rank': 'Your average position on Google Search. 1 is the best (top of the page).',
+  'click-rate': 'The percentage of people who saw your site on Google and actually clicked it.',
+  'search-clicks': 'How many people clicked your link in Google.',
+  'search-views': 'How many times your website was seen on Google.',
 
   // Keyword metrics
   kd: 'Keyword Difficulty (0-100). How hard it is to rank on page 1 for this keyword. Lower means easier to rank.',

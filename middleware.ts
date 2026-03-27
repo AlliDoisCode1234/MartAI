@@ -72,8 +72,8 @@ export function middleware(request: NextRequest) {
     // Prevent MIME type sniffing
     'X-Content-Type-Options': 'nosniff',
 
-    // Prevent clickjacking
-    'X-Frame-Options': 'DENY',
+    // X-Frame-Options is disabled to allow Markup.io embedding. Relying on CSP frame-ancestors instead.
+    // 'X-Frame-Options': 'DENY',
 
     // Enable XSS protection (legacy but still useful)
     'X-XSS-Protection': '1; mode=block',
@@ -108,7 +108,7 @@ export function middleware(request: NextRequest) {
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self' https://accounts.google.com",
-        "frame-ancestors 'none'",
+        "frame-ancestors 'self' https://app.markup.io https://*.markup.io",
         'upgrade-insecure-requests',
       ].join('; '),
     }),

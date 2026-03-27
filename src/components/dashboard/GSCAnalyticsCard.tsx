@@ -23,6 +23,7 @@ import {
   Td,
   Skeleton,
   Button,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import {
@@ -33,9 +34,12 @@ import {
   FiLink,
   FiArrowUp,
   FiArrowDown,
+  FiZap,
 } from 'react-icons/fi';
 import Link from 'next/link';
 import { CompactEmptyState } from '../feedback/EmptyState';
+import { MetricTooltip } from '@/src/components/shared';
+import { LetPhooBuildItModal } from '@/src/components/content/LetPhooBuildItModal';
 
 const MotionBox = motion(Box);
 
@@ -75,6 +79,7 @@ function StatCard({
   color,
   trend,
   sublabel,
+  tooltipKey,
 }: {
   label: string;
   value: string | number;
@@ -82,6 +87,7 @@ function StatCard({
   color: string;
   trend?: 'up' | 'down' | null;
   sublabel?: string;
+  tooltipKey?: string;
 }) {
   // For position, down is good. For others, up is good.
   const isPositionMetric = label === 'Avg. Rank';
@@ -97,9 +103,12 @@ function StatCard({
     <Box {...glassCard} p={4}>
       <HStack justify="space-between">
         <VStack align="start" spacing={0}>
-          <Text color="gray.500" fontSize="xs" fontWeight="medium">
-            {label}
-          </Text>
+          <HStack spacing={1}>
+            <Text color="gray.500" fontSize="xs" fontWeight="medium">
+              {label}
+            </Text>
+            {tooltipKey && <MetricTooltip metricKey={tooltipKey} size={12} />}
+          </HStack>
           <HStack spacing={2}>
             <Text color="white" fontSize="xl" fontWeight="bold">
               {value}
@@ -123,6 +132,8 @@ function StatCard({
 }
 
 export function GSCAnalyticsCard({ gscStats, isLoading, isConnected, isInitialSyncing }: Props) {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
   // Loading state
   if (isLoading) {
     return (
@@ -255,7 +266,6 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected, isInitialSy
           )}
         </HStack>
 
-        {/* Metrics Grid */}
         <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={3}>
           <StatCard
             label="Search Clicks"
@@ -263,6 +273,7 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected, isInitialSy
             icon={FiMousePointer}
             color="#FF9D00"
             sublabel="Total clicks from Google"
+            tooltipKey="search-clicks"
           />
           <StatCard
             label="Search Views"
@@ -270,6 +281,7 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected, isInitialSy
             icon={FiEye}
             color="#FF6B00"
             sublabel="Impressions in search"
+            tooltipKey="search-views"
           />
           <StatCard
             label="Click Rate"
@@ -277,6 +289,7 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected, isInitialSy
             icon={FiPercent}
             color="#34d399"
             sublabel="Avg. CTR"
+            tooltipKey="click-rate"
           />
           <StatCard
             label="Avg. Rank"
@@ -284,6 +297,7 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected, isInitialSy
             icon={FiTrendingUp}
             color="#f59e0b"
             sublabel="Lower is better"
+            tooltipKey="avg-rank"
           />
         </Grid>
 
@@ -328,20 +342,30 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected, isInitialSy
                 ))}
               </Tbody>
             </Table>
-            <Link href="/studio/strategy">
-              <Text
-                color="orange.400"
-                fontSize="xs"
-                mt={3}
-                cursor="pointer"
-                _hover={{ textDecoration: 'underline' }}
-              >
-                View all {gscStats.keywordCount} keywords →
-              </Text>
-            </Link>
+
+            <Button
+              mt={4}
+              w="full"
+              size="sm"
+              bg="linear-gradient(135deg, rgba(249,159,42,0.1) 0%, rgba(249,159,42,0.2) 100%)"
+              color="orange.400"
+              borderWidth="1px"
+              borderColor="orange.200"
+              leftIcon={<FiZap />}
+              onClick={onOpen}
+              _hover={{
+                bg: 'orange.500',
+                color: 'white',
+              }}
+              transition="all 0.2s"
+            >
+              Generate Content to Grow Traffic
+            </Button>
           </Box>
         )}
       </VStack>
+
+      <LetPhooBuildItModal isOpen={isOpen} onClose={onClose} />
     </MotionBox>
   );
 }
