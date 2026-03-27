@@ -33,6 +33,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { BLOG_ONLY_MODE, LAUNCH_CONTENT_TYPES } from '@/lib/constants/featureFlags';
+import { ContentTypeId } from '@/convex/phoo/contentTypes';
 
 // Content Types mapped exactly from convex/phoo/contentTypes.ts
 const ALL_CONTENT_TYPES = [
@@ -107,8 +108,7 @@ export function QuickCreateModal({
       const pieceId = await createPiece({
         projectId,
         title,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        contentType: type as any, // Cast to union type
+        contentType: type as ContentTypeId,
         keywords: keyword ? [keyword] : [],
       });
 

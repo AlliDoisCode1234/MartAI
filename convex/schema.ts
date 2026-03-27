@@ -546,7 +546,7 @@ export default defineSchema({
     propertyId: v.string(),
     propertyName: v.string(),
     // OAuth fields (Encrypted at rest)
-    isEncrypted: v.optional(v.boolean()),
+    isEncrypted: v.optional(v.boolean()), // Legacy marker
     accessToken: v.optional(v.string()),
     refreshToken: v.optional(v.string()),
     // Service account fields
@@ -564,7 +564,7 @@ export default defineSchema({
     projectId: v.id('projects'),
     siteUrl: v.string(),
     // OAuth fields (Encrypted at rest)
-    isEncrypted: v.optional(v.boolean()),
+    isEncrypted: v.optional(v.boolean()), // Legacy marker
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
     // All sites available in this Google account (for property picker)

@@ -117,10 +117,10 @@ export const getGA4ConnectionInternal = internalQuery({
     let finalRefreshToken = connection.refreshToken;
 
     try {
-      if (connection.isEncrypted !== false && connection.accessToken) {
+      if (connection.isEncrypted === true && connection.accessToken) {
         finalAccessToken = await decryptCredential(connection.accessToken);
       }
-      if (connection.isEncrypted !== false && connection.refreshToken) {
+      if (connection.isEncrypted === true && connection.refreshToken) {
         finalRefreshToken = await decryptCredential(connection.refreshToken);
       }
     } catch (error) {

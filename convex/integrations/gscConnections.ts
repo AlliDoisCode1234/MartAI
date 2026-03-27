@@ -127,16 +127,17 @@ export const getGSCConnectionInternal = internalQuery({
     let finalRefreshToken = connection.refreshToken;
 
     try {
-      if (connection.isEncrypted !== false && connection.accessToken) {
+      if (connection.isEncrypted === true && connection.accessToken) {
         finalAccessToken = await decryptCredential(connection.accessToken);
       }
-      if (connection.isEncrypted !== false && connection.refreshToken) {
+      if (connection.isEncrypted === true && connection.refreshToken) {
         finalRefreshToken = await decryptCredential(connection.refreshToken);
       }
     } catch (error) {
       console.warn('[GSC] Failed to decrypt connection token. Marking as invalid.', error);
       // We will let it flow back to caller which will trigger a re-auth if token is invalid
       finalAccessToken = '';
+      finalRefreshToken = undefined;
     }
 
     return {

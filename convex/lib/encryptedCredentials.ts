@@ -75,8 +75,12 @@ export async function encryptOAuthCredentials(
 export async function decryptOAuthCredentials(
   encrypted: EncryptedCredentials | OAuthCredentials
 ): Promise<OAuthCredentials> {
+  const markedEncrypted =
+    ('isEncrypted' in encrypted && encrypted.isEncrypted) ||
+    ('_encrypted' in encrypted && encrypted._encrypted === true);
+
   // Check if already decrypted (migration period)
-  if (!('isEncrypted' in encrypted) || !encrypted.isEncrypted) {
+  if (!markedEncrypted) {
     return encrypted as OAuthCredentials;
   }
 
@@ -115,8 +119,12 @@ export async function encryptPlatformCredentials(
 export async function decryptPlatformCredentials(
   encrypted: EncryptedCredentials | PlatformCredentials
 ): Promise<PlatformCredentials> {
+  const markedEncrypted =
+    ('isEncrypted' in encrypted && encrypted.isEncrypted) ||
+    ('_encrypted' in encrypted && encrypted._encrypted === true);
+
   // Check if already decrypted (migration period)
-  if (!('isEncrypted' in encrypted) || !encrypted.isEncrypted) {
+  if (!markedEncrypted) {
     console.warn(`[Encryption] Attempted to decrypt plaintext credentials`);
     return encrypted as PlatformCredentials;
   }
@@ -140,8 +148,12 @@ export async function decryptPlatformCredentials(
 export function needsEncryptionMigration(
   creds: EncryptedCredentials | OAuthCredentials | PlatformCredentials
 ): boolean {
-  // If no isEncrypted flag, needs migration
-  if (!('isEncrypted' in creds) || !creds.isEncrypted) {
+  const markedEncrypted =
+    ('isEncrypted' in creds && creds.isEncrypted) ||
+    ('_encrypted' in creds && creds._encrypted === true);
+
+  // If no encryption flags, needs migration
+  if (!markedEncrypted) {
     // Check if there's actually sensitive data to encrypt
     const c = creds as PlatformCredentials & OAuthCredentials;
     return !!(c.accessToken || c.refreshToken || c.apiKey || c.applicationPassword);

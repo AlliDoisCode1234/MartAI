@@ -231,15 +231,18 @@ export const syncProjectData = internalAction({
 
     // 3. Fetch GSC Data (keyword-level data)
     if (gscConnection) {
-      try {
-        const raw = (await ctx.runAction(internal.integrations.google.fetchGSCMetrics, {
-          connectionId: gscConnection._id,
-          siteUrl: gscConnection.siteUrl,
-          accessToken: gscConnection.accessToken,
-          refreshToken: gscConnection.refreshToken,
-          startDate,
-          endDate,
-        })) as RawGSCResponse;
+      if (!gscConnection.accessToken) {
+        console.warn(`[GSC Sync] Aborting generic sync for project ${projectId}. GSC access token missing or decrypted to null.`);
+      } else {
+        try {
+          const raw = (await ctx.runAction(internal.integrations.google.fetchGSCMetrics, {
+            connectionId: gscConnection._id,
+            siteUrl: gscConnection.siteUrl,
+            accessToken: gscConnection.accessToken,
+            refreshToken: gscConnection.refreshToken,
+            startDate,
+            endDate,
+          })) as RawGSCResponse;
 
         console.log(
           `[GSC Sync] Raw API response for ${projectId}: ${raw.rows?.length ?? 0} keyword rows returned`
@@ -288,6 +291,7 @@ export const syncProjectData = internalAction({
         });
       } catch (e) {
         console.error(`[GSC Sync] Failed for project ${projectId}:`, e);
+      }
       }
     }
 

@@ -19,11 +19,7 @@ export const getProjectScore = query({
   },
   handler: async (ctx, args) => {
     // SEC-002-A: RBAC — verify caller has viewer access
-    try {
-      await requireProjectAccess(ctx, args.projectId, 'viewer');
-    } catch {
-      return null;
-    }
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
 
     // Get project
     const project = await ctx.db.get(args.projectId);

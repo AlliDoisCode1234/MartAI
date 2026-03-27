@@ -353,20 +353,22 @@ describe('SEC-002-A: scores cross-project isolation', () => {
     const { t } = setupTwoUsers();
     const { ownerProjectId, attackerCtx } = await seedTwoUsersWithProjects(t);
 
-    const score = await attackerCtx.query(api.scores.getProjectScore, {
-      projectId: ownerProjectId,
-    });
-    expect(score).toBeNull();
+    await expect(
+      attackerCtx.query(api.scores.getProjectScore, {
+        projectId: ownerProjectId,
+      })
+    ).rejects.toThrow();
   });
 
   test('unauthenticated user cannot read scores', async () => {
     const { t } = setupTwoUsers();
     const { ownerProjectId } = await seedTwoUsersWithProjects(t);
 
-    const score = await t.query(api.scores.getProjectScore, {
-      projectId: ownerProjectId,
-    });
-    expect(score).toBeNull();
+    await expect(
+      t.query(api.scores.getProjectScore, {
+        projectId: ownerProjectId,
+      })
+    ).rejects.toThrow();
   });
 });
 

@@ -55,7 +55,6 @@ vi.mock('../../convex/ai/router/router', () => ({
 
 vi.mock('../../convex/lib/seoScoring', () => ({
   scoreContent: vi.fn().mockImplementation((content: string) => {
-    console.log('MOCK SCORE_CONTENT RX:', content);
     if (content.toLowerCase().includes('bad')) {
       return { score: 50, metrics: {} };
     }
@@ -75,7 +74,7 @@ vi.mock('../../convex/lib/suggestionEngine', () => ({
 describe(`Content Predictability Matrix (${TOTAL_TESTS} Permutations)`, () => {
 
   beforeEach(() => {
-    vi.resetAllMocks();
+    vi.clearAllMocks();
   });
 
   describe.each(INDUSTRIES)('Industry: %s', (industry) => {
@@ -160,10 +159,6 @@ describe(`Content Predictability Matrix (${TOTAL_TESTS} Permutations)`, () => {
             // 5. Assertions: We must verify the system prompts contained the non-negotiables
             // Find the Stage 1 Draft call
             const aiCalls = mockGenerateWithFallback.mock.calls;
-            console.log('AI Calls length:', aiCalls.length);
-            aiCalls.forEach((call, index) => {
-               console.log(`Call ${index}:`, call[0]?.systemPrompt?.slice(0, 100) || call[0]?.prompt?.slice(0, 100) || 'Unknown prompt');
-            });
             // The first call is outline, second is draft (Stage 1)
             const draftCallSystemPrompt = aiCalls[1]?.[0]?.systemPrompt;
             expect(draftCallSystemPrompt).toBeDefined();

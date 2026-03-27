@@ -18,6 +18,7 @@ export default defineConfig({
     },
     env: {
       CREDENTIAL_ENCRYPTION_KEY: 'a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890',
+      VITEST: 'true',
     },
   },
   resolve: {
