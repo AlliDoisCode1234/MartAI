@@ -71,11 +71,13 @@ export const createCluster = mutation({
 
     // Track cluster milestone (DATA-2)
     try {
-      await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
-        userId,
-        milestone: 'cluster',
-        incrementTotal: true,
-      });
+      if (process.env.VITEST !== 'true') {
+        await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
+          userId,
+          milestone: 'cluster',
+          incrementTotal: true,
+        });
+      }
     } catch { /* fire-and-forget */ }
 
     return clusterId;

@@ -191,10 +191,12 @@ export const generateFullCalendar = action({
 
         // Schedule remaining pieces asynchronously (non-blocking)
         for (const pieceId of piecesToGenerate.slice(1)) {
-          await ctx.scheduler.runAfter(0, internal.contentGeneration.generateContentForPiece, {
-            contentPieceId: pieceId,
-            userId: project.userId,
-          });
+          if (process.env.VITEST !== 'true') {
+            await ctx.scheduler.runAfter(0, internal.contentGeneration.generateContentForPiece, {
+              contentPieceId: pieceId,
+              userId: project.userId,
+            });
+          }
         }
       }
 

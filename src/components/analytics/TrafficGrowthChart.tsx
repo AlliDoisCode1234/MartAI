@@ -34,12 +34,13 @@ import {
 
 type ChartDataPoint = { date: string; sessions: number; clicks: number };
 
-type Props = {
+type Props = Readonly<{
   data: ChartDataPoint[];
   onSync: () => void;
-};
+  isInitialSyncing?: boolean;
+}>;
 
-export function TrafficGrowthChart({ data, onSync }: Props) {
+export function TrafficGrowthChart({ data, onSync, isInitialSyncing }: Props) {
   return (
     <Card
       shadow="xl"
@@ -116,6 +117,31 @@ export function TrafficGrowthChart({ data, onSync }: Props) {
                 />
               </LineChart>
             </ResponsiveContainer>
+          ) : isInitialSyncing ? (
+            <Box
+              h="320px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              bgGradient="linear(to-br, orange.50, teal.50)"
+              borderRadius="lg"
+              border="2px dashed"
+              borderColor="brand.orange"
+            >
+              <VStack spacing={4}>
+                <Box className="animate-pulse">
+                  <FiTrendingUp size={32} color="#F7941E" />
+                </Box>
+                <VStack spacing={1}>
+                  <Text color="gray.800" fontWeight="bold">
+                    Analyzing historical traffic...
+                  </Text>
+                  <Text color="gray.600" fontSize="sm">
+                    Reconstructing your growth timeline.
+                  </Text>
+                </VStack>
+              </VStack>
+            </Box>
           ) : (
             <Box
               h="320px"

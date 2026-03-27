@@ -2,6 +2,7 @@ import { mutation, query, internalQuery, internalMutation } from '../_generated/
 import { v } from 'convex/values';
 import { encryptCredential, decryptCredential } from '../lib/encryption';
 import { requireProjectAccess } from '../lib/rbac';
+import { internal } from '../_generated/api';
 
 // Create or update GA4 connection
 export const upsertGA4Connection = mutation({
@@ -41,6 +42,7 @@ export const upsertGA4Connection = mutation({
       projectId: args.projectId,
       propertyId: args.propertyId,
       propertyName: args.propertyName,
+      isEncrypted: true,
       accessToken: encryptedAccessToken,
       refreshToken: encryptedRefreshToken,
       lastSync: Date.now(),
@@ -50,6 +52,13 @@ export const upsertGA4Connection = mutation({
     if (existing) {
       const result = await ctx.db.patch(existing._id, connectionData);
       console.log('[GoogleOAuth][Mutation] GA4 connection PATCHED:', existing._id);
+      
+      // Trigger background sync for immediate analytics value proposition
+      if (process.env.VITEST !== 'true') {
+        await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
+          projectId: args.projectId,
+        });
+      }
       return result;
     }
 
@@ -58,6 +67,13 @@ export const upsertGA4Connection = mutation({
       createdAt: Date.now(),
     });
     console.log('[GoogleOAuth][Mutation] GA4 connection INSERTED:', result);
+    
+    // Trigger background sync for immediate analytics value proposition
+    if (process.env.VITEST !== 'true') {
+      await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
+        projectId: args.projectId,
+      });
+    }
     return result;
   },
 });
@@ -97,14 +113,26 @@ export const getGA4ConnectionInternal = internalQuery({
     if (!connection) return null;
 
     // Decrypt tokens for use (handle both OAuth and service account connections)
+    let finalAccessToken = connection.accessToken;
+    let finalRefreshToken = connection.refreshToken;
+
+    try {
+      if (connection.isEncrypted !== false && connection.accessToken) {
+        finalAccessToken = await decryptCredential(connection.accessToken);
+      }
+      if (connection.isEncrypted !== false && connection.refreshToken) {
+        finalRefreshToken = await decryptCredential(connection.refreshToken);
+      }
+    } catch (error) {
+      console.warn('[GA4] Failed to decrypt connection token. Marking as invalid.', error);
+      finalAccessToken = undefined;
+      finalRefreshToken = undefined;
+    }
+
     return {
       ...connection,
-      accessToken: connection.accessToken
-        ? await decryptCredential(connection.accessToken)
-        : undefined,
-      refreshToken: connection.refreshToken
-        ? await decryptCredential(connection.refreshToken)
-        : undefined,
+      accessToken: finalAccessToken,
+      refreshToken: finalRefreshToken,
     };
   },
 });

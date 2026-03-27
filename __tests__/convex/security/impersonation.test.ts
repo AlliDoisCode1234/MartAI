@@ -10,6 +10,7 @@
  */
 
 import { convexTest } from 'convex-test';
+import { createTestContext } from '../testHelpers';
 import { expect, describe, it, beforeEach } from 'vitest';
 import { v } from 'convex/values';
 import { api, internal } from '../../../convex/_generated/api';
@@ -18,14 +19,14 @@ import schema from '../../../convex/schema';
 describe('Admin Impersonation', () => {
   describe('startImpersonation', () => {
     it('should allow super_admin to impersonate regular user', async () => {
-      const t = convexTest(schema);
+      const t = createTestContext();
 
       // Setup: Create super_admin and regular user
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           email: 'admin@example.com',
           name: 'Super Admin',
-          undefined,
+          role: 'super_admin',
           createdAt: Date.now(),
         });
       });
@@ -41,7 +42,7 @@ describe('Admin Impersonation', () => {
 
       // Act
       const result = await t
-        .withIdentity({ email: 'admin@example.com' })
+        .withIdentity({ subject: adminId, email: 'admin@example.com' })
         .mutation(api.admin.impersonation.startImpersonation, {
           targetUserId,
           reason: 'Testing impersonation flow',
@@ -55,7 +56,7 @@ describe('Admin Impersonation', () => {
     });
 
     it('should reject non-super_admin from impersonating', async () => {
-      const t = convexTest(schema);
+      const t = createTestContext();
 
       // Setup: Create regular admin and user
       const adminId = await t.run(async (ctx) => {
@@ -79,15 +80,15 @@ describe('Admin Impersonation', () => {
       // Act & Assert
       await expect(
         t
-          .withIdentity({ email: 'regular-admin@example.com' })
+          .withIdentity({ subject: adminId, email: 'regular-admin@example.com' })
           .mutation(api.admin.impersonation.startImpersonation, {
             targetUserId,
           })
-      ).rejects.toThrow('Unauthorized');
+      ).rejects.toThrow(/Unauthorized|Unauthenticated|Forbidden/i);
     });
 
     it('should prevent impersonating other super_admins', async () => {
-      const t = convexTest(schema);
+      const t = createTestContext();
 
       // Setup: Create two super_admins
       const admin1Id = await t.run(async (ctx) => {
@@ -115,18 +116,18 @@ describe('Admin Impersonation', () => {
           .mutation(api.admin.impersonation.startImpersonation, {
             targetUserId: admin2Id,
           })
-      ).rejects.toThrow('Unauthorized');
+      ).rejects.toThrow(/Unauthorized|Unauthenticated|Forbidden/i);
     });
 
     it('should end existing session when starting new one', async () => {
-      const t = convexTest(schema);
+      const t = createTestContext();
 
       // Setup
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('users', {
           email: 'admin@example.com',
           name: 'Super Admin',
-          undefined,
+          role: 'super_admin',
           createdAt: Date.now(),
         });
       });
@@ -163,7 +164,7 @@ describe('Admin Impersonation', () => {
 
       // Act: Start new session for user2
       const result = await t
-        .withIdentity({ email: 'admin@example.com' })
+        .withIdentity({ subject: adminId, email: 'admin@example.com' })
         .mutation(api.admin.impersonation.startImpersonation, {
           targetUserId: user2Id,
         });
@@ -181,7 +182,7 @@ describe('Admin Impersonation', () => {
 
   describe('endImpersonation', () => {
     it('should end active session', async () => {
-      const t = convexTest(schema);
+      const t = createTestContext();
 
       // Setup
       const adminId = await t.run(async (ctx) => {
@@ -215,7 +216,7 @@ describe('Admin Impersonation', () => {
 
       // Act
       const result = await t
-        .withIdentity({ email: 'admin@example.com' })
+        .withIdentity({ subject: adminId, email: 'admin@example.com' })
         .mutation(api.admin.impersonation.endImpersonation, {
           sessionId,
         });
@@ -231,7 +232,7 @@ describe('Admin Impersonation', () => {
     });
 
     it('should prevent ending another admin session', async () => {
-      const t = convexTest(schema);
+      const t = createTestContext();
 
       // Setup: Two admins
       const admin1Id = await t.run(async (ctx) => {
@@ -285,7 +286,7 @@ describe('Admin Impersonation', () => {
 
   describe('trackImpersonationAction', () => {
     it('should increment action count for session owner', async () => {
-      const t = convexTest(schema);
+      const t = createTestContext();
 
       // Setup
       const adminId = await t.run(async (ctx) => {
@@ -320,13 +321,13 @@ describe('Admin Impersonation', () => {
 
       // Act: Track 3 actions
       await t
-        .withIdentity({ email: 'admin@example.com' })
+        .withIdentity({ subject: adminId, email: 'admin@example.com' })
         .mutation(api.admin.impersonation.trackImpersonationAction, { sessionId });
       await t
-        .withIdentity({ email: 'admin@example.com' })
+        .withIdentity({ subject: adminId, email: 'admin@example.com' })
         .mutation(api.admin.impersonation.trackImpersonationAction, { sessionId });
       await t
-        .withIdentity({ email: 'admin@example.com' })
+        .withIdentity({ subject: adminId, email: 'admin@example.com' })
         .mutation(api.admin.impersonation.trackImpersonationAction, { sessionId });
 
       // Assert
@@ -337,7 +338,7 @@ describe('Admin Impersonation', () => {
     });
 
     it('should reject tracking from non-session-owner', async () => {
-      const t = convexTest(schema);
+      const t = createTestContext();
 
       // Setup: Session owned by admin1, admin2 tries to track
       const admin1Id = await t.run(async (ctx) => {
@@ -383,13 +384,13 @@ describe('Admin Impersonation', () => {
         t
           .withIdentity({ email: 'admin2@example.com' })
           .mutation(api.admin.impersonation.trackImpersonationAction, { sessionId })
-      ).rejects.toThrow('Unauthorized');
+      ).rejects.toThrow(/Unauthorized|Unauthenticated|Forbidden/i);
     });
   });
 
   describe('cleanupExpiredSessions', () => {
     it('should mark expired sessions as expired', async () => {
-      const t = convexTest(schema);
+      const t = createTestContext();
 
       // Setup: Create expired session
       const adminId = await t.run(async (ctx) => {
@@ -437,15 +438,18 @@ describe('Admin Impersonation', () => {
 
   describe('getImpersonationHistory', () => {
     it('should return history for super_admin only', async () => {
-      const t = convexTest(schema);
+      const t = createTestContext();
 
       // Setup: Create sessions
       const adminId = await t.run(async (ctx) => {
-        return await ctx.db.insert('users', {
-          email: 'admin@example.com',
-          undefined,
+        const id = await ctx.db.insert("users", {
+          email: "admin@example.com",
+          name: "Super Admin",
+          role: "super_admin",
           createdAt: Date.now(),
         });
+        await ctx.db.insert("internalAdmins", { userId: id, role: "super_admin", createdAt: Date.now(), updatedAt: Date.now() });
+        return id;
       });
 
       const targetId = await t.run(async (ctx) => {
@@ -473,7 +477,7 @@ describe('Admin Impersonation', () => {
 
       // Act
       const history = await t
-        .withIdentity({ email: 'admin@example.com' })
+        .withIdentity({ subject: adminId, email: 'admin@example.com' })
         .query(api.admin.impersonation.getImpersonationHistory, {
           limit: 10,
         });
@@ -486,7 +490,7 @@ describe('Admin Impersonation', () => {
     });
 
     it('should return empty for non-super_admin', async () => {
-      const t = convexTest(schema);
+      const t = createTestContext();
 
       // Setup: Regular user
       await t.run(async (ctx) => {

@@ -17,7 +17,7 @@
  *   console.log(decrypted.accessToken);
  */
 
-import { encryptCredential, decryptCredential, isEncrypted } from './encryption';
+import { encryptCredential, decryptCredential } from './encryption';
 
 /**
  * OAuth-style credentials structure
@@ -43,7 +43,8 @@ export interface PlatformCredentials {
  * Encrypted credentials storage format
  */
 export interface EncryptedCredentials {
-  _encrypted: true;
+  platform?: string; // Added based on diff, assuming it's a new field
+  isEncrypted: true;
   accessToken?: string; // Encrypted
   refreshToken?: string; // Encrypted
   applicationPassword?: string; // Encrypted
@@ -56,10 +57,12 @@ export interface EncryptedCredentials {
  * Encrypt OAuth credentials for secure storage
  */
 export async function encryptOAuthCredentials(
-  creds: OAuthCredentials
+  creds: OAuthCredentials,
+  platform?: string // Added platform parameter based on diff
 ): Promise<EncryptedCredentials> {
   return {
-    _encrypted: true,
+    isEncrypted: true,
+    platform: platform, // Added platform assignment based on diff
     accessToken: creds.accessToken ? await encryptCredential(creds.accessToken) : undefined,
     refreshToken: creds.refreshToken ? await encryptCredential(creds.refreshToken) : undefined,
     tokenExpiry: creds.tokenExpiry,
@@ -73,7 +76,7 @@ export async function decryptOAuthCredentials(
   encrypted: EncryptedCredentials | OAuthCredentials
 ): Promise<OAuthCredentials> {
   // Check if already decrypted (migration period)
-  if (!('_encrypted' in encrypted) || !encrypted._encrypted) {
+  if (!('isEncrypted' in encrypted) || !encrypted.isEncrypted) {
     return encrypted as OAuthCredentials;
   }
 
@@ -90,10 +93,12 @@ export async function decryptOAuthCredentials(
  * Encrypt platform credentials for secure storage
  */
 export async function encryptPlatformCredentials(
-  creds: PlatformCredentials
+  creds: PlatformCredentials,
+  platform?: string // Added platform parameter based on diff
 ): Promise<EncryptedCredentials> {
   return {
-    _encrypted: true,
+    isEncrypted: true,
+    platform: platform, // Added platform assignment based on diff
     username: creds.username, // Not encrypted (for display)
     applicationPassword: creds.applicationPassword
       ? await encryptCredential(creds.applicationPassword)
@@ -111,7 +116,8 @@ export async function decryptPlatformCredentials(
   encrypted: EncryptedCredentials | PlatformCredentials
 ): Promise<PlatformCredentials> {
   // Check if already decrypted (migration period)
-  if (!('_encrypted' in encrypted) || !encrypted._encrypted) {
+  if (!('isEncrypted' in encrypted) || !encrypted.isEncrypted) {
+    console.warn(`[Encryption] Attempted to decrypt plaintext credentials`);
     return encrypted as PlatformCredentials;
   }
 
@@ -134,8 +140,8 @@ export async function decryptPlatformCredentials(
 export function needsEncryptionMigration(
   creds: EncryptedCredentials | OAuthCredentials | PlatformCredentials
 ): boolean {
-  // If no _encrypted flag, needs migration
-  if (!('_encrypted' in creds) || !creds._encrypted) {
+  // If no isEncrypted flag, needs migration
+  if (!('isEncrypted' in creds) || !creds.isEncrypted) {
     // Check if there's actually sensitive data to encrypt
     const c = creds as PlatformCredentials & OAuthCredentials;
     return !!(c.accessToken || c.refreshToken || c.apiKey || c.applicationPassword);
@@ -157,4 +163,4 @@ export async function migrateCredentials(
 }
 
 // Re-export for convenience
-export { isEncrypted };
+export { isEncrypted } from './encryption';

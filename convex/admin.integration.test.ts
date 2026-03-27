@@ -12,6 +12,7 @@
 
 import { describe, test, expect, beforeEach } from 'vitest';
 import { convexTest } from 'convex-test';
+import { createTestContext } from '../__tests__/convex/testHelpers';
 import schema from './schema';
 import { api } from './_generated/api';
 import { Id } from './_generated/dataModel';
@@ -23,7 +24,7 @@ describe('Admin Dashboard Metrics', () => {
   let regularUserId: Id<'users'>;
 
   beforeEach(async () => {
-    t = convexTest(schema);
+    t = createTestContext();
 
     const result = await t.run(async (ctx) => {
       const regular = await ctx.db.insert('users', {
@@ -37,18 +38,18 @@ describe('Admin Dashboard Metrics', () => {
       const admin = await ctx.db.insert('users', {
         email: 'admin@example.com',
         name: 'Admin User',
-        role: 'admin',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      await ctx.db.insert('internalAdmins', { userId: admin, role: 'admin', createdAt: Date.now(), updatedAt: Date.now() });
 
       const superAdmin = await ctx.db.insert('users', {
         email: 'super@example.com',
         name: 'Super Admin',
-        role: 'super_admin',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      await ctx.db.insert('internalAdmins', { userId: superAdmin, role: 'super_admin', createdAt: Date.now(), updatedAt: Date.now() });
 
       return { regular, admin, superAdmin };
     });
@@ -100,7 +101,7 @@ describe('Admin Users: Extended Queries', () => {
   let regularUserId: Id<'users'>;
 
   beforeEach(async () => {
-    t = convexTest(schema);
+    t = createTestContext();
 
     const result = await t.run(async (ctx) => {
       const regular = await ctx.db.insert('users', {
@@ -114,18 +115,18 @@ describe('Admin Users: Extended Queries', () => {
       const admin = await ctx.db.insert('users', {
         email: 'admin@example.com',
         name: 'Admin User',
-        role: 'admin',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      await ctx.db.insert('internalAdmins', { userId: admin, role: 'admin', createdAt: Date.now(), updatedAt: Date.now() });
 
       const superAdmin = await ctx.db.insert('users', {
         email: 'super@example.com',
         name: 'Super Admin',
-        role: 'super_admin',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      await ctx.db.insert('internalAdmins', { userId: superAdmin, role: 'super_admin', createdAt: Date.now(), updatedAt: Date.now() });
 
       return { regular, admin, superAdmin };
     });
@@ -185,22 +186,22 @@ describe('Admin Costs (super_admin only)', () => {
   let superAdminUserId: Id<'users'>;
 
   beforeEach(async () => {
-    t = convexTest(schema);
+    t = createTestContext();
 
     const result = await t.run(async (ctx) => {
       const admin = await ctx.db.insert('users', {
         email: 'admin@example.com',
-        role: 'admin',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      await ctx.db.insert('internalAdmins', { userId: admin, role: 'admin', createdAt: Date.now(), updatedAt: Date.now() });
 
       const superAdmin = await ctx.db.insert('users', {
         email: 'super@example.com',
-        role: 'super_admin',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      await ctx.db.insert('internalAdmins', { userId: superAdmin, role: 'super_admin', createdAt: Date.now(), updatedAt: Date.now() });
 
       return { admin, superAdmin };
     });
@@ -233,24 +234,24 @@ describe('BI Analytics: Event Tracking (super_admin only)', () => {
   let superAdminUserId: Id<'users'>;
 
   beforeEach(async () => {
-    t = convexTest(schema);
+    t = createTestContext();
 
     const result = await t.run(async (ctx) => {
       const admin = await ctx.db.insert('users', {
         email: 'admin@example.com',
         name: 'Admin',
-        role: 'admin',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      await ctx.db.insert('internalAdmins', { userId: admin, role: 'admin', createdAt: Date.now(), updatedAt: Date.now() });
 
       const superAdmin = await ctx.db.insert('users', {
         email: 'super@example.com',
         name: 'Super Admin',
-        role: 'super_admin',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      await ctx.db.insert('internalAdmins', { userId: superAdmin, role: 'super_admin', createdAt: Date.now(), updatedAt: Date.now() });
 
       // Seed some analytics events
       const now = Date.now();
@@ -347,22 +348,22 @@ describe('Subscription Metrics (super_admin only)', () => {
   let superAdminUserId: Id<'users'>;
 
   beforeEach(async () => {
-    t = convexTest(schema);
+    t = createTestContext();
 
     const result = await t.run(async (ctx) => {
       const admin = await ctx.db.insert('users', {
         email: 'admin@example.com',
-        role: 'admin',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      await ctx.db.insert('internalAdmins', { userId: admin, role: 'admin', createdAt: Date.now(), updatedAt: Date.now() });
 
       const superAdmin = await ctx.db.insert('users', {
         email: 'super@example.com',
-        role: 'super_admin',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      await ctx.db.insert('internalAdmins', { userId: superAdmin, role: 'super_admin', createdAt: Date.now(), updatedAt: Date.now() });
 
       // Seed a subscription with all required fields
       await ctx.db.insert('subscriptions', {
@@ -416,7 +417,7 @@ describe('Event Tracking: trackEvent mutation', () => {
   let t: ReturnType<typeof convexTest>;
 
   beforeEach(() => {
-    t = convexTest(schema);
+    t = createTestContext();
   });
 
   test('should allow unauthenticated event tracking (for landing page)', async () => {

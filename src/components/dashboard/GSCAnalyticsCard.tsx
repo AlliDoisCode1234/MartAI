@@ -55,8 +55,9 @@ interface Props {
     keywordCount: number;
     lastSyncDate: number | null;
   } | null;
-  isLoading?: boolean;
-  isConnected?: boolean;
+  readonly isLoading?: boolean;
+  readonly isConnected?: boolean;
+  readonly isInitialSyncing?: boolean;
 }
 
 const glassCard = {
@@ -121,7 +122,7 @@ function StatCard({
   );
 }
 
-export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
+export function GSCAnalyticsCard({ gscStats, isLoading, isConnected, isInitialSyncing }: Props) {
   // Loading state
   if (isLoading) {
     return (
@@ -189,6 +190,33 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
 
   // No data yet state
   if (!gscStats) {
+    if (isInitialSyncing) {
+      return (
+        <MotionBox
+          {...glassCard}
+          p={6}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          borderColor="orange.500"
+          borderWidth="1px"
+        >
+          <VStack spacing={4} pt={4} pb={4}>
+            <Icon as={FiTrendingUp} boxSize={8} color="orange.400" className="animate-pulse" />
+            <VStack spacing={1}>
+              <Text color="white" fontWeight="semibold" fontSize="lg">
+                Crunching your historical data...
+              </Text>
+              <Text color="gray.400" fontSize="sm" textAlign="center">
+                We are actively analyzing your Google Search Console performance. This usually takes less than a minute.
+              </Text>
+            </VStack>
+            <Skeleton height="8px" width="100%" maxW="300px" borderRadius="full" startColor="orange.500" endColor="orange.200" mt={2} />
+          </VStack>
+        </MotionBox>
+      );
+    }
+    
     return (
       <MotionBox
         {...glassCard}
@@ -199,7 +227,7 @@ export function GSCAnalyticsCard({ gscStats, isLoading, isConnected }: Props) {
       >
         <CompactEmptyState 
           icon={FiTrendingUp}
-          message="GSC connected - waiting for data sync. Data syncs automatically every 24 hours." 
+          message="GSC connected. Waiting for first data sync to complete." 
         />
       </MotionBox>
     );

@@ -53,10 +53,29 @@ vi.mock('../../convex/ai/router/router', () => ({
   }
 }));
 
+vi.mock('../../convex/lib/seoScoring', () => ({
+  scoreContent: vi.fn().mockImplementation((content: string) => {
+    console.log('MOCK SCORE_CONTENT RX:', content);
+    if (content.toLowerCase().includes('bad')) {
+      return { score: 50, metrics: {} };
+    }
+    return { score: 100, metrics: {} };
+  })
+}));
+
+vi.mock('../../convex/lib/suggestionEngine', () => ({
+  generateSuggestions: vi.fn().mockImplementation((score: unknown, content: string) => {
+    if (content.toLowerCase().includes('bad')) {
+      return [{ title: 'Too short', fixable: true, fixInstruction: 'Add words' }];
+    }
+    return [];
+  })
+}));
+
 describe(`Content Predictability Matrix (${TOTAL_TESTS} Permutations)`, () => {
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   describe.each(INDUSTRIES)('Industry: %s', (industry) => {
@@ -87,23 +106,26 @@ describe(`Content Predictability Matrix (${TOTAL_TESTS} Permutations)`, () => {
             });
 
             // 2. Setup AI Pipeline Mock based on scenario
+            const outlineText = `## Section 1\n## Section 2\n## Section 3\n## Section 4\n## Section 5\n## Section 6`;
+            const filler = `This is a perfectly standard sentence that has absolutely no targeted keywords but provides excellent readability padding words so we pass length loops cleanly. `.repeat(15);
+            const longText = `This is a short sentence for seo keyword. Another short sentence for marketing keyword. ${filler}`;
+            const draftText = `## Section 1\n${longText}\n## Section 2\n${longText}\n## Section 3\n${longText}\n## Section 4\n${longText}\n## Section 5\n${longText}\n## Section 6\n${longText}`;
+
             if (aiBehavior === 'compliant') {
               mockGenerateWithFallback
-                .mockResolvedValueOnce({ content: `Perfectly compliant draft for ${industry}.` }) // Outline
-                .mockResolvedValueOnce({ content: `Full content for ${industry}.` }) // Stage 1 Draft
-                .mockResolvedValueOnce({ content: JSON.stringify({ passed: true, issues: [] }) }) // Stage 2 Review
-                .mockResolvedValueOnce({ content: `Final content` }); // Stage 3 Final (not called if passed)
+                .mockResolvedValueOnce({ content: outlineText }) // Call 0: Outline
+                .mockResolvedValueOnce({ content: draftText }) // Call 1: Draft -> scoring engine evaluates > 95
+                .mockResolvedValueOnce({ content: `Final polished content.` }) // Call 2: Finalize -> Break Loop 
+                .mockResolvedValue({ content: `Fallback loop catch.` }); // Should not reach here
             } else {
-              // Failing scenarios: Stage 2 Review MUST reject it
+              // Failing scenarios: Scoring engine rejects due to word count or keywords, or we mock failure initially
               mockGenerateWithFallback
-                .mockResolvedValueOnce({ content: `Outline` }) // Outline
-                .mockResolvedValueOnce({ content: `Draft failing due to ${aiBehavior}.` }) // Stage 1 Draft
-                .mockResolvedValueOnce({ 
-                  content: JSON.stringify({ passed: false, issues: [`Failed due to ${aiBehavior}`] }) 
-                }) // Stage 2 Review rejects it
-                .mockResolvedValueOnce({ content: `Fixed content meeting guidelines.` }) // Stage 1 Draft Retry
-                .mockResolvedValueOnce({ content: JSON.stringify({ passed: true, issues: [] }) }) // Stage 2 Review Passing
-                .mockResolvedValueOnce({ content: `Final content` }); // Stage 3 Final
+                .mockResolvedValueOnce({ content: outlineText }) // Call 0: Outline
+                .mockResolvedValueOnce({ content: `Bad short draft` }) // Call 1: Draft -> scoring engine rejects (too short)
+                .mockResolvedValueOnce({ content: `Final bad short draft` }) // Call 2: Finalize -> Attempt 1
+                .mockResolvedValueOnce({ content: draftText }) // Call 3: Draft Retry -> scores > 95
+                .mockResolvedValueOnce({ content: draftText }) // Call 4: Finalize -> Break Loop
+                .mockResolvedValue({ content: `Fallback loop catch.` }); 
             }
 
             // 3. Fake Context
@@ -138,6 +160,10 @@ describe(`Content Predictability Matrix (${TOTAL_TESTS} Permutations)`, () => {
             // 5. Assertions: We must verify the system prompts contained the non-negotiables
             // Find the Stage 1 Draft call
             const aiCalls = mockGenerateWithFallback.mock.calls;
+            console.log('AI Calls length:', aiCalls.length);
+            aiCalls.forEach((call, index) => {
+               console.log(`Call ${index}:`, call[0]?.systemPrompt?.slice(0, 100) || call[0]?.prompt?.slice(0, 100) || 'Unknown prompt');
+            });
             // The first call is outline, second is draft (Stage 1)
             const draftCallSystemPrompt = aiCalls[1]?.[0]?.systemPrompt;
             expect(draftCallSystemPrompt).toBeDefined();
@@ -148,12 +174,11 @@ describe(`Content Predictability Matrix (${TOTAL_TESTS} Permutations)`, () => {
             expect(draftCallSystemPrompt).toContain(industry);
             expect(draftCallSystemPrompt).toContain(tone);
 
-            // VERIFY STAGE 2 HAPPENED
-            const reviewCallSystemPrompt = aiCalls[2]?.[0]?.systemPrompt;
-            expect(reviewCallSystemPrompt).toBeDefined();
-            expect(reviewCallSystemPrompt).toContain('You are a senior editorial reviewer and SEO quality analyst');
-            // The reviewer MUST know the brand name to check if competitor favors it
-            expect(reviewCallSystemPrompt).toContain('PhooAI (Our Brand)'); 
+            // VERIFY FINALIZATION ENGINE EXPECTATIONS
+            const finalizeCallSystemPrompt = aiCalls[2]?.[0]?.systemPrompt;
+            expect(finalizeCallSystemPrompt).toBeDefined();
+            expect(finalizeCallSystemPrompt).toContain('You are a master content editor producing publication-ready');
+            // Finalization engine primarily uses Persona Context and doesn't get strictly branded parameters like Stage 1.
           });
 
         });

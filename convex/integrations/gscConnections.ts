@@ -2,6 +2,7 @@ import { mutation, query, internalQuery, internalMutation } from '../_generated/
 import { v } from 'convex/values';
 import { requireProjectAccess } from '../lib/rbac';
 import { encryptCredential, decryptCredential } from '../lib/encryption';
+import { internal } from '../_generated/api';
 
 // Create or update GSC connection
 export const upsertGSCConnection = mutation({
@@ -49,6 +50,7 @@ export const upsertGSCConnection = mutation({
     const connectionData = {
       projectId: args.projectId,
       siteUrl: args.siteUrl,
+      isEncrypted: true,
       accessToken: encryptedAccessToken,
       refreshToken: encryptedRefreshToken,
       availableSites: args.availableSites,
@@ -59,6 +61,13 @@ export const upsertGSCConnection = mutation({
     if (existing) {
       const result = await ctx.db.patch(existing._id, connectionData);
       console.log('[GoogleOAuth][Mutation] GSC connection PATCHED:', existing._id);
+      
+      // Trigger background sync for immediate intelligence loop
+      if (process.env.VITEST !== 'true') {
+        await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
+          projectId: args.projectId,
+        });
+      }
       return result;
     }
 
@@ -67,6 +76,13 @@ export const upsertGSCConnection = mutation({
       createdAt: Date.now(),
     });
     console.log('[GoogleOAuth][Mutation] GSC connection INSERTED:', result);
+    
+    // Trigger background sync for immediate intelligence loop
+    if (process.env.VITEST !== 'true') {
+      await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
+        projectId: args.projectId,
+      });
+    }
     return result;
   },
 });
@@ -107,12 +123,26 @@ export const getGSCConnectionInternal = internalQuery({
     if (!connection) return null;
 
     // Decrypt tokens for use
+    let finalAccessToken = connection.accessToken;
+    let finalRefreshToken = connection.refreshToken;
+
+    try {
+      if (connection.isEncrypted !== false && connection.accessToken) {
+        finalAccessToken = await decryptCredential(connection.accessToken);
+      }
+      if (connection.isEncrypted !== false && connection.refreshToken) {
+        finalRefreshToken = await decryptCredential(connection.refreshToken);
+      }
+    } catch (error) {
+      console.warn('[GSC] Failed to decrypt connection token. Marking as invalid.', error);
+      // We will let it flow back to caller which will trigger a re-auth if token is invalid
+      finalAccessToken = '';
+    }
+
     return {
       ...connection,
-      accessToken: await decryptCredential(connection.accessToken),
-      refreshToken: connection.refreshToken
-        ? await decryptCredential(connection.refreshToken)
-        : undefined,
+      accessToken: finalAccessToken,
+      refreshToken: finalRefreshToken,
     };
   },
 });

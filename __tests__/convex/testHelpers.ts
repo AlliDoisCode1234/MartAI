@@ -8,7 +8,7 @@
  * - Common assertions
  */
 
-import { convexTest, type ConvexTestingHelper } from 'convex-test';
+import { convexTest } from 'convex-test';
 import schema from '../../convex/schema';
 import { modules } from '../../convex/test.setup';
 import { Id } from '../../convex/_generated/dataModel';
@@ -20,7 +20,7 @@ export const createTestContext = () => convexTest(schema, modules);
  * Seed a user in the test database
  */
 export async function seedUser(
-  t: ConvexTestingHelper<typeof schema>,
+  t: ReturnType<typeof convexTest>,
   overrides: Partial<{
     email: string;
     name: string;
@@ -56,7 +56,7 @@ export async function seedUser(
  * Seed a project in the test database
  */
 export async function seedProject(
-  t: ConvexTestingHelper<typeof schema>,
+  t: ReturnType<typeof convexTest>,
   userId: Id<'users'>,
   overrides: Partial<{
     name: string;
@@ -82,7 +82,7 @@ export async function seedProject(
  * Seed keywords in the test database
  */
 export async function seedKeywords(
-  t: ConvexTestingHelper<typeof schema>,
+  t: ReturnType<typeof convexTest>,
   projectId: Id<'projects'>,
   keywords: Array<{
     keyword: string;
@@ -116,7 +116,7 @@ export async function seedKeywords(
  * Seed a cluster in the test database
  */
 export async function seedCluster(
-  t: ConvexTestingHelper<typeof schema>,
+  t: ReturnType<typeof convexTest>,
   projectId: Id<'projects'>,
   overrides: Partial<{
     clusterName: string;
@@ -149,7 +149,7 @@ export async function seedCluster(
  * Seed a brief in the test database
  */
 export async function seedBrief(
-  t: ConvexTestingHelper<typeof schema>,
+  t: ReturnType<typeof convexTest>,
   projectId: Id<'projects'>,
   overrides: Partial<{
     clusterId: Id<'keywordClusters'>;
@@ -157,12 +157,14 @@ export async function seedBrief(
     scheduledDate: number;
     status: string;
   }> = {}
-): Promise<Id<'briefs'>> {
+): Promise<Id<'contentPieces'>> {
   return await t.run(async (ctx) => {
-    return await ctx.db.insert('briefs', {
+    return await ctx.db.insert('contentPieces', {
       projectId,
       clusterId: overrides.clusterId,
       title: overrides.title ?? 'Test Brief',
+      contentType: 'blog',
+      stage: 'idea',
       scheduledDate: overrides.scheduledDate ?? Date.now() + 7 * 24 * 60 * 60 * 1000,
       status: overrides.status ?? 'planned',
       createdAt: Date.now(),

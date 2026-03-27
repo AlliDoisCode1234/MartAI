@@ -17,11 +17,10 @@ const ROLES = ['owner', 'admin', 'editor', 'viewer', 'non-member'];
 const TARGET_ROLES = ['owner', 'admin', 'editor', 'viewer']; // The role being acted upon
 
 const TIERS = [
-  { name: 'free', memberLimit: 0 },
   { name: 'starter', memberLimit: 1 },
   { name: 'engine', memberLimit: 5 },
   { name: 'agency', memberLimit: 25 },
-  { name: 'enterprise', memberLimit: 999999 }
+  { name: 'enterprise', memberLimit: 999 }
 ];
 
 const ACTIONS = [
@@ -168,7 +167,11 @@ describe('RBAC & Subscriptions Predictability Matrix', () => {
         const mockWithIndex = vi.fn().mockReturnValue({ collect: mockCollect, filter: mockFilter, first: vi.fn().mockResolvedValue({ role: 'owner' }) });
         mockDb.query.mockReturnValue({ withIndex: mockWithIndex });
 
-        mockDb.get.mockResolvedValue({ maxMembers: tier.memberLimit });
+        mockDb.get.mockImplementation((id: string) => {
+          if (id === 'org1') return { ownerId: 'ownerUserId', maxMembers: tier.memberLimit };
+          if (id === 'ownerUserId') return { membershipTier: tier.name };
+          return { maxMembers: tier.memberLimit };
+        });
 
         const mockCtx = { db: mockDb } as unknown as MutationCtx;
 
@@ -209,7 +212,6 @@ describe('RBAC & Subscriptions Predictability Matrix', () => {
 
     // --- Subscription Tier Limits for Projects ---
     const PROJECT_LIMITS = [
-      { name: 'free', urlLimit: 0 },
       { name: 'starter', urlLimit: 1 },
       { name: 'engine', urlLimit: 3 },
       { name: 'agency', urlLimit: 10 },

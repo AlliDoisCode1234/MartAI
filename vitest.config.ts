@@ -13,10 +13,10 @@ export default defineConfig({
         inline: ['convex-test'],
       },
     },
-    // Test environment variables
+    fakeTimers: {
+      toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'setImmediate', 'clearImmediate'],
+    },
     env: {
-      // Random 64-char hex key for test encryption (DO NOT use in production)
-      // Generated with: openssl rand -hex 32
       CREDENTIAL_ENCRYPTION_KEY: 'a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890',
     },
   },

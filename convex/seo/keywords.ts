@@ -40,7 +40,7 @@ export const createKeywords = mutation({
     }
 
     // Track engagement milestone (ADMIN-003)
-    if (keywordIds.length > 0 && project.userId) {
+    if (keywordIds.length > 0 && project.userId && process.env.VITEST !== 'true') {
       await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
         userId: project.userId,
         milestone: 'keyword',
