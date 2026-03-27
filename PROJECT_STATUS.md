@@ -44,6 +44,15 @@ MartAI is an AI-driven SEO & Lead Generation Platform. The **Content Studio** ha
 - Three-way render: Beta Full > Success > Form
 - Orange border highlight on card when beta is full
 
+### ✅ Semantic Sliding Window Duplication Fix
+
+**Board Decision / Context:**
+- Addressed major flaw where AI generated duplicate titles due to incorrect context object coercion (`[object Object]`).
+- Increased deduplication sliding window history from 15 to 50 articles.
+- Imposed rigorous semantic deduplication constraint via global writer personas.
+
+**Status**: ✅ Fixed (March 27, 2026)
+
 ---
 
 ## Previously Completed (January 3, 2026)

@@ -218,18 +218,18 @@ export const autoGenerateContent = action({
 
     if (!resolvedTitle) {
       // Fetch existing titles to avoid duplicates
-      let existingTitles: string[] = [];
+      let existingTitles: { title: string }[] = [];
       try {
         existingTitles = await ctx.runQuery(
           internal.contentGeneration.getExistingTitles,
           { projectId }
-        ) as string[];
+        ) as { title: string }[];
       } catch {
         // Non-blocking
       }
 
-      let dedupLines = existingTitles.map((t) => `- "${t}"`).join('\n');
-      if (dedupLines.length > 1000) { dedupLines = dedupLines.slice(0, 1000) + '\n... [truncated]'; }
+      let dedupLines = existingTitles.map((t) => `- "${t.title}"`).join('\n');
+      if (dedupLines.length > 4000) { dedupLines = dedupLines.slice(0, 4000) + '\n... [truncated]'; }
       const dedupClause = existingTitles.length > 0
         ? `\n\nCRITICAL: NEVER generate a title that matches or closely resembles any of these existing titles:\n${dedupLines}\nYour title MUST be completely different from all of the above.`
         : '';
@@ -355,18 +355,18 @@ export const generateContentTitle = action({
       : '';
 
     // Fetch existing titles to prevent duplicates
-    let existingTitles: string[] = [];
+    let existingTitles: { title: string }[] = [];
     try {
       existingTitles = await ctx.runQuery(
         internal.contentGeneration.getExistingTitles,
         { projectId: args.projectId }
-      ) as string[];
+      ) as { title: string }[];
     } catch {
       // Non-blocking
     }
 
-    let dedupLines = existingTitles.map((t) => `- "${t}"`).join('\n');
-    if (dedupLines.length > 1000) { dedupLines = dedupLines.slice(0, 1000) + '\n... [truncated]'; }
+    let dedupLines = existingTitles.map((t) => `- "${t.title}"`).join('\n');
+    if (dedupLines.length > 4000) { dedupLines = dedupLines.slice(0, 4000) + '\n... [truncated]'; }
     const dedupClause = existingTitles.length > 0
       ? `\n\nCRITICAL: NEVER generate a title that matches or closely resembles any of these existing titles:\n${dedupLines}\nAll 5 titles MUST be completely different from the above.`
       : '';
@@ -1653,7 +1653,7 @@ export const getExistingTitles = internalQuery({
       .query('contentPieces')
       .withIndex('by_project_created', (q) => q.eq('projectId', args.projectId))
       .order('desc')
-      .take(15);
+      .take(50);
       
     // Deduplicate by title to ensure a clean sliding window
     const uniqueMap = new Map<string, { title: string, h2Outline: string[] }>();

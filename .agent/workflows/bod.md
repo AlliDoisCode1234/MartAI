@@ -177,6 +177,9 @@ These personas act as historical anchors, representing definitive architectural 
 #### Context Node 00010 (docs/personas/bot_persona_AI_CONTENT_HARDENING_00010_PERSONA.md)
 - Ask: "What decisions were made regarding AI Content Perfection, the Semantic Sliding Window, and the Hubspot funnel synchronization?"
 
+#### Context Node 00011 (docs/personas/bot_persona_PREFLIGHT_REMEDIATION_00011_PERSONA.md)
+- Ask: "What decisions were made to fix the Convex underscore-schema crash, the Stripe seat bypass vulnerability, and the onboarding workflow routing drift?"
+
 ---
 
 ## Consultation Process
