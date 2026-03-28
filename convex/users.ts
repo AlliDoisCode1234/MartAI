@@ -15,6 +15,7 @@ function filterUserFields(user: any) {
     role: user.role,
     createdAt: user.createdAt ?? user._creationTime,
     onboardingStatus: user.onboardingStatus,
+    organizationId: user.organizationId,
   };
 }
 
@@ -53,6 +54,7 @@ export const me = query({
       onboardingStatus: user.onboardingStatus,
       onboardingSteps: user.onboardingSteps,
       coachPreferences: user.coachPreferences,
+      organizationId: user.organizationId,
       // Boolean flag for password (never return actual hash)
       hasPassword: !!user.passwordHash,
     };
@@ -218,6 +220,39 @@ export const updateCoachPreferences = mutation({
         audienceExpertise: args.audienceExpertise !== undefined ? args.audienceExpertise : existingPrefs.audienceExpertise,
         customConstraints: args.customConstraints !== undefined ? args.customConstraints : existingPrefs.customConstraints,
       },
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Switch the user's active organization context.
+ * Security: Verifies the user has an active membership in the target organization.
+ */
+export const switchOrganization = mutation({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      throw new Error('Not authenticated');
+    }
+
+    // Verify membership
+    const membership = await ctx.db
+      .query('teamMembers')
+      .withIndex('by_user_org', (q) =>
+        q.eq('userId', userId).eq('organizationId', args.organizationId)
+      )
+      .first();
+
+    if (!membership || (membership.status && membership.status !== 'active')) {
+      throw new Error('You are not an active member of this organization');
+    }
+
+    // Switch active context
+    await ctx.db.patch(userId, {
+      organizationId: args.organizationId,
     });
 
     return { success: true };

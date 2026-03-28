@@ -301,10 +301,9 @@ export const acceptInvitation = mutation({
       throw new Error('This invitation was sent to a different email address');
     }
 
-    // Check if user already belongs to an organization
-    if (user.organizationId) {
-      throw new Error('You already belong to an organization. Multi-org support coming soon.');
-    }
+    // Feature: Multi-Org Support Enabled
+    // Users can now be part of multiple organizations.
+    // We no longer block users who already have an organizationId.
 
     const now = Date.now();
 

@@ -10,10 +10,11 @@
  * showing combined GA4 + GSC metrics with accessibility tooltips.
  */
 
-import { Grid, Box, HStack, VStack, Text, Icon } from '@chakra-ui/react';
+import { Grid, Box, HStack, VStack, Text, Icon, Button, useDisclosure } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { FiUsers, FiEye, FiClock, FiTarget, FiZap } from 'react-icons/fi';
 import { MetricTooltip } from '@/src/components/shared';
+import { LetPhooBuildItModal } from '@/src/components/content/LetPhooBuildItModal';
 
 const MotionBox = motion(Box);
 
@@ -100,6 +101,8 @@ export function DashboardStatRow({
   hasGSCData,
   hasGA4,
 }: Props) {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
   const stats: StatItem[] = [
     {
       label: 'Leads Generated',
@@ -295,12 +298,29 @@ export function DashboardStatRow({
               )}
             </HStack>
 
-            <Text color="gray.500" fontSize="xs">
-              {stat.subtitle}
-            </Text>
+            <HStack w="full" justify="space-between" align="center" mt={1}>
+              <Text color="gray.500" fontSize="xs">
+                {stat.subtitle}
+              </Text>
+              {stat.source !== 'GTM' && (
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  color="orange.400"
+                  _hover={{ bg: 'orange.50', color: 'orange.500' }}
+                  onClick={onOpen}
+                  px={2}
+                  h={6}
+                >
+                  ⚡ Improve
+                </Button>
+              )}
+            </HStack>
           </VStack>
         </MotionBox>
       ))}
+
+      <LetPhooBuildItModal isOpen={isOpen} onClose={onClose} />
     </Grid>
   );
 }

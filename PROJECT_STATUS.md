@@ -215,12 +215,22 @@ lib/hooks/useProject.ts(173): error TS2339: Property 'plan' does not exist
 
 ## Pending Tickets
 
+### HUBSPOT-001: User Funnel Conversion Tracking Setup (Date TBD)
+
+**Status**: ⏳ Backlog
+
+**Scope**:
+- Upgrade the 8 native funnel milestones in `hubspotMapper.ts` (Signup, Project Created, GSC, Keywords, Clusters, Brief, Published) from `booleancheckbox` to `datetime` fields.
+- Update `mapUserToHubSpot` to map the `engagementMilestones` timestamps directly to the HubSpot payload.
+- Enables native HubSpot "Time between steps" and "Conversion Rate" Funnel Reports for the Admin Dashboard.
+
+---
+
 ### BETA-001: Pre-Launch Pricing CTA (Thursday 1/16/2026)
 
 **Status**: ✅ Implementation Placeholder Connected (March 25, 2026)
 
 **Scope**:
-
 - Added "Lock in Pre-Launch Pricing" button to "Beta Full" state in `WaitlistForm.tsx`
 - Linked to Stripe checkout placeholder endpoint
 - Set up mock logic for Cancellation Retention Modal

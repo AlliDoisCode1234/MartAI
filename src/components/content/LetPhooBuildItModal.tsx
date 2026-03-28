@@ -14,7 +14,7 @@
  * 5. Full content generation kicks off
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -35,8 +35,13 @@ import {
   RadioGroup,
   Select,
   useToast,
+  Input,
+  InputGroup,
+  InputRightElement,
+  IconButton,
+  Avatar,
 } from '@chakra-ui/react';
-import { FiZap, FiCheck, FiArrowRight } from 'react-icons/fi';
+import { FiZap, FiCheck, FiArrowRight, FiSend } from 'react-icons/fi';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useProject } from '@/lib/hooks';
@@ -67,6 +72,11 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
   const [titles, setTitles] = useState<string[]>([]);
   const [selectedTitle, setSelectedTitle] = useState('');
   const [isLoadingTitles, setIsLoadingTitles] = useState(false);
+
+  // Interactive Coach State
+  const [coachInput, setCoachInput] = useState('');
+  const [coachMessages, setCoachMessages] = useState<{ role: 'phoo' | 'user'; text: string }[]>([]);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const generateTitles = useAction(api.contentGeneration.generateContentTitle);
   // WF-005: Durable workflow trigger replaces direct useAction(generateContent)
@@ -113,6 +123,14 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
     if (!projectId || !selectedTitle || !selectedKeyword) return;
     setStep('generating');
 
+    // Initialize the coach chat when generating starts
+    setCoachMessages([
+      {
+        role: 'phoo',
+        text: `I'm writing your article on "${selectedTitle}" right now. While we wait (usually 1-2 minutes), is there any specific call-to-action or tone you want me to emphasize for this generation?`,
+      },
+    ]);
+
     try {
       // WF-005: Start durable workflow instead of direct action call.
       // The workflow handles RBAC, quota checks, and step-level retry.
@@ -146,17 +164,26 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
   };
 
   const handleReset = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setStep('keyword');
     setSelectedKeyword('');
     setTitles([]);
     setSelectedTitle('');
     setContentType('blog');
+    setCoachInput('');
+    setCoachMessages([]);
   };
 
   const handleClose = () => {
     handleReset();
     onClose();
   };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="lg" isCentered>
@@ -343,17 +370,109 @@ export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
             </VStack>
           )}
 
-          {/* Step 3: Generating */}
+          {/* Step 3: Generating (Interactive Coach) */}
           {step === 'generating' && (
-            <VStack py={10} spacing={4}>
-              <Spinner color="#F99F2A" size="xl" thickness="3px" />
-              <Text color="white" fontWeight="medium">
-                Phoo is writing your article...
-              </Text>
-              <Text color="gray.400" fontSize="sm" textAlign="center">
-                This usually takes 1-2 minutes. You can close this modal — your content will appear
-                in the Studio when ready.
-              </Text>
+            <VStack spacing={4} align="stretch" h="400px">
+              <HStack bg="whiteAlpha.50" p={3} borderRadius="md" justify="space-between">
+                <HStack>
+                  <Spinner color="#F99F2A" size="sm" />
+                  <Text color="white" fontSize="sm" fontWeight="medium">
+                    Phoo is writing your article...
+                  </Text>
+                </HStack>
+                <Text color="gray.400" fontSize="xs">
+                  Safe to close modal
+                </Text>
+              </HStack>
+
+              <VStack
+                flex={1}
+                overflowY="auto"
+                bg="blackAlpha.300"
+                borderRadius="md"
+                p={4}
+                spacing={4}
+                align="stretch"
+                borderWidth="1px"
+                borderColor="whiteAlpha.100"
+              >
+                {coachMessages.map((msg, i) => (
+                  <HStack key={i} align="start" justify={msg.role === 'user' ? 'flex-end' : 'flex-start'} spacing={3}>
+                    {msg.role === 'phoo' && (
+                      <Avatar size="sm" bg="orange.500" icon={<FiZap fontSize="1rem" color="white" />} />
+                    )}
+                    <Box
+                      bg={msg.role === 'user' ? 'orange.500' : 'whiteAlpha.100'}
+                      color={msg.role === 'user' ? 'white' : 'gray.100'}
+                      px={4}
+                      py={2}
+                      borderRadius="xl"
+                      borderTopRightRadius={msg.role === 'user' ? 'sm' : 'xl'}
+                      borderTopLeftRadius={msg.role === 'phoo' ? 'sm' : 'xl'}
+                      maxW="85%"
+                    >
+                      <Text fontSize="sm">{msg.text}</Text>
+                    </Box>
+                  </HStack>
+                ))}
+              </VStack>
+
+              <InputGroup size="md">
+                <Input
+                  pr="4.5rem"
+                  placeholder="e.g. Keep it strictly professional..."
+                  value={coachInput}
+                  onChange={(e) => setCoachInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const val = coachInput.trim();
+                      if (!val) return;
+                      setCoachInput('');
+                      setCoachMessages((prev) => [...prev, { role: 'user', text: val }]);
+                      timeoutRef.current = setTimeout(() => {
+                        setCoachMessages((prev) => [
+                          ...prev,
+                          {
+                            role: 'phoo',
+                            text: 'Got it! I\'ve noted those preferences for this session.',
+                          },
+                        ]);
+                      }, 1000);
+                    }
+                  }}
+                  bg="whiteAlpha.50"
+                  color="white"
+                  borderColor="whiteAlpha.200"
+                  _hover={{ borderColor: 'orange.400' }}
+                  _focus={{ borderColor: 'orange.500', boxShadow: 'none' }}
+                />
+                <InputRightElement width="3rem">
+                  <IconButton
+                    h="1.75rem"
+                    size="sm"
+                    variant="ghost"
+                    color="orange.400"
+                    aria-label="Send"
+                    icon={<FiSend />}
+                    onClick={() => {
+                      const val = coachInput.trim();
+                      if (!val) return;
+                      setCoachInput('');
+                      setCoachMessages((prev) => [...prev, { role: 'user', text: val }]);
+                      timeoutRef.current = setTimeout(() => {
+                        setCoachMessages((prev) => [
+                          ...prev,
+                          {
+                            role: 'phoo',
+                            text: 'Got it! I\'ve noted those preferences for this session.',
+                          },
+                        ]);
+                      }, 1000);
+                    }}
+                  />
+                </InputRightElement>
+              </InputGroup>
             </VStack>
           )}
         </ModalBody>

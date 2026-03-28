@@ -21,6 +21,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { UserDropdown } from './UserDropdown';
+import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { MobileNav } from './MobileNav';
 import { FiArrowLeft, FiMessageCircle, FiMenu } from 'react-icons/fi';
 import { Icon } from '@chakra-ui/react';
@@ -124,6 +125,7 @@ export const Navigation: FC = () => {
 
               {/* Ask Phoo + User menu */}
               <HStack spacing={{ base: 2, md: 4 }}>
+                <OrganizationSwitcher />
                 <Link href="/assistant" style={{ textDecoration: 'none' }}>
                   <Button
                     size="sm"
@@ -240,6 +242,7 @@ export const Navigation: FC = () => {
 
               {/* Ask Phoo + User menu */}
               <HStack spacing={{ base: 2, md: 4 }}>
+                <OrganizationSwitcher />
                 <Link href="/assistant" style={{ textDecoration: 'none' }}>
                   <Button
                     size="sm"
@@ -355,6 +358,7 @@ export const Navigation: FC = () => {
               })}
               {isAuthenticated ? (
                 <HStack spacing={{ base: 2, md: 4 }}>
+                  <OrganizationSwitcher />
                   <Link href="/assistant" style={{ textDecoration: 'none' }}>
                     <Button
                       size="sm"

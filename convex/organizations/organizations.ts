@@ -124,12 +124,13 @@ export const getMyOrganizations = query({
     const memberships = await ctx.db
       .query('teamMembers')
       .withIndex('by_user', (q) => q.eq('userId', userId))
-      .filter((q) => q.eq(q.field('status'), 'active'))
       .collect();
+
+    const activeMemberships = memberships.filter(m => !m.status || m.status === 'active');
 
     // Fetch the organizations
     const organizations = await Promise.all(
-      memberships.map(async (membership) => {
+      activeMemberships.map(async (membership) => {
         const org = await ctx.db.get(membership.organizationId);
         return org ? { ...org, role: membership.role } : null;
       })
