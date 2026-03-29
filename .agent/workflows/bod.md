@@ -180,6 +180,9 @@ These personas act as historical anchors, representing definitive architectural 
 #### Context Node 00011 (docs/personas/bot_persona_PREFLIGHT_REMEDIATION_00011_PERSONA.md)
 - Ask: "What decisions were made to fix the Convex underscore-schema crash, the Stripe seat bypass vulnerability, and the onboarding workflow routing drift?"
 
+#### Context Node 00012 (docs/personas/bot_persona_MULTI_ORG_SECURITY_00012_PERSONA.md)
+- Ask: "What decisions were made regarding multi-organization support, dynamic CSP security headers, PII governance in feedback tables, and historical schema invariants?"
+
 ---
 
 ## Consultation Process

@@ -2,7 +2,7 @@ import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 
 import { getAuthUserId } from '@convex-dev/auth/server';
-import { getMaxSeatsForTier } from '../lib/tierLimits';
+import { getMaxSeatsForTier, getMaxWorkspacesForTier } from '../lib/tierLimits';
 
 /**
  * Team Management Mutations
@@ -92,6 +92,44 @@ export const getMyOrganization = query({
     if (!user?.organizationId) return null;
 
     return ctx.db.get(user.organizationId);
+  },
+});
+
+/**
+ * Get ALL organizations the current user belongs to.
+ * Used by OrganizationSwitcher for multi-org users.
+ * Returns org data enriched with the user's role per org.
+ */
+export const getMyOrganizations = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    const memberships = await ctx.db
+      .query('teamMembers')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect();
+
+    const activeMemberships = memberships.filter(
+      (m) => !m.status || m.status === 'active'
+    );
+
+    const organizations = await Promise.all(
+      activeMemberships.map(async (membership) => {
+        const org = await ctx.db.get(membership.organizationId);
+        if (!org) return null;
+        return {
+          _id: org._id,
+          name: org.name,
+          role: membership.role,
+        };
+      })
+    );
+
+    return organizations.filter(
+      (org): org is NonNullable<typeof org> => org !== null
+    );
   },
 });
 
@@ -227,10 +265,19 @@ export const createOrganization = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
 
-    // Check if user already has an org
     const user = await ctx.db.get(userId);
-    if (user?.organizationId) {
-      return user.organizationId; // Already has org, return it
+
+    // Enforce workspace limit per tier
+    const existingMemberships = await ctx.db
+      .query('teamMembers')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .filter((q) => q.eq(q.field('status'), 'active'))
+      .collect();
+    const maxWorkspaces = getMaxWorkspacesForTier(user?.membershipTier);
+    if (existingMemberships.length >= maxWorkspaces) {
+      throw new Error(
+        `Workspace limit reached (${existingMemberships.length}/${maxWorkspaces}). Upgrade your plan to create more workspaces.`
+      );
     }
 
     // Generate unique slug

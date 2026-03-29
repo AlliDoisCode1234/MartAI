@@ -140,7 +140,7 @@ export default function SettingsPage() {
   const cancelModal = useDisclosure();
 
   const myOrganizations = useQuery(
-    api.organizations.organizations.getMyOrganizations,
+    api.teams.teams.getMyOrganizations,
     me ? undefined : 'skip'
   );
   const organization = myOrganizations && myOrganizations.length > 0 ? myOrganizations[0] : null;

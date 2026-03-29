@@ -161,17 +161,10 @@ export const createInvitation = mutation({
       )
       .collect();
 
-    // Dynamically calculate max seats from owner's current tier (not stale org.maxMembers)
-    // This matches the same logic as getSeatUsage in teams.ts
+    // Dynamically calculate max seats from owner's current tier
+    // Uses the canonical SSOT from lib/tierLimits.ts
     const owner = await ctx.db.get(org.ownerId);
-    let maxSeats = 1; // Default for starter
-    if (owner?.membershipTier === 'engine') {
-      maxSeats = 5;
-    } else if (owner?.membershipTier === 'agency') {
-      maxSeats = 25;
-    } else if (owner?.membershipTier === 'enterprise') {
-      maxSeats = org.seatsPurchased ?? org.maxMembers ?? 999;
-    }
+    const maxSeats = getMaxSeatsForTier(owner?.membershipTier, org.seatsPurchased);
     const usedSeats = activeMembers.length + pendingInvites.length;
 
     if (usedSeats >= maxSeats) {
