@@ -107,6 +107,7 @@ import type * as lib_tierLimits from "../lib/tierLimits.js";
 import type * as lib_typedHelpers from "../lib/typedHelpers.js";
 import type * as migrations from "../migrations.js";
 import type * as onboarding from "../onboarding.js";
+import type * as organizations_organizations from "../organizations/organizations.js";
 import type * as phoo_agent_chat from "../phoo/agent/chat.js";
 import type * as phoo_agent_index from "../phoo/agent/index.js";
 import type * as phoo_agent_phoo from "../phoo/agent/phoo.js";
@@ -282,6 +283,7 @@ declare const fullApi: ApiFromModules<{
   "lib/typedHelpers": typeof lib_typedHelpers;
   migrations: typeof migrations;
   onboarding: typeof onboarding;
+  "organizations/organizations": typeof organizations_organizations;
   "phoo/agent/chat": typeof phoo_agent_chat;
   "phoo/agent/index": typeof phoo_agent_index;
   "phoo/agent/phoo": typeof phoo_agent_phoo;

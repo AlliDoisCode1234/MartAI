@@ -244,6 +244,11 @@ export default function StudioKeywordsPage() {
 
   const isEmpty = !enrichedKeywordsData || enrichedKeywordsData.keywords.length === 0;
 
+  // ── DEBUG: Log all Google-sourced keyword data ───────────────────
+  console.group('[KEYWORDS DEBUG] Google Data Snapshot');
+
+  console.groupEnd();
+
   return (
     <StudioLayout>
       <VStack spacing={6} align="stretch">

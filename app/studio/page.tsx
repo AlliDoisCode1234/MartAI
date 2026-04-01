@@ -113,6 +113,13 @@ export default function DashboardPage() {
 
   const syncProject = useAction(api.analytics.scheduler.syncProject);
 
+  // ── DEBUG: Log all Google data arriving from Convex ──────────────
+  useEffect(() => {
+    console.group('[DASHBOARD DEBUG] Google Data Snapshot');
+
+    console.groupEnd();
+  }, [kpis, gscStats, growthHistory, contentMetricsSummary, enrichedKeywordsData, recentContent, stats, projectId, project, hasGA4, hasGSC]);
+
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
