@@ -1,2 +1,0 @@
-src/components/dashboard/GSCAnalyticsCard.tsx(109,14): error TS2304: Cannot find name 'tooltipKey'.
-src/components/dashboard/GSCAnalyticsCard.tsx(109,54): error TS2304: Cannot find name 'tooltipKey'.

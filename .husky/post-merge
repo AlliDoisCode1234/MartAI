@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+# Auto-deploy Convex functions after pull/merge
+# Ensures the Convex backend stays in sync with local code
+
+echo "🔄 Auto-syncing Convex functions..."
+npx convex dev --once

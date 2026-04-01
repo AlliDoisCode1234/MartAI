@@ -214,6 +214,85 @@ export async function expectMutationToThrow(
   }
 }
 
+
+/**
+ * Seed an organization with owner as team member
+ */
+export async function seedOrganization(
+  t: ReturnType<typeof convexTest>,
+  ownerId: Id<'users'>,
+  overrides: Partial<{
+    name: string;
+    slug: string;
+    plan: string;
+    maxMembers: number;
+    membershipTier: string;
+  }> = {}
+): Promise<Id<'organizations'>> {
+  return await t.run(async (ctx) => {
+    const now = Date.now();
+
+    // Optionally set owner's membership tier for seat limit calculations
+    if (overrides.membershipTier) {
+      await ctx.db.patch(ownerId, { membershipTier: overrides.membershipTier });
+    }
+
+    const orgId = await ctx.db.insert('organizations', {
+      name: overrides.name ?? 'Test Organization',
+      slug: overrides.slug ?? `test-org-${now}`,
+      ownerId,
+      plan: overrides.plan ?? 'starter',
+      maxMembers: overrides.maxMembers ?? 5,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Add owner as team member
+    await ctx.db.insert('teamMembers', {
+      userId: ownerId,
+      organizationId: orgId,
+      role: 'owner',
+      status: 'active',
+      joinedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Set user's organizationId
+    await ctx.db.patch(ownerId, { organizationId: orgId });
+
+    return orgId;
+  });
+}
+
+/**
+ * Seed a team member in an organization
+ */
+export async function seedTeamMember(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<'users'>,
+  organizationId: Id<'organizations'>,
+  role: 'admin' | 'editor' | 'viewer'
+): Promise<Id<'teamMembers'>> {
+  return await t.run(async (ctx) => {
+    const now = Date.now();
+
+    const memberId = await ctx.db.insert('teamMembers', {
+      userId,
+      organizationId,
+      role,
+      status: 'active',
+      joinedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await ctx.db.patch(userId, { organizationId });
+
+    return memberId;
+  });
+}
+
 /**
  * Common test data for edge cases
  */
@@ -234,3 +313,4 @@ export const EDGE_CASES = {
   emptyArray: [],
   largeArray: Array.from({ length: 1000 }, (_, i) => `item_${i}`),
 };
+

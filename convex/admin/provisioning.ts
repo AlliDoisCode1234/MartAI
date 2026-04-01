@@ -43,7 +43,7 @@ export const provisionSubscription = mutation({
       billingCycle: args.billingCycle,
       startsAt,
       oneTimeFeePaid: false, // Default for manual provision
-    });
+    } as any);
 
     return { success: true };
   },

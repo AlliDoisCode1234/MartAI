@@ -17,4 +17,67 @@ if git diff --cached --name-only | grep -E "\.env$|\.env\.local$|\.env\.producti
   exit 1
 fi
 
-echo "✅ No secrets detected. Safe to commit."
+echo "✅ No secrets detected."
+
+# Prevent committing junk/debugging artifacts
+echo "🧹 Scanning for junk files..."
+
+JUNK_FILES=$(git diff --cached --name-only | grep -E \
+  "^(test-output|test-out-|test-clean|test-verbose|test-tail|test-tmp)" \
+  2>/dev/null)
+
+FIX_SCRIPTS=$(git diff --cached --name-only | grep -E \
+  "^fix-.*\.js$|^tmp_fix\.js$|^parse-error\.js$|wrapper-fix\.js$" \
+  2>/dev/null)
+
+BUILD_LOGS=$(git diff --cached --name-only | grep -E \
+  "^build_output\.txt$|^ts_errors\.|^tsc-.*\.txt$|^vitest-results\.json$" \
+  2>/dev/null)
+
+# Check for oversized files (>1MB) in staging
+LARGE_FILES=""
+for file in $(git diff --cached --name-only); do
+  if [ -f "$file" ]; then
+    size=$(wc -c < "$file" 2>/dev/null | tr -d ' ')
+    if [ "$size" -gt 1048576 ] 2>/dev/null; then
+      LARGE_FILES="$LARGE_FILES  - $file ($(( size / 1024 / 1024 ))MB)\n"
+    fi
+  fi
+done
+
+HAS_JUNK=0
+
+if [ -n "$JUNK_FILES" ]; then
+  echo "❌ ERROR: Test output files detected in staging:"
+  echo "$JUNK_FILES" | sed 's/^/  - /'
+  HAS_JUNK=1
+fi
+
+if [ -n "$FIX_SCRIPTS" ]; then
+  echo "❌ ERROR: Ad-hoc fix scripts detected in staging:"
+  echo "$FIX_SCRIPTS" | sed 's/^/  - /'
+  HAS_JUNK=1
+fi
+
+if [ -n "$BUILD_LOGS" ]; then
+  echo "❌ ERROR: Build/error logs detected in staging:"
+  echo "$BUILD_LOGS" | sed 's/^/  - /'
+  HAS_JUNK=1
+fi
+
+if [ -n "$LARGE_FILES" ]; then
+  echo "⚠️  WARNING: Large files (>1MB) detected in staging:"
+  printf "$LARGE_FILES"
+  HAS_JUNK=1
+fi
+
+if [ "$HAS_JUNK" = "1" ]; then
+  echo ""
+  echo "These files should NOT be committed. Options:"
+  echo "  git reset HEAD <file>    # Unstage the file"
+  echo "  git rm <file>            # Remove and untrack"
+  echo "  git commit --no-verify   # Bypass (use with caution)"
+  exit 1
+fi
+
+echo "✅ No junk files detected. Safe to commit."

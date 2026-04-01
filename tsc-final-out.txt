@@ -1,2 +1,0 @@
-convex/analytics/sync.ts(289,9): error TS1472: 'catch' or 'finally' expected.
-convex/analytics/sync.ts(292,9): error TS1005: 'try' expected.

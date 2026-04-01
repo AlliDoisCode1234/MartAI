@@ -87,6 +87,73 @@ export const upsertGSCConnection = mutation({
   },
 });
 
+export const upsertGSCConnectionInternal = internalMutation({
+  args: {
+    projectId: v.id('projects'),
+    siteUrl: v.string(),
+    accessToken: v.string(),
+    refreshToken: v.optional(v.string()),
+    availableSites: v.optional(
+      v.array(
+        v.object({
+          siteUrl: v.string(),
+          permissionLevel: v.string(),
+        })
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    console.log('[GoogleOAuth][InternalMutation] upsertGSCConnectionInternal called');
+
+    const existing = await ctx.db
+      .query('gscConnections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+
+    const encryptedAccessToken = await encryptCredential(args.accessToken);
+    const encryptedRefreshToken = args.refreshToken
+      ? await encryptCredential(args.refreshToken)
+      : undefined;
+
+    const connectionData = {
+      projectId: args.projectId,
+      siteUrl: args.siteUrl,
+      isEncrypted: true,
+      accessToken: encryptedAccessToken,
+      refreshToken: encryptedRefreshToken,
+      availableSites: args.availableSites,
+      lastSync: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    if (existing) {
+      if (!args.refreshToken) {
+        delete connectionData.refreshToken;
+      }
+      const result = await ctx.db.patch(existing._id, connectionData);
+      
+      if (process.env.VITEST !== 'true') {
+        await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
+          projectId: args.projectId,
+        });
+      }
+      return result;
+    }
+
+    const result = await ctx.db.insert('gscConnections', {
+      ...connectionData,
+      createdAt: Date.now(),
+    });
+    
+    if (process.env.VITEST !== 'true') {
+      await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
+        projectId: args.projectId,
+      });
+    }
+    return result;
+  },
+});
+
 // Get GSC connection by project (without tokens, for client)
 export const getGSCConnection = query({
   args: { projectId: v.id('projects') },

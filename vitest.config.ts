@@ -6,6 +6,7 @@ export default defineConfig({
     environment: 'node',
     include: ['__tests__/**/*.test.ts', 'convex/**/*.test.ts', 'lib/**/*.test.ts'],
     globals: true,
+    setupFiles: ['__tests__/setup/convexTestSetup.ts'],
     testTimeout: 60000,
     hookTimeout: 60000,
     server: {

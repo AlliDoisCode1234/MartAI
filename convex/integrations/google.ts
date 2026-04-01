@@ -139,6 +139,128 @@ export const exchangeCode = action({
   },
 });
 
+export const exchangeAndSave = action({
+  args: {
+    code: v.string(),
+    projectId: v.id('projects'),
+    redirectUri: v.optional(v.string()), // Override redirect URI for local dev
+  },
+  handler: async (ctx, args) => {
+    console.log('[GoogleOAuth][Convex] exchangeAndSave called with projectId:', args.projectId);
+
+    // 1. Exchange Code
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = args.redirectUri || process.env.GOOGLE_REDIRECT_URI;
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      throw new Error('Missing Google Creds');
+    }
+
+    const response = await fetch(GOOGLE_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code: args.code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error('[GoogleOAuth][Convex] Token exchange FAILED:', err);
+      throw new Error(`Google Token Exchange Failed: ${err}`);
+    }
+
+    const tokens = await response.json();
+    const accessToken = tokens.access_token;
+    const refreshToken = tokens.refresh_token;
+
+    if (!accessToken) {
+      throw new Error('No access token received from Google');
+    }
+
+    let ga4Saved = false;
+    let gscSaved = false;
+    let gscSiteCount = 0;
+
+    // 2. Fetch GA4 Properties
+    try {
+      const ga4Response = await fetch('https://analyticsadmin.googleapis.com/v1beta/accountSummaries', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (ga4Response.ok) {
+        const data = await ga4Response.json();
+        let firstPropertyId: string | null = null;
+        let firstPropertyName: string | null = null;
+
+        for (const account of data.accountSummaries || []) {
+          for (const prop of account.propertySummaries || []) {
+            if (!firstPropertyId) {
+                firstPropertyId = prop.property.replace('properties/', '');
+                firstPropertyName = prop.displayName;
+            }
+          }
+        }
+
+        if (firstPropertyId && firstPropertyName) {
+          // Use internal mutation securely
+          await ctx.runMutation(internal.integrations.ga4Connections.upsertGA4ConnectionInternal, {
+            projectId: args.projectId,
+            propertyId: firstPropertyId,
+            propertyName: firstPropertyName,
+            accessToken,
+            refreshToken,
+          });
+          ga4Saved = true;
+          console.log('[GoogleOAuth][Convex] GA4 saved securely');
+        }
+      }
+    } catch (err) {
+      console.error('[GoogleOAuth][Convex] GA4 lookup failed:', err);
+    }
+
+    // 3. Fetch GSC Sites
+    try {
+      const gscResponse = await fetch('https://www.googleapis.com/webmasters/v3/sites', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (gscResponse.ok) {
+        const data = await gscResponse.json();
+        const sites = data.siteEntry || [];
+        gscSiteCount = sites.length;
+
+        if (sites.length > 0) {
+          const site = sites.find((s: { permissionLevel: string }) => s.permissionLevel === 'siteOwner') || sites[0];
+          const availableSites = sites.map((s: { siteUrl: string; permissionLevel: string }) => ({
+            siteUrl: s.siteUrl,
+            permissionLevel: s.permissionLevel,
+          }));
+
+          await ctx.runMutation(internal.integrations.gscConnections.upsertGSCConnectionInternal, {
+            projectId: args.projectId,
+            siteUrl: site.siteUrl,
+            accessToken,
+            refreshToken,
+            availableSites,
+          });
+          gscSaved = true;
+          console.log('[GoogleOAuth][Convex] GSC saved securely');
+        }
+      }
+    } catch (err) {
+      console.error('[GoogleOAuth][Convex] GSC lookup failed:', err);
+    }
+
+    return { ga4Saved, gscSaved, gscSiteCount };
+  },
+});
+
 /**
  * List user's GA4 properties (for property picker dropdown)
  */
@@ -237,8 +359,16 @@ async function refreshAccessToken(refreshToken: string) {
     }),
   });
 
-  if (!response.ok) throw new Error('Failed to refresh token');
-  return await response.json();
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`[TOKEN REFRESH FAILED] Status: ${response.status}, Body: ${errorBody}`);
+    console.error(`[TOKEN REFRESH FAILED] Client ID: ${clientId?.slice(0, 15)}...`);
+    console.error(`[TOKEN REFRESH FAILED] Refresh Token (first 10): ${refreshToken?.slice(0, 10)}...`);
+    throw new Error(`Failed to refresh token: ${response.status} — ${errorBody}`);
+  }
+  const tokenData = await response.json();
+  console.log(`[TOKEN REFRESH OK] New access token obtained, expires_in: ${tokenData.expires_in}`);
+  return tokenData;
 }
 
 /**
@@ -278,7 +408,9 @@ export const fetchGA4Metrics = internalAction({
       throw new Error(`GA4 API Error: ${err}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    return data;
   },
 });
 
@@ -309,6 +441,12 @@ async function runGA4Report(
         { name: 'eventCount' },
         { name: 'conversions' },
       ],
+      dimensionFilter: {
+        filter: {
+          fieldName: 'sessionDefaultChannelGrouping',
+          stringFilter: { matchType: 'EXACT', value: 'Organic Search' },
+        },
+      },
     }),
   });
 }
@@ -373,10 +511,23 @@ async function runGA4LeadReport(
     body: JSON.stringify({
       dateRanges: [{ startDate, endDate }],
       metrics: [{ name: 'eventCount' }],
+      // GENERATE LEAD ONLY + ORGANIC SEARCH ONLY
       dimensionFilter: {
-        filter: {
-          fieldName: 'eventName',
-          stringFilter: { value: 'generate_lead' },
+        andGroup: {
+          expressions: [
+            {
+              filter: {
+                fieldName: 'eventName',
+                stringFilter: { value: 'generate_lead' },
+              },
+            },
+            {
+              filter: {
+                fieldName: 'sessionDefaultChannelGrouping',
+                stringFilter: { matchType: 'EXACT', value: 'Organic Search' },
+              },
+            },
+          ],
         },
       },
     }),
@@ -454,10 +605,23 @@ async function runGA4LeadByPageReport(
       dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: 'pagePath' }],
       metrics: [{ name: 'eventCount' }],
+      // GENERATE LEAD ONLY + ORGANIC SEARCH ONLY
       dimensionFilter: {
-        filter: {
-          fieldName: 'eventName',
-          stringFilter: { value: 'generate_lead' },
+        andGroup: {
+          expressions: [
+            {
+              filter: {
+                fieldName: 'eventName',
+                stringFilter: { value: 'generate_lead' },
+              },
+            },
+            {
+              filter: {
+                fieldName: 'sessionDefaultChannelGrouping',
+                stringFilter: { matchType: 'EXACT', value: 'Organic Search' },
+              },
+            },
+          ],
         },
       },
     }),
@@ -552,6 +716,12 @@ async function runGA4PageMetricsReport(
         { name: 'averageSessionDuration' },
         { name: 'bounceRate' },
       ],
+      dimensionFilter: {
+        filter: {
+          fieldName: 'sessionDefaultChannelGrouping',
+          stringFilter: { matchType: 'EXACT', value: 'Organic Search' },
+        },
+      },
       orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
       limit: 10000,
     }),
@@ -591,7 +761,8 @@ export const fetchGSCMetrics = internalAction({
       throw new Error(`GSC API Error: ${err}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    return data;
   },
 });
 

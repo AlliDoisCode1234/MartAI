@@ -32,10 +32,17 @@ export const createProject = mutation({
       throw new Error('User not found');
     }
 
-    const projects = await ctx.db
-      .query('projects')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .collect();
+    // Count projects: per-org if user has an active org, otherwise global
+    const orgId = args.organizationId || user?.organizationId;
+    const projects = orgId
+      ? await ctx.db
+          .query('projects')
+          .withIndex('by_org', (q) => q.eq('organizationId', orgId))
+          .collect()
+      : await ctx.db
+          .query('projects')
+          .withIndex('by_user', (q) => q.eq('userId', userId))
+          .collect();
 
     const tier = user.membershipTier ?? 'none';
     const config = planConfig(tier);

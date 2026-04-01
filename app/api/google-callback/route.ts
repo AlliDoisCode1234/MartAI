@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { unsafeApi } from '@/lib/convexClient';
+import type { Id } from '@/convex/_generated/dataModel';
 
 // Ensure we have the Convex URL
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -73,111 +74,17 @@ export async function GET(req: NextRequest) {
   try {
     console.log('[GoogleOAuth][LegacyCallback] Step 1: Exchanging code for tokens...');
 
-    // Step 1: Exchange authorization code for tokens
-    const tokens = await convex.action(api.integrations.google.exchangeCode, {
+    console.log('[GoogleOAuth][LegacyCallback] Step 1-3: Exchanging code and saving securely...');
+
+    const result = await convex.action(api.integrations.google.exchangeAndSave, {
       code,
-      projectId: projectId as any,
+      projectId: projectId as Id<'projects'>,
       redirectUri: process.env.GOOGLE_REDIRECT_URI || undefined,
     });
 
-    console.log('[GoogleOAuth][LegacyCallback] Token exchange result:', {
-      hasAccessToken: !!tokens.accessToken,
-      hasRefreshToken: !!tokens.refreshToken,
-      expiresIn: tokens.expiresIn,
-    });
-
-    if (!tokens.accessToken) {
-      console.error('[GoogleOAuth][LegacyCallback] No access token received');
-      return NextResponse.redirect(
-        new URL('/settings?tab=integrations&error=no_access_token', baseUrl)
-      );
-    }
-
-    // Step 2: List GA4 properties and save connection server-side
-    let ga4Saved = false;
-    try {
-      console.log('[GoogleOAuth][LegacyCallback] Step 2: Listing GA4 properties...');
-      const properties = await convex.action(api.integrations.google.listGA4Properties, {
-        accessToken: tokens.accessToken,
-      });
-
-      console.log('[GoogleOAuth][LegacyCallback] GA4 properties found:', properties.length);
-
-      if (properties.length > 0) {
-        const property = properties[0];
-        console.log('[GoogleOAuth][LegacyCallback] GA4 first property:', {
-          displayName: property.displayName,
-          propertyId: property.propertyId,
-        });
-
-        console.log('[GoogleOAuth][LegacyCallback] Saving GA4 connection via mutation...');
-        await convex.mutation(api.integrations.ga4Connections.upsertGA4Connection, {
-          projectId: projectId as any,
-          propertyId: property.propertyId,
-          propertyName: property.displayName,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-        });
-        ga4Saved = true;
-        console.log('[GoogleOAuth][LegacyCallback] GA4 connection SAVED');
-      } else {
-        console.warn('[GoogleOAuth][LegacyCallback] No GA4 properties found for this account');
-      }
-    } catch (ga4Error) {
-      console.error('[GoogleOAuth][LegacyCallback] GA4 property listing/save FAILED:', ga4Error);
-      // Continue - GSC may still work
-    }
-
-    // Step 3: List GSC sites and save connection server-side
-    let gscSaved = false;
-    let gscSiteCount = 0;
-    try {
-      console.log('[GoogleOAuth][LegacyCallback] Step 3: Listing GSC sites...');
-      const sites = await convex.action(api.integrations.google.listGSCSites, {
-        accessToken: tokens.accessToken,
-      });
-
-      console.log('[GoogleOAuth][LegacyCallback] GSC sites found:', sites.length);
-      gscSiteCount = sites.length;
-
-      if (sites.length > 0) {
-        // Pick the best default: siteOwner first, then first available
-        const site =
-          sites.find((s: { permissionLevel: string }) => s.permissionLevel === 'siteOwner') ||
-          sites[0];
-        console.log('[GoogleOAuth][LegacyCallback] GSC selected site:', {
-          siteUrl: site.siteUrl,
-          permissionLevel: site.permissionLevel,
-          totalSitesAvailable: sites.length,
-        });
-
-        // Store ALL available sites for the property picker UI
-        const availableSites = sites.map((s: { siteUrl: string; permissionLevel: string }) => ({
-          siteUrl: s.siteUrl,
-          permissionLevel: s.permissionLevel,
-        }));
-
-        console.log('[GoogleOAuth][LegacyCallback] Saving GSC connection via mutation...');
-        await convex.mutation(api.integrations.gscConnections.upsertGSCConnection, {
-          projectId: projectId as any,
-          siteUrl: site.siteUrl,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          availableSites,
-        });
-        gscSaved = true;
-        console.log(
-          '[GoogleOAuth][LegacyCallback] GSC connection SAVED with',
-          availableSites.length,
-          'available sites'
-        );
-      } else {
-        console.warn('[GoogleOAuth][LegacyCallback] No GSC sites found for this account');
-      }
-    } catch (gscError) {
-      console.error('[GoogleOAuth][LegacyCallback] GSC site listing/save FAILED:', gscError);
-      // Continue - GA4 may have already been saved
-    }
+    const ga4Saved = result.ga4Saved;
+    const gscSaved = result.gscSaved;
+    const gscSiteCount = result.gscSiteCount;
 
     console.log('[GoogleOAuth][LegacyCallback] === SUMMARY ===', {
       ga4Saved,
@@ -198,7 +105,7 @@ export async function GET(req: NextRequest) {
         );
         convex
           .action(api['analytics/scheduler'].syncProject, {
-            projectId: projectId as any,
+            projectId: projectId as Id<'projects'>,
           })
           .then(
             (result: unknown) =>

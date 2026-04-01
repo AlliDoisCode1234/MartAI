@@ -78,6 +78,66 @@ export const upsertGA4Connection = mutation({
   },
 });
 
+export const upsertGA4ConnectionInternal = internalMutation({
+  args: {
+    projectId: v.id('projects'),
+    propertyId: v.string(),
+    propertyName: v.string(),
+    accessToken: v.string(),
+    refreshToken: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    console.log('[GoogleOAuth][InternalMutation] upsertGA4ConnectionInternal called');
+
+    const existing = await ctx.db
+      .query('ga4Connections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+
+    const encryptedAccessToken = await encryptCredential(args.accessToken);
+    const encryptedRefreshToken = args.refreshToken
+      ? await encryptCredential(args.refreshToken)
+      : undefined;
+
+    const connectionData = {
+      projectId: args.projectId,
+      propertyId: args.propertyId,
+      propertyName: args.propertyName,
+      isEncrypted: true,
+      accessToken: encryptedAccessToken,
+      refreshToken: encryptedRefreshToken,
+      lastSync: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    if (existing) {
+      if (!args.refreshToken) {
+        delete connectionData.refreshToken;
+      }
+      const result = await ctx.db.patch(existing._id, connectionData);
+      
+      if (process.env.VITEST !== 'true') {
+        await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
+          projectId: args.projectId,
+        });
+      }
+      return result;
+    }
+
+    const result = await ctx.db.insert('ga4Connections', {
+      ...connectionData,
+      createdAt: Date.now(),
+    });
+    
+    if (process.env.VITEST !== 'true') {
+      await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
+        projectId: args.projectId,
+      });
+    }
+    return result;
+  },
+});
+
 // Get GA4 connection by project (without tokens, for client)
 export const getGA4Connection = query({
   args: { projectId: v.id('projects') },

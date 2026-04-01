@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+# Auto-deploy Convex functions after branch checkout
+# $3 = 1 means branch checkout (not file checkout)
+
+if [ "$3" = "1" ]; then
+  echo "🔄 Auto-syncing Convex functions..."
+  npx convex dev --once
+fi

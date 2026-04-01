@@ -1,40 +1,77 @@
 'use client';
 
+/**
+ * OrganizationSwitcher
+ *
+ * Component Hierarchy:
+ * App -> Navigation -> OrganizationSwitcher
+ *
+ * Workspace switcher for multi-org users (Engine+).
+ * Only renders if user belongs to 2+ organizations.
+ * Uses canonical convex/teams/teams.ts module.
+ *
+ * Tier gating:
+ * - Starter: shows "Upgrade to add workspaces"
+ * - Engine/Agency/Enterprise: shows "Create Workspace" (disabled at limit)
+ */
+
 import { type FC } from 'react';
 import {
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
+  MenuDivider,
   Button,
   Icon,
   Text,
   HStack,
   Box,
+  Tooltip,
   useToast,
 } from '@chakra-ui/react';
-import { FiBriefcase, FiCheck, FiChevronDown } from 'react-icons/fi';
+import { FiBriefcase, FiCheck, FiChevronDown, FiPlus, FiArrowUpRight } from 'react-icons/fi';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/lib/useAuth';
 import { Id } from '@/convex/_generated/dataModel';
+import Link from 'next/link';
+
+// Workspace limits per tier — mirrors SSOT in convex/lib/tierLimits.ts
+const WORKSPACE_LIMITS: Record<string, number> = {
+  starter: 1,
+  engine: 3,
+  agency: 10,
+  enterprise: 999,
+};
+
+interface OrgItem {
+  _id: Id<'organizations'>;
+  name: string;
+  role: string;
+}
 
 export const OrganizationSwitcher: FC = () => {
   const { user } = useAuth();
-  const organizations = useQuery(api.organizations.organizations.getMyOrganizations);
+  const organizations = useQuery(api.teams.teams.getMyOrganizations) as OrgItem[] | undefined;
   const switchOrg = useMutation(api.users.switchOrganization);
   const toast = useToast();
 
-  // If loading, or user only has 1 organization natively, don't show the switcher at all
+  // Don't render if loading, single org, or not logged in
   if (organizations === undefined || organizations.length <= 1 || !user) {
     return null;
   }
 
-  const currentOrg = organizations.find((org: any) => org._id === user.organizationId);
+  const currentOrg = organizations.find((org) => org._id === user.organizationId);
+  const tier = user.membershipTier || 'starter';
+  const isStarter = tier === 'starter';
+  const canCreateWorkspace = !isStarter;
+  const maxWorkspaces = WORKSPACE_LIMITS[tier] ?? 1;
+  const atWorkspaceLimit = organizations.length >= maxWorkspaces;
 
-  const handleSwitch = async (organizationId: string, orgName: string) => {
+  const handleSwitch = async (organizationId: Id<'organizations'>, orgName: string) => {
     try {
-      await switchOrg({ organizationId: organizationId as Id<'organizations'> });
+      await switchOrg({ organizationId });
       toast({
         title: 'Workspace Switched',
         description: `You are now working in ${orgName}`,
@@ -42,12 +79,11 @@ export const OrganizationSwitcher: FC = () => {
         duration: 3000,
         isClosable: true,
       });
-      // Optionally reload the page to flush any stale context or data if needed,
-      // but convex subscriptions are reactive so it should update instantly.
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       toast({
         title: 'Failed to switch workspace',
-        description: error.message,
+        description: message,
         status: 'error',
         duration: 4000,
       });
@@ -64,7 +100,6 @@ export const OrganizationSwitcher: FC = () => {
         rightIcon={<Icon as={FiChevronDown} />}
         leftIcon={<Icon as={FiBriefcase} />}
         _hover={{ color: 'brand.orange', bg: 'orange.50' }}
-        display={{ base: 'none', md: 'flex' }}
         maxWidth="200px"
       >
         <Text noOfLines={1}>
@@ -72,7 +107,7 @@ export const OrganizationSwitcher: FC = () => {
         </Text>
       </MenuButton>
       <MenuList minW="240px">
-        {organizations.map((org: any) => (
+        {organizations.map((org) => (
           <MenuItem
             key={org._id}
             onClick={() => handleSwitch(org._id, org.name)}
@@ -96,6 +131,66 @@ export const OrganizationSwitcher: FC = () => {
             {org._id === user.organizationId && <Icon as={FiCheck} color="brand.orange" />}
           </MenuItem>
         ))}
+
+        <MenuDivider />
+
+        {canCreateWorkspace ? (
+          <Tooltip
+            label={atWorkspaceLimit
+              ? `Workspace limit reached (${organizations.length}/${maxWorkspaces}). Upgrade for more.`
+              : undefined}
+            isDisabled={!atWorkspaceLimit}
+            hasArrow
+            placement="bottom"
+          >
+            <Box>
+              {atWorkspaceLimit ? (
+                <Link href="/subscription" passHref>
+                  <MenuItem
+                    icon={<Icon as={FiPlus} />}
+                    fontSize="sm"
+                    color="gray.400"
+                    _hover={{ bg: 'orange.50', color: 'brand.orange' }}
+                  >
+                    <HStack spacing={2} justify="space-between" w="100%">
+                      <Text>Create Workspace</Text>
+                      <Text fontSize="2xs" color="gray.400">
+                        {organizations.length}/{maxWorkspaces}
+                      </Text>
+                    </HStack>
+                  </MenuItem>
+                </Link>
+              ) : (
+                <Link href="/settings/workspace/new" passHref>
+                  <MenuItem
+                    icon={<Icon as={FiPlus} />}
+                    fontSize="sm"
+                    color="gray.600"
+                    _hover={{ bg: 'orange.50', color: 'brand.orange' }}
+                  >
+                    <HStack spacing={2} justify="space-between" w="100%">
+                      <Text>Create Workspace</Text>
+                      <Text fontSize="2xs" color="gray.400">
+                        {organizations.length}/{maxWorkspaces}
+                      </Text>
+                    </HStack>
+                  </MenuItem>
+                </Link>
+              )}
+            </Box>
+          </Tooltip>
+        ) : (
+          <Link href="/subscription" passHref>
+            <MenuItem
+              icon={<Icon as={FiArrowUpRight} />}
+              fontSize="xs"
+              color="gray.400"
+              _hover={{ bg: 'orange.50', color: 'brand.orange' }}
+            >
+              Upgrade to add workspaces
+            </MenuItem>
+          </Link>
+        )}
       </MenuList>
     </Menu>
   );

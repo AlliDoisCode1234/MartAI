@@ -71,3 +71,23 @@ docs/
 # Temp logs / ad-hoc scripts
 *_tmp.txt
 *_tmp.log
+
+# Test outputs and debugging artifacts
+test-output*.txt
+test-out-*.txt
+test-clean*.txt
+test-verbose*.txt
+test-tail*.txt
+test-tmp.*
+vitest-results.json
+
+# One-off fix/debug scripts (ad-hoc codemods)
+fix-*.js
+tmp_fix.js
+parse-error.js
+*-wrapper-fix.js
+
+# Build and error logs
+build_output.txt
+ts_errors.*
+tsc-*.txt
