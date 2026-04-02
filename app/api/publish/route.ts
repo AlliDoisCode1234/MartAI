@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/authMiddleware';
+import { requireAuth, secureResponse } from '@/lib/authMiddleware';
 import { callConvexQuery, callConvexMutation } from '@/lib/convexClient';
 
 export const dynamic = 'force-dynamic';
@@ -23,17 +23,17 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
 
     if (!projectId) {
-      return NextResponse.json(
+      return secureResponse(NextResponse.json(
         { error: 'projectId is required' },
         { status: 400 }
-      );
+      ));
     }
 
     if (!api) {
-      return NextResponse.json(
+      return secureResponse(NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
-      );
+      ));
     }
 
     let posts = [];
@@ -56,13 +56,13 @@ export async function GET(request: NextRequest) {
     // Sort by publish date
     posts.sort((a: any, b: any) => a.publishDate - b.publishDate);
 
-    return NextResponse.json({ posts });
+    return secureResponse(NextResponse.json({ posts }));
   } catch (error) {
     console.error('Get scheduled posts error:', error);
-    return NextResponse.json(
+    return secureResponse(NextResponse.json(
       { error: 'Failed to get scheduled posts' },
       { status: 500 }
-    );
+    ));
   }
 }
 
@@ -99,13 +99,13 @@ export async function PATCH(request: NextRequest) {
       ...updates,
     });
 
-    return NextResponse.json({ success: true });
+    return secureResponse(NextResponse.json({ success: true }));
   } catch (error) {
     console.error('Update scheduled post error:', error);
-    return NextResponse.json(
+    return secureResponse(NextResponse.json(
       { error: 'Failed to update scheduled post' },
       { status: 500 }
-    );
+    ));
   }
 }
 
@@ -117,29 +117,29 @@ export async function DELETE(request: NextRequest) {
     const postId = searchParams.get('postId');
 
     if (!postId) {
-      return NextResponse.json(
+      return secureResponse(NextResponse.json(
         { error: 'postId is required' },
         { status: 400 }
-      );
+      ));
     }
 
     if (!api) {
-      return NextResponse.json(
+      return secureResponse(NextResponse.json(
         { error: 'Convex not configured' },
         { status: 503 }
-      );
+      ));
     }
 
     await callConvexMutation(api.publishing.scheduledPosts.cancelScheduledPost, {
       postId: postId as any,
     });
 
-    return NextResponse.json({ success: true });
+    return secureResponse(NextResponse.json({ success: true }));
   } catch (error) {
     console.error('Cancel scheduled post error:', error);
-    return NextResponse.json(
+    return secureResponse(NextResponse.json(
       { error: 'Failed to cancel scheduled post' },
       { status: 500 }
-    );
+    ));
   }
 }

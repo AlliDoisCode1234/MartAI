@@ -3,15 +3,15 @@ import { action, internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
 import { fetchWithExponentialBackoff } from '../lib/apiResilience';
+import { verifyProjectAccess } from '../projects/projects';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 const SCOPES = [
   'https://www.googleapis.com/auth/analytics.readonly',
-  'https://www.googleapis.com/auth/analytics.edit', // Required for Admin API (list properties)
   'https://www.googleapis.com/auth/webmasters.readonly',
-  'https://www.googleapis.com/auth/tagmanager.edit.containers', // GTM Automation
+  'https://www.googleapis.com/auth/tagmanager.edit.containers',
   'openid',
   'email',
   'profile',
@@ -25,6 +25,13 @@ export const generateAuthUrl = action({
     redirectUri: v.optional(v.string()), // Override redirect URI for local dev
   },
   handler: async (ctx, args) => {
+    // SECURITY: Ensure caller is authenticated and actually owns the Project ID
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error('Unauthenticated');
+    if (args.projectId) {
+      await ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId: args.projectId });
+    }
+
     console.log('[GoogleOAuth][Convex] generateAuthUrl called with:', {
       projectId: args.projectId,
       returnTo: args.returnTo,
@@ -81,6 +88,13 @@ export const exchangeCode = action({
     redirectUri: v.optional(v.string()), // Override redirect URI for local dev
   },
   handler: async (ctx, args) => {
+    // SECURITY: Ensure caller is authenticated and owns the Project ID context
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error('Unauthenticated');
+    if (args.projectId) {
+      await ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId: args.projectId });
+    }
+
     console.log('[GoogleOAuth][Convex] exchangeCode called with projectId:', args.projectId);
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -146,6 +160,11 @@ export const exchangeAndSave = action({
     redirectUri: v.optional(v.string()), // Override redirect URI for local dev
   },
   handler: async (ctx, args) => {
+    // SECURITY: Absolute RBAC lock ensuring a malicious user cannot override an arbitrary project API
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error('Unauthenticated');
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId: args.projectId });
+
     console.log('[GoogleOAuth][Convex] exchangeAndSave called with projectId:', args.projectId);
 
     // 1. Exchange Code

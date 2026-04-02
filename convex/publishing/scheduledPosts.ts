@@ -2,6 +2,7 @@ import { mutation, query, internalMutation, internalQuery } from '../_generated/
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
+import { rateLimits } from '../rateLimits';
 
 /**
  * CREATE SCHEDULED POST
@@ -19,6 +20,24 @@ export const createScheduledPost = mutation({
     status: v.string(),
   },
   handler: async (ctx, args) => {
+    // 1. RBAC Verification (Must Own Project)
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, {
+      projectId: args.projectId,
+    });
+
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject || 'anonymous';
+
+    // 2. Token Exhaustion / Spam Defense
+    const rateLimit = await rateLimits.limit(ctx, 'api_publish_write', {
+      key: userId,
+      throws: false,
+    });
+    
+    if (!rateLimit.ok) {
+      throw new Error(`[RATE_LIMITED] Too many scheduling operations. Please wait.`);
+    }
+
     const postId = await ctx.db.insert('scheduledPosts', {
       ...args,
       tags: args.tags ?? [],
@@ -130,6 +149,18 @@ export const updateScheduledPost = mutation({
 
     const post = await ctx.db.get(postId);
     if (!post) throw new Error('Post not found');
+    
+    // RBAC: Verify access to the project owning this post
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, {
+      projectId: post.projectId,
+    });
+
+    const identity = await ctx.auth.getUserIdentity();
+    const rateLimit = await rateLimits.limit(ctx, 'api_publish_write', {
+      key: identity?.subject || 'anonymous',
+      throws: false,
+    });
+    if (!rateLimit.ok) throw new Error(`[RATE_LIMITED] Too many scheduling operations. Please wait.`);
 
     // reschedule if needed
     if (updates.publishDate && updates.publishDate !== post.publishDate) {

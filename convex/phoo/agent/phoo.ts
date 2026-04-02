@@ -13,6 +13,7 @@ import { components, internal } from '../../_generated/api';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { ActionCtx } from '../../_generated/server';
+import { Id } from '../../_generated/dataModel';
 
 // Phoo's system instructions - STRICT SEO + PRODUCT FOCUS ONLY
 export const PHOO_INSTRUCTIONS = `You are Phoo, the AI assistant for the Phoo SEO platform.
@@ -183,6 +184,17 @@ export const phooTools = {
       projectId: z.string().optional().describe('The project ID to check rating for'),
     }),
     handler: async (ctx: ActionCtx, args: { projectId?: string }) => {
+      // SEC-001: Require Project Access to prevent cross-tenant data leaks
+      if (args.projectId) {
+        try {
+          await ctx.runQuery(internal.projects.projects.verifyProjectAccess, {
+            projectId: args.projectId as Id<'projects'>,
+          });
+        } catch (error) {
+          return { error: 'Unauthorized: You do not have permission to view that project.' };
+        }
+      }
+
       // This will be implemented to calculate rating from project data
       // For now, return a placeholder that explains the rating system
       return {
@@ -227,6 +239,15 @@ export const phooTools = {
       weeks: z.number().optional().default(4).describe('Number of weeks to plan'),
     }),
     handler: async (ctx: ActionCtx, args: { projectId: string; weeks?: number }) => {
+      // SEC-001: Require Project Access to prevent cross-tenant data leaks
+      try {
+        await ctx.runQuery(internal.projects.projects.verifyProjectAccess, {
+          projectId: args.projectId as Id<'projects'>,
+        });
+      } catch (error) {
+        return { error: 'Unauthorized: You do not have permission to view that project.' };
+      }
+
       // This will generate content suggestions from PhooLib
       return {
         projectId: args.projectId,

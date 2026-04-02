@@ -17,6 +17,7 @@ import {
   mapApiAccessToHubSpot,
   mapPRScoreToHubSpot,
   mapLifecycleChangeToHubSpot,
+  mapOrganizationToHubSpot,
 } from './hubspotMapper';
 
 // HubSpot API base URL
@@ -34,8 +35,8 @@ function isHubSpotEnabled(): boolean {
  */
 async function hubspotRequest(
   endpoint: string,
-  method: 'GET' | 'POST' | 'PATCH',
-  body?: any
+  method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+  body?: Record<string, any>
 ): Promise<any> {
   const apiKey = process.env.HUBSPOT_API_KEY;
   if (!apiKey) {
@@ -106,6 +107,67 @@ async function upsertContact(
 }
 
 /**
+ * Create or update a company in HubSpot
+ * Uses search-before-create based on the unique Convex Organization ID.
+ */
+async function upsertCompany(
+  convexOrgId: string,
+  properties: Record<string, string | number | boolean>
+): Promise<{ id: string; isNew: boolean }> {
+  let existingCompanyId: string | null = null;
+
+  try {
+    const searchResult = await hubspotRequest('/crm/v3/objects/companies/search', 'POST', {
+      filterGroups: [
+        {
+          filters: [{ propertyName: 'phoo_organization_id', operator: 'EQ', value: convexOrgId }],
+        },
+      ],
+    });
+
+    if (searchResult.results?.length > 0) {
+      existingCompanyId = searchResult.results[0].id;
+    }
+  } catch (e) {
+    console.warn(`[HubSpot] Search failed for company ${convexOrgId}, will attempt create:`, e);
+  }
+
+  if (existingCompanyId) {
+    await hubspotRequest(`/crm/v3/objects/companies/${existingCompanyId}`, 'PATCH', {
+      properties: { phoo_organization_id: convexOrgId, ...properties },
+    });
+    console.log(`[HubSpot] Updated company: ${convexOrgId} (ID: ${existingCompanyId})`);
+    return { id: existingCompanyId, isNew: false };
+  }
+
+  const createResult = await hubspotRequest('/crm/v3/objects/companies', 'POST', {
+    properties: { phoo_organization_id: convexOrgId, ...properties },
+  });
+
+  console.log(`[HubSpot] Created company: ${convexOrgId} (ID: ${createResult.id})`);
+  return { id: createResult.id, isNew: true };
+}
+
+/**
+ * Link a Contact to a Company in HubSpot (B2B SaaS structure)
+ */
+async function associateContactToCompany(
+  contactId: string,
+  companyId: string
+): Promise<void> {
+  try {
+    await hubspotRequest(
+      `/crm/v3/objects/contacts/${contactId}/associations/companies/${companyId}/contact_to_company`,
+      'PUT'
+    );
+    console.log(`[HubSpot] Associated Contact ${contactId} to Company ${companyId}`);
+  } catch (e) {
+    console.error(`[HubSpot] Failed association for Contact ${contactId} -> Company ${companyId}`, e);
+    // Suppress error so it doesn't crash the entire user sync
+  }
+}
+
+/**
  * Sync a user to HubSpot
  * Uses centralized mapper for phoo_* properties.
  */
@@ -127,6 +189,32 @@ export const syncUserToHubspot = action({
     const projects = await ctx.runQuery(api.projects.projects.getProjectsByUser, {
       userId: args.userId,
     });
+
+    // Organization processing (B2B SaaS Multi-Org)
+    let companyId: string | null = null;
+    
+    if (user.organizationId) {
+      try {
+        const org = await ctx.runQuery(internal.teams.teams.getOrganizationForSync, { 
+          organizationId: user.organizationId 
+        });
+        
+        if (org) {
+          const orgProperties = mapOrganizationToHubSpot({
+            id: org._id,
+            name: org.name,
+            planTier: org.plan,
+            seatCount: org.maxMembers,
+            projectCount: org.projectCount,
+            createdAt: org.createdAt
+          });
+          const companyResult = await upsertCompany(org._id, orgProperties);
+          companyId = companyResult.id;
+        }
+      } catch(e) {
+         console.error("[HubSpot] Failed to sync organization", e);
+      }
+    }
 
     // Get latest PR score if they have a project
     let prScore: number | null = null;
@@ -167,6 +255,11 @@ export const syncUserToHubspot = action({
     });
 
     const result = await upsertContact(user.email, properties);
+    
+    // Associate Contact to Company
+    if (companyId && result.id) {
+       await associateContactToCompany(result.id, companyId);
+    }
 
     return {
       success: true,
@@ -641,7 +734,7 @@ export const syncLifecycleChangeToHubspot = internalAction({
 });
 
 /**
- * Sync an admin analytics funnel event to HubSpot as a boolean flag.
+ * Sync an admin analytics funnel event to HubSpot as a datetime flag.
  * Used by the central analyticsEvent dispatcher.
  */
 export const syncFunnelEventToHubspot = internalAction({
@@ -661,14 +754,14 @@ export const syncFunnelEventToHubspot = internalAction({
 
     // Map the eventName to the correct HubSpot property
     const propertyMap: Record<string, string> = {
-      'signup_started': 'phoo_funnel_signup_started',
-      'signup_completed': 'phoo_funnel_signup_completed',
-      'project_created': 'phoo_funnel_project_created',
-      'gsc_connected': 'phoo_funnel_gsc_connected',
-      'keywords_imported': 'phoo_funnel_keywords_imported',
-      'clusters_generated': 'phoo_funnel_clusters_generated',
-      'brief_created': 'phoo_funnel_brief_created',
-      'content_published': 'phoo_funnel_content_published',
+      'signup_started': 'phoo_funnel_signup_started_at',
+      'signup_completed': 'phoo_funnel_signup_completed_at',
+      'project_created': 'phoo_funnel_project_created_at',
+      'gsc_connected': 'phoo_funnel_gsc_connected_at',
+      'keywords_imported': 'phoo_funnel_keywords_imported_at',
+      'clusters_generated': 'phoo_funnel_clusters_generated_at',
+      'brief_created': 'phoo_funnel_brief_created_at',
+      'content_published': 'phoo_funnel_content_published_at',
     };
 
     const propertyName = propertyMap[args.eventName];
@@ -678,8 +771,23 @@ export const syncFunnelEventToHubspot = internalAction({
     }
 
     try {
+      let explicitTimestamp: number | undefined;
+
+      const steps = (user.onboardingSteps as Record<string, any>) || {};
+      const ms = user.engagementMilestones || {};
+
+      if (args.eventName === 'signup_completed') explicitTimestamp = steps.signupCompletedAt;
+      if (args.eventName === 'project_created') explicitTimestamp = steps.projectCreatedAt;
+      if (args.eventName === 'gsc_connected') explicitTimestamp = steps.gscConnectedAt;
+      if (args.eventName === 'keywords_imported') explicitTimestamp = ms.firstKeywordCreatedAt;
+      if (args.eventName === 'clusters_generated') explicitTimestamp = ms.firstClusterCreatedAt;
+      if (args.eventName === 'brief_created') explicitTimestamp = ms.firstBriefCreatedAt;
+      if (args.eventName === 'content_published') explicitTimestamp = ms.firstContentPublishedAt;
+
+      const timestamp = explicitTimestamp || Date.now();
+
       const properties: Record<string, string | number | boolean> = {
-        [propertyName]: true,
+        [propertyName]: timestamp,
       };
 
       await upsertContact(user.email, properties);

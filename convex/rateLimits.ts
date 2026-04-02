@@ -237,6 +237,28 @@ export const rateLimits = new RateLimiter(components.rateLimiter as any, {
     period: MINUTE,
     capacity: 10,
   },
+  
+  // Public Landing Page anonymous tool rate limits
+  api_seo_agent: {
+    kind: 'token bucket',
+    rate: 1, // 1 request per minute per IP
+    period: MINUTE,
+    capacity: 2, // Allow max burst of 2
+  },
+  
+  api_prospects_write: {
+    kind: 'token bucket',
+    rate: 5, // Max 5 leads per minute per IP
+    period: MINUTE,
+    capacity: 5,
+  },
+  
+  api_publish_write: {
+    kind: 'token bucket',
+    rate: 20, // Max 20 scheduled publish events per minute
+    period: MINUTE,
+    capacity: 20,
+  },
 
   // ============================================
   // ADMIN OPERATIONS RATE LIMITS
@@ -249,6 +271,15 @@ export const rateLimits = new RateLimiter(components.rateLimiter as any, {
     rate: 5,
     period: 15 * MINUTE,
     capacity: 5,
+  },
+
+  // Phoo Chat - generic limit to prevent token exhaustion
+  // 20 requests per minute
+  phooChat: {
+    kind: 'token bucket',
+    rate: 20,
+    period: MINUTE,
+    capacity: 20,
   },
 
   // Impersonation - prevent brute-force session creation

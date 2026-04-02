@@ -183,6 +183,9 @@ These personas act as historical anchors, representing definitive architectural 
 #### Context Node 00012 (docs/personas/bot_persona_MULTI_ORG_SECURITY_00012_PERSONA.md)
 - Ask: "What decisions were made regarding multi-organization support, dynamic CSP security headers, PII governance in feedback tables, and historical schema invariants?"
 
+#### Context Node 00013 (docs/personas/bot_persona_ANALYTICS_COMPILER_REMEDIATION_00013_PERSONA.md)
+- Ask: "What decisions were made regarding GA4 Organic Filters versus Total Traffic, resolving generic TS compiler errors in the Convex scheduler, and handling Convex backend-only deployment out-of-sync production errors?"
+
 ---
 
 ## Consultation Process

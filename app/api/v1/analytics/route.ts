@@ -11,6 +11,7 @@ import {
   forbiddenResponse,
   internalErrorResponse,
   corsPreflightResponse,
+  rateLimitedResponse,
   ApiKeyValidation,
 } from '@/lib/apiAuth';
 
@@ -53,6 +54,16 @@ export async function GET(request: NextRequest): Promise<Response> {
       return forbiddenResponse('API key does not have read permission', requestId);
     }
 
+    // Check rate limit before running expensive aggregations
+    const rateLimit = await convex.mutation(unsafeApi.apiKeys.checkApiRateLimit, {
+      keyId: validation.keyId,
+      endpoint: 'analytics_read',
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimitedResponse(rateLimit.retryAfter || 60, requestId);
+    }
+
     const { searchParams } = new URL(request.url);
     const days = Math.min(Math.max(1, parseInt(searchParams.get('days') || '30')), 90);
 
@@ -83,7 +94,12 @@ export async function GET(request: NextRequest): Promise<Response> {
         projectId: validation.projectId,
       },
       200,
-      requestId
+      requestId,
+      {
+        limit: rateLimit.limit,
+        remaining: rateLimit.remaining,
+        resetAt: rateLimit.resetAt,
+      }
     );
   } catch (error) {
     console.error(`[${requestId}] Public API error:`, error);

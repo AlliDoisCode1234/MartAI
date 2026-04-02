@@ -2,6 +2,7 @@ import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import type { Id } from '../_generated/dataModel';
 import { api } from '../_generated/api';
+import { rateLimits } from '../rateLimits';
 
 const baseProspectFields = {
   firstName: v.optional(v.string()),
@@ -121,8 +122,19 @@ export const createProspect = mutation({
   args: {
     ...baseProspectFields,
     status: v.optional(v.string()),
+    clientIp: v.optional(v.string()), // Used for Edge node rate limiting
   },
   handler: async (ctx, args) => {
+    // Defense in Depth: Throttle unauthenticated lead insertions
+    const rateLimit = await rateLimits.limit(ctx, 'api_prospects_write', {
+      key: args.clientIp || 'anonymous',
+      throws: false,
+    });
+    
+    if (!rateLimit.ok) {
+      throw new Error(`[RATE_LIMITED] Too many prospect submissions. Please wait.`);
+    }
+
     const now = Date.now();
     return await ctx.db.insert('prospects', {
       firstName: args.firstName ?? '',
@@ -148,9 +160,19 @@ export const updateProspect = mutation({
     prospectId: v.id('prospects'),
     ...baseProspectFields,
     status: v.optional(v.string()),
+    clientIp: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { prospectId, ...rest } = args;
+    const rateLimit = await rateLimits.limit(ctx, 'api_prospects_write', {
+      key: args.clientIp || 'anonymous',
+      throws: false,
+    });
+    
+    if (!rateLimit.ok) {
+      throw new Error(`[RATE_LIMITED] Too many prospect updates. Please wait.`);
+    }
+
+    const { prospectId, clientIp, ...rest } = args;
     const existing = await ctx.db.get(prospectId);
     if (!existing) {
       throw new Error('Prospect not found');

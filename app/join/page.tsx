@@ -27,6 +27,7 @@ import {
   AudienceSection,
   WaitlistForm,
 } from '@/src/components/landing';
+import { PremiumFooter } from '@/src/components/marketing/PremiumFooter';
 
 export default function JoinPage() {
   const scrollToForm = () => {
@@ -40,34 +41,7 @@ export default function JoinPage() {
       <FeaturesSection />
       <AudienceSection />
       <WaitlistForm />
-      {/* Footer */}
-      <Box as="footer" py={12} borderTop="1px solid" borderColor="whiteAlpha.100">
-        <Container maxW="6xl" textAlign="center">
-          <HStack justify="center" spacing={6} mb={4}>
-            <ChakraLink
-              as={Link}
-              href="/privacy"
-              color="gray.400"
-              fontSize="sm"
-              _hover={{ color: 'white' }}
-            >
-              Privacy Policy
-            </ChakraLink>
-            <ChakraLink
-              as={Link}
-              href="/terms"
-              color="gray.400"
-              fontSize="sm"
-              _hover={{ color: 'white' }}
-            >
-              Terms of Service
-            </ChakraLink>
-          </HStack>
-          <Text color="gray.500" fontSize="sm">
-            © {new Date().getFullYear()} Phoo AI. All rights reserved.
-          </Text>
-        </Container>
-      </Box>
+      <PremiumFooter />
     </Box>
   );
 }

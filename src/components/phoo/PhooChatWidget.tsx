@@ -51,6 +51,15 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
   const [showFaqs, setShowFaqs] = useState(!isAuthenticated); // Show FAQs for guest users
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // SEC-003: Memory Leak Guard
+  const isMounted = useRef(true);
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const createThread = useAction(api.phoo.agent.chat.createThread);
   const sendMessage = useAction(api.phoo.agent.chat.sendMessage);
 
@@ -145,7 +154,9 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      if (isMounted.current) {
+        setMessages((prev) => [...prev, assistantMessage]);
+      }
     } catch (error) {
       console.error('Chat error:', error);
       // Use static fallback instead of generic error (fixes P0 AI failover bug)
@@ -155,9 +166,13 @@ export default function PhooChatWidget({ projectId, isAuthenticated = false }: P
         content: generateStaticFallback(isAuthenticated),
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      if (isMounted.current) {
+        setMessages((prev) => [...prev, errorMessage]);
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 

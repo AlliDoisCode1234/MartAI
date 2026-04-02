@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { mutation, query } from '../_generated/server';
+import { mutation, query, internalQuery } from '../_generated/server';
 
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { getMaxSeatsForTier, getMaxWorkspacesForTier } from '../lib/tierLimits';
@@ -643,5 +643,28 @@ export const transferOwnership = mutation({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * INTERNAL USE ONLY: Fetch an organization for backend sync operations (e.g. HubSpot)
+ * Bypasses auth checks for background workers
+ */
+export const getOrganizationForSync = internalQuery({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) return null;
+    
+    // Calculate simple project count for the org
+    const projects = await ctx.db
+      .query('projects')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .collect();
+
+    return {
+      ...org,
+      projectCount: projects.length,
+    };
   },
 });
