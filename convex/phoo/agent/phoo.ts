@@ -191,6 +191,7 @@ export const phooTools = {
             projectId: args.projectId as Id<'projects'>,
           });
         } catch (error) {
+          console.error('Project access verification failed:', error);
           return { error: 'Unauthorized: You do not have permission to view that project.' };
         }
       }
@@ -245,6 +246,7 @@ export const phooTools = {
           projectId: args.projectId as Id<'projects'>,
         });
       } catch (error) {
+        console.error('Project access verification failed:', error);
         return { error: 'Unauthorized: You do not have permission to view that project.' };
       }
 

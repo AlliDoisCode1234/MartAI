@@ -97,13 +97,13 @@ export const generateClusters = action({
     // Get authenticated user
     const userId = await auth.getUserId(ctx);
     if (!userId) {
-      throw new Error('Unauthorized');
+      return { success: false, count: 0, error: 'Unauthorized' };
     }
 
     // Get user to check membership tier and role
     const user = await ctx.runQuery(api.users.current);
     if (!user) {
-      throw new Error('User not found');
+      return { success: false, count: 0, error: 'User not found' };
     }
 
     // Admin portal RBAC: only super_admin can generate keywords
@@ -114,7 +114,7 @@ export const generateClusters = action({
         projectId: args.projectId,
       });
       if (project && project.userId !== userId) {
-        throw new Error('Only super admins can generate keywords for other users projects');
+        return { success: false, count: 0, error: 'Only super admins can generate keywords for other users projects' };
       }
     }
 
@@ -142,11 +142,11 @@ export const generateClusters = action({
 
       if (!ok) {
         const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
-        throw new ConvexError({
-          kind: 'RateLimitError',
-          message: `Rate limit exceeded. You can generate ${tier === 'starter' ? '5 clusters per day' : tier === 'admin' ? '200 clusters per hour' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
-          retryAfter,
-        });
+        return { 
+          success: false, 
+          count: 0, 
+          error: `Rate limit exceeded. You can generate ${tier === 'starter' ? '5 clusters per day' : tier === 'admin' ? '200 clusters per hour' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.` 
+        };
       }
     }
 
@@ -170,9 +170,7 @@ export const generateClusters = action({
       );
 
       if (!connection?.accessToken || !connection?.siteUrl) {
-        throw new Error(
-          'GSC is not connected. Please connect Google Search Console in Settings first.'
-        );
+        return { success: false, count: 0, error: 'GSC is not connected. Please connect Google Search Console in Settings first.' };
       }
 
       try {
@@ -204,20 +202,12 @@ export const generateClusters = action({
             })
           );
         } else {
-          throw new Error(
-            'GSC returned no keyword data. Your site may not have enough search impressions yet.'
-          );
+          return { success: false, count: 0, error: 'GSC returned no keyword data. Your site may not have enough search impressions yet.' };
         }
       } catch (error) {
         console.error('[KeywordActions] GSC sync error:', error);
-        // Re-throw with context — do NOT silently fall back when GSC was explicitly requested
-        if (error instanceof Error && error.message.includes('GSC')) {
-          throw error;
-        }
-        // Security: Do NOT expose raw error.message to caller
-        throw new Error(
-          'GSC sync failed. Please check your Google Search Console connection and try again.'
-        );
+        // Security: Do NOT expose raw error.message to caller, but log it on the server
+        return { success: false, count: 0, error: 'GSC sync failed. Please check your Google Search Console connection and try again.' };
       }
     }
 
@@ -227,7 +217,7 @@ export const generateClusters = action({
     }
 
     if (keywordInputs.length === 0) {
-      throw new Error('Unable to find keywords to cluster. Add keywords or connect GSC.');
+      return { success: false, count: 0, error: 'Unable to find keywords to cluster. Add keywords or connect GSC.' };
     }
 
     // Generate cache key based on keyword set
@@ -438,7 +428,7 @@ export const generateKeywordsFromUrl = action({
     // Get authenticated user
     const userId = await auth.getUserId(ctx);
     if (!userId) {
-      throw new Error('Unauthorized');
+      return { success: false, count: 0, keywords: [], error: 'Unauthorized' };
     }
 
     // Get project details
@@ -447,7 +437,7 @@ export const generateKeywordsFromUrl = action({
     });
 
     if (!project) {
-      throw new Error('Project not found');
+      return { success: false, count: 0, keywords: [], error: 'Project not found' };
     }
 
     // Extract search terms from URL and project info

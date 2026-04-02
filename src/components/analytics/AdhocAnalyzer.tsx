@@ -59,7 +59,12 @@ export default function AdhocAnalyzer() {
 
     try {
       const response = await analyze({ url });
-      setResult(response.data);
+      
+      if (!response.success && 'error' in response) {
+        throw new Error((response as Extract<typeof response, { error?: string }>).error || 'Analysis failed');
+      }
+
+      setResult((response as any).data);
       toast({
         title: 'Analysis Complete',
         status: 'success',

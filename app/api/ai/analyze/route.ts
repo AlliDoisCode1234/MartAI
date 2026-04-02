@@ -62,7 +62,13 @@ export async function POST(request: NextRequest) {
     const result = (await callConvexAction(
       api.ai.analysis.runPipeline,
       payload
-    )) as AnalyzePipelineResult;
+    )) as AnalyzePipelineResult & { success?: boolean; error?: string };
+
+    if (result.success === false) {
+      return secureResponse(
+        NextResponse.json({ error: result.error || 'Failed to analyze' }, { status: 400 })
+      );
+    }
 
     return secureResponse(
       NextResponse.json({

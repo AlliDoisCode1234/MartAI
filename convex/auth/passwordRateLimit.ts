@@ -26,11 +26,12 @@ export const checkPasswordRateLimit = mutation({
   returns: v.object({
     allowed: v.boolean(),
     remaining: v.optional(v.number()),
+    error: v.optional(v.string()),
   }),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new ConvexError('Not authenticated');
+      return { allowed: false, error: 'Not authenticated' };
     }
 
     const userId = identity.subject;
@@ -46,12 +47,10 @@ export const checkPasswordRateLimit = mutation({
       const retryAfterMs = result.retryAfter || 900000; // 15 min default
       const retryAfterMinutes = Math.ceil(retryAfterMs / 60000);
 
-      throw new ConvexError({
-        code: 'RATE_LIMITED',
-        message: `Too many password attempts. Try again in ${retryAfterMinutes} minute${retryAfterMinutes === 1 ? '' : 's'}.`,
-        retryAfterMs,
-        retryAfterMinutes,
-      });
+      return {
+        allowed: false,
+        error: `Too many password attempts. Try again in ${retryAfterMinutes} minute${retryAfterMinutes === 1 ? '' : 's'}.`
+      };
     }
 
     return {

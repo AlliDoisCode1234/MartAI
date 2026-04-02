@@ -1,4 +1,4 @@
-import { action } from '../_generated/server';
+import { action, ActionCtx } from '../_generated/server';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
@@ -68,21 +68,28 @@ export const runPipeline = action({
   handler: async (
     ctx,
     args: PipelineArgs
-  ): Promise<{
-    reportId: string;
-    metrics: FusionResult;
-    keywordIdeasCreated: number;
-  }> => {
+  ): Promise<
+    | {
+        success: false;
+        error: string;
+      }
+    | {
+        success: true;
+        reportId: string;
+        metrics: FusionResult;
+        keywordIdeasCreated: number;
+      }
+  > => {
     // Get authenticated user
     const userId = await auth.getUserId(ctx);
     if (!userId) {
-      throw new Error('Unauthorized');
+      return { success: false, error: 'Unauthorized' };
     }
 
     // Get user to check membership tier and role
     const user = await ctx.runQuery(api.users.current);
     if (!user) {
-      throw new Error('User not found');
+      return { success: false, error: 'User not found' };
     }
 
     // Determine rate limit tier
@@ -95,25 +102,28 @@ export const runPipeline = action({
 
     // Check rate limit
     const rateLimitKey = getRateLimitKey('aiAnalysis', tier);
-    // rateLimitKey is dynamic (tier-based) so we need type assertion
-    const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
+    const { ok, retryAfter } = await (rateLimits as unknown as { limit: (ctx: ActionCtx, key: string, opts: { key: string }) => Promise<{ ok: boolean; retryAfter: number }> }).limit(ctx, rateLimitKey, {
       key: userId as string,
     });
 
     if (!ok) {
       const retryMinutes = Math.ceil(retryAfter / 1000 / 60);
-      throw new ConvexError({
-        kind: 'RateLimitError',
-        message: `Rate limit exceeded. You can generate ${tier === 'starter' ? '2 reports per day' : tier === 'admin' ? '50 reports per day' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`,
-        retryAfter,
-      });
+      return { 
+        success: false, 
+        error: `Rate limit exceeded. You can generate ${tier === 'starter' ? '2 reports per day' : tier === 'admin' ? '50 reports per day' : `${tier} tier limit reached`}. Try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`
+      };
     }
 
     if (!args.prospectId && !args.projectId && !args.url) {
-      throw new Error('Provide a prospectId, projectId, or url to analyze.');
+      return { success: false, error: 'Provide a prospectId, projectId, or url to analyze.' };
     }
 
-    const target = await resolveTarget(ctx, args);
+    let target: TargetInfo;
+    try {
+      target = await resolveTarget(ctx, args);
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Failed to resolve analysis target' };
+    }
     const typedProspectId = target.prospectId as Id<'prospects'> | undefined;
     const typedProjectId = target.projectId as Id<'projects'> | undefined;
     console.info('Starting MartAI pipeline', target);
@@ -149,15 +159,15 @@ export const runPipeline = action({
       if (typedProjectId) {
         try {
           // Fetch up to 100 recent GSC queries for the Optimization Engine
-          const latestKeywords = await ctx.runQuery(api.analytics.gscKeywords.getLatestKeywords as any, {
+          const latestKeywords = await ctx.runQuery(api.analytics.gscKeywords.getLatestKeywords as never, {
             projectId: typedProjectId,
             limit: 100,
-          });
+          }) as Array<{ keyword: string; clicks: number; impressions: number; position: number }> | null;
           
           if (latestKeywords && Array.isArray(latestKeywords) && latestKeywords.length > 0) {
             // Sort by impressions descending to give the LLM the highest impact keywords
-            const sorted = latestKeywords.sort((a: any, b: any) => b.impressions - a.impressions).slice(0, 50);
-            gscData = sorted.map((kw: any) => ({
+            const sorted = latestKeywords.sort((a, b) => b.impressions - a.impressions).slice(0, 50);
+            gscData = sorted.map((kw) => ({
               keyword: kw.keyword,
               clicks: kw.clicks,
               impressions: kw.impressions,
@@ -206,23 +216,24 @@ export const runPipeline = action({
       });
 
       return {
+        success: true,
         reportId: reportId.toString(),
         metrics: fusion,
         keywordIdeasCreated: keywordCandidates.length,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('MartAI pipeline failed', error);
       await ctx.runMutation(api.ai.reports.updateAiReport, {
         reportId,
         status: 'failed',
-        summary: error?.message || 'Pipeline failed unexpectedly',
+        summary: error instanceof Error ? error.message : 'Pipeline failed unexpectedly',
       });
-      throw error;
+      return { success: false, error: error instanceof Error ? error.message : 'Pipeline failed unexpectedly' };
     }
   },
 });
 
-async function resolveTarget(ctx: any, args: PipelineArgs): Promise<TargetInfo> {
+async function resolveTarget(ctx: ActionCtx, args: PipelineArgs): Promise<TargetInfo> {
   if (args.url) {
     return {
       url: normalizeUrl(args.url),
@@ -338,7 +349,7 @@ function scoreConfidence(crawl: CrawlResult, fusion: FusionResult) {
   };
 }
 
-async function getKeywordIdeas(target: TargetInfo, fusion: FusionResult, gscData?: any[]): Promise<KeywordIdeaCandidate[]> {
+async function getKeywordIdeas(target: TargetInfo, fusion: FusionResult, gscData?: { keyword: string; clicks: number; impressions: number; position: number }[]): Promise<KeywordIdeaCandidate[]> {
   try {
     const suggestions = await generateKeywords(
       target.hints.companyName || 'Unknown Company',
@@ -397,7 +408,7 @@ function generateKeywordIdeasFallback(target: TargetInfo, fusion: FusionResult):
   }));
 }
 
-async function persistKeywordIdeas(ctx: any, ideas: KeywordIdeaCandidate[], target: TargetInfo) {
+async function persistKeywordIdeas(ctx: ActionCtx, ideas: KeywordIdeaCandidate[], target: TargetInfo) {
   for (const idea of ideas) {
     await ctx.runMutation(api.seo.keywordIdeas.createKeywordIdea, {
       prospectId: target.prospectId,
@@ -414,7 +425,7 @@ async function persistKeywordIdeas(ctx: any, ideas: KeywordIdeaCandidate[], targ
   }
 }
 
-async function persistCalendarPreview(ctx: any, ideas: KeywordIdeaCandidate[], target: TargetInfo) {
+async function persistCalendarPreview(ctx: ActionCtx, ideas: KeywordIdeaCandidate[], target: TargetInfo) {
   if (!target.projectId || ideas.length === 0) {
     return;
   }

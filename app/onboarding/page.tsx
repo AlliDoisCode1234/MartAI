@@ -455,10 +455,16 @@ export default function OnboardingPage() {
                 projectId: newProjectId as Id<'projects'>,
                 limit: 30,
               });
+              if (!kwResult.success && 'error' in kwResult) {
+                throw new Error((kwResult as Extract<typeof kwResult, { error?: string }>).error || 'Keyword Generation failed');
+              }
               console.log('[ONBOARDING DEBUG] generateKeywordsFromUrl SUCCESS:', kwResult);
 
               console.log('[ONBOARDING DEBUG] Calling generateClusters...');
-              await generateClusters({ projectId: newProjectId as Id<'projects'> });
+              const clusterResult = await generateClusters({ projectId: newProjectId as Id<'projects'> });
+              if (!clusterResult.success && 'error' in clusterResult) {
+                throw new Error((clusterResult as Extract<typeof clusterResult, { error?: string }>).error || 'Clustering failed');
+              }
               console.log('[ONBOARDING DEBUG] generateClusters completed');
 
               // Generate content calendar using the working system

@@ -97,16 +97,11 @@ export function ChangePasswordForm({ userEmail, hasPassword }: Props) {
       // If user has existing password, verify it first
       if (hasPassword) {
         // Check rate limit before attempting verification
-        try {
-          await checkRateLimit();
-        } catch (rateLimitError: unknown) {
-          const err = rateLimitError as { data?: { code?: string; message?: string } };
-          if (err?.data?.code === 'RATE_LIMITED') {
-            setError(err.data.message || 'Too many attempts. Please try again later.');
-            setIsLoading(false);
-            return;
-          }
-          throw rateLimitError;
+        const rateLimitResult = await checkRateLimit();
+        if (!rateLimitResult.allowed) {
+          setError(rateLimitResult.error || 'Too many attempts. Please try again later.');
+          setIsLoading(false);
+          return;
         }
 
         try {
