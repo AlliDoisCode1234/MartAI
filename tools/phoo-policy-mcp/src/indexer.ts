@@ -174,11 +174,14 @@ function scanDirectory(dirPath: string, repoRoot: string): string[] {
 function shouldExclude(filePath: string, excludePatterns: string[]): boolean {
   const normalized = filePath.replace(/\\/g, '/');
   for (const pattern of excludePatterns) {
-    // Simple glob matching: ** = any depth, * = any chars in segment
-    const regexStr = pattern
+    // 1. Escape all regex metacharacters EXCEPT * (used for globs)
+    const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+    // 2. Apply glob expansions: ** = any depth, * = single segment
+    const regexStr = escaped
       .replace(/\*\*/g, '.*')
       .replace(/\*/g, '[^/]*');
-    if (new RegExp(regexStr).test(normalized)) {
+    // 3. Anchor to match full path
+    if (new RegExp(`^${regexStr}$`).test(normalized)) {
       return true;
     }
   }

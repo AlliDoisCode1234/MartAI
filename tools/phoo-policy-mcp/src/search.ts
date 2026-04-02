@@ -9,7 +9,7 @@
  */
 
 import Fuse from 'fuse.js';
-import type { PolicyChunk } from './indexer.js';
+import type { PolicyChunk } from './indexer';
 
 // ---------------------------------------------------------------------------
 // Types

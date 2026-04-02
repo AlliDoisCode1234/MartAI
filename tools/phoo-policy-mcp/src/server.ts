@@ -18,15 +18,18 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { resolve } from 'path';
-import { indexCorpus } from './indexer.js';
-import { PolicySearchEngine } from './search.js';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { indexCorpus } from './indexer';
+import { PolicySearchEngine } from './search';
 
 // ---------------------------------------------------------------------------
 // Resolve repo root (this file lives at tools/phoo-policy-mcp/src/server.ts)
 // ---------------------------------------------------------------------------
 
-const REPO_ROOT = resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const REPO_ROOT = resolve(__dirname, '..', '..', '..');
 
 // ---------------------------------------------------------------------------
 // Index corpus on startup

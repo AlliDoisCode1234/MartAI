@@ -12,9 +12,9 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { resolve } from 'path';
-import { indexCorpus } from '../src/indexer.js';
-import { PolicySearchEngine } from '../src/search.js';
+import { resolve } from 'node:path';
+import { indexCorpus } from '../src/indexer';
+import { PolicySearchEngine } from '../src/search';
 
 const REPO_ROOT = resolve(__dirname, '..', '..', '..');
 
