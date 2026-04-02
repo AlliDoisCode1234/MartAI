@@ -10,7 +10,14 @@ export const analyzeCompetitor = action({
   args: {
     url: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    data?: {
+      url: string;
+      metrics: { traffic: number; keywords: number; domainAuthority: number };
+      metadata: { title: string; description: string; h1Count: number; server: string; loadTime: number };
+    };
+  }> => {
     const userId = await auth.getUserId(ctx);
     if (!userId) {
       return { success: false, error: 'Unauthorized' };

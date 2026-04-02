@@ -4,7 +4,7 @@ import path from 'path';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['__tests__/**/*.test.ts', 'convex/**/*.test.ts', 'lib/**/*.test.ts'],
+    include: ['__tests__/**/*.test.ts', 'convex/**/*.test.ts', 'lib/**/*.test.ts', 'tools/**/*.test.ts'],
     globals: true,
     setupFiles: ['__tests__/setup/convexTestSetup.ts'],
     testTimeout: 60000,

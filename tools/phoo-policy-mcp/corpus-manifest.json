@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "description": "Phoo Policy Enforcement Layer — Corpus Manifest",
+  "directories": [
+    {
+      "path": ".agent/workflows",
+      "category": "workflow",
+      "description": "Actionable workflow checklists for development tasks"
+    },
+    {
+      "path": ".agent/rules",
+      "category": "rules",
+      "description": "Always-on coding rules and constraints"
+    },
+    {
+      "path": "docs/personas",
+      "category": "governance",
+      "description": "Board of Directors personas and session context memories"
+    }
+  ],
+  "files": [
+    {
+      "path": ".agent/RULES.md",
+      "category": "rules",
+      "severity": "critical",
+      "description": "Master rules file — security mandates, naming conventions, workflow table"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "category": "architecture",
+      "severity": "high",
+      "description": "System architecture, component hierarchy, data flow"
+    }
+  ],
+  "excludePatterns": [
+    "docs/legal/**",
+    "docs/LDD_*",
+    "docs/BOARD_DECISIONS.md",
+    "docs/SWARM_BUG_LOG*",
+    "docs/.internal/**",
+    "docs/ga4_to_ui_data_flow.md",
+    "docs/DEVELOPER_GUIDE.md",
+    "docs/DANE_PERSONA.md"
+  ]
+}
