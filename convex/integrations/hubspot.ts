@@ -35,8 +35,8 @@ function isHubSpotEnabled(): boolean {
  */
 async function hubspotRequest(
   endpoint: string,
-  method: 'GET' | 'POST' | 'PATCH',
-  body?: any
+  method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+  body?: Record<string, any>
 ): Promise<any> {
   const apiKey = process.env.HUBSPOT_API_KEY;
   if (!apiKey) {
@@ -771,8 +771,23 @@ export const syncFunnelEventToHubspot = internalAction({
     }
 
     try {
+      let explicitTimestamp: number | undefined;
+
+      const steps = (user.onboardingSteps as Record<string, any>) || {};
+      const ms = user.engagementMilestones || {};
+
+      if (args.eventName === 'signup_completed') explicitTimestamp = steps.signupCompletedAt;
+      if (args.eventName === 'project_created') explicitTimestamp = steps.projectCreatedAt;
+      if (args.eventName === 'gsc_connected') explicitTimestamp = steps.gscConnectedAt;
+      if (args.eventName === 'keywords_imported') explicitTimestamp = ms.firstKeywordCreatedAt;
+      if (args.eventName === 'clusters_generated') explicitTimestamp = ms.firstClusterCreatedAt;
+      if (args.eventName === 'brief_created') explicitTimestamp = ms.firstBriefCreatedAt;
+      if (args.eventName === 'content_published') explicitTimestamp = ms.firstContentPublishedAt;
+
+      const timestamp = explicitTimestamp || Date.now();
+
       const properties: Record<string, string | number | boolean> = {
-        [propertyName]: Date.now(),
+        [propertyName]: timestamp,
       };
 
       await upsertContact(user.email, properties);

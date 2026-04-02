@@ -33,12 +33,14 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const prospectsModule = getProspectsModule();
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'anonymous';
 
     const payload = draftSchema.parse(body);
 
     const prospectId = await callConvexMutation(prospectsModule.createProspect, {
       ...payload,
       status: body.status ?? 'draft',
+      clientIp: ip,
     });
 
     return secureResponse(
@@ -49,6 +51,11 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error('Create prospect error:', error);
+    
+    if (error?.message && error.message.includes('[RATE_LIMITED]')) {
+      return secureResponse(NextResponse.json({ error: 'Too many submissions. Please wait.' }, { status: 429 }));
+    }
+    
     const message = error?.issues?.[0]?.message || error?.message || 'Failed to create prospect';
     return secureResponse(NextResponse.json({ error: message }, { status: 400 }));
   }
@@ -78,15 +85,23 @@ export async function PATCH(request: NextRequest) {
     const data = schema.parse(rest);
 
     const prospectsModule = getProspectsModule();
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'anonymous';
+
     await callConvexMutation(prospectsModule.updateProspect, {
       prospectId,
       ...data,
       status: markSubmitted ? 'initial_submitted' : undefined,
+      clientIp: ip,
     });
 
     return secureResponse(NextResponse.json({ success: true, prospectId }));
   } catch (error: any) {
     console.error('Update prospect error:', error);
+    
+    if (error?.message && error.message.includes('[RATE_LIMITED]')) {
+      return secureResponse(NextResponse.json({ error: 'Too many updates. Please wait.' }, { status: 429 }));
+    }
+    
     const message = error?.issues?.[0]?.message || error?.message || 'Failed to update prospect';
     return secureResponse(NextResponse.json({ error: message }, { status: 400 }));
   }

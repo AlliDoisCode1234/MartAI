@@ -5,6 +5,7 @@ import { action } from '../_generated/server';
 import { generateKeywords } from '../../lib/generators/keywordGenerator';
 import { crawlWebsite } from '../../lib/generators/siteCrawler';
 import { IntelligenceService } from '../lib/services/intelligence';
+import { rateLimits } from '../rateLimits';
 
 export const runSEOAgent = action({
   args: {
@@ -13,8 +14,19 @@ export const runSEOAgent = action({
     industry: v.string(),
     targetAudience: v.string(),
     monthlyRevenueGoal: v.string(),
+    clientIp: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // 0. Public Security Enforcement (Defense in Depth)
+    const rateLimit = await rateLimits.limit(ctx, 'api_seo_agent', {
+      key: args.clientIp || 'anonymous',
+      throws: false, // Don't throw convex error, return proper status
+    });
+    
+    if (!rateLimit.ok) {
+      throw new Error(`[RATE_LIMITED] Too many SEO analyses requested from ${args.clientIp || 'anonymous'}. Please slow down.`);
+    }
+
     console.log(`[SEO Agent] Starting analysis for ${args.companyName} (${args.website})`);
 
     // 1. Crawl Website

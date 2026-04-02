@@ -9,12 +9,18 @@ const REDIRECT_URI =
   process.env.GOOGLE_REDIRECT_URI ||
   `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/oauth/google/callback`;
 
-// Scopes for GA4 and GSC
 export const GA4_SCOPES = ['https://www.googleapis.com/auth/analytics.readonly'];
 
 export const GSC_SCOPES = ['https://www.googleapis.com/auth/webmasters.readonly'];
 
-export const COMBINED_SCOPES = [...GA4_SCOPES, ...GSC_SCOPES];
+export const COMBINED_SCOPES = [
+  ...GA4_SCOPES,
+  ...GSC_SCOPES,
+  'https://www.googleapis.com/auth/tagmanager.edit.containers',
+  'openid',
+  'email',
+  'profile',
+];
 
 // Create OAuth2 client
 export function createOAuth2Client() {

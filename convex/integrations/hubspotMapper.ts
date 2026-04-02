@@ -188,6 +188,45 @@ export const HUBSPOT_CUSTOM_PROPERTIES = {
 } as const;
 
 // ============================================================================
+// HUBSPOT COMPANY PROPERTIES REGISTRY
+// ============================================================================
+// These must be created in HubSpot before use (Settings → Properties → Companies)
+
+export const HUBSPOT_COMPANY_PROPERTIES = {
+  phoo_organization_id: {
+    label: 'Phoo Organization ID',
+    description: 'The unique convex _id of the organization. Drives deduplication.',
+    type: 'string',
+  },
+  phoo_plan: {
+    label: 'Phoo Team Plan',
+    description: 'Current subscription tier for the organization',
+    type: 'enumeration',
+    options: ['starter', 'engine', 'agency', 'enterprise'],
+  },
+  phoo_project_count: {
+    label: 'Phoo Project Count',
+    description: 'Number of projects in the organization',
+    type: 'number',
+  },
+  phoo_pr_score: {
+    label: 'Phoo PR Score',
+    description: 'Max PR Score across the organization',
+    type: 'number',
+  },
+  phoo_seat_count: {
+    label: 'Phoo Seat Count',
+    description: 'Maximum permitted seats in the organization',
+    type: 'number',
+  },
+  phoo_acquisition_date: {
+    label: 'Phoo Agency Acquisition Date',
+    description: 'When the organization entered the system',
+    type: 'datetime',
+  },
+} as const;
+
+// ============================================================================
 // DATA MAPPERS
 // ============================================================================
 

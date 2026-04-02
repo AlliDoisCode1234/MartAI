@@ -8,9 +8,10 @@
  */
 
 import { action } from '../../_generated/server';
-import { v } from 'convex/values';
+import { v, ConvexError } from 'convex/values';
 import { phooAgent, phooFaqAgent, phooTools } from './phoo';
 import { auth } from '../../auth';
+import { rateLimits } from '../../rateLimits';
 
 /**
  * Create a new chat thread with Phoo
@@ -22,6 +23,13 @@ export const createThread = action({
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
+
+    // SEC-002: Rate limit to prevent massive AI token billing exhaustion
+    const rateLimit = await rateLimits.limit(ctx, 'phooChat', {
+      key: userId || 'anonymous',
+      throws: false,
+    });
+    if (!rateLimit.ok) throw new ConvexError('RATE_LIMITED: Too many chat requests. Please slow down.');
 
     // Use FAQ mode for unauthenticated users
     const agent = userId ? phooAgent : phooFaqAgent;
@@ -65,6 +73,13 @@ export const sendMessage = action({
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
 
+    // SEC-002: Rate limit to prevent massive AI token billing exhaustion
+    const rateLimit = await rateLimits.limit(ctx, 'phooChat', {
+      key: userId || 'anonymous',
+      throws: false,
+    });
+    if (!rateLimit.ok) throw new ConvexError('RATE_LIMITED: Too many chat requests. Please slow down.');
+
     // Use FAQ mode for unauthenticated users
     const agent = userId ? phooAgent : phooFaqAgent;
 
@@ -96,6 +111,13 @@ export const streamMessage = action({
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
+
+    // SEC-002: Rate limit to prevent massive AI token billing exhaustion
+    const rateLimit = await rateLimits.limit(ctx, 'phooChat', {
+      key: userId || 'anonymous',
+      throws: false,
+    });
+    if (!rateLimit.ok) throw new ConvexError('RATE_LIMITED: Too many chat requests. Please slow down.');
 
     // Use FAQ mode for unauthenticated users
     const agent = userId ? phooAgent : phooFaqAgent;
