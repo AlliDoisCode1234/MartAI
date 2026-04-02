@@ -86,6 +86,7 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
+    "mcp:policy": "tsx tools/phoo-policy-mcp/src/server.ts",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
     "clean": "node scripts/clean.js",
@@ -114,6 +115,7 @@
     ]
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/cheerio": "^0.22.35",
     "@typescript-eslint/eslint-plugin": "^8.51.0",
     "@typescript-eslint/parser": "^8.51.0",
@@ -123,6 +125,7 @@
     "eslint": "^9.39.2",
     "eslint-config-next": "^15.5.6",
     "eslint-config-prettier": "^10.1.8",
+    "fuse.js": "^7.1.0",
     "gh-pages": "^6.3.0",
     "husky": "^9.1.7",
     "msw": "^2.12.7",

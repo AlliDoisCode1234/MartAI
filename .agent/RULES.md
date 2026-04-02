@@ -16,6 +16,7 @@ On EVERY response, internally apply these workflows and show status at end of re
 | `/security-rules`     | Mutation/query checks, RBAC, rate limiting       |
 | `/martai`             | Comprehensive MartAI dev workflow                |
 | `/debugging-workflow` | Root cause investigation before fixes            |
+| `policy_preflight`    | MCP: Fetch relevant policies before code changes |
 
 After editing `convex/schema.ts`, ALWAYS run: `npx convex dev --once`
 PowerShell doesn't support `&&` - use separate commands or semicolons
