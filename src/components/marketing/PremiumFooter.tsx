@@ -23,7 +23,7 @@ import {
   SimpleGrid,
 } from '@chakra-ui/react';
 import Link from 'next/link';
-import { FaXTwitter, FaLinkedinIn, FaInstagram, FaFacebookF, FaYoutube } from 'react-icons/fa6';
+import { FaXTwitter, FaLinkedinIn, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa6';
 
 interface FooterLink {
   label: string;
@@ -59,11 +59,11 @@ const LEGAL_LINKS: FooterLink[] = [
 ];
 
 const SOCIAL_LINKS = [
-  { icon: FaXTwitter, href: '#', label: 'X (Twitter)' },
-  { icon: FaLinkedinIn, href: '#', label: 'LinkedIn' },
-  { icon: FaInstagram, href: '#', label: 'Instagram' },
-  { icon: FaFacebookF, href: '#', label: 'Facebook' },
-  { icon: FaYoutube, href: '#', label: 'YouTube' },
+  { icon: FaXTwitter, href: 'https://x.com/GetPhooApp', label: 'X (Twitter)' },
+  { icon: FaLinkedinIn, href: 'https://www.linkedin.com/company/phooapp', label: 'LinkedIn' },
+  { icon: FaInstagram, href: 'https://www.instagram.com/phooapp', label: 'Instagram' },
+  { icon: FaTiktok, href: 'https://www.tiktok.com/@phooapp', label: 'TikTok' },
+  { icon: FaYoutube, href: 'https://www.youtube.com/@Phooapp', label: 'YouTube' },
 ];
 
 const FooterColumn: FC<{ title: string; links: FooterLink[] }> = ({ title, links }) => (

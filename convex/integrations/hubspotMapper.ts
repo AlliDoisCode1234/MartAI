@@ -137,46 +137,53 @@ export const HUBSPOT_CUSTOM_PROPERTIES = {
     type: 'booleancheckbox',
   },
 
-  // Admin User Funnel Milestones
-  phoo_funnel_signup_started: {
-    label: 'Funnel: Signup Started',
-    description: 'User initiated the signup flow',
-    type: 'booleancheckbox',
+  // Admin User Funnel Milestones (Datetime tracking for cohort velocity)
+  phoo_funnel_signup_started_at: {
+    label: 'Funnel: Signup Started At',
+    description: 'When the user initiated the signup flow',
+    type: 'datetime',
   },
-  phoo_funnel_signup_completed: {
-    label: 'Funnel: Signup Completed',
-    description: 'User successfully created an account',
-    type: 'booleancheckbox',
+  phoo_funnel_signup_completed_at: {
+    label: 'Funnel: Signup Completed At',
+    description: 'When the user successfully created an account',
+    type: 'datetime',
   },
-  phoo_funnel_project_created: {
-    label: 'Funnel: Project Created',
-    description: 'User created their first SEO project',
-    type: 'booleancheckbox',
+  phoo_funnel_project_created_at: {
+    label: 'Funnel: Project Created At',
+    description: 'When the user created their first SEO project',
+    type: 'datetime',
   },
-  phoo_funnel_gsc_connected: {
-    label: 'Funnel: GSC Connected',
-    description: 'User connected Google Search Console during onboarding',
-    type: 'booleancheckbox',
+  phoo_funnel_gsc_connected_at: {
+    label: 'Funnel: GSC Connected At',
+    description: 'When the user connected Google Search Console during onboarding',
+    type: 'datetime',
   },
-  phoo_funnel_keywords_imported: {
-    label: 'Funnel: Keywords Imported',
-    description: 'User successfully imported initial target keywords',
-    type: 'booleancheckbox',
+  phoo_funnel_keywords_imported_at: {
+    label: 'Funnel: Keywords Imported At',
+    description: 'When the user successfully imported initial target keywords',
+    type: 'datetime',
   },
-  phoo_funnel_clusters_generated: {
-    label: 'Funnel: Clusters Generated',
-    description: 'User grouped keywords into semantic clusters',
-    type: 'booleancheckbox',
+  phoo_funnel_clusters_generated_at: {
+    label: 'Funnel: Clusters Generated At',
+    description: 'When the user grouped keywords into semantic clusters',
+    type: 'datetime',
   },
-  phoo_funnel_brief_created: {
-    label: 'Funnel: Brief Created',
-    description: 'User generated or manually created a requested content brief',
-    type: 'booleancheckbox',
+  phoo_funnel_brief_created_at: {
+    label: 'Funnel: Brief Created At',
+    description: 'When the user generated or manually created a requested content brief',
+    type: 'datetime',
   },
-  phoo_funnel_content_published: {
-    label: 'Funnel: Content Published',
-    description: 'User successfully generated and published their first AI piece',
-    type: 'booleancheckbox',
+  phoo_funnel_content_published_at: {
+    label: 'Funnel: Content Published At',
+    description: 'When the user successfully generated and published their first AI piece',
+    type: 'datetime',
+  },
+
+  // Multi-Org Architecture Overhaul
+  phoo_organization_id: {
+    label: 'Phoo Organization ID',
+    description: 'The unique convex _id of the organization. Drives deduplication.',
+    type: 'string',
   },
 } as const;
 
@@ -199,8 +206,17 @@ export function mapUserToHubSpot(user: {
   lastActiveAt?: number;
   onboardingSteps?: Record<string, boolean | string | number | undefined>;
   engagementMilestones?: {
+    firstKeywordCreatedAt?: number;
+    firstClusterCreatedAt?: number;
+    firstBriefCreatedAt?: number;
+    firstContentPublishedAt?: number;
+    firstGa4ConnectedAt?: number;
+    firstGscConnectedAt?: number;
+    firstWordPressConnectedAt?: number;
     totalKeywords?: number;
     totalClusters?: number;
+    totalBriefs?: number;
+    totalDrafts?: number;
     totalPublished?: number;
   };
   projectCount?: number;
@@ -250,8 +266,8 @@ export function mapUserToHubSpot(user: {
   // Onboarding step details
   if (user.onboardingSteps) {
     const steps = user.onboardingSteps;
-    if (steps.signupCompleted !== undefined) {
-      props.phoo_signup_completed = !!steps.signupCompleted;
+    if (steps.signupCompletedAt) {
+      props.phoo_funnel_signup_completed_at = steps.signupCompletedAt;
     }
     if (steps.planSelected && typeof steps.planSelected === 'string') {
       props.phoo_plan = steps.planSelected;
@@ -262,11 +278,34 @@ export function mapUserToHubSpot(user: {
     if (steps.projectCreated !== undefined) {
       props.phoo_project_created = !!steps.projectCreated;
     }
+    if (steps.projectCreatedAt) {
+      props.phoo_funnel_project_created_at = steps.projectCreatedAt;
+    }
     if (steps.ga4Connected !== undefined) {
       props.phoo_ga4_connected = !!steps.ga4Connected;
     }
     if (steps.gscConnected !== undefined) {
       props.phoo_gsc_connected = !!steps.gscConnected;
+    }
+    if (steps.gscConnectedAt) {
+      props.phoo_funnel_gsc_connected_at = steps.gscConnectedAt;
+    }
+  }
+
+  // Engagement Milestones (Funnel timestamps rollups)
+  if (user.engagementMilestones) {
+    const milestones = user.engagementMilestones;
+    if (milestones.firstKeywordCreatedAt) {
+      props.phoo_funnel_keywords_imported_at = milestones.firstKeywordCreatedAt;
+    }
+    if (milestones.firstClusterCreatedAt) {
+      props.phoo_funnel_clusters_generated_at = milestones.firstClusterCreatedAt;
+    }
+    if (milestones.firstBriefCreatedAt) {
+      props.phoo_funnel_brief_created_at = milestones.firstBriefCreatedAt;
+    }
+    if (milestones.firstContentPublishedAt) {
+      props.phoo_funnel_content_published_at = milestones.firstContentPublishedAt;
     }
   }
 
@@ -468,6 +507,44 @@ export function mapLifecycleChangeToHubSpot(change: {
   }
   if (change.lifecyclestage) {
     props.lifecyclestage = change.lifecyclestage;
+  }
+
+  return props;
+}
+
+/**
+ * Map an Organization to HubSpot Company properties
+ * Facilitates the B2B SaaS synchronization matching Phoo's multi-org Team Tier architecture.
+ */
+export function mapOrganizationToHubSpot(org: {
+  id: string;
+  name: string;
+  planTier?: string;
+  stripeCustomerId?: string;
+  projectCount?: number;
+  maxPrScore?: number | null;
+  seatCount?: number;
+  createdAt?: number;
+}): Record<string, string | number | boolean> {
+  const props: Record<string, string | number | boolean> = {
+    name: org.name,
+    phoo_organization_id: org.id,
+  };
+
+  if (org.planTier) {
+    props.phoo_plan = org.planTier;
+  }
+  if (org.projectCount !== undefined) {
+    props.phoo_project_count = org.projectCount;
+  }
+  if (org.maxPrScore !== undefined && org.maxPrScore !== null) {
+    props.phoo_pr_score = org.maxPrScore;
+  }
+  if (org.seatCount !== undefined) {
+    props.phoo_seat_count = org.seatCount;
+  }
+  if (org.createdAt) {
+    props.phoo_acquisition_date = org.createdAt;
   }
 
   return props;
