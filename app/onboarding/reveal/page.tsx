@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Container, VStack, Heading, Text, Button, Alert, AlertIcon } from '@chakra-ui/react';
 import { PageLoadingSkeleton } from '@/components/skeletons';
@@ -9,6 +9,7 @@ import { KeywordReveal } from '@/src/components/KeywordReveal';
 import type { KeywordCluster } from '@/types';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
 import { assertProjectId } from '@/lib/typeGuards';
 
 export default function OnboardingRevealPage() {
@@ -33,9 +34,9 @@ export default function OnboardingRevealPage() {
     }
 
     loadClusters();
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, router, loadClusters]);
 
-  const loadClusters = async () => {
+  const loadClusters = useCallback(async () => {
     try {
       const projectId = localStorage.getItem('currentProjectId');
       if (!projectId) {
@@ -106,14 +107,14 @@ export default function OnboardingRevealPage() {
               // Save to Convex
               try {
                 await createCluster({
-                  projectId: projectIdTyped as any,
+                  projectId: projectIdTyped as Id<'projects'>,
                   clusterName: demo.clusterName || demo.topic || 'Keyword Opportunity',
                   keywords:
                     demo.keywords ||
                     (demo.primaryKeyword
                       ? [demo.primaryKeyword, ...(demo.supportingKeywords || [])]
                       : []),
-                  intent: (demo.searchIntent || demo.intent || 'commercial') as any,
+                  intent: (demo.searchIntent || demo.intent || 'commercial') as KeywordCluster['intent'],
                   difficulty: demo.difficulty || 50,
                   volumeRange: demo.volumeRange || { min: 100, max: 1000 },
                   impactScore: demo.impactScore || 0.7,
@@ -124,7 +125,7 @@ export default function OnboardingRevealPage() {
 
                 // Add to local state for display
                 transformedClusters.push({
-                  _id: `temp-${Date.now()}-${Math.random()}` as any, // Temporary ID for display
+                  _id: `temp-${Date.now()}-${Math.random()}` as Id<'keywordClusters'>, // Temporary ID for display
                   projectId: projectIdTyped,
                   clusterName: demo.clusterName || demo.topic || 'Keyword Opportunity',
                   keywords:
@@ -167,7 +168,7 @@ export default function OnboardingRevealPage() {
       setError(err instanceof Error ? err.message : 'Failed to load keywords');
       setLoading(false);
     }
-  };
+  }, [router, createCluster]);
 
   const handleRevealComplete = () => {
     setRevealComplete(true);

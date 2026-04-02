@@ -55,6 +55,11 @@ export default function AdminProspectsPage() {
     try {
       setRunningId(prospectId);
       const result = await runAnalysis({ prospectId });
+      
+      if (!(result as any).success && 'error' in result) {
+        throw new Error((result as any).error);
+      }
+
       toast({
         status: 'success',
         title: 'Analysis started',

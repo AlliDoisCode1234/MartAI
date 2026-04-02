@@ -184,7 +184,7 @@ export default function SettingsPage() {
     if (newIndex !== tabIndex) {
       setTabIndex(newIndex);
     }
-  }, [tabParam]);
+  }, [tabParam, tabIndex]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateBrand = (key: string, value: any) => {

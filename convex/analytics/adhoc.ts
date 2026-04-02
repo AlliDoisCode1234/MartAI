@@ -13,12 +13,12 @@ export const analyzeCompetitor = action({
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) {
-      throw new Error('Unauthorized');
+      return { success: false, error: 'Unauthorized' };
     }
 
     const user = await ctx.runQuery(api.users.current);
     if (!user) {
-      throw new Error('User not found');
+      return { success: false, error: 'User not found' };
     }
 
     // Determine tier
@@ -38,11 +38,10 @@ export const analyzeCompetitor = action({
 
     if (!ok) {
       const retryHours = Math.ceil(retryAfter / 1000 / 60 / 60);
-      throw new ConvexError({
-        kind: 'RateLimitError',
-        message: `Analysis limit reached for ${tier} tier. Try again in ${retryHours} hour(s) or upgrade.`,
-        retryAfter,
-      });
+      return {
+        success: false,
+        error: `Analysis limit reached for ${tier} tier. Try again in ${retryHours} hour(s) or upgrade.`,
+      };
     }
 
     // validate URL
@@ -55,7 +54,7 @@ export const analyzeCompetitor = action({
       // 1. Basic Fetch for Metadata
       const response = await fetch(targetUrl);
       if (!response.ok) {
-        throw new Error(`Failed to fetch URL: ${response.statusText}`);
+        return { success: false, error: `Failed to fetch URL: ${response.statusText}` };
       }
       const html = await response.text();
 
@@ -129,7 +128,7 @@ export const analyzeCompetitor = action({
         metadata: { error: error.message },
         cost: 0,
       });
-      throw new Error(`Analysis failed: ${error.message}`);
+      return { success: false, error: `Analysis failed: ${error.message}` };
     }
   },
 });
@@ -150,7 +149,7 @@ export const storeCompetitorAnalysis = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error('Unauthorized');
+    if (!userId) return null;
 
     return await ctx.db.insert('competitorAnalytics', {
       userId,

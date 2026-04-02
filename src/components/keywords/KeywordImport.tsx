@@ -55,6 +55,11 @@ export function KeywordImport() {
         projectId: projectId as Id<'projects'>,
         importFromGSC: true,
       });
+
+      if (!result.success && 'error' in result) {
+        throw new Error((result as any).error);
+      }
+
       toast({
         title: 'GSC Sync Complete',
         description: `Imported and clustered ${result.count} keyword groups from Google Search Console.`,
@@ -81,6 +86,11 @@ export function KeywordImport() {
         projectId: projectId as Id<'projects'>,
         limit: 50,
       });
+
+      if (!result.success && 'error' in result) {
+        throw new Error((result as Extract<typeof result, { error?: string }>).error || 'Generation failed');
+      }
+
       toast({
         title: 'Keywords Generated',
         description: `Discovered ${result.count} keywords from your website profile.`,
