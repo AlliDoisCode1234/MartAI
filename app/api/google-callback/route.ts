@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
-import { unsafeApi } from '@/lib/convexClient';
 import type { Id } from '@/convex/_generated/dataModel';
+import { internal } from '@/convex/_generated/api';
 
 // Ensure we have the Convex URL
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -12,8 +12,6 @@ if (!convexUrl) {
 }
 
 const convex = new ConvexHttpClient(convexUrl as string);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const api: any = unsafeApi;
 
 export async function GET(req: NextRequest) {
   console.log('[GoogleOAuth][LegacyCallback] === LEGACY CALLBACK HIT ===');
@@ -72,11 +70,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('[GoogleOAuth][LegacyCallback] Step 1: Exchanging code for tokens...');
+    console.log('[GoogleOAuth][LegacyCallback] Step 1-3: Exchanging code and saving securely via internalAction...');
 
-    console.log('[GoogleOAuth][LegacyCallback] Step 1-3: Exchanging code and saving securely...');
-
-    const result = await convex.action(api.integrations.google.exchangeAndSave, {
+    // Use internalAction — this server-side route has no user auth session.
+    // Security: projectId was verified at generateAuthUrl time and carried
+    // through the OAuth state round-trip.
+    const result = await convex.action(internal.integrations.google.internalExchangeAndSave, {
       code,
       projectId: projectId as Id<'projects'>,
       redirectUri: process.env.GOOGLE_REDIRECT_URI || undefined,
@@ -104,7 +103,7 @@ export async function GET(req: NextRequest) {
           projectId
         );
         convex
-          .action(api['analytics/scheduler'].syncProject, {
+          .action(internal.analytics.sync.syncProjectData, {
             projectId: projectId as Id<'projects'>,
           })
           .then(

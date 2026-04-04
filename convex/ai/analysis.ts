@@ -162,7 +162,7 @@ export const runPipeline = action({
           const latestKeywords = await ctx.runQuery(api.analytics.gscKeywords.getLatestKeywords as never, {
             projectId: typedProjectId,
             limit: 100,
-          }) as Array<{ keyword: string; clicks: number; impressions: number; position: number }> | null;
+          } as never) as Array<{ keyword: string; clicks: number; impressions: number; position: number }> | null;
           
           if (latestKeywords && Array.isArray(latestKeywords) && latestKeywords.length > 0) {
             // Sort by impressions descending to give the LLM the highest impact keywords

@@ -10,15 +10,35 @@ import { generateKeywordClusters } from '../../lib/generators/keywordClustering'
 import { cache, getCacheKey, CACHE_TTL } from '../cache';
 import { getGSCData } from '../../lib/googleAuth';
 import * as crypto from 'node:crypto';
+import type { Id } from '../_generated/dataModel';
+import type { GenericActionCtx } from 'convex/server';
+import type { DataModel } from '../_generated/dataModel';
+import type { NormalizedSerpUrl } from '../integrations/dataForSeo';
 
-function importKeywordsFromGSC(gscData: any): KeywordInput[] {
+/** Shape of a single row returned by the GSC Search Analytics API */
+interface GSCRow {
+  keys?: string[] | null;
+  clicks?: number | null;
+  impressions?: number | null;
+  ctr?: number | null;
+  position?: number | null;
+}
+
+/** Shape of the GSC Search Analytics API response */
+interface GSCResponse {
+  rows?: GSCRow[];
+}
+
+function importKeywordsFromGSC(gscData: GSCResponse): KeywordInput[] {
   if (!gscData?.rows) return [];
-  return gscData.rows.map((row: any) => ({
-    keyword: row.keys[0],
-    volume: row.impressions || 0, // Use impressions as proxy for volume
-    difficulty: 50, // Default mid-range difficulty
-    intent: 'informational', // Default intent
-  }));
+  return gscData.rows
+    .filter((row: GSCRow) => row.keys && row.keys.length > 0)
+    .map((row: GSCRow) => ({
+      keyword: row.keys![0],
+      volume: row.impressions || 0,
+      difficulty: 50,
+      intent: 'informational',
+    }));
 }
 
 export interface KeywordInput {
@@ -29,11 +49,8 @@ export interface KeywordInput {
 }
 
 async function insertKeywordsFromInputs(
-  ctx: {
-    runMutation: (...args: any[]) => Promise<any>;
-    runQuery: (...args: any[]) => Promise<any>;
-  },
-  projectId: any,
+  ctx: Pick<GenericActionCtx<DataModel>, 'runMutation' | 'runQuery'>,
+  projectId: Id<'projects'>,
   inputs: KeywordInput[]
 ) {
   if (inputs.length === 0) return;
@@ -91,6 +108,7 @@ export const generateClusters = action({
   ): Promise<{
     success: boolean;
     count: number;
+    error?: string;
     cached?: boolean;
     storage?: boolean;
   }> => {
@@ -135,7 +153,7 @@ export const generateClusters = action({
     if (!isDevMode) {
       // Check rate limit
       const rateLimitKey = getRateLimitKey('generateKeywordClusters', tier);
-      // rateLimitKey is dynamic (tier-based) so we need type assertion for the string union
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic tier-based key requires cast; root cause is RateLimiter generic constraint (see rateLimits.ts:54)
       const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
         key: userId as string,
       });
@@ -213,7 +231,7 @@ export const generateClusters = action({
 
     // Only use IL fallback when GSC was NOT explicitly requested
     if (keywordInputs.length === 0 && !(args.importFromGSC ?? false)) {
-      keywordInputs = buildFallbackKeywords(project ?? undefined);
+      keywordInputs = await buildFallbackKeywords(ctx, project ?? undefined);
     }
 
     if (keywordInputs.length === 0) {
@@ -309,6 +327,26 @@ export const generateClusters = action({
       project?.industry
     );
 
+    // [Cost Control Rule]: 1 API hit per cluster for SERP analysis (using the primary keyword)
+    await Promise.allSettled(
+      clusters.map(async (cluster) => {
+        if (cluster.keywords.length > 0) {
+          try {
+            const topSerpUrls = await ctx.runAction(internal.integrations.dataForSeo.getTopSerpUrls, {
+               keyword: cluster.keywords[0],
+               limit: 5
+            }) as NormalizedSerpUrl[];
+            
+            if (topSerpUrls && topSerpUrls.length > 0) {
+              cluster.topSerpUrls = topSerpUrls.map(u => u.url);
+            }
+          } catch (serpError) {
+            console.warn(`SERP fetch failed for cluster ${cluster.clusterName}:`, serpError);
+          }
+        }
+      })
+    );
+
     let createdCount = 0;
     for (const cluster of clusters) {
       try {
@@ -365,7 +403,10 @@ export const generateClusters = action({
   },
 });
 
-function buildFallbackKeywords(project?: { industry?: string; name?: string }): KeywordInput[] {
+async function buildFallbackKeywords(
+  ctx: Pick<GenericActionCtx<DataModel>, 'runAction' | 'runQuery' | 'runMutation'>,
+  project?: { industry?: string; name?: string }
+): Promise<KeywordInput[]> {
   const base = (project?.industry || project?.name || 'growth marketing').toLowerCase();
   const topics = [
     `${base} strategy`,
@@ -377,6 +418,23 @@ function buildFallbackKeywords(project?: { industry?: string; name?: string }): 
     `${base} automation`,
     `${base} templates`,
   ];
+
+  try {
+    const rawMetrics = await ctx.runAction(internal.integrations.dataForSeo.getKeywordIdeas, {
+      keywords: topics,
+    });
+    
+    if (rawMetrics && rawMetrics.length > 0) {
+      return rawMetrics.map((metric: { keyword: string; monthlySearches: number; rankingDifficulty: number; paidCompetition: string }) => ({
+        keyword: metric.keyword,
+        volume: metric.monthlySearches,
+        difficulty: metric.rankingDifficulty || 50,
+        intent: metric.paidCompetition === 'HIGH' ? 'commercial' : metric.paidCompetition === 'MEDIUM' ? 'transactional' : 'informational',
+      }));
+    }
+  } catch (error) {
+    console.error('[KeywordActions] DataForSEO fallback failed, degrading to mock data:', error);
+  }
 
   return topics.map((keyword, index) => ({
     keyword,
@@ -423,6 +481,7 @@ export const generateKeywordsFromUrl = action({
   ): Promise<{
     success: boolean;
     count: number;
+    error?: string;
     keywords: Array<{ keyword: string; volume: number; difficulty: number; intent: string }>;
   }> => {
     // Get authenticated user
@@ -482,7 +541,7 @@ export const generateKeywordsFromUrl = action({
 
     // If library search returned nothing (or we had no search terms), fall back to generated keywords
     if (allKeywords.length === 0) {
-      const fallback = buildFallbackKeywords(project);
+      const fallback = await buildFallbackKeywords(ctx, project);
       allKeywords.push(...fallback);
     }
 

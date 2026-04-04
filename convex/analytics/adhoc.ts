@@ -12,6 +12,7 @@ export const analyzeCompetitor = action({
   },
   handler: async (ctx, args): Promise<{
     success: boolean;
+    error?: string;
     data?: {
       url: string;
       metrics: { traffic: number; keywords: number; domainAuthority: number };
@@ -38,7 +39,7 @@ export const analyzeCompetitor = action({
 
     // Check Rate Limit (aiAnalysis limit)
     const rateLimitKey = getRateLimitKey('aiAnalysis', tier);
-    // rateLimitKey is dynamic (tier-based) so we need type assertion
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic tier-based key requires cast; root cause is RateLimiter generic constraint (see rateLimits.ts:54)
     const { ok, retryAfter } = await (rateLimits as any).limit(ctx, rateLimitKey, {
       key: userId as string,
     });
@@ -126,16 +127,17 @@ export const analyzeCompetitor = action({
           metadata,
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       // Record failure
       await ctx.runMutation(api['analytics/adhoc'].storeCompetitorAnalysis, {
         url: targetUrl,
         metrics: {},
         status: 'failed',
-        metadata: { error: error.message },
+        metadata: { error: message },
         cost: 0,
       });
-      return { success: false, error: `Analysis failed: ${error.message}` };
+      return { success: false, error: `Analysis failed: ${message}` };
     }
   },
 });

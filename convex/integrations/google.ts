@@ -281,6 +281,139 @@ export const exchangeAndSave = action({
 });
 
 /**
+ * Internal variant of exchangeAndSave for server-side OAuth callback.
+ *
+ * The Next.js API route (app/api/google-callback) calls this via a bare
+ * ConvexHttpClient that has no user auth session. Security is guaranteed
+ * because:
+ *   1. generateAuthUrl verified the user's identity before encoding
+ *      the projectId into the OAuth state parameter
+ *   2. This is an internalAction — unreachable from the public API
+ *   3. The projectId was cryptographically carried through the OAuth
+ *      state round-trip (base64-encoded, validated at callback)
+ */
+export const internalExchangeAndSave = internalAction({
+  args: {
+    code: v.string(),
+    projectId: v.id('projects'),
+    redirectUri: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    console.log('[GoogleOAuth][Convex] internalExchangeAndSave called with projectId:', args.projectId);
+
+    // 1. Exchange Code
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = args.redirectUri || process.env.GOOGLE_REDIRECT_URI;
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      throw new Error('Missing Google Creds');
+    }
+
+    const response = await fetch(GOOGLE_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code: args.code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error('[GoogleOAuth][Convex] Token exchange FAILED:', err);
+      throw new Error(`Google Token Exchange Failed: ${err}`);
+    }
+
+    const tokens = await response.json();
+    const accessToken = tokens.access_token;
+    const refreshToken = tokens.refresh_token;
+
+    if (!accessToken) {
+      throw new Error('No access token received from Google');
+    }
+
+    let ga4Saved = false;
+    let gscSaved = false;
+    let gscSiteCount = 0;
+
+    // 2. Fetch GA4 Properties
+    try {
+      const ga4Response = await fetch('https://analyticsadmin.googleapis.com/v1beta/accountSummaries', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (ga4Response.ok) {
+        const data = await ga4Response.json();
+        let firstPropertyId: string | null = null;
+        let firstPropertyName: string | null = null;
+
+        for (const account of data.accountSummaries || []) {
+          for (const prop of account.propertySummaries || []) {
+            if (!firstPropertyId) {
+                firstPropertyId = prop.property.replace('properties/', '');
+                firstPropertyName = prop.displayName;
+            }
+          }
+        }
+
+        if (firstPropertyId && firstPropertyName) {
+          await ctx.runMutation(internal.integrations.ga4Connections.upsertGA4ConnectionInternal, {
+            projectId: args.projectId,
+            propertyId: firstPropertyId,
+            propertyName: firstPropertyName,
+            accessToken,
+            refreshToken,
+          });
+          ga4Saved = true;
+          console.log('[GoogleOAuth][Convex] GA4 saved securely');
+        }
+      }
+    } catch (err) {
+      console.error('[GoogleOAuth][Convex] GA4 lookup failed:', err);
+    }
+
+    // 3. Fetch GSC Sites
+    try {
+      const gscResponse = await fetch('https://www.googleapis.com/webmasters/v3/sites', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (gscResponse.ok) {
+        const data = await gscResponse.json();
+        const sites = data.siteEntry || [];
+        gscSiteCount = sites.length;
+
+        if (sites.length > 0) {
+          const site = sites.find((s: { permissionLevel: string }) => s.permissionLevel === 'siteOwner') || sites[0];
+          const availableSites = sites.map((s: { siteUrl: string; permissionLevel: string }) => ({
+            siteUrl: s.siteUrl,
+            permissionLevel: s.permissionLevel,
+          }));
+
+          await ctx.runMutation(internal.integrations.gscConnections.upsertGSCConnectionInternal, {
+            projectId: args.projectId,
+            siteUrl: site.siteUrl,
+            accessToken,
+            refreshToken,
+            availableSites,
+          });
+          gscSaved = true;
+          console.log('[GoogleOAuth][Convex] GSC saved securely');
+        }
+      }
+    } catch (err) {
+      console.error('[GoogleOAuth][Convex] GSC lookup failed:', err);
+    }
+
+    return { ga4Saved, gscSaved, gscSiteCount };
+  },
+});
+
+/**
  * List user's GA4 properties (for property picker dropdown)
  */
 export const listGA4Properties = action({

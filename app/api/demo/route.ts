@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const demo = generateDemoData({ url, companyName, industry, targetAudience });
+    const demo = await generateDemoData({ url, companyName, industry, targetAudience });
     return NextResponse.json({
       success: true,
       generatedAt: Date.now(),
@@ -31,11 +31,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  const demo = generateDemoData({ url: 'https://martai-demo.com' });
   return NextResponse.json({
     success: true,
-    message: 'Demo endpoint is ready',
-    example: demo,
+    message: 'Demo endpoint API is alive',
   });
 }
 
