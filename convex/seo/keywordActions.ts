@@ -13,7 +13,7 @@ import * as crypto from 'node:crypto';
 import type { Id } from '../_generated/dataModel';
 import type { GenericActionCtx } from 'convex/server';
 import type { DataModel } from '../_generated/dataModel';
-import type { NormalizedSerpUrl } from '../integrations/dataForSeo';
+import type { NormalizedSerpUrl, NormalizedKeywordMetric } from '../integrations/dataForSeo';
 
 /** Shape of a single row returned by the GSC Search Analytics API */
 interface GSCRow {
@@ -124,16 +124,16 @@ export const generateClusters = action({
       return { success: false, count: 0, error: 'User not found' };
     }
 
-    // Admin portal RBAC: only super_admin can generate keywords
-    // Regular admins can view but not generate (prevents accidental expensive AI calls)
-    if (user.role === 'admin' && user.role !== 'super_admin') {
-      // Check if this is being called from admin context (no projectId ownership)
-      const project = await ctx.runQuery(api.projects.projects.getProjectById, {
-        projectId: args.projectId,
-      });
-      if (project && project.userId !== userId) {
-        return { success: false, count: 0, error: 'Only super admins can generate keywords for other users projects' };
-      }
+    const project = await ctx.runQuery(api.projects.projects.getProjectById, {
+      projectId: args.projectId,
+    });
+    if (!project) {
+      return { success: false, count: 0, error: 'Project not found' };
+    }
+
+    // Authorization: User must own the project UNLESS they are a super_admin
+    if (project.userId !== userId && user.role !== 'super_admin') {
+      return { success: false, count: 0, error: 'Unauthorized to generate clusters for this project' };
     }
 
     // Determine rate limit tier
@@ -168,9 +168,7 @@ export const generateClusters = action({
       }
     }
 
-    const project = await ctx.runQuery(api.projects.projects.getProjectById, {
-      projectId: args.projectId,
-    });
+
 
     let keywordInputs: KeywordInput[] = (args.keywords ?? []).map((keyword) => ({
       keyword: keyword.keyword,
@@ -425,10 +423,10 @@ async function buildFallbackKeywords(
     });
     
     if (rawMetrics && rawMetrics.length > 0) {
-      return rawMetrics.map((metric: { keyword: string; monthlySearches: number; rankingDifficulty: number; paidCompetition: string }) => ({
-        keyword: metric.keyword,
-        volume: metric.monthlySearches,
-        difficulty: metric.rankingDifficulty || 50,
+      return rawMetrics.map((metric: NormalizedKeywordMetric) => ({
+        keyword: metric.keyword || 'Unknown Keyword',
+        volume: metric.monthlySearches ?? 0,
+        difficulty: metric.rankingDifficulty ?? 50,
         intent: metric.paidCompetition === 'HIGH' ? 'commercial' : metric.paidCompetition === 'MEDIUM' ? 'transactional' : 'informational',
       }));
     }

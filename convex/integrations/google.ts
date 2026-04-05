@@ -1,4 +1,5 @@
 'use node';
+import * as crypto from 'node:crypto';
 import { action, internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
@@ -67,7 +68,18 @@ export const generateAuthUrl = action({
       stateData.returnTo = args.returnTo;
     }
     if (Object.keys(stateData).length > 0) {
-      const encodedState = Buffer.from(JSON.stringify(stateData)).toString('base64');
+      const payloadStr = JSON.stringify(stateData);
+      let encodedState: string;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      
+      if (clientSecret) {
+        const sig = crypto.createHmac('sha256', clientSecret).update(payloadStr).digest('hex');
+        const securePayload = { p: payloadStr, s: sig };
+        encodedState = Buffer.from(JSON.stringify(securePayload)).toString('base64');
+      } else {
+        encodedState = Buffer.from(JSON.stringify(stateData)).toString('base64');
+      }
+      
       url.searchParams.append('state', encodedState);
       console.log('[GoogleOAuth][Convex] State payload:', stateData);
     }
@@ -296,14 +308,28 @@ export const internalExchangeAndSave = internalAction({
   args: {
     code: v.string(),
     projectId: v.id('projects'),
+    stateRaw: v.optional(v.string()),
     redirectUri: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     console.log('[GoogleOAuth][Convex] internalExchangeAndSave called with projectId:', args.projectId);
 
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    // Security: Validate Secure State HMAC if provided (Prevents Forgery)
+    if (args.stateRaw && clientSecret) {
+       const secureState = JSON.parse(Buffer.from(args.stateRaw, 'base64').toString('utf-8'));
+       if (secureState.p && secureState.s) {
+          const expectedSig = crypto.createHmac('sha256', clientSecret).update(secureState.p).digest('hex');
+          if (expectedSig !== secureState.s) throw new Error('State signature forged - OAuth execution blocked');
+          
+          const parsedId = JSON.parse(secureState.p).projectId;
+          if (parsedId !== args.projectId) throw new Error('ProjectId payload swap detected - OAuth execution blocked');
+       }
+    }
+
     // 1. Exchange Code
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const redirectUri = args.redirectUri || process.env.GOOGLE_REDIRECT_URI;
 
     if (!clientId || !clientSecret || !redirectUri) {

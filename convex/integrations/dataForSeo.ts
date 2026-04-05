@@ -88,7 +88,7 @@ function getAuthHeader(): string | null {
 
   // Base64 encode the string "login:password"
   const authString = `${login}:${password}`;
-  return `Basic ${Buffer.from(authString).toString('base64')}`;
+  return `Basic ${btoa(authString)}`;
 }
 
 export async function performDfsRequest(endpointPath: string, payload: any): Promise<DfsResponse<any>> {

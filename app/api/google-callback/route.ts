@@ -45,7 +45,8 @@ export async function GET(req: NextRequest) {
   let returnTo: string | undefined;
   try {
     const stateJson = Buffer.from(stateParam, 'base64').toString('utf-8');
-    const stateData = JSON.parse(stateJson);
+    const secureState = JSON.parse(stateJson);
+    const stateData = secureState.p ? JSON.parse(secureState.p) : secureState;
     projectId = stateData.projectId;
     returnTo = stateData.returnTo;
     console.log('[GoogleOAuth][LegacyCallback] Decoded state:', {
@@ -78,6 +79,7 @@ export async function GET(req: NextRequest) {
     const result = await convex.action(internal.integrations.google.internalExchangeAndSave, {
       code,
       projectId: projectId as Id<'projects'>,
+      stateRaw: stateParam,
       redirectUri: process.env.GOOGLE_REDIRECT_URI || undefined,
     });
 

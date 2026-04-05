@@ -139,8 +139,9 @@ export async function generateDemoData(request: DemoRequest): Promise<DemoData> 
   const targetKeywords = Array.from(new Set(defaultMockClusters.flatMap((c) => c.keywords)));
   const login = process.env.DATAFORSEO_LOGIN;
   const password = process.env.DATAFORSEO_PASSWORD;
+  const enableLive = process.env.ENABLE_LIVE_ONBOARDING === 'true';
 
-  if (login && password) {
+  if (login && password && enableLive) {
     try {
       const authString = `${login}:${password}`;
       const authHeader = `Basic ${btoa(authString)}`;

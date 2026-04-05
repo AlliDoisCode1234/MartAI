@@ -1,4 +1,4 @@
-import { action } from '../_generated/server';
+import { action, internalAction } from '../_generated/server';
 import { internal } from '../_generated/api';
 import { v } from 'convex/values';
 import { NormalizedKeywordMetric } from './dataForSeo';
@@ -11,7 +11,7 @@ import { NormalizedKeywordMetric } from './dataForSeo';
  * conform to SEAN's interface, and test graceful mock degradation BEFORE
  * actual DataForSEO API keys and credits are consumed.
  */
-export const runIntegrationDiagnostics = action({
+export const runIntegrationDiagnostics = internalAction({
   args: {
     testKeywords: v.optional(v.array(v.string())),
   },
