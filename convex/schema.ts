@@ -474,6 +474,10 @@ export default defineSchema({
       )
     ),
     cancelFeedback: v.optional(v.string()),
+    // Churn mitigation & retention
+    retentionOfferAccepted: v.optional(
+      v.union(v.literal('pause'), v.literal('stay20'), v.literal('downgrade'))
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -494,6 +498,14 @@ export default defineSchema({
   })
     .index('by_user_period', ['userId', 'periodStart'])
     .index('by_user_period_end', ['userId', 'periodEnd']),
+
+  // Stripe Webhook Idempotency
+  stripeProcessedEvents: defineTable({
+    eventId: v.string(), // The Stripe event ID (e.g. evt_123)
+    eventType: v.string(), // e.g., 'customer.subscription.updated'
+    processedAt: v.number(), // Timestamp processed
+  }).index('by_event_id', ['eventId']),
+
 
   // Projects (user's SEO projects)
   projects: defineTable({
@@ -933,6 +945,18 @@ export default defineSchema({
     .index('by_hash', ['inputHash'])
     .index('by_operation', ['operation'])
     .index('by_date', ['createdAt']),
+
+  // DataForSEO API Cache (Enterprise Governance)
+  dataForSeoCache: defineTable({
+    inputHash: v.string(), // SHA-256 of sorted JSON payload
+    endpoint: v.string(), // e.g., '/dataforseo_labs/google/keyword_ideas/live'
+    response: v.any(), // The full parsed HTTP JSON
+    expiresAt: v.number(), // TTL timestamp (e.g., +7 days)
+    createdAt: v.number(),
+  })
+    .index('by_hash', ['inputHash'])
+    .index('by_endpoint', ['endpoint'])
+    .index('by_expiresAt', ['expiresAt']),
 
   // Content Templates (AI prompts + SEO checklists per page type)
   contentTemplates: defineTable({

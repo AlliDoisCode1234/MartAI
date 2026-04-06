@@ -6,7 +6,7 @@
  */
 
 import { v } from 'convex/values';
-import { internalMutation, query } from '../../_generated/server';
+import { internalMutation, query, internalQuery } from '../../_generated/server';
 import { Id } from '../../_generated/dataModel';
 import { requireSuperAdmin } from '../../lib/rbac';
 
@@ -398,6 +398,51 @@ export const getCostPerUser = query({
       totalCost: Math.round(totalCost * 100) / 100,
       topUsers,
       startDate: startDateKey,
+    };
+  },
+});
+
+/**
+ * Check if user has exceeded their rolling 30-day token limit.
+ * Used by the AI Router circuit breaker.
+ */
+export const checkTokenLimit = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx: any, args: any) => {
+    // 1. Get tier limit for user
+    const user = await ctx.db.get(args.userId);
+    if (!user) return false;
+    
+    // We import getMaxTokensForTier dynamically or statically
+    // But since we can't easily modify the top of the file here without breaking lines,
+    // let's just use a duplicate check or use the tierLimits module
+    
+    const TIER_TOKENS: Record<string, number> = {
+      starter: 50_000,
+      engine: 250_000,
+      agency: 1_000_000,
+      enterprise: 5_000_000,
+    };
+    const maxTokens = TIER_TOKENS[user.membershipTier || 'starter'] || TIER_TOKENS.starter;
+    
+    // 2. Sum up total tokens across the last 30 days
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    const startDateKey = startDate.toISOString().split('T')[0];
+
+    // Using index to efficiently fetch 30 days of data for this user
+    const usage = await ctx.db
+      .query('aiUsage')
+      .withIndex('by_user_date', (q: any) => q.eq('userId', args.userId))
+      .filter((q: any) => q.gte(q.field('dateKey'), startDateKey))
+      .collect();
+
+    const usedTokens = usage.reduce((sum: number, u: any) => sum + u.totalTokens, 0);
+
+    return { 
+      allowed: usedTokens < maxTokens, 
+      usedTokens, 
+      maxTokens 
     };
   },
 });

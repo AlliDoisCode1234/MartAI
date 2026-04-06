@@ -136,6 +136,12 @@ export async function requireProjectAccess(
     return { userId, project, role: 'owner' };
   }
 
+  // Admin access bypass (Parity for Internal Portal)
+  const adminCheck = await checkAdminRole(ctx, 'admin');
+  if (adminCheck) {
+    return { userId, project, role: 'owner' };
+  }
+
   // Organization-based access
   if (project.organizationId) {
     const { role } = await requireOrgRole(ctx, project.organizationId, requiredOrgRole);

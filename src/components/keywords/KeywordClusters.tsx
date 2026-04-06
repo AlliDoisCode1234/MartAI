@@ -63,8 +63,10 @@ const thStyle = {
   py: 3,
 };
 
-export function KeywordClusters() {
-  const { projectId } = useProject(null, { autoSelect: true });
+export function KeywordClusters({ projectId: propProjectId }: { projectId?: string }) {
+  const { projectId: hookProjectId } = useProject(null, { autoSelect: true });
+  const projectId = propProjectId || hookProjectId;
+  
   const toast = useToast();
 
   const clusters = useQuery(

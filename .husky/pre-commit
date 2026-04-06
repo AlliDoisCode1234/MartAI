@@ -24,15 +24,15 @@ echo "🧹 Scanning for junk files..."
 
 JUNK_FILES=$(git diff --cached --name-only | grep -E \
   "^(test-output|test-out-|test-clean|test-verbose|test-tail|test-tmp)" \
-  2>/dev/null)
+  2>/dev/null || true)
 
 FIX_SCRIPTS=$(git diff --cached --name-only | grep -E \
   "^fix-.*\.js$|^tmp_fix\.js$|^parse-error\.js$|wrapper-fix\.js$" \
-  2>/dev/null)
+  2>/dev/null || true)
 
 BUILD_LOGS=$(git diff --cached --name-only | grep -E \
   "^build_output\.txt$|^ts_errors\.|^tsc-.*\.txt$|^vitest-results\.json$" \
-  2>/dev/null)
+  2>/dev/null || true)
 
 # Check for oversized files (>1MB) in staging
 LARGE_FILES=""

@@ -550,6 +550,18 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       read: async () => isAdmin,
       modify: async () => true, // Anyone can add themselves
     },
+
+    // DataForSEO API Cache (Enterprise Caching Layer)
+    dataForSeoCache: {
+      read: async () => isAdmin, // System-level cache
+      modify: async () => isAdmin,
+    },
+
+    // Stripe Webhook Idempotency Reference Table
+    stripeProcessedEvents: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
   };
 }
 

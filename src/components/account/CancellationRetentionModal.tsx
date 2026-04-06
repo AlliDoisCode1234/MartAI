@@ -34,7 +34,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useState, useRef } from 'react';
-import { useMutation } from 'convex/react';
+import { useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import {
   FiAlertTriangle,
@@ -45,6 +45,8 @@ import {
   FiFileText,
   FiSearch,
   FiZap,
+  FiPauseCircle,
+  FiTrendingDown,
 } from 'react-icons/fi';
 
 type CancelReason = 'too_expensive' | 'not_using' | 'missing_features' | 'found_alternative' | 'other';
@@ -76,6 +78,8 @@ export function CancellationRetentionModal({ isOpen, onClose, currentPlan, renew
   const requestCancellation = useMutation(
     api.subscriptions.subscriptionLifecycle.requestCancellation
   );
+  const applyRetentionOffer = useAction(api.subscriptions.retention.applyRetentionOffer);
+  const createPortalSession = useAction(api.stripe.checkout.createPortalSession);
 
   const effectiveDate = renewsAt
     ? new Date(renewsAt).toLocaleDateString('en-US', {
@@ -115,6 +119,47 @@ export function CancellationRetentionModal({ isOpen, onClose, currentPlan, renew
     } catch (err) {
       toast({
         title: 'Cancellation failed',
+        description: err instanceof Error ? err.message : 'An error occurred',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRetentionOption = async (option: 'pause' | 'stay20' | 'downgrade') => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+
+    try {
+      if (option === 'downgrade') {
+        // Option 3: Redirect to Stripe Customer Portal to downgrade
+        const { url } = await createPortalSession({ 
+          returnUrl: `${window.location.origin}/settings?tab=billing` 
+        });
+        window.location.href = url;
+        return; // Don't close or unset loading state pending redirect
+      }
+
+      // Option 1 & 2: Pause or Apply Coupon
+      await applyRetentionOffer({ option });
+      toast({
+        title: option === 'pause' ? 'Subscription Paused' : 'Discount Applied!',
+        description: option === 'pause' 
+          ? 'Your subscription will pause for 2 months.'
+          : 'Enjoy 20% off for the next 3 months!',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+      handleClose();
+    } catch (err) {
+      toast({
+        title: 'Action failed',
         description: err instanceof Error ? err.message : 'An error occurred',
         status: 'error',
         duration: 5000,
@@ -213,7 +258,7 @@ export function CancellationRetentionModal({ isOpen, onClose, currentPlan, renew
                 variant="ghost"
                 color="gray.500"
                 size="sm"
-                onClick={() => setStep(3)}
+                onClick={() => setStep(2)}
                 isDisabled={!reason}
                 _hover={{ color: 'gray.700' }}
               >
@@ -223,7 +268,110 @@ export function CancellationRetentionModal({ isOpen, onClose, currentPlan, renew
           </>
         )}
 
+        {/* ─── Step 2: Retention Offers ─── */}
+        {step === 2 && (
+          <>
+            <ModalHeader pb={2}>
+              <HStack spacing={3}>
+                <Icon as={FiGift} color="orange.400" boxSize={5} />
+                <Text>Wait, before you go...</Text>
+              </HStack>
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <VStack align="stretch" spacing={4}>
+                <Text color="gray.600" fontSize="sm">
+                  We value your membership. Choose an option below that works better for you:
+                </Text>
 
+                <VStack spacing={3} align="stretch" mt={2}>
+                  {/* Option 2: Discount */}
+                  <Box 
+                    p={4} 
+                    borderWidth="2px" 
+                    borderColor="orange.400" 
+                    borderRadius="xl" 
+                    bg="orange.50"
+                    position="relative"
+                    overflow="hidden"
+                  >
+                    <Badge position="absolute" top={3} right={3} colorScheme="green" variant="solid">
+                      RECOMMENDED
+                    </Badge>
+                    <HStack mb={2}>
+                      <Icon as={FiGift} color="orange.500" boxSize={5} />
+                      <Text fontWeight="bold" color="orange.800">Stay and Save 20%</Text>
+                    </HStack>
+                    <Text fontSize="sm" color="orange.700" mb={4}>
+                      Get 20% off your subscription for the next 3 months. Keep all your benefits and data.
+                    </Text>
+                    <Button 
+                      w="full" 
+                      colorScheme="orange" 
+                      onClick={() => handleRetentionOption('stay20')}
+                      isLoading={isSubmitting}
+                      loadingText="Applying coupon..."
+                    >
+                      Claim 20% Off
+                    </Button>
+                  </Box>
+
+                  {/* Option 1: Pause */}
+                  <Box p={4} borderWidth="1px" borderColor="gray.200" borderRadius="xl" bg="white">
+                    <HStack mb={2}>
+                      <Icon as={FiPauseCircle} color="blue.500" boxSize={5} />
+                      <Text fontWeight="bold" color="gray.800">Need a break? Pause it</Text>
+                    </HStack>
+                    <Text fontSize="sm" color="gray.600" mb={4}>
+                      Pause billing for up to 2 months. We'll save your projects exactly how you left them.
+                    </Text>
+                    <Button 
+                      w="full" 
+                      variant="outline" 
+                      onClick={() => handleRetentionOption('pause')}
+                      isLoading={isSubmitting}
+                      loadingText="Pausing..."
+                    >
+                      Pause For 2 Months
+                    </Button>
+                  </Box>
+
+                  {/* Option 3: Downgrade */}
+                  <Box p={4} borderWidth="1px" borderColor="gray.200" borderRadius="xl" bg="white">
+                    <HStack mb={2}>
+                      <Icon as={FiTrendingDown} color="gray.500" boxSize={5} />
+                      <Text fontWeight="bold" color="gray.800">Switch to a lower plan</Text>
+                    </HStack>
+                    <Text fontSize="sm" color="gray.600" mb={4}>
+                      Don't need all the features right now? Switch to a lighter subscription tier.
+                    </Text>
+                    <Button 
+                      w="full" 
+                      variant="ghost" 
+                      onClick={() => handleRetentionOption('downgrade')}
+                      isLoading={isSubmitting}
+                      loadingText="Redirecting..."
+                    >
+                      View Lower Plans
+                    </Button>
+                  </Box>
+                </VStack>
+              </VStack>
+            </ModalBody>
+            <ModalFooter justifyContent="center" pt={0}>
+              <Button
+                variant="ghost"
+                color="gray.400"
+                size="sm"
+                onClick={() => setStep(3)}
+                _hover={{ color: 'red.500', bg: 'red.50' }}
+                isDisabled={isSubmitting}
+              >
+                No thanks, I still want to cancel
+              </Button>
+            </ModalFooter>
+          </>
+        )}
 
         {/* ─── Step 3: Final Confirmation ─── */}
         {step === 3 && (

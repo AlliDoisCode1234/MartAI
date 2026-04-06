@@ -39,6 +39,8 @@ registerRoutes(http, components.stripe, {
         status: sub.status || 'active',
         currentPeriodEnd: sub.current_period_end || Math.floor(Date.now() / 1000),
         cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+        eventId: event.id,
+        eventType: event.type,
       });
     },
     'customer.subscription.updated': async (ctx: any, event: any) => {
@@ -52,6 +54,8 @@ registerRoutes(http, components.stripe, {
         status: sub.status || 'active',
         currentPeriodEnd: sub.current_period_end || Math.floor(Date.now() / 1000),
         cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+        eventId: event.id,
+        eventType: event.type,
       });
     },
     'customer.subscription.deleted': async (ctx: any, event: any) => {
@@ -65,6 +69,8 @@ registerRoutes(http, components.stripe, {
         status: sub.status || 'canceled',
         currentPeriodEnd: sub.current_period_end || Math.floor(Date.now() / 1000),
         cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+        eventId: event.id,
+        eventType: event.type,
       });
     },
   },

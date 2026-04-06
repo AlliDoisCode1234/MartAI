@@ -44,11 +44,29 @@ export const createProject = mutation({
           .withIndex('by_user', (q) => q.eq('userId', userId))
           .collect();
 
-    const tier = user.membershipTier ?? 'none';
-    const config = planConfig(tier);
+    // Determine the effective tier for limit calculation
+    // By default, use the acting user's tier
+    let effectiveTier = user.membershipTier ?? 'none';
+    
+    // If creating within an organization, the limits are dictated by the organization OWNER's tier,
+    // NOT the acting member's tier (whether higher or lower).
+    if (orgId) {
+      const org = await ctx.db.get(orgId);
+      if (org && org.ownerId) {
+        const owner = await ctx.db.get(org.ownerId);
+        if (owner) {
+          effectiveTier = owner.membershipTier ?? 'none';
+        }
+      }
+    }
+
+    const config = planConfig(effectiveTier);
 
     // Strict enforcement: No config means no paid plan = 0 limit
-    const limit: number = config?.features.maxUrls ?? 0;
+    // For Enterprise, checking config.features might require fallback if custom limits apply
+    const limit: number = orgId 
+      ? (await ctx.db.get(orgId))?.maxProjects ?? config?.features.maxUrls ?? 0 
+      : config?.features.maxUrls ?? 0;
 
     if (projects.length >= limit) {
       if (limit === 0) {

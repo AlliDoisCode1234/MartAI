@@ -15,6 +15,22 @@ function isPhooAiDomain(request: NextRequest): boolean {
   return host.includes('phoo.ai') || host.includes('phoo-ai');
 }
 
+/**
+ * Check if request is from MarkUp.io proxy
+ */
+function isMarkUpProxy(request: NextRequest): boolean {
+  const userAgent = request.headers.get('user-agent') || '';
+  const isMarkUpHeader = request.headers.get('markup-request') === 'true';
+  const isMarkUpAgent = userAgent.includes('Markup/1.0');
+  
+  // The vendor proxy IP list for MarkUp.io
+  const MARKUP_IPS = ['34.229.37.143', '34.229.37.212', '34.229.37.152'];
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || '';
+  const isMarkUpIp = MARKUP_IPS.includes(ip.trim());
+
+  return (isMarkUpHeader || isMarkUpAgent) && isMarkUpIp;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -52,6 +68,9 @@ export function middleware(request: NextRequest) {
   // Security Headers
   // ==========================================================================
   const response = NextResponse.next();
+
+  // Validate MarkUp Cloud Proxy execution on Public Routes (Debugging Workflow: Option A implementation)
+  const isMarkUpVerified = isPublicRoute && isMarkUpProxy(request);
 
   // Dynamic Clickjacking Protection
   // - Public routes: Allow markup.io framing via CSP
@@ -92,20 +111,24 @@ export function middleware(request: NextRequest) {
   }
 
   // Cross-Origin policies (skip for auth routes to allow OAuth popups/redirects)
-  if (!pathname.startsWith('/auth')) {
+  // Skip COEP for verified MarkUp proxies to allow their visual overlay scripts
+  if (!pathname.startsWith('/auth') && !isMarkUpVerified) {
     securityHeaders['Cross-Origin-Embedder-Policy'] = 'require-corp';
     securityHeaders['Cross-Origin-Opener-Policy'] = 'same-origin';
   }
 
-  // Content Security Policy
+    // Content Security Policy
   if (process.env.NODE_ENV === 'production') {
+    const mk = isMarkUpVerified ? " https://*.markup.io" : "";
+    const mkData = isMarkUpVerified ? " https://*.markup.io" : "";
+
     securityHeaders['Content-Security-Policy'] = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://www.googletagmanager.com", // Google OAuth + GA4
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
-      "font-src 'self' https://fonts.gstatic.com data:",
-      "img-src 'self' data: https: blob:",
-      "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://api.openai.com https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com",
+      `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://www.googletagmanager.com${mk}`, // Google OAuth + GA4 + MarkUp
+      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com${mk}`,
+      `font-src 'self' https://fonts.gstatic.com data:${mkData}`,
+      `img-src 'self' data: https: blob:${mkData}`,
+      `connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://api.openai.com https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com${mk}`,
       "frame-src https://accounts.google.com", // Google OAuth popup
       "object-src 'none'",
       "base-uri 'self'",
