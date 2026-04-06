@@ -70,6 +70,11 @@ export interface NormalizedSerpUrl {
   rank: number;
 }
 
+export interface NormalizedBulkSerpResult {
+  keyword: string;
+  urls: NormalizedSerpUrl[];
+}
+
 // ==========================================
 // CORE HTTP ABSTRACTION
 // ==========================================
@@ -91,8 +96,26 @@ function getAuthHeader(): string | null {
   return `Basic ${btoa(authString)}`;
 }
 
-export async function performDfsRequest(endpointPath: string, payload: any): Promise<DfsResponse<any>> {
+export async function performDfsRequest(ctx: any, endpointPath: string, payload: any): Promise<DfsResponse<any>> {
   const authHeader = getAuthHeader();
+
+  // ── Enterprise Caching Layer ──
+  const rawString = endpointPath + JSON.stringify(payload);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawString));
+  const inputHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+  // We can only use ctx if it has runQuery (means it's a mutation/action context)
+  if (ctx && typeof ctx.runQuery === 'function') {
+    try {
+      const cached = await ctx.runQuery(internal.integrations.dfsCache.getCache, { inputHash });
+      if (cached && cached.expiresAt > Date.now()) {
+        console.log(`[DataForSEO] Cache HIT for ${endpointPath}`);
+        return cached.response;
+      }
+    } catch (e) {
+      console.warn(`[DataForSEO] Cache read failed, proceeding with live fetch:`, e);
+    }
+  }
 
   // ── FALLBACK MOCK MODE ──
   // Ensures CI pipelines, local devs, and tests pass without billing actual DFS credits.
@@ -124,6 +147,19 @@ export async function performDfsRequest(endpointPath: string, payload: any): Pro
     throw new Error(`DataForSEO Internal API Error: [${json.status_code}] ${json.status_message}`);
   }
 
+  // ── Save to Cache ──
+  if (ctx && typeof ctx.runMutation === 'function') {
+    try {
+      await ctx.runMutation(internal.integrations.dfsCache.setCache, {
+        inputHash,
+        endpoint: endpointPath,
+        response: json,
+      });
+    } catch (e) {
+      console.warn(`[DataForSEO] Cache write failed:`, e);
+    }
+  }
+
   return json;
 }
 
@@ -133,7 +169,7 @@ export const executeDfsRequest = internalAction({
     payload: v.any(), // Array of tasks
   },
   handler: async (ctx, args) => {
-    return performDfsRequest(args.endpointPath, args.payload);
+    return performDfsRequest(ctx, args.endpointPath, args.payload);
   },
 });
 
@@ -163,6 +199,7 @@ export const getKeywordIdeas = internalAction({
     }];
 
     const responseData = await performDfsRequest(
+      ctx,
       '/dataforseo_labs/google/keyword_ideas/live',
       postPayload
     );
@@ -212,6 +249,7 @@ export const getTopSerpUrls = internalAction({
     }];
 
     const responseData = await performDfsRequest(
+      ctx,
       '/serp/google/organic/live',
       postPayload
     );
@@ -238,6 +276,76 @@ export const getTopSerpUrls = internalAction({
 
     return organicUrls;
   },
+});
+
+/**
+ * Bulk Get Top Organic SERP URLs (Live)
+ * Submits up to 100 keywords per payload to drastically reduce parallel HTTP contention.
+ */
+export const getBulkTopSerpUrls = internalAction({
+  args: {
+    keywords: v.array(v.string()), 
+    locationName: v.optional(v.string()), 
+    languageName: v.optional(v.string()), 
+    limit: v.optional(v.number()), 
+  },
+  handler: async (ctx, args): Promise<NormalizedBulkSerpResult[]> => {
+    if (args.keywords.length === 0) return [];
+    
+    const CHUNK_SIZE = 100; // DFS constraint limit per payload array
+    const results: NormalizedBulkSerpResult[] = [];
+    
+    for (let i = 0; i < args.keywords.length; i += CHUNK_SIZE) {
+      const chunk = args.keywords.slice(i, i + CHUNK_SIZE);
+      const postPayload = chunk.map(k => ({
+        keyword: k,
+        location_name: args.locationName || 'United States',
+        language_name: args.languageName || 'English',
+        depth: args.limit || 5,
+      }));
+
+      const responseData = await performDfsRequest(
+        ctx,
+        '/serp/google/organic/live',
+        postPayload
+      );
+
+      const tasks = responseData.tasks;
+      if (!tasks) continue;
+
+      for (let taskIndex = 0; taskIndex < tasks.length; taskIndex++) {
+        const task = tasks[taskIndex];
+        // API array result indexing matches request payload mapping 1:1
+        const requestedKeyword = chunk[taskIndex]; 
+        
+        if (!task.result || task.result.length === 0) {
+          results.push({ keyword: requestedKeyword, urls: [] });
+          continue;
+        }
+
+        const rootResult = task.result[0];
+        if (!rootResult || !rootResult.items) {
+          results.push({ keyword: requestedKeyword, urls: [] });
+          continue;
+        }
+
+        const organicUrls: NormalizedSerpUrl[] = [];
+        for (const item of rootResult.items) {
+          if (item.type === 'organic' && item.url) {
+            organicUrls.push({
+              url: item.url,
+              title: item.title || '',
+              rank: item.rank_group || 0,
+            });
+          }
+        }
+        
+        results.push({ keyword: requestedKeyword, urls: organicUrls });
+      }
+    }
+
+    return results;
+  }
 });
 
 // ==========================================
@@ -279,37 +387,46 @@ function _generateMockDfsResponse(endpoint: string, payload: any): DfsResponse<a
                     items: mockItems
                 }]
             }]
-        }
+        };
     }
 
     // Map specifically for serp/google/organic/live mock structure
     if (endpoint.includes('serp/google/organic/live')) {
-        const query = payload[0].keyword || 'seo';
+        const mockTasks: any[] = [];
         
+        if (Array.isArray(payload)) {
+            for (let i = 0; i < payload.length; i++) {
+                const taskPayload = payload[i];
+                const query = String(taskPayload.keyword || 'seo');
+                
+                mockTasks.push({
+                    id: `mock-serp-${12345 + i}`,
+                    status_code: 20000,
+                    status_message: "Ok. (MOCK MODE)",
+                    time: "0.01 sec",
+                    cost: 0,
+                    resultCount: 1,
+                    path: ["v3", "mock"],
+                    data: taskPayload,
+                    result: [{
+                        items: [
+                            { type: 'organic', rank_group: 1, url: `https://example.com/best-${query.replace(/\s+/g, '-')}`, title: `Best ${query}` },
+                            { type: 'organic', rank_group: 2, url: `https://example.com/guide-${query.replace(/\s+/g, '-')}`, title: `Guide to ${query}` },
+                            { type: 'organic', rank_group: 3, url: `https://example.com/top-${query.replace(/\s+/g, '-')}`, title: `Top ${query} Software` }
+                        ]
+                    }]
+                });
+            }
+        }
+
         return {
             version: "0.1.mock",
             status_code: 20000,
             status_message: "Ok. (MOCK SERP MODE)",
             time: "0.01 sec",
             cost: 0,
-            tasks: [{
-                id: "mock-serp-12345",
-                status_code: 20000,
-                status_message: "Ok. (MOCK MODE)",
-                time: "0.01 sec",
-                cost: 0,
-                resultCount: 1,
-                path: ["v3", "mock"],
-                data: payload[0],
-                result: [{
-                    items: [
-                        { type: 'organic', rank_group: 1, url: `https://example.com/best-${query.replace(/\s+/g, '-')}`, title: `Best ${query}` },
-                        { type: 'organic', rank_group: 2, url: `https://example.com/guide-${query.replace(/\s+/g, '-')}`, title: `Guide to ${query}` },
-                        { type: 'organic', rank_group: 3, url: `https://example.com/top-${query.replace(/\s+/g, '-')}`, title: `Top ${query} Software` },
-                    ]
-                }]
-            }]
-        }
+            tasks: mockTasks
+        };
     }
 
     // Catch-all standard mock wrapper
@@ -320,5 +437,5 @@ function _generateMockDfsResponse(endpoint: string, payload: any): DfsResponse<a
         time: "0.01 sec",
         cost: 0,
         tasks: []
-    }
+    };
 }

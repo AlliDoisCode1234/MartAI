@@ -159,7 +159,7 @@ export const runPipeline = action({
       if (typedProjectId) {
         try {
           // Fetch up to 100 recent GSC queries for the Optimization Engine
-          const latestKeywords = await ctx.runQuery(api.analytics.gscKeywords.getLatestKeywords as never, {
+          const latestKeywords = await ctx.runQuery(api.analytics.gscKeywords.getLatestKeywords as any, {
             projectId: typedProjectId,
             limit: 100,
           } as never) as Array<{ keyword: string; clicks: number; impressions: number; position: number }> | null;

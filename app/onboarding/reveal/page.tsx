@@ -112,7 +112,7 @@ export default function OnboardingRevealPage() {
 
                 // Add to local state for display
                 transformedClusters.push({
-                  _id: `temp-${Date.now()}-${Math.random()}` as unknown as ClusterId, // Temporary ID for display
+                  _id: `temp-${Date.now()}-${Math.random()}` as any, // Temporary ID for display
                   projectId: projectIdTyped,
                   clusterName: demo.clusterName || demo.topic || 'Keyword Opportunity',
                   keywords:

@@ -23,6 +23,14 @@ const TIER_WORKSPACES: Record<MembershipTier, number> = {
   enterprise: 999,
 };
 
+/** Max AI Tokens allowed to be generated per billing period */
+const TIER_TOKENS: Record<MembershipTier, number> = {
+  starter: 50_000,
+  engine: 250_000,
+  agency: 1_000_000,
+  enterprise: 5_000_000,
+};
+
 /**
  * Get max seats for a membership tier.
  * Returns 1 (starter) for unknown/undefined tiers.
@@ -41,4 +49,13 @@ export function getMaxSeatsForTier(tier: string | undefined, enterpriseOverride?
 export function getMaxWorkspacesForTier(tier: string | undefined): number {
   if (!tier) return 1;
   return TIER_WORKSPACES[tier as MembershipTier] ?? 1;
+}
+
+/**
+ * Get max AI tokens allowed per billing period based on tier.
+ * Defaults to starter plan limits if unknown.
+ */
+export function getMaxTokensForTier(tier: string | undefined): number {
+  if (!tier) return TIER_TOKENS.starter;
+  return TIER_TOKENS[tier as MembershipTier] ?? TIER_TOKENS.starter;
 }

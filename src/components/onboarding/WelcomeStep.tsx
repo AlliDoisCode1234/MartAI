@@ -48,8 +48,8 @@ const INDUSTRY_OPTIONS = [
 ];
 
 type Props = {
-  formData: { businessName: string; website: string; industry?: string };
-  onFormChange: (data: { businessName: string; website: string; industry?: string }) => void;
+  formData: { businessName: string; website: string; industry?: string; customIndustry?: string };
+  onFormChange: (data: { businessName: string; website: string; industry?: string; customIndustry?: string }) => void;
   onNext: () => void;
   loading: boolean;
 };
@@ -141,6 +141,17 @@ export function WelcomeStep({ formData, onFormChange, onNext, loading }: Props) 
                   </option>
                 ))}
               </Select>
+              {formData.industry === 'other' && (
+                <Box mt={3} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} as={motion.div}>
+                  <Input
+                    placeholder="Please specify your industry..."
+                    value={formData.customIndustry || ''}
+                    onChange={(e) => onFormChange({ ...formData, customIndustry: e.target.value })}
+                    size="lg"
+                    autoFocus
+                  />
+                </Box>
+              )}
               <Text fontSize="xs" color="gray.500" mt={1}>
                 Helps us provide more relevant keyword and content recommendations
               </Text>

@@ -6,9 +6,10 @@
  */
 
 import { v } from 'convex/values';
-import { internalMutation, query } from '../../_generated/server';
+import { internalMutation, query, internalQuery } from '../../_generated/server';
 import { Id } from '../../_generated/dataModel';
 import { requireSuperAdmin } from '../../lib/rbac';
+import { getMaxTokensForTier } from '../../lib/tierLimits';
 
 // Model cost rates per 1K tokens (in USD)
 const MODEL_COSTS: Record<string, { input: number; output: number }> = {
@@ -398,6 +399,45 @@ export const getCostPerUser = query({
       totalCost: Math.round(totalCost * 100) / 100,
       topUsers,
       startDate: startDateKey,
+    };
+  },
+});
+
+/**
+ * Check if user has exceeded their rolling 30-day token limit.
+ * Used by the AI Router circuit breaker.
+ */
+export const checkTokenLimit = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx: any, args: any) => {
+    // 1. Get tier limit for user
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error('[usageTracking] User not found during token limit check');
+    }
+    
+    // We import getMaxTokensForTier dynamically or statically
+    const maxTokens = getMaxTokensForTier(user.membershipTier || 'starter');
+    
+    // 2. Sum up total tokens across the last 30 days
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    const startDateKey = startDate.toISOString().split('T')[0];
+
+    // Using index to efficiently fetch 30 days of data for this user
+    const usage = await ctx.db
+      .query('aiUsage')
+      .withIndex('by_user_date', (q: any) => 
+        q.eq('userId', args.userId).gte('dateKey', startDateKey)
+      )
+      .collect();
+
+    const usedTokens = usage.reduce((sum: number, u: any) => sum + u.totalTokens, 0);
+
+    return { 
+      allowed: usedTokens < maxTokens, 
+      usedTokens, 
+      maxTokens 
     };
   },
 });

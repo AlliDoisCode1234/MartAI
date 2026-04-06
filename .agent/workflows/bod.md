@@ -186,6 +186,9 @@ These personas act as historical anchors, representing definitive architectural 
 #### Context Node 00013 (docs/personas/bot_persona_ANALYTICS_COMPILER_REMEDIATION_00013_PERSONA.md)
 - Ask: "What decisions were made regarding GA4 Organic Filters versus Total Traffic, resolving generic TS compiler errors in the Convex scheduler, and handling Convex backend-only deployment out-of-sync production errors?"
 
+#### Context Node 00014 (docs/personas/bot_persona_DATAFORSEO_SECURITY_REMEDIATION_00014_PERSONA.md)
+- Ask: "What decisions were made during the DataForSEO integration regarding IDOR BOLA patching, data contract typings, and inserting the ZERO penetration testing persona?"
+
 ---
 
 ## Consultation Process

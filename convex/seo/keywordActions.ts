@@ -326,24 +326,30 @@ export const generateClusters = action({
     );
 
     // [Cost Control Rule]: 1 API hit per cluster for SERP analysis (using the primary keyword)
-    await Promise.allSettled(
-      clusters.map(async (cluster) => {
-        if (cluster.keywords.length > 0) {
-          try {
-            const topSerpUrls = await ctx.runAction(internal.integrations.dataForSeo.getTopSerpUrls, {
-               keyword: cluster.keywords[0],
-               limit: 5
-            }) as NormalizedSerpUrl[];
-            
-            if (topSerpUrls && topSerpUrls.length > 0) {
-              cluster.topSerpUrls = topSerpUrls.map(u => u.url);
+    // [Network Efficiency]: Batched deeply into a single external HTTP transaction via getBulkTopSerpUrls
+    const serpsToFetch = clusters
+      .filter((c) => c.keywords.length > 0)
+      .map((c) => c.keywords[0]);
+      
+    if (serpsToFetch.length > 0) {
+      try {
+        const bulkSerps = await ctx.runAction(internal.integrations.dataForSeo.getBulkTopSerpUrls, {
+          keywords: serpsToFetch,
+          limit: 5
+        }) as any[];
+        
+        for (const cluster of clusters) {
+          if (cluster.keywords.length > 0) {
+            const match = bulkSerps.find(s => s.keyword === cluster.keywords[0]);
+            if (match && match.urls && match.urls.length > 0) {
+              cluster.topSerpUrls = match.urls.map((u: any) => u.url);
             }
-          } catch (serpError) {
-            console.warn(`SERP fetch failed for cluster ${cluster.clusterName}:`, serpError);
           }
         }
-      })
-    );
+      } catch (serpError) {
+        console.warn(`Bulk SERP fetch failed:`, serpError);
+      }
+    }
 
     let createdCount = 0;
     for (const cluster of clusters) {

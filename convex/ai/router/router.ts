@@ -65,6 +65,18 @@ export const generateWithFallback = action({
       throw new Error('[AIRouter] No configured AI providers available');
     }
 
+    // Enforce 30-day Tier Token Limits
+    if (args.userId) {
+      const limitCheck = await ctx.runQuery(internal.ai.admin.usageTracking.checkTokenLimit, {
+        userId: args.userId,
+      });
+
+      // Defensively check object shape since it can technically return false or break bounds
+      if (limitCheck && typeof limitCheck === 'object' && !limitCheck.allowed) {
+        throw new Error(`[AIRouter] Token Limit Exceeded: You have used ${limitCheck.usedTokens?.toLocaleString() ?? 0} tokens of your ${limitCheck.maxTokens?.toLocaleString() ?? 0} 30-day limit.`);
+      }
+    }
+
     // Try each provider in order
     for (const { provider, modelId, providerId } of providers) {
       // Check circuit state

@@ -17,8 +17,25 @@ export const handleSubscriptionUpdate = internalMutation({
     status: v.string(),
     currentPeriodEnd: v.number(),
     cancelAtPeriodEnd: v.boolean(),
+    eventId: v.optional(v.string()),
+    eventType: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // 0. Idempotency Check
+    if (args.eventId) {
+      const existing = await ctx.db
+        .query('stripeProcessedEvents')
+        .withIndex('by_event_id', (q) => q.eq('eventId', args.eventId as string))
+        .first();
+        
+      if (existing) {
+        console.log(`[Webhook Sync] Idempotency catch: Event ${args.eventId} already processed. Skipping.`);
+        return;
+      }
+      
+      // We will mark it as processed at the VERY END if everything succeeds
+    }
+
     // 1. Find the user by casting stripeUserId to a typed users Id or retrieving via Stripe Customer ID
     let user = null;
     if (args.stripeUserId.startsWith('cus_')) {
@@ -123,6 +140,15 @@ export const handleSubscriptionUpdate = internalMutation({
         event: BI_EVENTS.SUBSCRIPTION_CREATED,
         userId: user._id,
         properties: { tier: mappedTier },
+      });
+    }
+
+    // Mark as processed successfully
+    if (args.eventId) {
+      await ctx.db.insert('stripeProcessedEvents', {
+        eventId: args.eventId,
+        eventType: args.eventType ?? 'unknown',
+        processedAt: Date.now(),
       });
     }
   },
