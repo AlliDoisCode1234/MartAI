@@ -190,8 +190,8 @@ export const fetchGoogleSeoFeed = internalAction({
  */
 export const refreshSeoFeed = action({
   args: {},
-  handler: async (ctx) => {
-    return await ctx.runAction(internal.seo.googleSeoFeed.fetchGoogleSeoFeed, {});
+  handler: async (ctx): Promise<{ success: boolean; entriesFound?: number; entriesStored?: number; error?: string }> => {
+    return (await ctx.runAction(internal.seo.googleSeoFeed.fetchGoogleSeoFeed, {})) as { success: boolean; entriesFound?: number; entriesStored?: number; error?: string };
   },
 });
 

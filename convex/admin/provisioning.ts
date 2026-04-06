@@ -36,7 +36,8 @@ export const provisionSubscription = mutation({
 
     // Using scheduler.runAfter(0, ...) is the Convex-recommended pattern
     // for calling internal mutations from regular mutations without type recursion
-    await ctx.scheduler.runAfter(0, internal.subscriptions.subscriptions.upsertSubscription, {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await ctx.scheduler.runAfter(0, internal.subscriptions.subscriptions.upsertSubscription as any, {
       userId: args.targetUserId,
       planTier: args.planTier,
       status: args.status,

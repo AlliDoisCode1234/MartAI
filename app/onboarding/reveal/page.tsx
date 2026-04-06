@@ -6,7 +6,7 @@ import { Box, Container, VStack, Heading, Text, Button, Alert, AlertIcon } from 
 import { PageLoadingSkeleton } from '@/components/skeletons';
 import { useAuth } from '@/lib/useAuth';
 import { KeywordReveal } from '@/src/components/KeywordReveal';
-import type { KeywordCluster } from '@/types';
+import type { KeywordCluster, ClusterId } from '@/types';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
@@ -22,19 +22,6 @@ export default function OnboardingRevealPage() {
 
   const createCluster = useMutation(api.seo.keywordClusters.createCluster);
 
-  useEffect(() => {
-    // Wait for auth to finish loading
-    if (authLoading) {
-      return;
-    }
-
-    if (!isAuthenticated) {
-      router.replace('/auth/login');
-      return;
-    }
-
-    loadClusters();
-  }, [isAuthenticated, authLoading, router, loadClusters]);
 
   const loadClusters = useCallback(async () => {
     try {
@@ -107,7 +94,7 @@ export default function OnboardingRevealPage() {
               // Save to Convex
               try {
                 await createCluster({
-                  projectId: projectIdTyped as Id<'projects'>,
+                  projectId: projectIdTyped as unknown as Id<'projects'>,
                   clusterName: demo.clusterName || demo.topic || 'Keyword Opportunity',
                   keywords:
                     demo.keywords ||
@@ -125,7 +112,7 @@ export default function OnboardingRevealPage() {
 
                 // Add to local state for display
                 transformedClusters.push({
-                  _id: `temp-${Date.now()}-${Math.random()}` as Id<'keywordClusters'>, // Temporary ID for display
+                  _id: `temp-${Date.now()}-${Math.random()}` as unknown as ClusterId, // Temporary ID for display
                   projectId: projectIdTyped,
                   clusterName: demo.clusterName || demo.topic || 'Keyword Opportunity',
                   keywords:
@@ -169,6 +156,20 @@ export default function OnboardingRevealPage() {
       setLoading(false);
     }
   }, [router, createCluster]);
+
+  useEffect(() => {
+    // Wait for auth to finish loading
+    if (authLoading) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      router.replace('/auth/login');
+      return;
+    }
+
+    loadClusters();
+  }, [isAuthenticated, authLoading, router, loadClusters]);
 
   const handleRevealComplete = () => {
     setRevealComplete(true);

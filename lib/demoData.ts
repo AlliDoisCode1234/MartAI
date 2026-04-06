@@ -64,7 +64,7 @@ export type DemoData = {
 const FALLBACK_INDUSTRY = 'local services';
 const FALLBACK_AUDIENCE = 'busy professionals';
 
-export function generateDemoData(request: DemoRequest): DemoData {
+export async function generateDemoData(request: DemoRequest): Promise<DemoData> {
   const { url, companyName, industry, targetAudience } = request;
   const host = safeHost(url);
   const inferredCompany = companyName || formatCompanyName(host);
@@ -74,7 +74,7 @@ export function generateDemoData(request: DemoRequest): DemoData {
   const tone = inferTone(inferredIndustry);
   const baseScore = 78;
 
-  const keywordClusters: KeywordCluster[] = [
+  const defaultMockClusters: KeywordCluster[] = [
     {
       _id: demoClusterId('demo-cluster-1'),
       projectId: demoProjectId('demo-project'),
@@ -133,6 +133,72 @@ export function generateDemoData(request: DemoRequest): DemoData {
       updatedAt: Date.now(),
     },
   ];
+
+  let keywordClusters = defaultMockClusters;
+
+  const targetKeywords = Array.from(new Set(defaultMockClusters.flatMap((c) => c.keywords)));
+  const login = process.env.DATAFORSEO_LOGIN;
+  const password = process.env.DATAFORSEO_PASSWORD;
+  const enableLive = process.env.ENABLE_LIVE_ONBOARDING === 'true';
+
+  if (login && password && enableLive) {
+    try {
+      const authString = `${login}:${password}`;
+      const authHeader = `Basic ${btoa(authString)}`;
+
+      const res = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_ideas/live', {
+        method: 'POST',
+        headers: {
+          Authorization: authHeader,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([
+          {
+            keywords: targetKeywords,
+            location_name: 'United States',
+            language_name: 'English',
+            limit: 50,
+          },
+        ]),
+        signal: AbortSignal.timeout(5000), // Strict 5s Edge Failsafe
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const items = json.tasks?.[0]?.result?.[0]?.items || [];
+
+        const dataMap = new Map();
+        for (const item of items) {
+          dataMap.set(item.keyword.toLowerCase(), item);
+        }
+
+        keywordClusters = defaultMockClusters.map((cluster) => {
+          let totalVolume = 0;
+          let avgDiff = 0;
+          let validKeywords = 0;
+          for (const k of cluster.keywords) {
+            const data = dataMap.get(k.toLowerCase());
+            if (data) {
+              totalVolume += data.keyword_info?.search_volume || 0;
+              avgDiff += data.keyword_difficulty || 50;
+              validKeywords++;
+            }
+          }
+          if (validKeywords > 0) {
+            cluster.difficulty = Math.round(avgDiff / validKeywords);
+            // Recompute cluster volume with ±20% natural variance range to look realistic
+            cluster.volumeRange = {
+              min: Math.floor(totalVolume * 0.8),
+              max: Math.ceil(totalVolume * 1.2),
+            };
+          }
+          return cluster;
+        });
+      }
+    } catch (e) {
+      console.warn('[Onboarding] DataForSEO edge fetch failed. Degrading to mock data.', e);
+    }
+  }
 
   const seoAudit: DemoSeoAudit = {
     overallScore: baseScore,
