@@ -9,6 +9,7 @@ import { v } from 'convex/values';
 import { internalMutation, query, internalQuery } from '../../_generated/server';
 import { Id } from '../../_generated/dataModel';
 import { requireSuperAdmin } from '../../lib/rbac';
+import { getMaxTokensForTier } from '../../lib/tierLimits';
 
 // Model cost rates per 1K tokens (in USD)
 const MODEL_COSTS: Record<string, { input: number; output: number }> = {
@@ -411,19 +412,12 @@ export const checkTokenLimit = internalQuery({
   handler: async (ctx: any, args: any) => {
     // 1. Get tier limit for user
     const user = await ctx.db.get(args.userId);
-    if (!user) return false;
+    if (!user) {
+      throw new Error('[usageTracking] User not found during token limit check');
+    }
     
     // We import getMaxTokensForTier dynamically or statically
-    // But since we can't easily modify the top of the file here without breaking lines,
-    // let's just use a duplicate check or use the tierLimits module
-    
-    const TIER_TOKENS: Record<string, number> = {
-      starter: 50_000,
-      engine: 250_000,
-      agency: 1_000_000,
-      enterprise: 5_000_000,
-    };
-    const maxTokens = TIER_TOKENS[user.membershipTier || 'starter'] || TIER_TOKENS.starter;
+    const maxTokens = getMaxTokensForTier(user.membershipTier || 'starter');
     
     // 2. Sum up total tokens across the last 30 days
     const startDate = new Date();
@@ -433,8 +427,9 @@ export const checkTokenLimit = internalQuery({
     // Using index to efficiently fetch 30 days of data for this user
     const usage = await ctx.db
       .query('aiUsage')
-      .withIndex('by_user_date', (q: any) => q.eq('userId', args.userId))
-      .filter((q: any) => q.gte(q.field('dateKey'), startDateKey))
+      .withIndex('by_user_date', (q: any) => 
+        q.eq('userId', args.userId).gte('dateKey', startDateKey)
+      )
       .collect();
 
     const usedTokens = usage.reduce((sum: number, u: any) => sum + u.totalTokens, 0);

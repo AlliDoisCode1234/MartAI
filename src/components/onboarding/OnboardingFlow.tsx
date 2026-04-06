@@ -76,7 +76,7 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
 
   // Restore existing project if user has one (prevents LIMIT_REACHED on retry)
   useEffect(() => {
-    if (existingProjects && existingProjects.length > 0 && !projectId) {
+    if (!isSubsequentProject && existingProjects && existingProjects.length > 0 && !projectId) {
       const existingProject = existingProjects[0];
       console.log('[ONBOARDING] Restoring existing project:', existingProject._id);
       setProjectId(existingProject._id);
@@ -90,7 +90,7 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
         setFormData((prev) => ({ ...prev, website: existingProject.websiteUrl }));
       }
     }
-  }, [existingProjects, projectId]);
+  }, [existingProjects, projectId, isSubsequentProject]);
 
   // Cache email when user loads
   useEffect(() => {
@@ -120,6 +120,12 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
         hasRestoredStep.current = true;
         return;
       }
+    }
+
+    // Do NOT restore global DB onboarding step flags if creating a brand new project
+    if (isSubsequentProject) {
+      hasRestoredStep.current = true;
+      return;
     }
 
     // Compute step from onboardingSteps boolean flags
@@ -532,6 +538,7 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
 
   const handleStep3Next = async () => {
     await createAndAdvanceProject();
+    nextStep();
   };
 
   // Step 4: GA4 connection - full page redirect (more reliable than popup)

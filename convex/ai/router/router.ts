@@ -71,8 +71,9 @@ export const generateWithFallback = action({
         userId: args.userId,
       });
 
-      if (!limitCheck.allowed) {
-        throw new Error(`[AIRouter] Token Limit Exceeded: You have used ${limitCheck.usedTokens.toLocaleString()} tokens of your ${limitCheck.maxTokens.toLocaleString()} 30-day limit.`);
+      // Defensively check object shape since it can technically return false or break bounds
+      if (limitCheck && typeof limitCheck === 'object' && !limitCheck.allowed) {
+        throw new Error(`[AIRouter] Token Limit Exceeded: You have used ${limitCheck.usedTokens?.toLocaleString() ?? 0} tokens of your ${limitCheck.maxTokens?.toLocaleString() ?? 0} 30-day limit.`);
       }
     }
 
