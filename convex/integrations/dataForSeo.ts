@@ -4,8 +4,9 @@ import { fetchWithExponentialBackoff } from '../lib/apiResilience';
 import { internal } from '../_generated/api';
 
 /**
- * DATAFORSEO INTEGRATION ARCHITECTURE
- * 
+ * DATAFORSEO INTEGRATION ARCHITECTURE SYNC
+ *
+ *
  * Strict implementation of DataForSEO API v3.
  * Adheres to SEAN's Board Guidelines:
  * - Always uses Basic Auth with Base64 encoding.
@@ -96,13 +97,19 @@ function getAuthHeader(): string | null {
   return `Basic ${btoa(authString)}`;
 }
 
-export async function performDfsRequest(ctx: any, endpointPath: string, payload: any): Promise<DfsResponse<any>> {
+export async function performDfsRequest(
+  ctx: any,
+  endpointPath: string,
+  payload: any
+): Promise<DfsResponse<any>> {
   const authHeader = getAuthHeader();
 
   // ── Enterprise Caching Layer ──
   const rawString = endpointPath + JSON.stringify(payload);
   const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawString));
-  const inputHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const inputHash = Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 
   // We can only use ctx if it has runQuery (means it's a mutation/action context)
   if (ctx && typeof ctx.runQuery === 'function') {
@@ -120,17 +127,19 @@ export async function performDfsRequest(ctx: any, endpointPath: string, payload:
   // ── FALLBACK MOCK MODE ──
   // Ensures CI pipelines, local devs, and tests pass without billing actual DFS credits.
   if (!authHeader) {
-    console.warn(`[DataForSEO] Missing API Credentials. Triggering Mock Fallback Route for ${endpointPath}`);
+    console.warn(
+      `[DataForSEO] Missing API Credentials. Triggering Mock Fallback Route for ${endpointPath}`
+    );
     return _generateMockDfsResponse(endpointPath, payload);
   }
 
   const url = `${DFS_API_BASE}${endpointPath}`;
-  
+
   // Using MartAI's infrastructure resilience wrapper for automatic retry handling
   const response = await fetchWithExponentialBackoff(url, {
     method: 'POST',
     headers: {
-      'Authorization': authHeader,
+      Authorization: authHeader,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
@@ -188,15 +197,16 @@ export const getKeywordIdeas = internalAction({
     languageName: v.optional(v.string()), // Default: "English"
   },
   handler: async (ctx, args): Promise<NormalizedKeywordMetric[]> => {
-    
     // Per the DataForSEO v3 guidelines, payload must be an array of query objects
-    const postPayload = [{
-      keywords: args.keywords,
-      location_name: args.locationName || 'United States',
-      language_name: args.languageName || 'English',
-      // Optional limits for cost control
-      limit: 50,
-    }];
+    const postPayload = [
+      {
+        keywords: args.keywords,
+        location_name: args.locationName || 'United States',
+        language_name: args.languageName || 'English',
+        // Optional limits for cost control
+        limit: 50,
+      },
+    ];
 
     const responseData = await performDfsRequest(
       ctx,
@@ -219,7 +229,7 @@ export const getKeywordIdeas = internalAction({
     const rawItems: DfsKeywordIdeaResult[] = rootResult.items;
 
     // Nomenclature mapping loop
-    return rawItems.map(item => ({
+    return rawItems.map((item) => ({
       keyword: item.keyword,
       monthlySearches: item.keyword_info?.search_volume ?? 0,
       adCostCpc: item.keyword_info?.cpc ?? 0,
@@ -241,18 +251,16 @@ export const getTopSerpUrls = internalAction({
     limit: v.optional(v.number()), // Defaults to 5 based on LDD Scope
   },
   handler: async (ctx, args): Promise<NormalizedSerpUrl[]> => {
-    const postPayload = [{
-      keyword: args.keyword,
-      location_name: args.locationName || 'United States',
-      language_name: args.languageName || 'English',
-      depth: args.limit || 5,
-    }];
+    const postPayload = [
+      {
+        keyword: args.keyword,
+        location_name: args.locationName || 'United States',
+        language_name: args.languageName || 'English',
+        depth: args.limit || 5,
+      },
+    ];
 
-    const responseData = await performDfsRequest(
-      ctx,
-      '/serp/google/organic/live',
-      postPayload
-    );
+    const responseData = await performDfsRequest(ctx, '/serp/google/organic/live', postPayload);
 
     const tasks = responseData.tasks;
     if (!tasks || tasks.length === 0 || !tasks[0].result) return [];
@@ -284,31 +292,27 @@ export const getTopSerpUrls = internalAction({
  */
 export const getBulkTopSerpUrls = internalAction({
   args: {
-    keywords: v.array(v.string()), 
-    locationName: v.optional(v.string()), 
-    languageName: v.optional(v.string()), 
-    limit: v.optional(v.number()), 
+    keywords: v.array(v.string()),
+    locationName: v.optional(v.string()),
+    languageName: v.optional(v.string()),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<NormalizedBulkSerpResult[]> => {
     if (args.keywords.length === 0) return [];
-    
+
     const CHUNK_SIZE = 100; // DFS constraint limit per payload array
     const results: NormalizedBulkSerpResult[] = [];
-    
+
     for (let i = 0; i < args.keywords.length; i += CHUNK_SIZE) {
       const chunk = args.keywords.slice(i, i + CHUNK_SIZE);
-      const postPayload = chunk.map(k => ({
+      const postPayload = chunk.map((k) => ({
         keyword: k,
         location_name: args.locationName || 'United States',
         language_name: args.languageName || 'English',
         depth: args.limit || 5,
       }));
 
-      const responseData = await performDfsRequest(
-        ctx,
-        '/serp/google/organic/live',
-        postPayload
-      );
+      const responseData = await performDfsRequest(ctx, '/serp/google/organic/live', postPayload);
 
       const tasks = responseData.tasks;
       if (!tasks) continue;
@@ -316,8 +320,8 @@ export const getBulkTopSerpUrls = internalAction({
       for (let taskIndex = 0; taskIndex < tasks.length; taskIndex++) {
         const task = tasks[taskIndex];
         // API array result indexing matches request payload mapping 1:1
-        const requestedKeyword = chunk[taskIndex]; 
-        
+        const requestedKeyword = chunk[taskIndex];
+
         if (!task.result || task.result.length === 0) {
           results.push({ keyword: requestedKeyword, urls: [] });
           continue;
@@ -339,13 +343,13 @@ export const getBulkTopSerpUrls = internalAction({
             });
           }
         }
-        
+
         results.push({ keyword: requestedKeyword, urls: organicUrls });
       }
     }
 
     return results;
-  }
+  },
 });
 
 // ==========================================
@@ -353,89 +357,109 @@ export const getBulkTopSerpUrls = internalAction({
 // ==========================================
 
 function _generateMockDfsResponse(endpoint: string, payload: any): DfsResponse<any> {
-    
-    // Map specifically for keyword_ideas/live mock structure
-    if (endpoint.includes('keyword_ideas/live')) {
-        const queryList = payload[0].keywords || ['seo'];
-        
-        const mockItems = queryList.map((q: string) => ({
-            keyword: `${q} mock extension`,
-            keyword_difficulty: Math.floor(Math.random() * 40) + 40,
-            keyword_info: {
-                search_volume: Math.floor(Math.random() * 10000) + 100,
-                cpc: parseFloat((Math.random() * 10 + 1).toFixed(2)),
-                competition_level: Math.random() > 0.5 ? 'HIGH' : 'MEDIUM'
-            }
-        }));
+  // Map specifically for keyword_ideas/live mock structure
+  if (endpoint.includes('keyword_ideas/live')) {
+    const queryList = payload[0].keywords || ['seo'];
 
-        return {
-            version: "0.1.mock",
-            status_code: 20000,
-            status_message: "Ok. (MOCK MODE)",
-            time: "0.01 sec",
-            cost: 0,
-            tasks: [{
-                id: "mock-task-12345",
-                status_code: 20000,
-                status_message: "Ok. (MOCK MODE)",
-                time: "0.01 sec",
-                cost: 0,
-                resultCount: 1,
-                path: ["v3", "mock"],
-                data: payload[0],
-                result: [{
-                    items: mockItems
-                }]
-            }]
-        };
-    }
+    const mockItems = queryList.map((q: string) => ({
+      keyword: `${q} mock extension`,
+      keyword_difficulty: Math.floor(Math.random() * 40) + 40,
+      keyword_info: {
+        search_volume: Math.floor(Math.random() * 10000) + 100,
+        cpc: parseFloat((Math.random() * 10 + 1).toFixed(2)),
+        competition_level: Math.random() > 0.5 ? 'HIGH' : 'MEDIUM',
+      },
+    }));
 
-    // Map specifically for serp/google/organic/live mock structure
-    if (endpoint.includes('serp/google/organic/live')) {
-        const mockTasks: any[] = [];
-        
-        if (Array.isArray(payload)) {
-            for (let i = 0; i < payload.length; i++) {
-                const taskPayload = payload[i];
-                const query = String(taskPayload.keyword || 'seo');
-                
-                mockTasks.push({
-                    id: `mock-serp-${12345 + i}`,
-                    status_code: 20000,
-                    status_message: "Ok. (MOCK MODE)",
-                    time: "0.01 sec",
-                    cost: 0,
-                    resultCount: 1,
-                    path: ["v3", "mock"],
-                    data: taskPayload,
-                    result: [{
-                        items: [
-                            { type: 'organic', rank_group: 1, url: `https://example.com/best-${query.replace(/\s+/g, '-')}`, title: `Best ${query}` },
-                            { type: 'organic', rank_group: 2, url: `https://example.com/guide-${query.replace(/\s+/g, '-')}`, title: `Guide to ${query}` },
-                            { type: 'organic', rank_group: 3, url: `https://example.com/top-${query.replace(/\s+/g, '-')}`, title: `Top ${query} Software` }
-                        ]
-                    }]
-                });
-            }
-        }
-
-        return {
-            version: "0.1.mock",
-            status_code: 20000,
-            status_message: "Ok. (MOCK SERP MODE)",
-            time: "0.01 sec",
-            cost: 0,
-            tasks: mockTasks
-        };
-    }
-
-    // Catch-all standard mock wrapper
     return {
-        version: "0.1.mock",
-        status_code: 20000,
-        status_message: "Ok. (MOCK MODE UNMAPPED)",
-        time: "0.01 sec",
-        cost: 0,
-        tasks: []
+      version: '0.1.mock',
+      status_code: 20000,
+      status_message: 'Ok. (MOCK MODE)',
+      time: '0.01 sec',
+      cost: 0,
+      tasks: [
+        {
+          id: 'mock-task-12345',
+          status_code: 20000,
+          status_message: 'Ok. (MOCK MODE)',
+          time: '0.01 sec',
+          cost: 0,
+          resultCount: 1,
+          path: ['v3', 'mock'],
+          data: payload[0],
+          result: [
+            {
+              items: mockItems,
+            },
+          ],
+        },
+      ],
     };
+  }
+
+  // Map specifically for serp/google/organic/live mock structure
+  if (endpoint.includes('serp/google/organic/live')) {
+    const mockTasks: any[] = [];
+
+    if (Array.isArray(payload)) {
+      for (let i = 0; i < payload.length; i++) {
+        const taskPayload = payload[i];
+        const query = String(taskPayload.keyword || 'seo');
+
+        mockTasks.push({
+          id: `mock-serp-${12345 + i}`,
+          status_code: 20000,
+          status_message: 'Ok. (MOCK MODE)',
+          time: '0.01 sec',
+          cost: 0,
+          resultCount: 1,
+          path: ['v3', 'mock'],
+          data: taskPayload,
+          result: [
+            {
+              items: [
+                {
+                  type: 'organic',
+                  rank_group: 1,
+                  url: `https://example.com/best-${query.replace(/\s+/g, '-')}`,
+                  title: `Best ${query}`,
+                },
+                {
+                  type: 'organic',
+                  rank_group: 2,
+                  url: `https://example.com/guide-${query.replace(/\s+/g, '-')}`,
+                  title: `Guide to ${query}`,
+                },
+                {
+                  type: 'organic',
+                  rank_group: 3,
+                  url: `https://example.com/top-${query.replace(/\s+/g, '-')}`,
+                  title: `Top ${query} Software`,
+                },
+              ],
+            },
+          ],
+        });
+      }
+    }
+
+    return {
+      version: '0.1.mock',
+      status_code: 20000,
+      status_message: 'Ok. (MOCK SERP MODE)',
+      time: '0.01 sec',
+      cost: 0,
+      tasks: mockTasks,
+    };
+  }
+
+  // Catch-all standard mock wrapper
+  return {
+    version: '0.1.mock',
+    status_code: 20000,
+    status_message: 'Ok. (MOCK MODE UNMAPPED)',
+    time: '0.01 sec',
+    cost: 0,
+    tasks: [],
+  };
 }
