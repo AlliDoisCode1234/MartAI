@@ -403,6 +403,7 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
           name: formData.businessName || 'My Business',
           websiteUrl,
           industry: finalIndustry || undefined,
+          organizationId: user?.organizationId || undefined,
         });
         if (newProjectId) {
           setProjectId(newProjectId);
