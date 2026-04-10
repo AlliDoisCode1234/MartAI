@@ -448,6 +448,106 @@ async function buildFallbackKeywords(
   }));
 }
 
+export const createManualClusterWithMetrics = action({
+  args: {
+    projectId: v.id('projects'),
+    clusterName: v.string(),
+    keywords: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // 1. Authenticate user
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    // Extract unique keywords
+    const keywords = [...new Set(args.keywords.map((k) => k.trim()).filter(Boolean))];
+    if (keywords.length < 3) throw new Error('A cluster needs at least 3 unique keywords');
+
+    // 2. Fetch Metrics from DataForSEO
+    let volumeRange = { min: 0, max: 0 };
+    let difficulty = 50;
+    let intent = 'informational';
+    let impactScore = 0.5;
+
+    try {
+      const rawMetrics = await ctx.runAction(internal.integrations.dataForSeo.getKeywordIdeas, {
+        keywords,
+      });
+
+      if (rawMetrics && rawMetrics.length > 0) {
+        difficulty = Math.round(
+          rawMetrics.reduce((sum: number, m: NormalizedKeywordMetric) => sum + (m.rankingDifficulty ?? 50), 0) /
+            rawMetrics.length
+        );
+        const volumes = rawMetrics
+          .map((m: NormalizedKeywordMetric) => m.monthlySearches ?? 0)
+          .filter((v: number) => v > 0);
+        if (volumes.length > 0) {
+          volumeRange = { min: Math.min(...volumes), max: Math.max(...volumes) };
+        }
+
+        // Use intent from top keyword
+        const topMetric = rawMetrics[0];
+        intent =
+          topMetric.paidCompetition === 'HIGH'
+            ? 'commercial'
+            : topMetric.paidCompetition === 'MEDIUM'
+              ? 'transactional'
+              : 'informational';
+
+        // Simple impact calculation based on DFS Data
+        const avgVol = (volumeRange.min + volumeRange.max) / 2;
+        impactScore = Math.min((avgVol / 10000) * 0.4 + (1 - difficulty / 100) * 0.3 + 0.3, 1);
+      }
+    } catch (e) {
+      console.warn('Manual cluster DFS metric fetch failed:', e);
+    }
+
+    // 3. Fetch Top SERPs from DataForSEO (Batch lookup for the primary keyword)
+    let topSerpUrls: string[] = [];
+    try {
+      if (keywords.length > 0) {
+        const bulkSerps = (await ctx.runAction(internal.integrations.dataForSeo.getBulkTopSerpUrls, {
+          keywords: [keywords[0]],
+          limit: 5,
+        })) as any[];
+
+        if (bulkSerps && bulkSerps.length > 0 && bulkSerps[0].urls) {
+          topSerpUrls = bulkSerps[0].urls.map((u: any) => u.url);
+        }
+      }
+    } catch (e) {
+      console.warn('Manual cluster DFS SERP fetch failed:', e);
+    }
+
+    // 4. Create the cluster mapping using actual DFS payload metrics
+    const clusterId = await ctx.runMutation(api.seo.keywordClusters.createCluster, {
+      projectId: args.projectId,
+      clusterName: args.clusterName,
+      keywords,
+      intent,
+      difficulty,
+      volumeRange,
+      impactScore: Math.round(impactScore * 100) / 100,
+      topSerpUrls,
+      status: 'active',
+      createdAt: Date.now(),
+    });
+
+    // 5. Insert these keywords into global keyword pool so the counts update correctly
+    const keywordInputs = keywords.map((kw) => ({
+      keyword: kw,
+      volume: volumeRange.max,
+      difficulty,
+      intent,
+    }));
+    await insertKeywordsFromInputs(ctx, args.projectId, keywordInputs);
+    await ctx.runMutation(api.seo.keywords.linkKeywordsToClusters, { projectId: args.projectId });
+
+    return clusterId;
+  },
+});
+
 export const splitCluster = action({
   args: {
     clusterId: v.id('keywordClusters'),

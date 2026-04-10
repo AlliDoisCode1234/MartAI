@@ -37,22 +37,17 @@ const MART_MESSAGES: Record<string, { greeting: string; tip: string; action?: st
     tip: 'Your dashboard shows keyword opportunities and content status.',
     action: 'View Keywords',
   },
-  '/strategy': {
-    greeting: 'Time to build your content strategy!',
-    tip: 'Start by adding keywords, then cluster them into topics.',
-    action: 'Add Keywords',
-  },
-  '/keywords': {
+  '/studio/keywords': {
     greeting: "Let's find keywords that rank!",
     tip: 'Focus on high PR Score keywords for quick wins.',
     action: 'Import from GSC',
   },
-  '/calendar': {
+  '/studio/calendar': {
     greeting: 'Plan your content schedule!',
     tip: 'Consistent publishing (2-4x/week) drives best results.',
     action: 'Create Brief',
   },
-  '/content': {
+  '/studio/create': {
     greeting: 'Ready to write great content!',
     tip: "I'll help generate outlines and drafts for you.",
     action: 'Start Writing',

@@ -33,7 +33,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   {
     label: 'Track Keywords',
     subtitle: 'Track Performance',
-    href: '/keywords',
+    href: '/studio/keywords',
     icon: FiTarget,
     iconColor: '#60a5fa',
   },

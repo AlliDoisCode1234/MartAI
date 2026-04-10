@@ -27,17 +27,12 @@ import {
   PlanSelectionStep,
   PaymentStep,
   IntegrationStep,
-  ProcessingStep,
 } from '@/src/components/onboarding';
 
 // Constants
 import { getUserEmail, cacheUserEmail } from '@/lib/constants/onboarding';
 
-interface OnboardingFlowProps {
-  isSubsequentProject?: boolean;
-}
-
-export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowProps) {
+export function OnboardingFlow() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
@@ -76,7 +71,7 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
 
   // Restore existing project if user has one (prevents LIMIT_REACHED on retry)
   useEffect(() => {
-    if (!isSubsequentProject && existingProjects && existingProjects.length > 0 && !projectId) {
+    if (existingProjects && existingProjects.length > 0 && !projectId) {
       const existingProject = existingProjects[0];
       console.log('[ONBOARDING] Restoring existing project:', existingProject._id);
       setProjectId(existingProject._id);
@@ -90,7 +85,7 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
         setFormData((prev) => ({ ...prev, website: existingProject.websiteUrl }));
       }
     }
-  }, [existingProjects, projectId, isSubsequentProject]);
+  }, [existingProjects, projectId]);
 
   // Cache email when user loads
   useEffect(() => {
@@ -122,22 +117,15 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
       }
     }
 
-    // Do NOT restore global DB onboarding step flags if creating a brand new project
-    if (isSubsequentProject) {
-      hasRestoredStep.current = true;
-      return;
-    }
-
     // Compute step from onboardingSteps boolean flags
     const steps = (user as Record<string, unknown>)?.onboardingSteps as
       | Record<string, boolean | string | number>
       | undefined;
     if (steps && Object.keys(steps).length > 0) {
       let computedStep = 1;
-      if (steps.signupCompleted && !isSubsequentProject) computedStep = 2;
-      if (steps.planSelected && !isSubsequentProject) computedStep = 3;
-      if (steps.paymentCompleted || steps.projectCreated) computedStep = 4;
-      if (steps.ga4Connected) computedStep = 5;
+      if (steps.signupCompleted) computedStep = 2;
+      if (steps.planSelected) computedStep = 3;
+      if (steps.paymentCompleted || steps.projectCreated || steps.ga4Connected) computedStep = 4;
 
       if (computedStep > 1) {
         setStep(computedStep);
@@ -309,10 +297,10 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
 
   // Redirect completed users to dashboard
   useEffect(() => {
-    if (!authLoading && user?.onboardingStatus === 'completed' && !isSubsequentProject) {
+    if (!authLoading && user?.onboardingStatus === 'completed') {
       router.replace('/studio');
     }
-  }, [authLoading, user?.onboardingStatus, router, isSubsequentProject]);
+  }, [authLoading, user?.onboardingStatus, router]);
 
   // ==========================================================================
   // LOADING STATE GUARDS (render loading UI while redirecting)
@@ -355,7 +343,7 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
   }
 
   // Guard 3: Already completed onboarding - show loading while useEffect redirects
-  if (user.onboardingStatus === 'completed' && !isSubsequentProject) {
+  if (user.onboardingStatus === 'completed') {
     return (
       <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="brand.light">
         <MartLoader message="Welcome back! Redirecting..." />
@@ -368,14 +356,14 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
   // ==========================================================================
 
   // Beta users skip pricing (step 2) and payment (step 3) - they get solo tier
-  const skipPricing = (user?.isBetaUser ?? false) || isSubsequentProject;
+  const skipPricing = user?.isBetaUser ?? false;
 
-  // For beta/subsequent: 1 -> 4 -> 5 (skip 2-3)
-  // For regular users: 1 -> 2 -> 3 -> 4 -> 5
+  // For beta: 1 -> 4
+  // For regular users: 1 -> 2 -> 3 -> 4
   const nextStep = () => {
     setStep((s) => {
       if (skipPricing && s === 1) return 4; // Skip pricing/payment
-      return Math.min(s + 1, 5);
+      return Math.min(s + 1, 4);
     });
   };
   const prevStep = () => {
@@ -385,7 +373,6 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
     });
   };
   // Step 3: Create project and advance
-  // Note: For subsequent projects, this is called directly from Step 1!
   const createAndAdvanceProject = async () => {
     setLoading(true);
     try {
@@ -652,7 +639,6 @@ export function OnboardingFlow({ isSubsequentProject = false }: OnboardingFlowPr
                 onBack={prevStep}
               />
             )}
-            {step === 5 && <ProcessingStep projectId={projectId} />}
           </AnimatePresence>
         </VStack>
       </Container>

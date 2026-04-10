@@ -212,8 +212,8 @@ export default function OnboardingRevealPage() {
             <Text color="gray.600" textAlign="center">
               Let's generate some keyword opportunities for you!
             </Text>
-            <Button bg="brand.orange" color="white" onClick={() => router.push('/studio/strategy')}>
-              Go to Strategy Dashboard
+            <Button bg="brand.orange" color="white" onClick={() => router.push('/studio/keywords')}>
+              Go to Keyword Strategy
             </Button>
           </VStack>
         </Container>
