@@ -125,7 +125,6 @@ export const Navigation: FC = () => {
 
               {/* Ask Phoo + User menu */}
               <HStack spacing={{ base: 2, md: 4 }}>
-                <OrganizationSwitcher />
                 <Link href="/assistant" style={{ textDecoration: 'none' }}>
                   <Button
                     size="sm"
@@ -161,6 +160,7 @@ export const Navigation: FC = () => {
           brandLabel="Phoo"
           brandColor="brand.orange"
           variant="light"
+          showWorkspaceHeader={true}
           user={
             user
               ? {

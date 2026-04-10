@@ -36,6 +36,7 @@ import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/lib/useAuth';
 import { Id } from '@/convex/_generated/dataModel';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Workspace limits per tier — mirrors SSOT in convex/lib/tierLimits.ts
 const WORKSPACE_LIMITS: Record<string, number> = {
@@ -53,6 +54,7 @@ interface OrgItem {
 
 export const OrganizationSwitcher: FC = () => {
   const { user } = useAuth();
+  const router = useRouter();
   const organizations = useQuery(api.teams.teams.getMyOrganizations) as OrgItem[] | undefined;
   const switchOrg = useMutation(api.users.switchOrganization);
   const toast = useToast();
@@ -71,7 +73,37 @@ export const OrganizationSwitcher: FC = () => {
 
   const handleSwitch = async (organizationId: Id<'organizations'>, orgName: string) => {
     try {
+      // Context Memory: save current project for outgoing org
+      const currentOrgId = user.organizationId;
+      const currentProjectId = (() => {
+        try { return localStorage.getItem('currentProjectId'); } catch { return null; }
+      })();
+      if (currentOrgId && currentProjectId) {
+        try {
+          const orgProjectMap = JSON.parse(localStorage.getItem('orgProjectMap') || '{}');
+          orgProjectMap[currentOrgId] = currentProjectId;
+          localStorage.setItem('orgProjectMap', JSON.stringify(orgProjectMap));
+        } catch { /* noop */ }
+      }
+
       await switchOrg({ organizationId });
+
+      // Context Memory: restore last project for incoming org
+      try {
+        const orgProjectMap = JSON.parse(localStorage.getItem('orgProjectMap') || '{}');
+        const lastProject = orgProjectMap[organizationId];
+        if (lastProject) {
+          localStorage.setItem('currentProjectId', lastProject);
+        } else {
+          localStorage.removeItem('currentProjectId');
+        }
+      } catch {
+        try { localStorage.removeItem('currentProjectId'); } catch { /* noop */ }
+      }
+
+      // Navigate to studio root for clean context reset
+      router.push('/studio');
+
       toast({
         title: 'Workspace Switched',
         description: `You are now working in ${orgName}`,

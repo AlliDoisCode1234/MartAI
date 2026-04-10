@@ -112,7 +112,7 @@ export const getProjectsByUser = query({
   },
 });
 
-// List projects for current user (simplified for Content Studio)
+// List projects for current user's active organization (or fallback to user-scoped)
 export const list = query({
   args: {},
   handler: async (ctx) => {
@@ -120,6 +120,18 @@ export const list = query({
     if (!userId) {
       return [];
     }
+
+    const user = await ctx.db.get(userId);
+
+    // Org-scoped: show projects belonging to user's active organization
+    if (user?.organizationId) {
+      return await ctx.db
+        .query('projects')
+        .withIndex('by_org', (q) => q.eq('organizationId', user.organizationId!))
+        .collect();
+    }
+
+    // Fallback: user-scoped (legacy / no org)
     return await ctx.db
       .query('projects')
       .withIndex('by_user', (q) => q.eq('userId', userId))
