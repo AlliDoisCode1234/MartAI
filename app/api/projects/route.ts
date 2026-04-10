@@ -9,7 +9,16 @@ export const dynamic = 'force-dynamic';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const apiLocal: any = unsafeApi;
 
-// GET - Get projects for authenticated user
+/**
+ * GET - Get projects for authenticated user
+ *
+ * NOTE: This REST endpoint is a legacy compatibility layer.
+ * The primary frontend uses Convex's reactive `projects.list` query directly.
+ * This endpoint uses the deprecated `getProjectsByUser` which is user-scoped,
+ * not org-scoped. It will be removed in a future release.
+ *
+ * @deprecated Prefer Convex reactive `projects.list` query for org-aware results.
+ */
 export async function GET(request: NextRequest) {
   try {
     // Require auth with origin validation for GET requests
@@ -23,13 +32,14 @@ export async function GET(request: NextRequest) {
       return secureResponse(response);
     }
 
-    const userId = assertUserId(authUser.userId);
-    // Use the path structure matching the generated API: projects/projects
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+
+    // Refactored to use the strictly scoped projects.list which handles multi-org boundaries.
     const projects = await callConvexQuery(
-      (apiLocal as any)['projects/projects'].getProjectsByUser,
-      {
-        userId: userId as any,
-      }
+      (apiLocal as any)['projects/projects'].list,
+      {},
+      token
     );
 
     const response = NextResponse.json({ projects: projects || [] });
@@ -44,7 +54,15 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Create new project
+/**
+ * POST - Create new project
+ *
+ * NOTE: This REST endpoint is a legacy compatibility layer.
+ * The primary frontend uses Convex's `createProject` mutation directly.
+ * The backend mutation now auto-scopes to the user's active org via computed orgId.
+ *
+ * @deprecated Prefer Convex reactive `projects.createProject` mutation directly.
+ */
 export async function POST(request: NextRequest) {
   try {
     // Require auth for state-changing operations
@@ -55,10 +73,7 @@ export async function POST(request: NextRequest) {
       allowedContentTypes: ['application/json'],
     });
 
-    console.log('📥 [API] /api/projects POST request received');
-    const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
-    console.log(`🔑 [API] OpenAI Key Present: ${hasOpenAIKey}`);
-    if (!hasOpenAIKey) console.warn('⚠️ [API] Warning: OPENAI_API_KEY is missing!');
+    console.log('[API] /api/projects POST request received');
 
     const body = await request.json();
     const { name, websiteUrl, industry } = body;
@@ -77,7 +92,6 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = assertUserId(authUser.userId);
-    // Use the path structure matching the generated API: projects/projects
     const projectId = await callConvexMutation(
       (apiLocal as any)['projects/projects'].createProject,
       {

@@ -1263,6 +1263,7 @@ export default defineSchema({
     // HubSpot sync
     hubspotContactId: v.optional(v.string()),
     hubspotSyncedAt: v.optional(v.number()),
+    hubspotError: v.optional(v.string()),
     // Admin notes
     adminNotes: v.optional(v.string()),
     reviewedBy: v.optional(v.id('users')),
@@ -1511,17 +1512,11 @@ export default defineSchema({
       v.literal('donate'),
       v.literal('events'),
       v.literal('partner'),
-      v.literal('program'),
-      // DEPRECATED: Legacy types kept for backward compatibility
-      // TODO: Migrate existing documents and remove these
-      v.literal('pillar'),
-      v.literal('howto'),
-      v.literal('comparison'),
-      v.literal('listicle')
+      v.literal('program')
     ),
 
     // Legacy field for PhooIntelligence content type (kept for backward compatibility)
-    phooContentType: v.optional(v.string()),
+    // Deprecated phooContentType removed natively
 
     // Priority for calendar ordering
     priority: v.optional(v.union(v.literal('P0'), v.literal('P1'), v.literal('P2'))),

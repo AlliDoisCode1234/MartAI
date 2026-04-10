@@ -35,6 +35,8 @@ async function testStrategyData() {
     console.log(`   ✅ Found user: ${user.username} (${user._id})`);
 
     // 2. Get user's projects
+    // NOTE: getProjectsByUser is @deprecated. Test scripts still use it because
+    // ConvexHttpClient lacks auth context for projects.list. Migrate when test infra supports auth.
     console.log("\n2️⃣ Finding user projects...");
     const projects = await client.query(api.projects.projects.getProjectsByUser, {
       userId: user._id,

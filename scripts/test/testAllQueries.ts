@@ -34,6 +34,8 @@ async function testAllQueries() {
     console.log(`   ✅ User found: ${user.username} (${user._id})`);
 
     // 2. Test Projects
+    // NOTE: getProjectsByUser is @deprecated. Test scripts still use it because
+    // ConvexHttpClient lacks auth context for projects.list. Migrate when test infra supports auth.
     console.log("\n2️⃣ Testing Project Queries...");
     const projects = await client.query(api.projects.projects.getProjectsByUser, {
       userId: user._id,

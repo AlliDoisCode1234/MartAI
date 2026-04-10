@@ -9,6 +9,7 @@ import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { api } from './_generated/api';
 import { auth } from './auth';
+import { requireAdminRole } from './lib/rbac';
 
 // ============================================
 // PUBLIC MUTATIONS (Form Submission)
@@ -96,7 +97,7 @@ export const listRequests = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // TODO: Add admin role check when auth is available
+    await requireAdminRole(ctx, 'admin');
 
     if (args.status) {
       const requests = await ctx.db
@@ -139,10 +140,7 @@ export const approveRequest = mutation({
     adminNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const adminId = await auth.getUserId(ctx);
-    if (!adminId) throw new Error('Unauthorized');
-
-    // TODO: Check admin role
+    const { userId: adminId } = await requireAdminRole(ctx, 'admin');
 
     const request = await ctx.db.get(args.requestId);
     if (!request) throw new Error('Request not found');
@@ -183,8 +181,7 @@ export const rejectRequest = mutation({
     adminNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const adminId = await auth.getUserId(ctx);
-    if (!adminId) throw new Error('Unauthorized');
+    const { userId: adminId } = await requireAdminRole(ctx, 'admin');
 
     const now = Date.now();
 
@@ -214,8 +211,7 @@ export const markContacted = mutation({
     adminNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const adminId = await auth.getUserId(ctx);
-    if (!adminId) throw new Error('Unauthorized');
+    const { userId: adminId } = await requireAdminRole(ctx, 'admin');
 
     const now = Date.now();
 
@@ -237,11 +233,13 @@ export const markContacted = mutation({
 export const updateHubspotSync = mutation({
   args: {
     requestId: v.id('apiAccessRequests'),
-    hubspotContactId: v.string(),
+    hubspotContactId: v.optional(v.string()),
+    hubspotError: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.requestId, {
-      hubspotContactId: args.hubspotContactId,
+      ...(args.hubspotContactId && { hubspotContactId: args.hubspotContactId }),
+      ...(args.hubspotError && { hubspotError: args.hubspotError }),
       hubspotSyncedAt: Date.now(),
     });
 

@@ -369,6 +369,16 @@ export const syncProjectData = internalAction({
       }
     }
 
+    // Steps 5-11: Only run downstream intelligence when we have fresh data
+    // This avoids 7+ unnecessary function invocations per project when connections
+    // exist but fail to return data (expired tokens, API quota, etc.)
+    const hasFreshData = ga4Data !== null || gscData !== null;
+
+    if (!hasFreshData) {
+      console.log(`[Analytics Sync] Project ${projectId}: No fresh data fetched, skipping intelligence pipeline`);
+      return { ga4Data, gscData };
+    }
+
     // 5. Detect Quick Win Keywords (position 5-15, high impressions)
     try {
       const quickWins = await ctx.runQuery(internal.analytics.gscKeywords.getQuickWinKeywords, {

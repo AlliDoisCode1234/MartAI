@@ -64,7 +64,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
 
   // Data
   const user = useQuery(api.admin.users.getUserDetails, { userId });
-  const projects = useQuery(api.projects.projects.getProjectsByUser, { userId });
+  const projects = user?.projects || [];
   const health = useQuery(api.subscriptions.userHealth.computeUserHealth, { userId });
 
   // Mutations

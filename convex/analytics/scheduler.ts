@@ -43,14 +43,32 @@ export const syncAllProjects = action({
   ): Promise<Array<{ projectId: string; status: string; data?: unknown; error?: string }>> => {
     const projects = await ctx.runQuery(internal.analytics.queries.getAllProjectsInternal);
 
-    console.log(`[Analytics Scheduler] Scheduling syncs for ${projects.length} projects...`);
+    // Pre-filter: only sync projects that have at least one integration connected
+    const connectedProjects = [];
+    for (const project of projects) {
+      const [ga4, gsc] = await Promise.all([
+        ctx.runQuery(internal.integrations.ga4Connections.getGA4ConnectionInternal, {
+          projectId: project._id,
+        }),
+        ctx.runQuery(internal.integrations.gscConnections.getGSCConnectionInternal, {
+          projectId: project._id,
+        }),
+      ]);
+      if (ga4 || gsc) {
+        connectedProjects.push(project);
+      }
+    }
+
+    console.log(
+      `[Analytics Scheduler] ${connectedProjects.length}/${projects.length} projects have integrations. Scheduling syncs...`
+    );
 
     const results = [];
     let delayMs = 0;
     const baseDelayMs = 2000;
     const MAX_DELAY_MS = 5 * 60 * 1000; // 5 minute ceiling
 
-    for (const project of projects) {
+    for (const project of connectedProjects) {
       try {
         const jitter = Math.floor(Math.random() * 500);
         const boundedDelay = Math.min(delayMs + jitter, MAX_DELAY_MS);

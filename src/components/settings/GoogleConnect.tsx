@@ -47,7 +47,7 @@ export function GoogleConnect({ projectId }: Props) {
   const searchParams = useSearchParams();
   const { isOpen: isGtmOpen, onOpen: onGtmOpen, onClose: onGtmClose } = useDisclosure();
 
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectingService, setConnectingService] = useState<'ga4' | 'gsc' | null>(null);
 
   // Convex hooks
   const ga4Connection = useQuery(api.integrations.ga4Connections.getGA4Connection, {
@@ -102,9 +102,9 @@ export function GoogleConnect({ projectId }: Props) {
     }
   }, [searchParams, toast]);
 
-  const handleConnect = async () => {
-    console.log('[GoogleOAuth][Client] handleConnect triggered with projectId:', projectId);
-    setIsConnecting(true);
+  const handleConnect = async (service: 'ga4' | 'gsc') => {
+    console.log('[GoogleOAuth][Client] handleConnect triggered with projectId:', projectId, 'service:', service);
+    setConnectingService(service);
     try {
       console.log('[GoogleOAuth][Client] Calling generateAuthUrl Convex action...');
       // Pass the current origin's callback URL so local dev auto-resolves to localhost
@@ -129,7 +129,7 @@ export function GoogleConnect({ projectId }: Props) {
         status: 'error',
         duration: 5000,
       });
-      setIsConnecting(false);
+      setConnectingService(null);
     }
   };
 
@@ -237,8 +237,8 @@ export function GoogleConnect({ projectId }: Props) {
               bg={GA4_COLOR}
               color="white"
               _hover={{ bg: '#C26300' }}
-              onClick={handleConnect}
-              isLoading={isConnecting}
+              onClick={() => handleConnect('ga4')}
+              isLoading={connectingService === 'ga4'}
               loadingText="Connecting..."
             >
               Connect
@@ -295,8 +295,8 @@ export function GoogleConnect({ projectId }: Props) {
               bg={GSC_COLOR}
               color="white"
               _hover={{ bg: '#3A7AD8' }}
-              onClick={handleConnect}
-              isLoading={isConnecting}
+              onClick={() => handleConnect('gsc')}
+              isLoading={connectingService === 'gsc'}
               loadingText="Connecting..."
             >
               Connect
