@@ -247,14 +247,17 @@ export const markComplete = internalMutation({
 
     // Auto-generate first content piece (zero-touch experience)
     // Find user's project — prefer org-scoped lookup
+    // Deterministic selection: get the most recently created project for the org/user
     const project = user.organizationId
       ? await ctx.db
           .query('projects')
           .withIndex('by_org', (q) => q.eq('organizationId', user.organizationId!))
+          .order('desc')
           .first()
       : await ctx.db
           .query('projects')
           .withIndex('by_user', (q) => q.eq('userId', args.userId))
+          .order('desc')
           .first();
 
     if (project) {

@@ -20,10 +20,9 @@ describe('Password Rate Limiting', () => {
     it('should require authentication', async () => {
       const t = convexTest(schema, modules);
 
-      // Without authentication, should throw
-      await expect(
-        t.mutation(api.auth.passwordRateLimit.checkPasswordRateLimit, {})
-      ).rejects.toThrow();
+      // Without authentication, should return allowed: false
+      const result = await t.mutation(api.auth.passwordRateLimit.checkPasswordRateLimit, {});
+      expect(result).toEqual({ allowed: false, error: 'Not authenticated' });
     });
 
     it('should allow attempts when authenticated (mocked)', async () => {

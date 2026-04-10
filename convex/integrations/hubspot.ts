@@ -348,7 +348,7 @@ export const syncApiAccessRequest = action({
       return { success: false, reason: 'no_api_key' };
     }
 
-    const request = await ctx.runQuery(api.apiAccessRequests.getRequest, {
+    const request = await ctx.runQuery(internal.apiAccessRequests.getRequest, {
       requestId: args.requestId,
     });
 
@@ -370,7 +370,7 @@ export const syncApiAccessRequest = action({
       const result = await upsertContact(request.email, properties);
 
       // Update request with HubSpot ID
-      await ctx.runMutation(api.apiAccessRequests.updateHubspotSync, {
+      await ctx.runMutation(internal.apiAccessRequests.updateHubspotSync, {
         requestId: args.requestId,
         hubspotContactId: result.id,
       });
@@ -385,7 +385,7 @@ export const syncApiAccessRequest = action({
       console.error(`[HubSpot] Failed to sync API access request ${args.requestId}:`, errorMessage);
       
       // Update request with the error
-      await ctx.runMutation(api.apiAccessRequests.updateHubspotSync, {
+      await ctx.runMutation(internal.apiAccessRequests.updateHubspotSync, {
         requestId: args.requestId,
         hubspotError: errorMessage,
       });

@@ -64,7 +64,7 @@ describe('Content Type Contract', () => {
     'program',
   ] as const;
 
-  const LEGACY_CONTENT_TYPES = ['pillar', 'howto', 'comparison', 'listicle'] as const;
+  const LEGACY_CONTENT_TYPES = ['howto', 'comparison', 'listicle'] as const;
 
   const INVALID_CONTENT_TYPES = [
     'blogPost', // BUG-1: this was used in autoGenerateFirstContent

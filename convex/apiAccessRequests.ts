@@ -5,7 +5,7 @@
  * Wires to HubSpot for sales pipeline.
  */
 
-import { mutation, query } from './_generated/server';
+import { mutation, query, internalMutation, internalQuery } from './_generated/server';
 import { v } from 'convex/values';
 import { api } from './_generated/api';
 import { auth } from './auth';
@@ -118,10 +118,12 @@ export const listRequests = query({
 });
 
 /**
- * Get a single API access request by ID
+ * Get a specific request (internal, for sync)
  */
-export const getRequest = query({
-  args: { requestId: v.id('apiAccessRequests') },
+export const getRequest = internalQuery({
+  args: {
+    requestId: v.id('apiAccessRequests'),
+  },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.requestId);
   },
@@ -230,7 +232,7 @@ export const markContacted = mutation({
 /**
  * Update HubSpot sync status (internal, called by HubSpot action)
  */
-export const updateHubspotSync = mutation({
+export const updateHubspotSync = internalMutation({
   args: {
     requestId: v.id('apiAccessRequests'),
     hubspotContactId: v.optional(v.string()),

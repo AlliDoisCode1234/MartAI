@@ -21,13 +21,14 @@ export async function callConvexMutation<T = any>(
   args: any,
   token?: string
 ): Promise<T> {
-  if (!convexUrl || !convexClient) {
+  if (!convexUrl) {
     throw new Error('Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL');
   }
+  const client = new ConvexHttpClient(convexUrl);
   if (token) {
-    convexClient.setAuth(token);
+    client.setAuth(token);
   }
-  return await convexClient.mutation(mutation, args);
+  return await client.mutation(mutation, args);
 }
 
 /**
@@ -43,13 +44,14 @@ export async function callConvexQuery<T = any>(
   args: any,
   token?: string
 ): Promise<T> {
-  if (!convexUrl || !convexClient) {
+  if (!convexUrl) {
     throw new Error('Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL');
   }
+  const client = new ConvexHttpClient(convexUrl);
   if (token) {
-    convexClient.setAuth(token);
+    client.setAuth(token);
   }
-  return await convexClient.query(query, args);
+  return await client.query(query, args);
 }
 
 /**
@@ -64,13 +66,14 @@ export async function callConvexAction<T = any>(
   args: any,
   token?: string
 ): Promise<T> {
-  if (!convexUrl || !convexClient) {
+  if (!convexUrl) {
     throw new Error('Convex is not configured. Set NEXT_PUBLIC_CONVEX_URL');
   }
+  const client = new ConvexHttpClient(convexUrl);
   if (token) {
-    convexClient.setAuth(token);
+    client.setAuth(token);
   }
-  return await convexClient.action(action, args);
+  return await client.action(action, args);
 }
 
 // Re-export api from generated module for type-safe access

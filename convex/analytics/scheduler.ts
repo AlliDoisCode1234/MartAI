@@ -44,18 +44,34 @@ export const syncAllProjects = action({
     const projects = await ctx.runQuery(internal.analytics.queries.getAllProjectsInternal);
 
     // Pre-filter: only sync projects that have at least one integration connected
+    // Batched concurrent mapping to prevent Action runtime timeouts
     const connectedProjects = [];
-    for (const project of projects) {
-      const [ga4, gsc] = await Promise.all([
-        ctx.runQuery(internal.integrations.ga4Connections.getGA4ConnectionInternal, {
-          projectId: project._id,
-        }),
-        ctx.runQuery(internal.integrations.gscConnections.getGSCConnectionInternal, {
-          projectId: project._id,
-        }),
-      ]);
-      if (ga4 || gsc) {
-        connectedProjects.push(project);
+    const BATCH_SIZE = 25;
+    
+    for (let i = 0; i < projects.length; i += BATCH_SIZE) {
+      const batch = projects.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async (project: any) => {
+          try {
+            const [ga4, gsc] = await Promise.all([
+              ctx.runQuery(internal.integrations.ga4Connections.getGA4ConnectionInternal, {
+                projectId: project._id,
+              }),
+              ctx.runQuery(internal.integrations.gscConnections.getGSCConnectionInternal, {
+                projectId: project._id,
+              }),
+            ]);
+            return ga4 || gsc ? project : null;
+          } catch (error) {
+            console.error(`Failed integration lookup for project ${project._id}:`, error);
+            // Default to syncing if lookup fails, to be safe
+            return project;
+          }
+        })
+      );
+      
+      for (const result of batchResults) {
+        if (result) connectedProjects.push(result);
       }
     }
 

@@ -146,8 +146,8 @@ describe('ContentPieces CRUD', () => {
       const handler = (contentPieces.create as unknown as { handler: Function }).handler;
       const args = {
         projectId: mockProjectId,
-        contentType: 'pillar' as const,
-        title: 'Pillar Content',
+        contentType: 'blog' as const,
+        title: 'Blog Content',
         keywords: ['main topic'],
       };
 
