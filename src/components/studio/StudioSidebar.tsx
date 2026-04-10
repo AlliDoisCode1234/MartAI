@@ -41,6 +41,7 @@ import { useAuth } from '@/lib/useAuth';
 import { getUserDisplayName } from '@/lib/funNames';
 import { UserDropdown } from '../Navigation/UserDropdown';
 import { STUDIO_COLORS } from '@/lib/constants/studioTokens';
+import { WorkspaceHeader } from './WorkspaceHeader';
 
 interface NavItem {
   href: string;
@@ -146,6 +147,9 @@ export function StudioSidebar({ collapsed = false, onToggle }: Props) {
           />
         )}
       </Flex>
+
+      {/* Workspace Header: Org + Project Selector (Vercel pattern) */}
+      <WorkspaceHeader collapsed={collapsed} />
 
       {/* Main Navigation */}
       <VStack spacing={0.5} align="stretch" px={3} flex={1}>

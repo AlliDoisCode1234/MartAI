@@ -89,10 +89,11 @@ export function useProject(
   const [isSelectingProject, setIsSelectingProject] = useState(autoSelect);
 
   // Fetch user's projects if autoSelect is enabled
+  // Uses org-aware projects.list (scoped to active organization)
   const user = useQuery(api.users.current, autoSelect ? undefined : 'skip');
   const userProjects = useQuery(
-    api.projects.projects.getProjectsByUser,
-    autoSelect && user?._id ? { userId: user._id as unknown as Id<'users'> } : 'skip'
+    api.projects.projects.list,
+    autoSelect && user?._id ? undefined : 'skip'
   );
 
   // Auto-select logic
@@ -117,10 +118,15 @@ export function useProject(
       }
     }
 
-    // Validate stored ID exists in user's projects
+    // Validate stored ID exists in current org's projects
     const matchedProject = storedId
       ? userProjects.find((p: { _id: string }) => p._id === storedId)
       : null;
+
+    // Cross-org staleness guard: clear stale project reference
+    if (storedId && !matchedProject) {
+      try { localStorage.removeItem('currentProjectId'); } catch { /* noop */ }
+    }
 
     const selectedProject = matchedProject ?? userProjects[0];
     const selectedId = selectedProject._id as string;

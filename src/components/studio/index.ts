@@ -16,3 +16,4 @@ export { MetricProgressRow } from './MetricProgressRow';
 export { RankedArticleTable } from './RankedArticleTable';
 export { GrowthActionCard } from './GrowthActionCard';
 export { ContentSuggestionsPanel } from './ContentSuggestionsPanel';
+export { WorkspaceHeader } from './WorkspaceHeader';

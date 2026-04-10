@@ -174,6 +174,15 @@ export default function CreateWorkspacePage() {
 
       setProjectId(newProjectId);
 
+      // Explicitly set project context for the new org
+      try {
+        localStorage.setItem('currentProjectId', newProjectId);
+        // Seed context memory for the new org
+        const orgProjectMap = JSON.parse(localStorage.getItem('orgProjectMap') || '{}');
+        orgProjectMap[orgId] = newProjectId;
+        localStorage.setItem('orgProjectMap', JSON.stringify(orgProjectMap));
+      } catch { /* Safari private browsing */ }
+
       // Save for OAuth return
       try {
         sessionStorage.setItem('workspace_projectId', newProjectId);

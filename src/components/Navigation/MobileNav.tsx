@@ -30,6 +30,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiArrowLeft } from 'react-icons/fi';
+import { WorkspaceHeader } from '../studio/WorkspaceHeader';
 
 interface NavItem {
   label: string;
@@ -45,6 +46,8 @@ interface Props {
   brandColor?: string;
   placement?: 'left' | 'right';
   variant?: 'dark' | 'light';
+  /** Show workspace header (org + project switcher) in drawer — for studio context */
+  showWorkspaceHeader?: boolean;
   user?: {
     name?: string;
     email?: string;
@@ -60,6 +63,7 @@ export const MobileNav: FC<Props> = ({
   brandColor = 'brand.orange',
   placement = 'left',
   variant = 'dark',
+  showWorkspaceHeader = false,
   user,
 }) => {
   const pathname = usePathname();
@@ -113,6 +117,13 @@ export const MobileNav: FC<Props> = ({
         </DrawerHeader>
 
         <DrawerBody px={0} py={4}>
+          {/* Workspace Header for studio mobile context */}
+          {showWorkspaceHeader && (
+            <Box px={3} mb={3}>
+              <WorkspaceHeader collapsed={false} variant="light" />
+            </Box>
+          )}
+
           <VStack align="stretch" spacing={1}>
             {navItems.map((item) => {
               const isActive =

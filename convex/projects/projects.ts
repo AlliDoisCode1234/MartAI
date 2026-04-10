@@ -83,7 +83,7 @@ export const createProject = mutation({
 
     const projectId = await ctx.db.insert('projects', {
       userId,
-      organizationId: args.organizationId,
+      organizationId: orgId,
       name: args.name,
       websiteUrl: args.websiteUrl,
       industry: args.industry,
@@ -112,7 +112,7 @@ export const getProjectsByUser = query({
   },
 });
 
-// List projects for current user (simplified for Content Studio)
+// List projects for current user's active organization (or fallback to user-scoped)
 export const list = query({
   args: {},
   handler: async (ctx) => {
@@ -120,6 +120,30 @@ export const list = query({
     if (!userId) {
       return [];
     }
+
+    const user = await ctx.db.get(userId);
+
+    // Org-scoped: verify active membership before showing org projects
+    if (user?.organizationId) {
+      const membership = await ctx.db
+        .query('teamMembers')
+        .withIndex('by_user_org', (q) =>
+          q.eq('userId', userId).eq('organizationId', user.organizationId!)
+        )
+        .first();
+
+      // Active membership confirmed — return org projects
+      if (membership && (!membership.status || membership.status === 'active')) {
+        return await ctx.db
+          .query('projects')
+          .withIndex('by_org', (q) => q.eq('organizationId', user.organizationId!))
+          .collect();
+      }
+
+      // Membership missing or inactive — fall back to user-scoped
+    }
+
+    // Fallback: user-scoped (legacy / no org / invalid membership)
     return await ctx.db
       .query('projects')
       .withIndex('by_user', (q) => q.eq('userId', userId))
