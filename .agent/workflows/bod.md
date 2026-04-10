@@ -189,6 +189,9 @@ These personas act as historical anchors, representing definitive architectural 
 #### Context Node 00014 (docs/personas/bot_persona_DATAFORSEO_SECURITY_REMEDIATION_00014_PERSONA.md)
 - Ask: "What decisions were made during the DataForSEO integration regarding IDOR BOLA patching, data contract typings, and inserting the ZERO penetration testing persona?"
 
+#### Context Node 00015 (docs/personas/bot_persona_PRODUCTION_HARDENING_00015_PERSONA.md)
+- Ask: "What decisions were made during the PRODUCTION_HARDENING initiative? What specific hazards or edge cases did we discover?"
+
 ---
 
 ## Consultation Process
