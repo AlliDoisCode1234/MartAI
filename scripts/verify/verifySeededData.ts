@@ -42,6 +42,8 @@ async function verifySeededData() {
     }
 
     // 2. Verify Project
+    // NOTE: getProjectsByUser is @deprecated. Test scripts still use it because
+    // ConvexHttpClient lacks auth context for projects.list. Migrate when test infra supports auth.
     console.log("\n2️⃣ Verifying Project...");
     const projects = await client.query(api.projects.projects.getProjectsByUser, {
       userId: user._id,

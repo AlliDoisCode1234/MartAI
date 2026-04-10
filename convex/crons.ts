@@ -13,17 +13,17 @@ crons.daily(
   internal.auth.passwordReset.cleanupExpiredTokens
 );
 
-// AI Provider health checks every 5 minutes
+// AI Provider health checks every 15 minutes (reduced from 5min to lower DB mutation costs)
 crons.interval(
   'ai-provider-health-check',
-  { minutes: 5 },
+  { minutes: 15 },
   internal.ai.health.healthActions.runHealthChecks
 );
 
-// Check circuit breaker timeouts every 5 minutes (matches health check frequency)
+// Check circuit breaker timeouts every 15 minutes (matches health check frequency)
 crons.interval(
   'ai-circuit-timeout-check',
-  { minutes: 5 },
+  { minutes: 15 },
   internal.ai.health.healthActions.checkCircuitTimeouts
 );
 

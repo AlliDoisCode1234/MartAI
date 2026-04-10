@@ -101,8 +101,27 @@ export const createProject = mutation({
   },
 });
 
-// Get projects by user
+/**
+ * @deprecated Use `projects.list` (org-aware, auth-scoped) for frontend consumers.
+ * For server-side internal operations, use `getProjectsByUserInternal` instead.
+ * This public query bypasses org membership validation and will be removed in a future release.
+ */
 export const getProjectsByUser = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('projects')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+  },
+});
+
+/**
+ * Internal-only: Get all projects for a user regardless of org context.
+ * Used by server-side operations (HubSpot sync, onboarding completion)
+ * where cross-org visibility is intentional.
+ */
+export const getProjectsByUserInternal = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
     return await ctx.db

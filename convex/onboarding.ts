@@ -246,11 +246,19 @@ export const markComplete = internalMutation({
     // That function is called during onboarding step 4, not here in markComplete
 
     // Auto-generate first content piece (zero-touch experience)
-    // Find user's project and schedule content generation
-    const project = await ctx.db
-      .query('projects')
-      .filter((q) => q.eq(q.field('userId'), args.userId))
-      .first();
+    // Find user's project — prefer org-scoped lookup
+    // Deterministic selection: get the most recently created project for the org/user
+    const project = user.organizationId
+      ? await ctx.db
+          .query('projects')
+          .withIndex('by_org', (q) => q.eq('organizationId', user.organizationId!))
+          .order('desc')
+          .first()
+      : await ctx.db
+          .query('projects')
+          .withIndex('by_user', (q) => q.eq('userId', args.userId))
+          .order('desc')
+          .first();
 
     if (project) {
       // Delay 5s to let GSC sync populate keywords first

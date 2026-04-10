@@ -251,7 +251,7 @@ export const saveServiceAccountConnection = mutation({
     propertyId: v.string(),
     propertyName: v.string(),
     serviceAccountEmail: v.string(),
-    encryptedServiceAccountKey: v.string(),
+    serviceAccountKey: v.string(),
   },
   handler: async (ctx, args) => {
     // Check if connection exists
@@ -261,7 +261,7 @@ export const saveServiceAccountConnection = mutation({
       .first();
 
     // Encrypt the service account key before storage
-    const encryptedKey = await encryptCredential(args.encryptedServiceAccountKey);
+    const encryptedKey = await encryptCredential(args.serviceAccountKey);
 
     const connectionData = {
       projectId: args.projectId,

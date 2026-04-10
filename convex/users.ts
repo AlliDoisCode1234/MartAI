@@ -89,6 +89,21 @@ export const getUser = internalQuery({
   },
 });
 
+/**
+ * Internal: Get full user document by ID for server-side integrations.
+ * Security: Internal-only, not exposed to clients.
+ * Returns ALL user fields (used by HubSpot sync, lifecycle events).
+ * 
+ * Differs from `getUser` which returns minimal auth fields,
+ * and `getById` which requires caller authentication.
+ */
+export const getByIdInternal = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.userId);
+  },
+});
+
 export const completeOnboarding = mutation({
   args: {},
   handler: async (ctx) => {

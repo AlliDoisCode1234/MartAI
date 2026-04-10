@@ -438,11 +438,7 @@ describe('Content Studio: SEO Quality Guarantee', () => {
 
 const CONTENT_TYPES = [
   { type: 'blog', wordTarget: 1200, requiredFields: ['title', 'keywords', 'content'] },
-  {
-    type: 'pillar',
-    wordTarget: 3000,
-    requiredFields: ['title', 'keywords', 'content', 'h2Outline'],
-  },
+
   { type: 'howto', wordTarget: 1500, requiredFields: ['title', 'keywords', 'steps'] },
   { type: 'listicle', wordTarget: 1000, requiredFields: ['title', 'keywords', 'items'] },
   { type: 'comparison', wordTarget: 1500, requiredFields: ['title', 'optionA', 'optionB'] },
@@ -488,12 +484,12 @@ describe('Content Studio: 17 Content Types', () => {
       expect(getWordTarget('unknown')).toBe(1200); // Default
     });
 
-    it('should select pillar for high-volume clusters', () => {
+    it('should select blog for high-volume clusters', () => {
       const cluster = {
         keywords: ['main topic', 'sub topic 1', 'sub topic 2'],
         totalVolume: 50000,
       };
-      expect(selectContentTypeForCluster(cluster)).toBe('pillar');
+      expect(selectContentTypeForCluster(cluster)).toBe('blog');
     });
 
     it('should select howto for "how to" keywords', () => {
@@ -528,9 +524,9 @@ describe('Content Studio: 17 Content Types', () => {
   });
 
   describe('Word Count Validation by Type', () => {
-    it('should enforce minimum for pillar (3000+)', () => {
-      expect(validateWordCount('pillar', 2500)).toBe(false);
-      expect(validateWordCount('pillar', 3500)).toBe(true);
+    it('should enforce minimum for blog (1200+)', () => {
+      expect(validateWordCount('blog', 1000)).toBe(false);
+      expect(validateWordCount('blog', 1500)).toBe(true);
     });
 
     it('should allow shorter glossary (400+)', () => {
@@ -707,7 +703,7 @@ function scoreKeywordDensity(density: number): number {
 // Content Type Helper Functions
 const WORD_TARGETS: Record<string, number> = {
   blog: 1200,
-  pillar: 3000,
+
   howto: 1500,
   listicle: 1000,
   comparison: 1500,
@@ -727,7 +723,7 @@ const WORD_TARGETS: Record<string, number> = {
 
 const REQUIRED_FIELDS: Record<string, string[]> = {
   blog: ['title', 'keywords', 'content'],
-  pillar: ['title', 'keywords', 'content', 'h2Outline'],
+
   howto: ['title', 'keywords', 'steps'],
   listicle: ['title', 'keywords', 'items'],
   comparison: ['title', 'optionA', 'optionB'],
@@ -759,8 +755,8 @@ function selectContentTypeForCluster(cluster: {
 }): string {
   const allKeywords = cluster.keywords.join(' ').toLowerCase();
 
-  // High volume = pillar
-  if (cluster.totalVolume && cluster.totalVolume > 30000) return 'pillar';
+  // High volume = blog
+  if (cluster.totalVolume && cluster.totalVolume > 30000) return 'blog';
 
   // Pattern matching
   if (allKeywords.includes('how to') || allKeywords.includes('steps')) return 'howto';

@@ -36,9 +36,9 @@ export const DEBUG_ONBOARDING = process.env.DEBUG_ONBOARDING === 'true';
  *   - Feature/Solution CTAs: "See Pricing" → /pricing
  *   - Login/Signup pages: visible in header nav
  *
- * TODO: Set to true when ready to launch publicly
+ * Enabled via Vercel env var: NEXT_PUBLIC_IS_LAUNCHED
  */
-export const IS_LAUNCHED = false;
+export const IS_LAUNCHED = process.env.NEXT_PUBLIC_IS_LAUNCHED === 'true';
 
 /** Beta waitlist destination used when IS_LAUNCHED is false */
 export const BETA_JOIN_HREF = '/join';
@@ -63,9 +63,9 @@ export const LAUNCHED_PRICING_HREF = '/pricing';
  *   - Calendar generates full industry-template calendar
  *   - All content type selectors show complete taxonomy
  *
- * TODO: Set to false when ready to expand content types post-launch
+ * Set via NEXT_PUBLIC_BLOG_ONLY_MODE
  */
-export const BLOG_ONLY_MODE = true;
+export const BLOG_ONLY_MODE = process.env.NEXT_PUBLIC_BLOG_ONLY_MODE !== 'false';
 
 /** Content types enabled at launch — expand this array to unlock more */
 export const LAUNCH_CONTENT_TYPES = ['blog'] as const;

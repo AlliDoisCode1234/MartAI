@@ -293,16 +293,52 @@ export const exchangeAndSave = action({
 });
 
 /**
- * Internal variant of exchangeAndSave for server-side OAuth callback.
+ * Server-to-server entry point for OAuth callback.
  *
- * The Next.js API route (app/api/google-callback) calls this via a bare
- * ConvexHttpClient that has no user auth session. Security is guaranteed
- * because:
- *   1. generateAuthUrl verified the user's identity before encoding
- *      the projectId into the OAuth state parameter
- *   2. This is an internalAction — unreachable from the public API
- *   3. The projectId was cryptographically carried through the OAuth
- *      state round-trip (base64-encoded, validated at callback)
+ * ConvexHttpClient CANNOT call internalAction — it only reaches public functions.
+ * This public action acts as a validated gateway: the Next.js API route passes
+ * a shared secret (CONVEX_SERVER_SECRET) that only server-side code possesses.
+ *
+ * Security layers:
+ *   1. Shared secret gate — rejects calls without valid server secret
+ *   2. HMAC state signature — prevents projectId forgery (validated in internal handler)
+ *   3. Internal delegation — all credential-handling stays in internalExchangeAndSave
+ */
+export const serverExchangeAndSave = action({
+  args: {
+    serverSecret: v.string(),
+    code: v.string(),
+    projectId: v.id('projects'),
+    stateRaw: v.optional(v.string()),
+    redirectUri: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ ga4Saved: boolean; gscSaved: boolean; gscSiteCount: number }> => {
+    // Gate 1: Validate server-to-server shared secret
+    const expectedSecret = process.env.CONVEX_SERVER_SECRET;
+    if (!expectedSecret || args.serverSecret !== expectedSecret) {
+      console.error('[GoogleOAuth][Convex] serverExchangeAndSave: Invalid server secret');
+      throw new Error('Unauthorized: Invalid server credentials');
+    }
+
+    // Delegate to internal handler (which validates HMAC state + does the real work)
+    return (await ctx.runAction(internal.integrations.google.internalExchangeAndSave as any, {
+      code: args.code,
+      projectId: args.projectId,
+      stateRaw: args.stateRaw,
+      redirectUri: args.redirectUri,
+    })) as { ga4Saved: boolean; gscSaved: boolean; gscSiteCount: number };
+  },
+});
+
+/**
+ * Internal variant of exchangeAndSave for server-side delegation.
+ *
+ * NOT directly callable from ConvexHttpClient — use serverExchangeAndSave instead.
+ * Called internally by serverExchangeAndSave (after secret validation)
+ * and by other Convex functions via ctx.runAction.
  */
 export const internalExchangeAndSave = internalAction({
   args: {
@@ -1084,7 +1120,7 @@ export const verifyServiceAccount = action({
         propertyId,
         propertyName,
         serviceAccountEmail: credentials.client_email,
-        encryptedServiceAccountKey: args.serviceAccountJson, // TODO: encrypt before saving
+        serviceAccountKey: args.serviceAccountJson,
       });
 
       return { success: true, propertyName };

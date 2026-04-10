@@ -179,14 +179,14 @@ export const syncUserToHubspot = action({
       return { success: false, reason: 'no_api_key' };
     }
 
-    const user = await ctx.runQuery(api.users.getById, { userId: args.userId });
+    const user = await ctx.runQuery(internal.users.getByIdInternal, { userId: args.userId });
     if (!user || !user.email) {
       console.log(`[HubSpot] User ${args.userId} has no email, skipping`);
       return { success: false, reason: 'no_email' };
     }
 
-    // Get user's projects
-    const projects = await ctx.runQuery(api.projects.projects.getProjectsByUser, {
+    // Get user's projects (server-side: use internal query, not deprecated public API)
+    const projects = await ctx.runQuery(internal.projects.projects.getProjectsByUserInternal, {
       userId: args.userId,
     });
 
@@ -348,7 +348,7 @@ export const syncApiAccessRequest = action({
       return { success: false, reason: 'no_api_key' };
     }
 
-    const request = await ctx.runQuery(api.apiAccessRequests.getRequest, {
+    const request = await ctx.runQuery(internal.apiAccessRequests.getRequest, {
       requestId: args.requestId,
     });
 
@@ -366,19 +366,32 @@ export const syncApiAccessRequest = action({
       contactName: request.contactName,
     });
 
-    const result = await upsertContact(request.email, properties);
+    try {
+      const result = await upsertContact(request.email, properties);
 
-    // Update request with HubSpot ID
-    await ctx.runMutation(api.apiAccessRequests.updateHubspotSync, {
-      requestId: args.requestId,
-      hubspotContactId: result.id,
-    });
+      // Update request with HubSpot ID
+      await ctx.runMutation(internal.apiAccessRequests.updateHubspotSync, {
+        requestId: args.requestId,
+        hubspotContactId: result.id,
+      });
 
-    return {
-      success: true,
-      hubspotId: result.id,
-      isNew: result.isNew,
-    };
+      return {
+        success: true,
+        hubspotId: result.id,
+        isNew: result.isNew,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[HubSpot] Failed to sync API access request ${args.requestId}:`, errorMessage);
+      
+      // Update request with the error
+      await ctx.runMutation(internal.apiAccessRequests.updateHubspotSync, {
+        requestId: args.requestId,
+        hubspotError: errorMessage,
+      });
+
+      return { success: false, reason: 'api_error', error: errorMessage };
+    }
   },
 });
 
@@ -403,12 +416,12 @@ export const updateMRScore = internalAction({
       return { success: false, reason: 'no_api_key' };
     }
 
-    const user = await ctx.runQuery(api.users.getById, { userId: args.userId });
+    const user = await ctx.runQuery(internal.users.getByIdInternal, { userId: args.userId });
     if (!user?.email) {
       return { success: false, reason: 'no_email' };
     }
 
-    const projects = await ctx.runQuery(api.projects.projects.getProjectsByUser, {
+    const projects = await ctx.runQuery(internal.projects.projects.getProjectsByUserInternal, {
       userId: args.userId,
     });
 
@@ -707,7 +720,7 @@ export const syncLifecycleChangeToHubspot = internalAction({
       return { success: false, reason: 'no_api_key' };
     }
 
-    const user = await ctx.runQuery(api.users.getById, { userId: args.userId });
+    const user = await ctx.runQuery(internal.users.getByIdInternal, { userId: args.userId });
     if (!user?.email) {
       console.log(`[HubSpot] User ${args.userId} has no email, skipping lifecycle sync`);
       return { success: false, reason: 'no_email' };
@@ -747,7 +760,7 @@ export const syncFunnelEventToHubspot = internalAction({
       return { success: false, reason: 'no_api_key' };
     }
 
-    const user = await ctx.runQuery(api.users.getById, { userId: args.userId });
+    const user = await ctx.runQuery(internal.users.getByIdInternal, { userId: args.userId });
     if (!user || !user.email) {
       return { success: false, reason: 'no_email' };
     }

@@ -111,7 +111,7 @@ export const WorkspaceHeader: FC<Props> = ({ collapsed = false, variant = 'dark'
   if (!user) return null;
 
   const currentOrg = organizations?.find((org) => org._id === user.organizationId);
-  const currentProject = projects?.find((p) => p._id === projectId);
+  const currentProject = projects?.find((p: any) => p._id === projectId);
   const hasMultipleOrgs = (organizations?.length ?? 0) > 1;
 
   const handleOrgSwitch = async (organizationId: Id<'organizations'>, orgName: string) => {
@@ -348,7 +348,7 @@ export const WorkspaceHeader: FC<Props> = ({ collapsed = false, variant = 'dark'
               shadow="xl"
             >
               {projects && projects.length > 0 ? (
-                projects.map((project) => (
+                projects.map((project: any) => (
                   <MenuItem
                     key={project._id}
                     onClick={() => handleProjectSwitch(project._id)}

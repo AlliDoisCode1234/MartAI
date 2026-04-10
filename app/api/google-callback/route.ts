@@ -1,27 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import type { Id } from '@/convex/_generated/dataModel';
-import { internal } from '@/convex/_generated/api';
+import { api } from '@/convex/_generated/api';
 
 // Ensure we have the Convex URL
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 if (!convexUrl) {
-  console.warn('[GoogleOAuth][LegacyCallback] NEXT_PUBLIC_CONVEX_URL is NOT defined');
+  console.warn('[GoogleOAuth][Callback] NEXT_PUBLIC_CONVEX_URL is NOT defined');
 } else {
-  console.log('[GoogleOAuth][LegacyCallback] NEXT_PUBLIC_CONVEX_URL:', convexUrl ? 'SET' : 'UNSET');
+  console.log('[GoogleOAuth][Callback] NEXT_PUBLIC_CONVEX_URL:', convexUrl ? 'SET' : 'UNSET');
 }
 
 const convex = new ConvexHttpClient(convexUrl as string);
 
 export async function GET(req: NextRequest) {
-  console.log('[GoogleOAuth][LegacyCallback] === LEGACY CALLBACK HIT ===');
-  console.log('[GoogleOAuth][LegacyCallback] Full URL:', req.nextUrl.toString());
+  console.log('[GoogleOAuth][Callback] === CALLBACK HIT ===');
+  console.log('[GoogleOAuth][Callback] Full URL:', req.nextUrl.toString());
 
   const code = req.nextUrl.searchParams.get('code');
   const stateParam = req.nextUrl.searchParams.get('state');
   const error = req.nextUrl.searchParams.get('error');
 
-  console.log('[GoogleOAuth][LegacyCallback] Raw params:', {
+  console.log('[GoogleOAuth][Callback] Raw params:', {
     hasCode: !!code,
     hasState: !!stateParam,
     error: error || 'none',
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   const baseUrl = new URL(req.url).origin;
 
   if (error) {
-    console.error('[GoogleOAuth][LegacyCallback] Google returned error:', error);
+    console.error('[GoogleOAuth][Callback] Google returned error:', error);
     return NextResponse.redirect(new URL(`/settings?tab=integrations&error=${error}`, baseUrl));
   }
 
@@ -49,14 +49,14 @@ export async function GET(req: NextRequest) {
     const stateData = secureState.p ? JSON.parse(secureState.p) : secureState;
     projectId = stateData.projectId;
     returnTo = stateData.returnTo;
-    console.log('[GoogleOAuth][LegacyCallback] Decoded state:', {
+    console.log('[GoogleOAuth][Callback] Decoded state:', {
       projectId,
       returnTo,
       fullState: stateData,
     });
   } catch {
     console.error(
-      '[GoogleOAuth][LegacyCallback] Failed to decode state parameter, raw value:',
+      '[GoogleOAuth][Callback] Failed to decode state parameter, raw value:',
       stateParam?.substring(0, 50)
     );
     return NextResponse.redirect(
@@ -70,13 +70,23 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  try {
-    console.log('[GoogleOAuth][LegacyCallback] Step 1-3: Exchanging code and saving securely via internalAction...');
+  // Server-to-server shared secret — validates that this call originates from
+  // our own Next.js API route, not an external attacker
+  const serverSecret = process.env.CONVEX_SERVER_SECRET;
+  if (!serverSecret) {
+    console.error('[GoogleOAuth][Callback] CONVEX_SERVER_SECRET is NOT configured');
+    return NextResponse.redirect(
+      new URL('/settings?tab=integrations&error=server_config_error', baseUrl)
+    );
+  }
 
-    // Use internalAction — this server-side route has no user auth session.
-    // Security: projectId was verified at generateAuthUrl time and carried
-    // through the OAuth state round-trip.
-    const result = await convex.action(internal.integrations.google.internalExchangeAndSave, {
+  try {
+    console.log('[GoogleOAuth][Callback] Exchanging code via serverExchangeAndSave...');
+
+    // Call the PUBLIC action with shared-secret gate (NOT internalAction)
+    // ConvexHttpClient cannot call internalAction — this is a Convex platform constraint
+    const result = await convex.action(api.integrations.google.serverExchangeAndSave, {
+      serverSecret,
       code,
       projectId: projectId as Id<'projects'>,
       stateRaw: stateParam,
@@ -87,7 +97,7 @@ export async function GET(req: NextRequest) {
     const gscSaved = result.gscSaved;
     const gscSiteCount = result.gscSiteCount;
 
-    console.log('[GoogleOAuth][LegacyCallback] === SUMMARY ===', {
+    console.log('[GoogleOAuth][Callback] === SUMMARY ===', {
       ga4Saved,
       gscSaved,
       projectId,
@@ -99,23 +109,24 @@ export async function GET(req: NextRequest) {
 
     if (ga4Saved || gscSaved) {
       // Trigger initial per-project sync (fire-and-forget so redirect isn't delayed)
+      // Uses the public syncProject action (ConvexHttpClient can't call internal functions)
       try {
         console.log(
-          '[GoogleOAuth][LegacyCallback] Triggering initial sync for project:',
+          '[GoogleOAuth][Callback] Triggering initial sync for project:',
           projectId
         );
         convex
-          .action(internal.analytics.sync.syncProjectData, {
+          .action(api['analytics/scheduler'].syncProject, {
             projectId: projectId as Id<'projects'>,
           })
           .then(
-            (result: unknown) =>
-              console.log('[GoogleOAuth][LegacyCallback] Initial sync complete:', result),
+            (syncResult: unknown) =>
+              console.log('[GoogleOAuth][Callback] Initial sync complete:', syncResult),
             (err: unknown) =>
-              console.error('[GoogleOAuth][LegacyCallback] Initial sync failed:', err)
+              console.error('[GoogleOAuth][Callback] Initial sync failed:', err)
           );
       } catch (syncErr) {
-        console.error('[GoogleOAuth][LegacyCallback] Failed to trigger sync:', syncErr);
+        console.error('[GoogleOAuth][Callback] Failed to trigger sync:', syncErr);
       }
 
       redirectUrl.searchParams.set('setup', 'ga4');
@@ -129,19 +140,19 @@ export async function GET(req: NextRequest) {
         }
       }
       console.log(
-        '[GoogleOAuth][LegacyCallback] SUCCESS — redirecting to:',
+        '[GoogleOAuth][Callback] SUCCESS — redirecting to:',
         redirectUrl.toString()
       );
     } else {
       redirectUrl.searchParams.set('error', 'no_properties_saved');
       console.error(
-        '[GoogleOAuth][LegacyCallback] FAILED — tokens exchanged but no properties saved'
+        '[GoogleOAuth][Callback] FAILED — tokens exchanged but no properties saved'
       );
     }
 
     return NextResponse.redirect(redirectUrl);
   } catch (e) {
-    console.error('[GoogleOAuth][LegacyCallback] UNHANDLED ERROR:', e);
+    console.error('[GoogleOAuth][Callback] UNHANDLED ERROR:', e);
     return NextResponse.redirect(
       new URL('/settings?tab=integrations&error=exchange_failed', baseUrl)
     );
