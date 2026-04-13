@@ -23,7 +23,6 @@ export const generateAuthUrl = action({
   args: {
     projectId: v.optional(v.id('projects')),
     returnTo: v.optional(v.string()), // Where to redirect after OAuth
-    redirectUri: v.optional(v.string()), // Override redirect URI for local dev
   },
   handler: async (ctx, args) => {
     // SECURITY: Ensure caller is authenticated and actually owns the Project ID
@@ -39,7 +38,7 @@ export const generateAuthUrl = action({
     });
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = args.redirectUri || process.env.GOOGLE_REDIRECT_URI;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
     console.log('[GoogleOAuth][Convex] Environment check:', {
       GOOGLE_CLIENT_ID: clientId ? 'SET' : 'UNSET',
@@ -67,9 +66,7 @@ export const generateAuthUrl = action({
     if (args.returnTo) {
       stateData.returnTo = args.returnTo;
     }
-    if (redirectUri) {
-      stateData.redirectUri = redirectUri;
-    }
+    // Removed redirectUri from state to enforce strict environment URL
     if (Object.keys(stateData).length > 0) {
       const payloadStr = JSON.stringify(stateData);
       let encodedState: string;
@@ -99,7 +96,6 @@ export const exchangeCode = action({
   args: {
     code: v.string(),
     projectId: v.optional(v.id('projects')),
-    redirectUri: v.optional(v.string()), // Override redirect URI for local dev
   },
   handler: async (ctx, args) => {
     // SECURITY: Ensure caller is authenticated and owns the Project ID context
@@ -113,7 +109,7 @@ export const exchangeCode = action({
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = args.redirectUri || process.env.GOOGLE_REDIRECT_URI;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
     console.log('[GoogleOAuth][Convex] exchangeCode env check:', {
       GOOGLE_CLIENT_ID: clientId ? 'SET' : 'UNSET',
@@ -171,7 +167,6 @@ export const exchangeAndSave = action({
   args: {
     code: v.string(),
     projectId: v.id('projects'),
-    redirectUri: v.optional(v.string()), // Override redirect URI for local dev
   },
   handler: async (ctx, args) => {
     // SECURITY: Absolute RBAC lock ensuring a malicious user cannot override an arbitrary project API
@@ -184,7 +179,7 @@ export const exchangeAndSave = action({
     // 1. Exchange Code
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = args.redirectUri || process.env.GOOGLE_REDIRECT_URI;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
     if (!clientId || !clientSecret || !redirectUri) {
       throw new Error('Missing Google Creds');
@@ -312,7 +307,6 @@ export const serverExchangeAndSave = action({
     code: v.string(),
     projectId: v.id('projects'),
     stateRaw: v.optional(v.string()),
-    redirectUri: v.optional(v.string()),
   },
   handler: async (
     ctx,
@@ -330,7 +324,6 @@ export const serverExchangeAndSave = action({
       code: args.code,
       projectId: args.projectId,
       stateRaw: args.stateRaw,
-      redirectUri: args.redirectUri,
     })) as { ga4Saved: boolean; gscSaved: boolean; gscSiteCount: number };
   },
 });
@@ -347,14 +340,13 @@ export const internalExchangeAndSave = internalAction({
     code: v.string(),
     projectId: v.id('projects'),
     stateRaw: v.optional(v.string()),
-    redirectUri: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     console.log('[GoogleOAuth][Convex] internalExchangeAndSave called with projectId:', args.projectId);
 
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-    let finalRedirectUri = args.redirectUri || process.env.GOOGLE_REDIRECT_URI;
+    let finalRedirectUri = process.env.GOOGLE_REDIRECT_URI;
 
     // Security: Validate Secure State HMAC if provided (Prevents Forgery)
     if (args.stateRaw && clientSecret) {
@@ -369,9 +361,14 @@ export const internalExchangeAndSave = internalAction({
        
        const payload = JSON.parse(secureState.p);
        if (payload.projectId !== args.projectId) throw new Error('ProjectId payload swap detected - OAuth execution blocked');
-       
+
+       // Legacy grace period for in-flight authorization requests
        if (typeof payload.redirectUri === 'string') {
-         finalRedirectUri = payload.redirectUri;
+          if (payload.redirectUri === process.env.GOOGLE_REDIRECT_URI || payload.redirectUri.startsWith('http://localhost:')) {
+             finalRedirectUri = payload.redirectUri;
+          } else {
+             console.warn(`[GoogleOAuth] Rejected in-flight dynamic redirectUri: ${payload.redirectUri}`);
+          }
        }
     }
 

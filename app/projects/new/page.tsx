@@ -279,11 +279,9 @@ export default function CreateProjectPage() {
     setConnectionError(null);
 
     try {
-      const localRedirectUri = `${window.location.origin}/api/google-callback`;
       const authUrl = await generateAuthUrl({
         projectId: projectId as Id<'projects'>,
         returnTo: '/projects/new?step=2',
-        redirectUri: localRedirectUri,
       });
 
       if (!authUrl) {

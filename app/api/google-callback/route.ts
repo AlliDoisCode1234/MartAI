@@ -53,17 +53,18 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Derive trusted base to prevent origin spoofing
-  const canonicalBase = process.env.NEXT_PUBLIC_APP_URL 
-    || (process.env.GOOGLE_REDIRECT_URI ? new URL(process.env.GOOGLE_REDIRECT_URI).origin : 'http://localhost:3000');
-  
-  const requestOrigin = req.nextUrl.origin;
-  
-  // Allow localhost for dev, and allow the canonical base. 
-  // If spoofed, fallback to canonical to avoid handing token to attacker.
-  const baseUrl = (requestOrigin === canonicalBase || requestOrigin?.includes('localhost')) 
-    ? requestOrigin 
-    : canonicalBase;
+  // Derive trusted base to prevent origin spoofing, tied strictly to GOOGLE_REDIRECT_URI to prevent cross-origin auth hijacking
+  let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  if (process.env.GOOGLE_REDIRECT_URI) {
+    try {
+      const authOrigin = new URL(process.env.GOOGLE_REDIRECT_URI).origin;
+      // Fail fast if misconfigured
+      if (process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL !== authOrigin) {
+        console.error(`[GoogleOAuth] CRITICAL MISMATCH: NEXT_PUBLIC_APP_URL (${process.env.NEXT_PUBLIC_APP_URL}) != GOOGLE_REDIRECT_URI origin (${authOrigin})`);
+      }
+      baseUrl = authOrigin; // Force route UI flows dynamically to exactly what Google approved
+    } catch {}
+  }
 
   // Helper: build redirect URL with error params, respecting returnTo
   const buildErrorRedirect = (errorCode: string) => {
@@ -97,13 +98,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Pass a properly structured fallback URI based on securely derived baseUrl.
-    // Convex will strictly overwrite this with the HMAC signed redirectUri if available.
-    const finalRedirectUri = new URL('/api/google-callback', baseUrl).toString();
-
-    console.log('[GoogleOAuth][Callback] Exchanging code via serverExchangeAndSave...', {
-      finalRedirectUri,
-    });
+    console.log('[GoogleOAuth][Callback] Exchanging code via serverExchangeAndSave...');
 
     // Call the PUBLIC action with shared-secret gate (NOT internalAction)
     // ConvexHttpClient cannot call internalAction — this is a Convex platform constraint
@@ -112,7 +107,6 @@ export async function GET(req: NextRequest) {
       code,
       projectId: projectId as Id<'projects'>,
       stateRaw: stateParam,
-      redirectUri: finalRedirectUri,
     });
 
     const ga4Saved = result.ga4Saved;

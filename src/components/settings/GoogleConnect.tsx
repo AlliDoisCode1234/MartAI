@@ -107,10 +107,7 @@ export function GoogleConnect({ projectId }: Props) {
     setConnectingService(service);
     try {
       console.log('[GoogleOAuth][Client] Calling generateAuthUrl Convex action...');
-      // Pass the current origin's callback URL so local dev auto-resolves to localhost
-      const localRedirectUri = `${window.location.origin}/api/google-callback`;
-      console.log('[GoogleOAuth][Client] Using redirectUri:', localRedirectUri);
-      const authUrl = await generateAuthUrl({ projectId, redirectUri: localRedirectUri });
+      const authUrl = await generateAuthUrl({ projectId });
       console.log(
         '[GoogleOAuth][Client] Received authUrl:',
         authUrl ? `${authUrl.substring(0, 80)}...` : 'NULL'
