@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
       code,
       projectId: projectId as Id<'projects'>,
       stateRaw: stateParam,
-      redirectUri: process.env.GOOGLE_REDIRECT_URI || undefined,
+      redirectUri: `${baseUrl}/api/google-callback`,
     });
 
     const ga4Saved = result.ga4Saved;
