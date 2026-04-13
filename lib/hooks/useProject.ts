@@ -215,12 +215,12 @@ export function useProject(
 
     return {
       projectId: resolvedProjectId ?? null,
-      project,
-      ga4Connection,
-      gscConnection,
-      rating,
-      metrics,
-      strategyData,
+      project: shouldFetch ? project : null,
+      ga4Connection: shouldFetch ? ga4Connection : null,
+      gscConnection: shouldFetch ? gscConnection : null,
+      rating: shouldFetch ? rating : null,
+      metrics: shouldFetch ? metrics : null,
+      strategyData: shouldFetch ? strategyData : null,
       isLoading: dataLoading || isSelectingProject,
       isSelectingProject,
       hasGA4: !!ga4Connection,

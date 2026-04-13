@@ -173,8 +173,9 @@ export default function InsightsPage() {
   const strategyData = useQuery(api.strategy.getFullStrategy, projectId ? { projectId } : 'skip');
 
   // Loading state
-  if (projectLoading || contentPieces === undefined) return <InsightsSkeleton />;
+  if (projectLoading) return <InsightsSkeleton />;
   if (!project || !projectId) return <InsightsEmpty />;
+  if (contentPieces === undefined) return <InsightsSkeleton />;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Convex query return type is inferred
   const pieces: ContentPieceForInsights[] = (contentPieces ?? []).map((p: any) => ({
