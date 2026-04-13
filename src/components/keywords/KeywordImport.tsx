@@ -10,7 +10,7 @@
  * Inline panel — rendered via display:none toggle, not a separate route.
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Box,
   VStack,
@@ -35,6 +35,8 @@ export function KeywordImport() {
   const toast = useToast();
   const [isSyncingGsc, setIsSyncingGsc] = useState(false);
   const [isSyncingAi, setIsSyncingAi] = useState(false);
+  const [isUploadingCsv, setIsUploadingCsv] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check GSC connection status
   const gscConnection = useQuery(
@@ -107,6 +109,75 @@ export function KeywordImport() {
     } finally {
       setIsSyncingAi(false);
     }
+  };
+
+  const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !projectId) return;
+
+    setIsUploadingCsv(true);
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        if (!text) throw new Error("Empty file");
+
+        const lines = text.split('\n').filter(l => l.trim() !== '');
+        if (lines.length < 2) throw new Error("File must contain a header and at least one keyword row");
+
+        // Simple CSV parser assuming: Keyword, Volume, Difficulty
+        const keywords = lines.slice(1).map(line => {
+          const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+          const keyword = cols[0];
+          const volume = parseInt(cols[1], 10) || 500;
+          const difficulty = parseInt(cols[2], 10) || 40;
+          
+          return {
+            keyword,
+            volume,
+            difficulty,
+            intent: 'informational' // default intent
+          };
+        }).filter(k => k.keyword.length > 0);
+
+        if (keywords.length === 0) throw new Error("No valid keywords found in CSV");
+
+        const result = await generateClusters({
+          projectId: projectId as Id<'projects'>,
+          keywords
+        });
+
+        if (!result.success && 'error' in result) {
+          throw new Error((result as any).error);
+        }
+
+        toast({
+          title: 'CSV Imported',
+          description: `Imported and clustered ${result.count} keyword groups.`,
+          status: 'success',
+          duration: 5000,
+        });
+
+      } catch (error) {
+        toast({
+          title: 'Upload failed',
+          description: error instanceof Error ? error.message : 'Invalid CSV format',
+          status: 'error',
+          duration: 5000,
+        });
+      } finally {
+        setIsUploadingCsv(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+    
+    reader.onerror = () => {
+      toast({ title: 'Error reading file', status: 'error', duration: 3000 });
+      setIsUploadingCsv(false);
+    };
+
+    reader.readAsText(file);
   };
 
   return (
@@ -208,14 +279,23 @@ export function KeywordImport() {
               Import a list of keywords from a CSV file. Include columns for keyword, volume, and
               difficulty.
             </Text>
+            <input
+              type="file"
+              accept=".csv"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleCsvUpload}
+            />
             <Button
-              leftIcon={<FiUpload />}
+              leftIcon={isUploadingCsv ? <Spinner size="xs" /> : <FiUpload />}
               bg="rgba(255,255,255,0.1)"
               color="white"
               _hover={{ bg: 'rgba(255,255,255,0.15)' }}
               size="sm"
+              isDisabled={isUploadingCsv}
+              onClick={() => fileInputRef.current?.click()}
             >
-              Choose File
+              {isUploadingCsv ? 'Uploading...' : 'Choose File'}
             </Button>
           </VStack>
         </Box>

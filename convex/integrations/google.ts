@@ -81,7 +81,6 @@ export const generateAuthUrl = action({
       }
       
       url.searchParams.append('state', encodedState);
-      console.log('[GoogleOAuth][Convex] State payload:', stateData);
     }
 
     const finalUrl = url.toString();

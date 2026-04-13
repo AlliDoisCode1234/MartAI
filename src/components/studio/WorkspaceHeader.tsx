@@ -97,6 +97,10 @@ export const WorkspaceHeader: FC<Props> = ({ collapsed = false, variant = 'dark'
   // Data
   const organizations = useQuery(api.teams.teams.getMyOrganizations) as OrgItem[] | undefined;
   const projects = useQuery(api.projects.projects.list, user?._id ? undefined : 'skip');
+  const projectLimits = useQuery(
+    api.projects.projects.getProjectCreationLimits,
+    user?.organizationId ? { organizationId: user.organizationId as Id<'organizations'> } : {}
+  );
   const switchOrg = useMutation(api.users.switchOrganization);
 
   // Context
@@ -400,18 +404,37 @@ export const WorkspaceHeader: FC<Props> = ({ collapsed = false, variant = 'dark'
 
               <MenuDivider borderColor="whiteAlpha.100" />
 
-              <Link href="/onboarding" passHref>
-                <MenuItem
-                  icon={<Icon as={FiPlus} />}
-                  bg="transparent"
-                  _hover={{ bg: 'whiteAlpha.100' }}
-                  color="whiteAlpha.600"
-                  fontSize="sm"
-                  px={3}
-                >
-                  New Project
-                </MenuItem>
-              </Link>
+              {projectLimits?.canCreate !== false ? (
+                <Link href="/projects/new" passHref>
+                  <MenuItem
+                    icon={<Icon as={FiPlus} />}
+                    bg="transparent"
+                    _hover={{ bg: 'whiteAlpha.100' }}
+                    color="whiteAlpha.600"
+                    fontSize="sm"
+                    px={3}
+                  >
+                    New Project
+                  </MenuItem>
+                </Link>
+              ) : (
+                <Tooltip label={projectLimits?.errorReason || 'Project limit reached'} placement="right" hasArrow>
+                  <Box>
+                    <MenuItem
+                      icon={<Icon as={FiPlus} />}
+                      bg="transparent"
+                      _hover={{ bg: 'whiteAlpha.50' }}
+                      color="whiteAlpha.400"
+                      fontSize="sm"
+                      px={3}
+                      cursor="not-allowed"
+                      onClick={() => router.push('/settings?tab=billing')}
+                    >
+                      Limit Reached (Upgrade)
+                    </MenuItem>
+                  </Box>
+                </Tooltip>
+              )}
             </MenuList>
           </Menu>
         </VStack>

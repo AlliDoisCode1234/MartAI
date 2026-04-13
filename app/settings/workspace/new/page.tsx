@@ -82,6 +82,18 @@ export default function CreateWorkspacePage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
+  // Onboarding completion guard — only fully onboarded users can create workspaces.
+  useEffect(() => {
+    if (!authLoading && user && user.onboardingStatus !== 'completed') {
+      try {
+        if (sessionStorage.getItem('onboarding_just_completed') === 'true') {
+          return;
+        }
+      } catch {}
+      router.replace('/onboarding');
+    }
+  }, [authLoading, user, router]);
+
   // Tier guard — Starter users shouldn't reach this page
   useEffect(() => {
     if (user && (!user.membershipTier || user.membershipTier === 'starter')) {

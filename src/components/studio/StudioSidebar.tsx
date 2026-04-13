@@ -98,6 +98,7 @@ export function StudioSidebar({ collapsed = false, onToggle }: Props) {
       flexDirection="column"
       borderRight="1px solid"
       borderColor="rgba(255,255,255,0.06)"
+      position="relative"
     >
       {/* Brand & Toggle */}
       <Flex px={collapsed ? 2 : 5} mb={6} justify="space-between" align="center" h="36px">

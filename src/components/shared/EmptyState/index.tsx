@@ -14,7 +14,7 @@
  *   title="No keywords yet"
  *   message="Connect GSC or add keywords manually"
  *   actionLabel="Add Keywords"
- *   actionRoute="/studio/strategy"
+ *   actionRoute="/studio/keywords"
  *   theme="dark"
  *   icon={<MartCharacter size="md" />}
  * />

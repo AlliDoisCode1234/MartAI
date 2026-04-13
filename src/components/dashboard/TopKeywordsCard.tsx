@@ -72,7 +72,7 @@ export function TopKeywordsCard({ keywords }: Props) {
               Your best ranking keywords and their performance
             </Text>
           </Box>
-          <Button size="sm" variant="outline" onClick={() => router.push('/keywords')}>
+          <Button size="sm" variant="outline" onClick={() => router.push('/studio/keywords')}>
             View All
           </Button>
         </HStack>

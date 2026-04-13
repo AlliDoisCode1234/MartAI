@@ -192,6 +192,9 @@ These personas act as historical anchors, representing definitive architectural 
 #### Context Node 00015 (docs/personas/bot_persona_PRODUCTION_HARDENING_00015_PERSONA.md)
 - Ask: "What decisions were made during the PRODUCTION_HARDENING initiative? What specific hazards or edge cases did we discover?"
 
+#### Context Node 00016 (docs/personas/bot_persona_BLAST_RADIUS_DISCIPLINE_00016_PERSONA.md)
+- Ask: "What is the mandatory blast radius protocol for route/constant changes? How do we prevent missing occurrences across the codebase?"
+
 ---
 
 ## Consultation Process

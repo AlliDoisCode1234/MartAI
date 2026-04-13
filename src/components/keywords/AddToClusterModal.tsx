@@ -33,7 +33,7 @@ import {
   Divider,
 } from '@chakra-ui/react';
 import { FiPlus, FiLayers, FiCheck } from 'react-icons/fi';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 
@@ -67,7 +67,7 @@ export function AddToClusterModal({ isOpen, onClose, projectId, keywordId, keywo
     projectId ? { projectId: projectId as Id<'projects'> } : 'skip'
   );
 
-  const createClusterMut = useMutation(api.seo.keywordClusters.createManualCluster);
+  const createClusterAction = useAction(api.seo.keywordActions.createManualClusterWithMetrics);
   const assignKeywordMut = useMutation(api.seo.keywords.assignKeywordToCluster);
 
   const handleClose = () => {
@@ -103,7 +103,7 @@ export function AddToClusterModal({ isOpen, onClose, projectId, keywordId, keywo
     setIsCreating(true);
 
     try {
-      const clusterId = await createClusterMut({
+      const clusterId = await createClusterAction({
         projectId: projectId as Id<'projects'>,
         clusterName: newClusterName.trim(),
         keywords: allKeywords,

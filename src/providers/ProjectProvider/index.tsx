@@ -112,7 +112,7 @@ export const ProjectProvider: FC<Props> = ({
               <Text color={darkMode ? 'gray.400' : 'gray.600'}>
                 Create or select a project to get started.
               </Text>
-              <Link href="/onboarding">
+              <Link href="/projects/new">
                 <Button
                   bg="linear-gradient(135deg, #FF9D00 0%, #FF6B00 100%)"
                   color="white"

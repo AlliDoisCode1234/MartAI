@@ -27,47 +27,55 @@ export async function GET(req: NextRequest) {
     error: error || 'none',
   });
 
-  const baseUrl = new URL(req.url).origin;
+  // Determine the fallback redirect path — use returnTo from state if available,
+  // otherwise fall back to settings integrations tab.
+  // We need returnTo for ALL error paths, so attempt to decode state early.
+  let returnTo: string | undefined;
+  let projectId: string | undefined;
+
+  if (stateParam) {
+    try {
+      const stateJson = Buffer.from(stateParam, 'base64').toString('utf-8');
+      const secureState = JSON.parse(stateJson);
+      const stateData = secureState.p ? JSON.parse(secureState.p) : secureState;
+      projectId = stateData.projectId;
+      
+      const rawReturnTo = stateData.returnTo;
+      if (typeof rawReturnTo === 'string' && rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//')) {
+        returnTo = rawReturnTo;
+      } else if (rawReturnTo) {
+        console.warn('[GoogleOAuth][Callback] Invalid returnTo path rejected');
+      }
+
+      console.log('[GoogleOAuth][Callback] Decoded state projectId:', projectId);
+    } catch {
+      console.error('[GoogleOAuth][Callback] Failed to decode state parameter');
+    }
+  }
+
+  const baseUrl = req.nextUrl.origin;
+
+  // Helper: build redirect URL with error params, respecting returnTo
+  const buildErrorRedirect = (errorCode: string) => {
+    const path = returnTo || '/settings?tab=integrations';
+    const url = new URL(path, baseUrl);
+    url.searchParams.set('success', 'false');
+    url.searchParams.set('error', errorCode);
+    return url;
+  };
 
   if (error) {
     console.error('[GoogleOAuth][Callback] Google returned error:', error);
-    return NextResponse.redirect(new URL(`/settings?tab=integrations&error=${error}`, baseUrl));
+    return NextResponse.redirect(buildErrorRedirect(error));
   }
 
   if (!code || !stateParam) {
-    return NextResponse.redirect(
-      new URL('/settings?tab=integrations&error=missing_params', baseUrl)
-    );
+    return NextResponse.redirect(buildErrorRedirect('missing_params'));
   }
 
-  // Decode the base64 state parameter to extract projectId
-  let projectId: string | undefined;
-  let returnTo: string | undefined;
-  try {
-    const stateJson = Buffer.from(stateParam, 'base64').toString('utf-8');
-    const secureState = JSON.parse(stateJson);
-    const stateData = secureState.p ? JSON.parse(secureState.p) : secureState;
-    projectId = stateData.projectId;
-    returnTo = stateData.returnTo;
-    console.log('[GoogleOAuth][Callback] Decoded state:', {
-      projectId,
-      returnTo,
-      fullState: stateData,
-    });
-  } catch {
-    console.error(
-      '[GoogleOAuth][Callback] Failed to decode state parameter, raw value:',
-      stateParam?.substring(0, 50)
-    );
-    return NextResponse.redirect(
-      new URL('/settings?tab=integrations&error=invalid_state', baseUrl)
-    );
-  }
-
+  // State was already decoded above — just validate projectId
   if (!projectId) {
-    return NextResponse.redirect(
-      new URL('/settings?tab=integrations&error=missing_project_id', baseUrl)
-    );
+    return NextResponse.redirect(buildErrorRedirect('missing_project_id'));
   }
 
   // Server-to-server shared secret — validates that this call originates from
@@ -75,9 +83,7 @@ export async function GET(req: NextRequest) {
   const serverSecret = process.env.CONVEX_SERVER_SECRET;
   if (!serverSecret) {
     console.error('[GoogleOAuth][Callback] CONVEX_SERVER_SECRET is NOT configured');
-    return NextResponse.redirect(
-      new URL('/settings?tab=integrations&error=server_config_error', baseUrl)
-    );
+    return NextResponse.redirect(buildErrorRedirect('server_config_error'));
   }
 
   try {
@@ -153,8 +159,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   } catch (e) {
     console.error('[GoogleOAuth][Callback] UNHANDLED ERROR:', e);
-    return NextResponse.redirect(
-      new URL('/settings?tab=integrations&error=exchange_failed', baseUrl)
-    );
+    return NextResponse.redirect(buildErrorRedirect('exchange_failed'));
   }
 }
