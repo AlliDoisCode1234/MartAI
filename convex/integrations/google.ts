@@ -67,6 +67,9 @@ export const generateAuthUrl = action({
     if (args.returnTo) {
       stateData.returnTo = args.returnTo;
     }
+    if (redirectUri) {
+      stateData.redirectUri = redirectUri;
+    }
     if (Object.keys(stateData).length > 0) {
       const payloadStr = JSON.stringify(stateData);
       let encodedState: string;

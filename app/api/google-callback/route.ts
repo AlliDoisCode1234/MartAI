@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
   // We need returnTo for ALL error paths, so attempt to decode state early.
   let returnTo: string | undefined;
   let projectId: string | undefined;
+  let redirectUriFromState: string | undefined;
 
   if (stateParam) {
     try {
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
       const secureState = JSON.parse(stateJson);
       const stateData = secureState.p ? JSON.parse(secureState.p) : secureState;
       projectId = stateData.projectId;
+      redirectUriFromState = stateData.redirectUri;
       
       const rawReturnTo = stateData.returnTo;
       if (typeof rawReturnTo === 'string' && rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//')) {
@@ -97,7 +99,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('[GoogleOAuth][Callback] Exchanging code via serverExchangeAndSave...');
+    // The exact canonical redirectUri that generated the auth URL is packed securely inside `state`.
+    // We trust it because it's HMAC signed.
+    const finalRedirectUri = redirectUriFromState || new URL('/api/google-callback', canonicalBase).toString();
+
+    console.log('[GoogleOAuth][Callback] Exchanging code via serverExchangeAndSave...', {
+      useStateRedirect: !!redirectUriFromState,
+      finalRedirectUri,
+    });
 
     // Call the PUBLIC action with shared-secret gate (NOT internalAction)
     // ConvexHttpClient cannot call internalAction — this is a Convex platform constraint
@@ -106,7 +115,7 @@ export async function GET(req: NextRequest) {
       code,
       projectId: projectId as Id<'projects'>,
       stateRaw: stateParam,
-      redirectUri: new URL('/api/google-callback', baseUrl).toString(),
+      redirectUri: finalRedirectUri,
     });
 
     const ga4Saved = result.ga4Saved;
