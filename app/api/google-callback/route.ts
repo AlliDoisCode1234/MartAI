@@ -97,7 +97,13 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('[GoogleOAuth][Callback] Exchanging code via serverExchangeAndSave...');
+    // Pass a properly structured fallback URI based on securely derived baseUrl.
+    // Convex will strictly overwrite this with the HMAC signed redirectUri if available.
+    const finalRedirectUri = new URL('/api/google-callback', baseUrl).toString();
+
+    console.log('[GoogleOAuth][Callback] Exchanging code via serverExchangeAndSave...', {
+      finalRedirectUri,
+    });
 
     // Call the PUBLIC action with shared-secret gate (NOT internalAction)
     // ConvexHttpClient cannot call internalAction — this is a Convex platform constraint
@@ -106,7 +112,7 @@ export async function GET(req: NextRequest) {
       code,
       projectId: projectId as Id<'projects'>,
       stateRaw: stateParam,
-      redirectUri: new URL('/api/google-callback', baseUrl).toString(),
+      redirectUri: finalRedirectUri,
     });
 
     const ga4Saved = result.ga4Saved;

@@ -67,6 +67,9 @@ export const generateAuthUrl = action({
     if (args.returnTo) {
       stateData.returnTo = args.returnTo;
     }
+    if (redirectUri) {
+      stateData.redirectUri = redirectUri;
+    }
     if (Object.keys(stateData).length > 0) {
       const payloadStr = JSON.stringify(stateData);
       let encodedState: string;
@@ -351,23 +354,31 @@ export const internalExchangeAndSave = internalAction({
 
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
+    let finalRedirectUri = args.redirectUri || process.env.GOOGLE_REDIRECT_URI;
+
     // Security: Validate Secure State HMAC if provided (Prevents Forgery)
     if (args.stateRaw && clientSecret) {
        const secureState = JSON.parse(Buffer.from(args.stateRaw, 'base64').toString('utf-8'));
-       if (secureState.p && secureState.s) {
-          const expectedSig = crypto.createHmac('sha256', clientSecret).update(secureState.p).digest('hex');
-          if (expectedSig !== secureState.s) throw new Error('State signature forged - OAuth execution blocked');
-          
-          const parsedId = JSON.parse(secureState.p).projectId;
-          if (parsedId !== args.projectId) throw new Error('ProjectId payload swap detected - OAuth execution blocked');
+       
+       if (!secureState.p || !secureState.s) {
+         throw new Error('OAuth state is unsigned. Production requires HMAC signed state.');
+       }
+       
+       const expectedSig = crypto.createHmac('sha256', clientSecret).update(secureState.p).digest('hex');
+       if (expectedSig !== secureState.s) throw new Error('State signature forged - OAuth execution blocked');
+       
+       const payload = JSON.parse(secureState.p);
+       if (payload.projectId !== args.projectId) throw new Error('ProjectId payload swap detected - OAuth execution blocked');
+       
+       if (typeof payload.redirectUri === 'string') {
+         finalRedirectUri = payload.redirectUri;
        }
     }
 
     // 1. Exchange Code
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = args.redirectUri || process.env.GOOGLE_REDIRECT_URI;
 
-    if (!clientId || !clientSecret || !redirectUri) {
+    if (!clientId || !clientSecret || !finalRedirectUri) {
       throw new Error('Missing Google Creds');
     }
 
@@ -378,7 +389,7 @@ export const internalExchangeAndSave = internalAction({
         code: args.code,
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: redirectUri,
+        redirect_uri: finalRedirectUri,
         grant_type: 'authorization_code',
       }),
     });
