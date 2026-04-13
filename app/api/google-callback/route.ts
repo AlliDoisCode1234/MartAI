@@ -53,17 +53,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Derive trusted base to prevent origin spoofing
-  const canonicalBase = process.env.NEXT_PUBLIC_APP_URL 
-    || (process.env.GOOGLE_REDIRECT_URI ? new URL(process.env.GOOGLE_REDIRECT_URI).origin : 'http://localhost:3000');
-  
-  const requestOrigin = req.nextUrl.origin;
-  
-  // Allow localhost for dev, and allow the canonical base. 
-  // If spoofed, fallback to canonical to avoid handing token to attacker.
-  const baseUrl = (requestOrigin === canonicalBase || requestOrigin?.includes('localhost')) 
-    ? requestOrigin 
-    : canonicalBase;
+  // Hardcode single base URL strictly based on production environment
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
   // Helper: build redirect URL with error params, respecting returnTo
   const buildErrorRedirect = (errorCode: string) => {
@@ -97,13 +88,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Pass a properly structured fallback URI based on securely derived baseUrl.
-    // Convex will strictly overwrite this with the HMAC signed redirectUri if available.
-    const finalRedirectUri = new URL('/api/google-callback', baseUrl).toString();
-
-    console.log('[GoogleOAuth][Callback] Exchanging code via serverExchangeAndSave...', {
-      finalRedirectUri,
-    });
+    console.log('[GoogleOAuth][Callback] Exchanging code via serverExchangeAndSave...');
 
     // Call the PUBLIC action with shared-secret gate (NOT internalAction)
     // ConvexHttpClient cannot call internalAction — this is a Convex platform constraint
@@ -112,7 +97,6 @@ export async function GET(req: NextRequest) {
       code,
       projectId: projectId as Id<'projects'>,
       stateRaw: stateParam,
-      redirectUri: finalRedirectUri,
     });
 
     const ga4Saved = result.ga4Saved;
