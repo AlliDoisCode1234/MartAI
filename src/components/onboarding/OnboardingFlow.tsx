@@ -552,10 +552,12 @@ export function OnboardingFlow() {
     setConnectionError(null);
 
     try {
+      const localRedirectUri = `${window.location.origin}/api/google-callback`;
       // Generate auth URL with returnTo so callback redirects back to onboarding
       const authUrl = await generateAuthUrl({
         projectId: projectId as Id<'projects'>,
         returnTo: '/onboarding?step=4',
+        redirectUri: localRedirectUri,
       });
 
       if (!authUrl) {
