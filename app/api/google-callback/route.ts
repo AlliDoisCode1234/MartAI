@@ -39,19 +39,21 @@ export async function GET(req: NextRequest) {
       const secureState = JSON.parse(stateJson);
       const stateData = secureState.p ? JSON.parse(secureState.p) : secureState;
       projectId = stateData.projectId;
-      returnTo = stateData.returnTo;
-      console.log('[GoogleOAuth][Callback] Decoded state:', {
-        projectId,
-        returnTo,
-        fullState: stateData,
-      });
+      
+      const rawReturnTo = stateData.returnTo;
+      if (typeof rawReturnTo === 'string' && rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//')) {
+        returnTo = rawReturnTo;
+      } else if (rawReturnTo) {
+        console.warn('[GoogleOAuth][Callback] Invalid returnTo path rejected');
+      }
+
+      console.log('[GoogleOAuth][Callback] Decoded state projectId:', projectId);
     } catch {
-      console.error(
-        '[GoogleOAuth][Callback] Failed to decode state parameter, raw value:',
-        stateParam?.substring(0, 50)
-      );
+      console.error('[GoogleOAuth][Callback] Failed to decode state parameter');
     }
   }
+
+  const baseUrl = req.nextUrl.origin;
 
   // Helper: build redirect URL with error params, respecting returnTo
   const buildErrorRedirect = (errorCode: string) => {
