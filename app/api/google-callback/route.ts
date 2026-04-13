@@ -53,7 +53,17 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const baseUrl = req.nextUrl.origin;
+  // Derive trusted base to prevent origin spoofing
+  const canonicalBase = process.env.NEXT_PUBLIC_APP_URL 
+    || (process.env.GOOGLE_REDIRECT_URI ? new URL(process.env.GOOGLE_REDIRECT_URI).origin : 'http://localhost:3000');
+  
+  const requestOrigin = req.nextUrl.origin;
+  
+  // Allow localhost for dev, and allow the canonical base. 
+  // If spoofed, fallback to canonical to avoid handing token to attacker.
+  const baseUrl = (requestOrigin === canonicalBase || requestOrigin?.includes('localhost')) 
+    ? requestOrigin 
+    : canonicalBase;
 
   // Helper: build redirect URL with error params, respecting returnTo
   const buildErrorRedirect = (errorCode: string) => {
@@ -96,7 +106,7 @@ export async function GET(req: NextRequest) {
       code,
       projectId: projectId as Id<'projects'>,
       stateRaw: stateParam,
-      redirectUri: `${baseUrl}/api/google-callback`,
+      redirectUri: new URL('/api/google-callback', baseUrl).toString(),
     });
 
     const ga4Saved = result.ga4Saved;
