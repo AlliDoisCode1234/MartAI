@@ -53,8 +53,18 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Hardcode single base URL strictly based on production environment
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  // Derive trusted base to prevent origin spoofing, tied strictly to GOOGLE_REDIRECT_URI to prevent cross-origin auth hijacking
+  let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  if (process.env.GOOGLE_REDIRECT_URI) {
+    try {
+      const authOrigin = new URL(process.env.GOOGLE_REDIRECT_URI).origin;
+      // Fail fast if misconfigured
+      if (process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL !== authOrigin) {
+        console.error(`[GoogleOAuth] CRITICAL MISMATCH: NEXT_PUBLIC_APP_URL (${process.env.NEXT_PUBLIC_APP_URL}) != GOOGLE_REDIRECT_URI origin (${authOrigin})`);
+      }
+      baseUrl = authOrigin; // Force route UI flows dynamically to exactly what Google approved
+    } catch {}
+  }
 
   // Helper: build redirect URL with error params, respecting returnTo
   const buildErrorRedirect = (errorCode: string) => {

@@ -346,7 +346,7 @@ export const internalExchangeAndSave = internalAction({
 
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-    const finalRedirectUri = process.env.GOOGLE_REDIRECT_URI;
+    let finalRedirectUri = process.env.GOOGLE_REDIRECT_URI;
 
     // Security: Validate Secure State HMAC if provided (Prevents Forgery)
     if (args.stateRaw && clientSecret) {
@@ -361,6 +361,15 @@ export const internalExchangeAndSave = internalAction({
        
        const payload = JSON.parse(secureState.p);
        if (payload.projectId !== args.projectId) throw new Error('ProjectId payload swap detected - OAuth execution blocked');
+
+       // Legacy grace period for in-flight authorization requests
+       if (typeof payload.redirectUri === 'string') {
+          if (payload.redirectUri === process.env.GOOGLE_REDIRECT_URI || payload.redirectUri.startsWith('http://localhost:')) {
+             finalRedirectUri = payload.redirectUri;
+          } else {
+             console.warn(`[GoogleOAuth] Rejected in-flight dynamic redirectUri: ${payload.redirectUri}`);
+          }
+       }
     }
 
     // 1. Exchange Code
