@@ -127,6 +127,11 @@ export default function DashboardPage() {
       return;
     }
     if (user && user.onboardingStatus !== 'completed') {
+      try {
+        if (sessionStorage.getItem('onboarding_just_completed') === 'true') {
+          return;
+        }
+      } catch {}
       router.replace('/onboarding');
       return;
     }

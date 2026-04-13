@@ -143,6 +143,11 @@ export const Layout: FC<Props> = ({ children }) => {
     if (user === null) return;
 
     if (user.onboardingStatus !== 'completed') {
+      try {
+        if (sessionStorage.getItem('onboarding_just_completed') === 'true') {
+          return;
+        }
+      } catch {}
       router.replace('/onboarding');
     }
   }, [authLoading, isAuthenticated, isPublicRoute, user, router]);

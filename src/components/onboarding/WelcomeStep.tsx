@@ -18,7 +18,9 @@ import {
   Text,
   FormControl,
   FormLabel,
+  FormHelperText,
   Input,
+  Textarea,
   Button,
   Select,
   Link,
@@ -26,30 +28,20 @@ import {
 import { motion } from 'framer-motion';
 import { FiArrowRight, FiArrowLeft } from 'react-icons/fi';
 import { MartCharacter } from '@/src/components/assistant';
+import { INDUSTRY_OPTIONS } from '@/lib/constants/industries';
 
 const MotionBox = motion(Box);
 
-// Industry options for better SEO targeting
-const INDUSTRY_OPTIONS = [
-  { value: '', label: 'Select your industry (optional)' },
-  { value: 'ecommerce', label: 'E-commerce / Retail' },
-  { value: 'saas', label: 'SaaS / Software' },
-  { value: 'agency', label: 'Marketing Agency' },
-  { value: 'healthcare', label: 'Healthcare / Medical' },
-  { value: 'legal', label: 'Legal Services' },
-  { value: 'realestate', label: 'Real Estate' },
-  { value: 'construction', label: 'Construction / Home Services' },
-  { value: 'restaurant', label: 'Restaurant / Food Service' },
-  { value: 'fitness', label: 'Fitness / Wellness' },
-  { value: 'education', label: 'Education / Coaching' },
-  { value: 'nonprofit', label: 'Non-Profit' },
-  { value: 'local', label: 'Local Service Business' },
-  { value: 'other', label: 'Other' },
-];
-
 type Props = {
-  formData: { businessName: string; website: string; industry?: string; customIndustry?: string };
-  onFormChange: (data: { businessName: string; website: string; industry?: string; customIndustry?: string }) => void;
+  formData: {
+    businessName: string;
+    website: string;
+    industry?: string;
+    customIndustry?: string;
+    targetAudience?: string;
+    businessGoals?: string;
+  };
+  onFormChange: (data: Props['formData']) => void;
   onNext: () => void;
   loading: boolean;
 };
@@ -155,6 +147,36 @@ export function WelcomeStep({ formData, onFormChange, onNext, loading }: Props) 
               <Text fontSize="xs" color="gray.500" mt={1}>
                 Helps us provide more relevant keyword and content recommendations
               </Text>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Target Audience (optional)</FormLabel>
+              <Textarea
+                placeholder="e.g., Small business owners aged 30-50 looking for local services"
+                value={formData.targetAudience || ''}
+                onChange={(e) => onFormChange({ ...formData, targetAudience: e.target.value })}
+                size="lg"
+                rows={2}
+                resize="vertical"
+              />
+              <FormHelperText color="gray.500">
+                Helps our AI tailor content tone and keyword strategy
+              </FormHelperText>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Business Goals (optional)</FormLabel>
+              <Textarea
+                placeholder="e.g., Increase organic traffic by 50%, generate more leads"
+                value={formData.businessGoals || ''}
+                onChange={(e) => onFormChange({ ...formData, businessGoals: e.target.value })}
+                size="lg"
+                rows={2}
+                resize="vertical"
+              />
+              <FormHelperText color="gray.500">
+                Guides content prioritization and strategy recommendations
+              </FormHelperText>
             </FormControl>
           </VStack>
 

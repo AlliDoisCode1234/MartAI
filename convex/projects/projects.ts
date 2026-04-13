@@ -34,6 +34,22 @@ export const createProject = mutation({
 
     // Count projects: per-org if user has an active org, otherwise global
     const orgId = args.organizationId || user?.organizationId;
+
+    // SEC-002: Verify org membership before allowing project creation in an org.
+    // Prevents IDOR/BOLA — users cannot create projects in foreign orgs.
+    if (orgId) {
+      const membership = await ctx.db
+        .query('teamMembers')
+        .withIndex('by_user_org', (q) =>
+          q.eq('userId', userId).eq('organizationId', orgId)
+        )
+        .first();
+
+      if (!membership || (membership.status && membership.status !== 'active')) {
+        throw new Error('Forbidden: Not an active member of this organization');
+      }
+    }
+
     const projects = orgId
       ? await ctx.db
           .query('projects')
@@ -101,6 +117,100 @@ export const createProject = mutation({
   },
 });
 
+/**
+ * Returns whether the current user is permitted to create a new project.
+ * Uses the precise logic identical to createProject, isolating the capacity check.
+ */
+export const getProjectCreationLimits = query({
+  args: { organizationId: v.optional(v.id('organizations')) },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return null;
+
+    const user = await ctx.db.get(userId);
+    if (!user) return null;
+
+    const orgId = args.organizationId || user.organizationId;
+    
+    // SEC-002 replication for query context
+    if (orgId) {
+      const membership = await ctx.db
+        .query('teamMembers')
+        .withIndex('by_user_org', (q) =>
+          q.eq('userId', userId).eq('organizationId', orgId)
+        )
+        .first();
+
+      if (!membership || (membership.status && membership.status !== 'active')) {
+        return null;
+      }
+    }
+
+    const projects = orgId
+      ? await ctx.db
+          .query('projects')
+          .withIndex('by_org', (q) => q.eq('organizationId', orgId))
+          .collect()
+      : await ctx.db
+          .query('projects')
+          .withIndex('by_user', (q) => q.eq('userId', userId))
+          .collect();
+
+    let effectiveTier = user.membershipTier ?? 'none';
+    if (orgId) {
+      const org = await ctx.db.get(orgId);
+      if (org && org.ownerId) {
+        const owner = await ctx.db.get(org.ownerId);
+        if (owner) {
+          effectiveTier = owner.membershipTier ?? 'none';
+        }
+      }
+    }
+
+    const config = planConfig(effectiveTier);
+    const limit: number = orgId 
+      ? (await ctx.db.get(orgId))?.maxProjects ?? config?.features.maxUrls ?? 0 
+      : config?.features.maxUrls ?? 0;
+
+    const current = projects.length;
+    let canCreate = current < limit;
+    
+    // Exception: If config strictly yields unlimited (e.g. 999999) then always allow
+    if (limit >= 99999) canCreate = true;
+
+    return {
+      canCreate,
+      limit,
+      current,
+      errorReason: canCreate 
+        ? undefined 
+        : limit === 0 
+          ? 'LIMIT_REACHED: Payment required. Please subscribe to a plan to start MartAI.'
+          : `LIMIT_REACHED: Upgrade your plan to manage more websites. Current limit: ${limit}`
+    };
+  }
+});
+
+/**
+ * SuperAdmin Project Deletion
+ * Exclusive mutation restricted entirely to internal technical operations.
+ */
+export const adminDeleteProject = mutation({
+  args: {
+    projectId: v.id('projects'),
+  },
+  handler: async (ctx, args) => {
+    // SECURITY: Strictly restrict this to super_admins
+    await requireSuperAdmin(ctx);
+
+    const project = await ctx.db.get(args.projectId);
+    if (!project) throw new Error('Project not found');
+
+    await ctx.db.delete(args.projectId);
+
+    return { success: true };
+  }
+});
 /**
  * @deprecated Use `projects.list` (org-aware, auth-scoped) for frontend consumers.
  * For server-side internal operations, use `getProjectsByUserInternal` instead.

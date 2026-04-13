@@ -9,9 +9,15 @@
  * 2-step wizard for adding a new project to the current workspace.
  * Decoupled from user acquisition components.
  *
- * Step 1: Project name + business URL -> creates project
+ * Step 1: Project name + URL + business context -> creates project
  * Step 2: Connect GA4/GSC (optional, can skip)
  * Completion: Redirects to /studio
+ *
+ * Business context (industry, targetAudience, businessGoals) is consumed by:
+ * - Writer personas (writerPersonas/index.ts)
+ * - Content calendar (generateCalendar.ts)
+ * - Keyword generation (keywordActions.ts)
+ * - SEO agent (agentActions.ts)
  */
 
 import { useState, useEffect } from 'react';
@@ -24,7 +30,9 @@ import {
   Text,
   FormControl,
   FormLabel,
+  FormHelperText,
   Input,
+  Textarea,
   Button,
   Select,
   HStack,
@@ -36,31 +44,15 @@ import {
 } from '@chakra-ui/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiBriefcase, FiArrowRight, FiArrowLeft, FiCheck } from 'react-icons/fi';
-import { useMutation, useAction, useConvex } from 'convex/react';
+import { useMutation, useAction, useConvex, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useAuth } from '@/lib/useAuth';
 import { MartLoader } from '@/src/components/assistant';
 import { IntegrationStep } from '@/src/components/onboarding';
+import { INDUSTRY_OPTIONS } from '@/lib/constants/industries';
 
 const MotionBox = motion(Box);
-
-const INDUSTRY_OPTIONS = [
-  { value: '', label: 'Select your industry (optional)' },
-  { value: 'ecommerce', label: 'E-commerce / Retail' },
-  { value: 'saas', label: 'SaaS / Software' },
-  { value: 'agency', label: 'Marketing Agency' },
-  { value: 'healthcare', label: 'Healthcare / Medical' },
-  { value: 'legal', label: 'Legal Services' },
-  { value: 'realestate', label: 'Real Estate' },
-  { value: 'construction', label: 'Construction / Home Services' },
-  { value: 'restaurant', label: 'Restaurant / Food Service' },
-  { value: 'fitness', label: 'Fitness / Wellness' },
-  { value: 'education', label: 'Education / Coaching' },
-  { value: 'nonprofit', label: 'Non-Profit' },
-  { value: 'local', label: 'Local Service Business' },
-  { value: 'other', label: 'Other' },
-];
 
 export default function CreateProjectPage() {
   const router = useRouter();
@@ -69,6 +61,12 @@ export default function CreateProjectPage() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const convex = useConvex();
 
+  // Guard: Evaluate limits preemptively
+  const projectLimits = useQuery(
+    api.projects.projects.getProjectCreationLimits,
+    user?.organizationId ? { organizationId: user.organizationId as Id<'organizations'> } : {}
+  );
+
   // Wizard state
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -76,6 +74,8 @@ export default function CreateProjectPage() {
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [industry, setIndustry] = useState('');
   const [customIndustry, setCustomIndustry] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
+  const [businessGoals, setBusinessGoals] = useState('');
   const [projectId, setProjectId] = useState<string | null>(null);
   const [ga4Connected, setGa4Connected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -98,6 +98,35 @@ export default function CreateProjectPage() {
       router.replace('/auth/login');
     }
   }, [authLoading, isAuthenticated, router]);
+
+  // Preemptive Limit Guard
+  useEffect(() => {
+    if (projectLimits && typeof projectLimits.canCreate !== 'undefined') {
+      if (!projectLimits.canCreate) {
+        toast({
+          title: 'Limit Reached',
+          description: projectLimits.errorReason || 'Upgrade to add more projects.',
+          status: 'error',
+          duration: 7000,
+          isClosable: true,
+        });
+        router.replace('/settings?tab=billing');
+      }
+    }
+  }, [projectLimits, router, toast]);
+
+  // Onboarding completion guard — only fully onboarded users can create projects here.
+  // Mid-onboarding users must complete the funnel (plan selection, payment) first.
+  useEffect(() => {
+    if (!authLoading && user && user.onboardingStatus !== 'completed') {
+      try {
+        if (sessionStorage.getItem('onboarding_just_completed') === 'true') {
+          return;
+        }
+      } catch {}
+      router.replace('/onboarding');
+    }
+  }, [authLoading, user, router]);
 
   // Handle OAuth callback return
   useEffect(() => {
@@ -173,6 +202,8 @@ export default function CreateProjectPage() {
         name: projectName.trim(),
         websiteUrl: sanitizedUrl,
         industry: finalIndustry || undefined,
+        targetAudience: targetAudience.trim() || undefined,
+        businessGoals: businessGoals.trim() || undefined,
         organizationId: user.organizationId,
       });
 
@@ -378,6 +409,40 @@ export default function CreateProjectPage() {
                           />
                         </Box>
                       )}
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel>Target Audience</FormLabel>
+                      <Textarea
+                        id="project-audience"
+                        placeholder="e.g., Small business owners aged 30-50 looking for affordable local marketing"
+                        value={targetAudience}
+                        onChange={(e) => setTargetAudience(e.target.value)}
+                        size="lg"
+                        focusBorderColor="brand.orange"
+                        rows={2}
+                        resize="vertical"
+                      />
+                      <FormHelperText color="gray.500">
+                        Helps our AI tailor keywords, content tone, and strategy to the people you want to reach
+                      </FormHelperText>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel>Business Goals</FormLabel>
+                      <Textarea
+                        id="project-goals"
+                        placeholder="e.g., Increase organic traffic by 50% in 6 months, generate 20 leads/month"
+                        value={businessGoals}
+                        onChange={(e) => setBusinessGoals(e.target.value)}
+                        size="lg"
+                        focusBorderColor="brand.orange"
+                        rows={2}
+                        resize="vertical"
+                      />
+                      <FormHelperText color="gray.500">
+                        Guides content prioritization and strategy recommendations
+                      </FormHelperText>
                     </FormControl>
 
                     <HStack justify="space-between" pt={4}>

@@ -35,7 +35,7 @@ export function WelcomeEmptyState() {
           variant="solid"
           colorScheme="brand"
           rightIcon={<ArrowForwardIcon />}
-          onClick={() => router.push('/onboarding')}
+          onClick={() => router.push('/projects/new')}
         >
           Create Your First Project
         </Button>

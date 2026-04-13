@@ -43,7 +43,14 @@ export function OnboardingFlow() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('starter');
-  const [formData, setFormData] = useState({ businessName: '', website: '' });
+  const [formData, setFormData] = useState({
+    businessName: '',
+    website: '',
+    industry: '',
+    customIndustry: '',
+    targetAudience: '',
+    businessGoals: '',
+  });
   const [projectId, setProjectId] = useState<string | null>(null);
   const [ga4Connected, setGa4Connected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -205,6 +212,9 @@ export function OnboardingFlow() {
       // Complete onboarding and redirect to dashboard
       completeOnboarding()
         .then(() => {
+          try {
+            sessionStorage.setItem('onboarding_just_completed', 'true');
+          } catch {}
           router.push('/studio');
         })
         .catch(console.error);
@@ -381,15 +391,17 @@ export function OnboardingFlow() {
         if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://'))
           websiteUrl = 'https://' + websiteUrl;
           
-        let finalIndustry = (formData as any).industry;
-        if (finalIndustry === 'other' && 'customIndustry' in formData) {
-          finalIndustry = (formData as any).customIndustry;
+        let finalIndustry = formData.industry;
+        if (finalIndustry === 'other' && formData.customIndustry) {
+          finalIndustry = formData.customIndustry;
         }
 
         const newProjectId = await createProject({
           name: formData.businessName || 'My Business',
           websiteUrl,
           industry: finalIndustry || undefined,
+          targetAudience: formData.targetAudience?.trim() || undefined,
+          businessGoals: formData.businessGoals?.trim() || undefined,
           organizationId: user?.organizationId || undefined,
         });
         if (newProjectId) {
@@ -591,6 +603,10 @@ export function OnboardingFlow() {
 
     // Mark onboarding complete and redirect to dashboard
     await completeOnboarding();
+
+    try {
+      sessionStorage.setItem('onboarding_just_completed', 'true');
+    } catch {}
 
     // Go directly to dashboard - content generation happens in background
     router.push('/studio');
