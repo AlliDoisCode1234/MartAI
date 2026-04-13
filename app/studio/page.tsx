@@ -203,9 +203,10 @@ export default function DashboardPage() {
   const loadingDashboard = authLoading || projectLoading;
   const userName = user?.name?.split(' ')[0] || 'there';
 
-  if (loadingDashboard || stats === undefined || enrichedKeywordsData === undefined)
-    return <DashboardSkeleton />;
+  if (loadingDashboard) return <DashboardSkeleton />;
   if (!project) return <WelcomeEmptyState />;
+  if (stats === undefined || enrichedKeywordsData === undefined)
+    return <DashboardSkeleton />;
 
   const hasGA4Data = !!kpis && kpis.hasGA4Data;
   const hasGSCData = !!kpis && kpis.hasGSCData;
