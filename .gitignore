@@ -59,6 +59,8 @@ id_rsa*
 *.tsbuildinfo
 next-env.d.ts
 
+# convex
+
 # private legal documents
 docs/legal/private/
 

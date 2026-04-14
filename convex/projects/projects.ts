@@ -407,11 +407,36 @@ export const deleteProject = mutation({
     // This forcibly prevents standard users from churning projects to evade billing quotas.
     await requireSuperAdmin(ctx);
 
-    // Executing deterministic Soft Deletion pattern
-    await ctx.db.patch(args.projectId, { 
-      status: 'deleted', 
-      deletedAt: Date.now() 
-    });
+    const { projectId } = args;
+
+    // CASCADE DELETE SENSITIVE CONNECTIONS
+    // To prevent storing orphaned OAuth credentials, we must synchronously delete integrating rows.
+    // We intentionally leave huge tables (analyticsData) orphaned to avoid exceeding Convex's mutation limit.
+    const ga4 = await ctx.db.query('ga4Connections').withIndex('by_project', (q) => q.eq('projectId', projectId)).collect();
+    for (const row of ga4) await ctx.db.delete(row._id);
+
+    const gsc = await ctx.db.query('gscConnections').withIndex('by_project', (q) => q.eq('projectId', projectId)).collect();
+    for (const row of gsc) await ctx.db.delete(row._id);
+
+    const gtm = await ctx.db.query('gtmConnections').withIndex('by_project', (q) => q.eq('projectId', projectId)).collect();
+    for (const row of gtm) await ctx.db.delete(row._id);
+
+    const platforms = await ctx.db.query('platformConnections').withIndex('by_project', (q) => q.eq('projectId', projectId)).collect();
+    for (const row of platforms) await ctx.db.delete(row._id);
+
+    // Hard delete for super admins
+    await ctx.db.delete(projectId);
+  },
+});
+
+/**
+ * Internal-only: Retrieve a project by ID without requiring an active user session.
+ * Exclusively used by background systems.
+ */
+export const getProjectInternal = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.projectId);
   },
 });
 

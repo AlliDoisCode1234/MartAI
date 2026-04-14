@@ -101,6 +101,11 @@ export default function CreateProjectPage() {
 
   // Preemptive Limit Guard
   useEffect(() => {
+    // If a project has already been created in this flow, or we are on step 2,
+    // do not trigger the limit guard. This prevents users from being booted
+    // out of the wizard just because the project they newly created reached the limit.
+    if (projectId || step > 1) return;
+
     if (projectLimits && typeof projectLimits.canCreate !== 'undefined') {
       if (!projectLimits.canCreate) {
         toast({
@@ -113,7 +118,7 @@ export default function CreateProjectPage() {
         router.replace('/settings?tab=billing');
       }
     }
-  }, [projectLimits, router, toast]);
+  }, [projectLimits, router, toast, projectId, step]);
 
   // Onboarding completion guard — only fully onboarded users can create projects here.
   // Mid-onboarding users must complete the funnel (plan selection, payment) first.

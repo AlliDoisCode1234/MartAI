@@ -35,6 +35,13 @@ export const syncProjectData = internalAction({
       .toISOString()
       .split('T')[0];
 
+    // Pre-flight Existence Guard: Prevent syncing against hard-deleted or non-existent projects
+    const project = await ctx.runQuery(internal.projects.projects.getProjectInternal, { projectId });
+    if (!project) {
+      console.warn(`[Sync Guard] Aborting sync for ${projectId}: Project does not exist or was hard-deleted.`);
+      return null;
+    }
+
     // 1. Fetch Connections
     const ga4Connection = await ctx.runQuery(
       internal.integrations.ga4Connections.getGA4ConnectionInternal,
