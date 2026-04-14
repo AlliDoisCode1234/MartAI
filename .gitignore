@@ -60,7 +60,6 @@ id_rsa*
 next-env.d.ts
 
 # convex
-convex/_generated/
 
 # private legal documents
 docs/legal/private/
