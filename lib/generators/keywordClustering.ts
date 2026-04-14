@@ -56,7 +56,13 @@ export async function generateKeywordClusters(
   }
 
   // Prepare keyword list for AI
-  const keywordList = keywords.map((k) => ({
+  // SCALING ENFORCEMENT: Cap at top 150 keywords sorted by volume
+  // This prevents 'context_length_exceeded' exceptions resulting from massive GSC data loads
+  const topKeywords = [...keywords]
+    .sort((a, b) => (b.volume || 0) - (a.volume || 0))
+    .slice(0, 150);
+
+  const keywordList = topKeywords.map((k) => ({
     keyword: k.keyword,
     volume: k.volume ?? 0,
     difficulty: k.difficulty ?? 50,
@@ -70,29 +76,29 @@ export async function generateKeywordClusters(
     return generateMockClusters(keywords);
   }
 
-  const prompt = `You are an SEO expert analyzing keywords for clustering. 
+  const prompt = `You are an elite SEO strategist focused purely on conversion and lead generation. 
 
-${websiteUrl ? `Website: ${websiteUrl}` : ''}
-${industry ? `Industry: ${industry}` : ''}
+${websiteUrl ? `Target Website: ${websiteUrl}` : ''}
+${industry ? `Business Industry: ${industry}` : ''}
 
-Analyze the following keywords and group them into logical clusters based on:
-1. Semantic similarity and search intent
-2. User journey stage (awareness → consideration → purchase)
-3. Topic/thematic relevance
-4. Search volume patterns
+Analyze the provided keyword list and group them into logical sub-clusters. 
+CRITICAL RULES:
+1. FILTER OUT KEYWORD STUFFING: Discard spammy, grammatically incorrect, or repetitive keyword variations. Only keep natural, human-readable search queries.
+2. HIGH-INTENT FOCUS: Prioritize terms that indicate a user is ready to hire, buy, or solve an immediate problem related to the business.
+3. SEMANTIC GROUPING: Group by true search intent, not just string matching.
 
 Keywords to analyze:
 ${JSON.stringify(keywordList, null, 2)}
 
-For each cluster, provide:
-- A descriptive cluster name
-- All keywords that belong together
-- Search intent (informational, commercial, transactional, navigational)
+For each distinct, high-quality cluster, provide:
+- A descriptive cluster name representing the core topic
+- The refined array of natural keywords (drop the junk/stuffed phrases)
+- Search intent (must be: informational, commercial, transactional, or navigational)
 - Estimated volume range (min/max)
-- Difficulty estimate (0-100, where 0 is easy to rank, 100 is very competitive)
-- Brief reasoning for the grouping
+- Difficulty estimate (0-100, where 0 is easy to rank, 100 is impossible)
+- Brief reasoning for why this specific grouping drives actual business value/leads.
 
-Create 5-15 clusters depending on the number of keywords. Prioritize clusters with high commercial or transactional intent.
+Create 5-15 clusters depending on the volume of valid keywords. Prioritize clusters with high commercial or transactional intent.
 
 Return ONLY a valid JSON object with this exact structure (no markdown, no explanation):
 {
