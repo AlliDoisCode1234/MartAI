@@ -441,8 +441,8 @@ export const WorkspaceHeader: FC<Props> = ({ collapsed = false, variant = 'dark'
                 </Tooltip>
               )}
 
-              {/* Danger Zone: Delete Project (Strictly Super Admin / Admin Only) */}
-              {(user?.role === 'super_admin' || user?.role === 'admin') && currentProject && (
+              {/* Danger Zone: Delete Project (Strictly Super Admin Only) */}
+              {user?.role === 'super_admin' && currentProject && (
                 <MenuItem
                   icon={<Icon as={FiTrash2} />}
                   bg="transparent"

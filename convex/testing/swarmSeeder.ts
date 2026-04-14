@@ -14,6 +14,9 @@ export const seedSwarmAccount = mutation({
     const user = await ctx.db.get(userId);
     if (!user) return false;
 
+    // Security Gate: Ensure the client isn't escalating arbitrary emails
+    if (user.email !== args.email) return false;
+
     let tier: 'starter' | 'engine' | 'agency' = 'starter';
     let targetProjects = 0;
     let newRole: string | undefined = undefined;
@@ -36,9 +39,9 @@ export const seedSwarmAccount = mutation({
     }
 
     // Assign the tier to bypass Stripe constraints via beta logic/override
+    // subscriptionStatus does not exist on the user schema natively
     const patchData: any = {
       membershipTier: tier,
-      subscriptionStatus: 'active',
     };
     if (newRole) patchData.role = newRole;
 
@@ -57,12 +60,13 @@ export const seedSwarmAccount = mutation({
       await ctx.db.insert('projects', {
         userId,
         name: `Swarm Seed ${i + 1}`,
-        domain: `https://seed${i}.swarmsite.com`,
+        websiteUrl: `https://seed${i}.swarmsite.com`,
         organizationId: user.organizationId,
+        industry: 'Testing',
+        projectType: 'own',
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        settings: { industry: 'Testing' },
-      } as any);
+      });
     }
 
     return true;

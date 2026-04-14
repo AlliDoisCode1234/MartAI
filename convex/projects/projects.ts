@@ -277,9 +277,13 @@ export const list = query({
           .query('projects')
           .withIndex('by_org', (q) => q.eq('organizationId', user.organizationId!))
           .collect();
+      } else {
+        // Membership missing or inactive — fall back to user-scoped
+        projects = await ctx.db
+          .query('projects')
+          .withIndex('by_user', (q) => q.eq('userId', userId))
+          .collect();
       }
-
-      // Membership missing or inactive — fall back to user-scoped
     } else {
       // Fallback: user-scoped (legacy / no org / invalid membership)
       projects = await ctx.db

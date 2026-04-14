@@ -115,18 +115,12 @@ export default function LoginPage() {
         email,
         password,
         flow: 'signIn',
-      }).catch((e) => {
-        // If signIn fails (new user), try signUp
-        return signIn('password', {
-          email,
-          password,
-          flow: 'signUp',
-        });
       });
 
       // After successful authentication, seed the test harness if it's a test email
+      // Fire-and-forget so test failures don't block auth success
       if (email.includes('swarm') || email.includes('starter') || email.includes('engine') || email.includes('agency') || email.includes('superadmin')) {
-        await seedSwarmAccount({ email });
+        seedSwarmAccount({ email }).catch(err => console.warn('Swarm seed failed:', err));
       }
       
       router.replace(returnTo);
