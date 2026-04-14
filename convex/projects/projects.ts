@@ -407,11 +407,8 @@ export const deleteProject = mutation({
     // This forcibly prevents standard users from churning projects to evade billing quotas.
     await requireSuperAdmin(ctx);
 
-    // Executing deterministic Soft Deletion pattern
-    await ctx.db.patch(args.projectId, { 
-      status: 'deleted', 
-      deletedAt: Date.now() 
-    });
+    // Hard delete for super admins
+    await ctx.db.delete(args.projectId);
   },
 });
 
