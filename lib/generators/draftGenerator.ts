@@ -67,23 +67,24 @@ Write a comprehensive, SEO-optimized blog post that:
 
 1. **Structure**:
    - Use the primary title as H1
-   - Follow the H2 outline exactly
+   - Follow the H2 outline exactly, especially the Call to Action/Actionable Next Steps section
    - Include all FAQs naturally in the content
    - Use H3 for subsections
    - Include internal link placeholders: [[topic name]]
 
-2. **Content Quality**:
+2. **Content Quality & Focus (CRITICAL STAGE)**:
    - Minimum 800 words (target 1200-2000)
-   - Write in-depth, valuable content
-   - Include transparent sections for costs, problems, comparisons where relevant
+   - DO NOT write "Wiki-Style" fluff. DO NOT give generic history lessons.
+   - Address the reader's underlying business friction directly. Focus aggressively on costs, ROI, implementations, and comparisons.
+   - Write in-depth, high-value, actionable content that drives the user toward making a hiring or software purchasing decision.
    - Use the keyword cluster naturally throughout
-   - Address user intent comprehensively
-   - Include examples, data, and actionable insights
+   - Address user intent comprehensively, with a strong lean toward Commercial problem solving.
+   - Include specific examples, industry data, and actionable framework insights.
 
 3. **Tone & Style**:
-   ${brandVoice ? `- Match brand voice: ${brandVoice}` : '- Professional yet approachable'}
+   ${brandVoice ? `- Match brand voice: ${brandVoice}` : '- Professional, authoritative, and direct'}
    - Clear and engaging
-   - Avoid fluff and filler
+   - BAN generic transitions ("In today's fast-paced digital landscape"). Be aggressively concise.
    - Use active voice
    - Include specific details and numbers
 

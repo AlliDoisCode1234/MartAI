@@ -36,10 +36,10 @@ type Props = {
   formData: {
     businessName: string;
     website: string;
-    industry?: string;
-    customIndustry?: string;
-    targetAudience?: string;
-    businessGoals?: string;
+    industry: string;
+    customIndustry: string;
+    targetAudience: string;
+    businessGoals: string;
   };
   onFormChange: (data: Props['formData']) => void;
   onNext: () => void;

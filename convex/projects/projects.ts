@@ -50,7 +50,7 @@ export const createProject = mutation({
       }
     }
 
-    const projects = orgId
+    const allProjects = orgId
       ? await ctx.db
           .query('projects')
           .withIndex('by_org', (q) => q.eq('organizationId', orgId))
@@ -59,6 +59,9 @@ export const createProject = mutation({
           .query('projects')
           .withIndex('by_user', (q) => q.eq('userId', userId))
           .collect();
+
+    // Filter out soft-deleted projects
+    const projects = allProjects.filter((p) => p.status !== 'deleted');
 
     // Determine the effective tier for limit calculation
     // By default, use the acting user's tier
@@ -146,7 +149,7 @@ export const getProjectCreationLimits = query({
       }
     }
 
-    const projects = orgId
+    const allProjects = orgId
       ? await ctx.db
           .query('projects')
           .withIndex('by_org', (q) => q.eq('organizationId', orgId))
@@ -155,6 +158,9 @@ export const getProjectCreationLimits = query({
           .query('projects')
           .withIndex('by_user', (q) => q.eq('userId', userId))
           .collect();
+
+    // Filter out soft-deleted projects for limit check
+    const projects = allProjects.filter((p) => p.status !== 'deleted');
 
     let effectiveTier = user.membershipTier ?? 'none';
     if (orgId) {
@@ -219,10 +225,11 @@ export const adminDeleteProject = mutation({
 export const getProjectsByUser = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const projects = await ctx.db
       .query('projects')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .collect();
+    return projects.filter((p) => p.status !== 'deleted');
   },
 });
 
@@ -234,10 +241,11 @@ export const getProjectsByUser = query({
 export const getProjectsByUserInternal = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const projects = await ctx.db
       .query('projects')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .collect();
+    return projects.filter((p) => p.status !== 'deleted');
   },
 });
 
@@ -252,6 +260,8 @@ export const list = query({
 
     const user = await ctx.db.get(userId);
 
+    let projects: any[] = [];
+
     // Org-scoped: verify active membership before showing org projects
     if (user?.organizationId) {
       const membership = await ctx.db
@@ -263,20 +273,26 @@ export const list = query({
 
       // Active membership confirmed — return org projects
       if (membership && (!membership.status || membership.status === 'active')) {
-        return await ctx.db
+        projects = await ctx.db
           .query('projects')
           .withIndex('by_org', (q) => q.eq('organizationId', user.organizationId!))
           .collect();
+      } else {
+        // Membership missing or inactive — fall back to user-scoped
+        projects = await ctx.db
+          .query('projects')
+          .withIndex('by_user', (q) => q.eq('userId', userId))
+          .collect();
       }
-
-      // Membership missing or inactive — fall back to user-scoped
+    } else {
+      // Fallback: user-scoped (legacy / no org / invalid membership)
+      projects = await ctx.db
+        .query('projects')
+        .withIndex('by_user', (q) => q.eq('userId', userId))
+        .collect();
     }
 
-    // Fallback: user-scoped (legacy / no org / invalid membership)
-    return await ctx.db
-      .query('projects')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .collect();
+    return projects.filter((p) => p.status !== 'deleted');
   },
 });
 
@@ -301,10 +317,12 @@ export const getProjectsByOrganization = query({
       return [];
     }
 
-    return await ctx.db
+    const projects = await ctx.db
       .query('projects')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .collect();
+
+    return projects.filter((p) => p.status !== 'deleted');
   },
 });
 
@@ -312,7 +330,10 @@ export const getProjectsByOrganization = query({
 export const getProjectById = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.projectId);
+    const project = await ctx.db.get(args.projectId);
+    // Hide soft-deleted projects from direct UI component fetches
+    if (project && project.status === 'deleted') return null;
+    return project;
   },
 });
 
@@ -382,10 +403,15 @@ export const updateProject = mutation({
 export const deleteProject = mutation({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
-    // Security: Require project admin access for deletion
-    await requireProjectAccess(ctx, args.projectId, 'admin');
+    // Strict Financial Security RBAC: Only system super-admins may invoke project deletion.
+    // This forcibly prevents standard users from churning projects to evade billing quotas.
+    await requireSuperAdmin(ctx);
 
-    await ctx.db.delete(args.projectId);
+    // Executing deterministic Soft Deletion pattern
+    await ctx.db.patch(args.projectId, { 
+      status: 'deleted', 
+      deletedAt: Date.now() 
+    });
   },
 });
 

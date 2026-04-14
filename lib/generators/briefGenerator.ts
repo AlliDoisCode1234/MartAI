@@ -46,7 +46,7 @@ export async function generateBriefDetails(
 
   const model = openai('gpt-4o');
 
-  const prompt = `You are an SEO content strategist creating a detailed content brief.
+  const prompt = `You are a Lead-Generation Architect creating an ultra-detailed, high-conversion content brief. Your ultimate goal is not just to inform, but to generate business inquiries and close sales.
 
 ${websiteUrl ? `Website: ${websiteUrl}` : ''}
 ${industry ? `Industry: ${industry}` : ''}
@@ -67,10 +67,10 @@ Create a comprehensive content brief with:
    - Mix of question, how-to, and benefit-driven formats
 
 2. **H2 Outline** (6-10 main sections):
-   - Logical content flow
-   - Cover user intent comprehensively
-   - Include comparison/cost sections if commercial intent
-   - Progressive disclosure from basics to advanced
+   - Logical content flow designed as a conversion funnel
+   - MUST include a dedicated section for "Costs", "Comparisons", or "ROI"
+   - MUST include an explicit "[Call to Action / Next Steps]" H2 section at the bottom
+   - Progressive disclosure from basics to advanced, solving user friction
 
 3. **FAQs** (5-8 questions):
    - Address common user questions

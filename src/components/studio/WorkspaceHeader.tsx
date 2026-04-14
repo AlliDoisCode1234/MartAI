@@ -31,6 +31,7 @@ import {
   VStack,
   Tooltip,
   useToast,
+  useDisclosure,
 } from '@chakra-ui/react';
 import {
   FiBriefcase,
@@ -38,6 +39,7 @@ import {
   FiCheck,
   FiChevronDown,
   FiPlus,
+  FiTrash2,
 } from 'react-icons/fi';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -46,6 +48,7 @@ import { useProjectContext } from '@/src/providers/ProjectProvider';
 import { Id } from '@/convex/_generated/dataModel';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { DeleteProjectModal } from '../settings/DeleteProjectModal';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const MotionBox = motion(Box);
@@ -90,6 +93,7 @@ export const WorkspaceHeader: FC<Props> = ({ collapsed = false, variant = 'dark'
   const { user } = useAuth();
   const router = useRouter();
   const toast = useToast();
+  const deleteModal = useDisclosure();
   const [isSwitching, setIsSwitching] = useState(false);
 
   const t = THEME[variant];
@@ -210,6 +214,7 @@ export const WorkspaceHeader: FC<Props> = ({ collapsed = false, variant = 'dark'
   }
 
   return (
+    <>
     <AnimatePresence mode="wait">
       <MotionBox
         key={`${user.organizationId}-${projectId}`}
@@ -435,10 +440,35 @@ export const WorkspaceHeader: FC<Props> = ({ collapsed = false, variant = 'dark'
                   </Box>
                 </Tooltip>
               )}
+
+              {/* Danger Zone: Delete Project (Strictly Super Admin Only) */}
+              {user?.role === 'super_admin' && currentProject && (
+                <MenuItem
+                  icon={<Icon as={FiTrash2} />}
+                  bg="transparent"
+                  _hover={{ bg: variant === 'dark' ? 'red.900' : 'red.50', color: 'red.400' }}
+                  color="red.500"
+                  fontSize="sm"
+                  px={3}
+                  mt={1}
+                  onClick={deleteModal.onOpen}
+                >
+                  Delete Active Project
+                </MenuItem>
+              )}
             </MenuList>
           </Menu>
         </VStack>
       </MotionBox>
     </AnimatePresence>
+    {currentProject && (
+      <DeleteProjectModal
+        isOpen={deleteModal.isOpen}
+        onClose={deleteModal.onClose}
+        projectId={currentProject._id}
+        projectName={currentProject.name}
+      />
+    )}
+    </>
   );
 };

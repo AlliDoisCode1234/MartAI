@@ -34,7 +34,8 @@ import {
   Icon,
 } from '@chakra-ui/react';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { useConvexAuth } from 'convex/react';
+import { useConvexAuth, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { FaGoogle } from 'react-icons/fa';
 import { FiMail, FiLock } from 'react-icons/fi';
 
@@ -48,6 +49,7 @@ export default function LoginPage() {
   const isCheckoutIntent = searchParams.get('intent') === 'checkout';
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
+  const seedSwarmAccount = useMutation(api.testing.swarmSeeder.seedSwarmAccount);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +116,13 @@ export default function LoginPage() {
         password,
         flow: 'signIn',
       });
+
+      // After successful authentication, seed the test harness if it's a test email
+      // Fire-and-forget so test failures don't block auth success
+      if (email.includes('swarm') || email.includes('starter') || email.includes('engine') || email.includes('agency') || email.includes('superadmin')) {
+        seedSwarmAccount({ email }).catch(err => console.warn('Swarm seed failed:', err));
+      }
+      
       router.replace(returnTo);
     } catch (err) {
       setError('Invalid email or password');
