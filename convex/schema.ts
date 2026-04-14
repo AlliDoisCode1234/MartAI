@@ -545,12 +545,16 @@ export default defineSchema({
         )
       )
     ),
+    // Soft Deletion Tracking
+    status: v.optional(v.union(v.literal('active'), v.literal('deleted'))),
+    deletedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index('by_user', ['userId'])
     .index('by_org', ['organizationId'])
-    .index('by_type', ['projectType']),
+    .index('by_type', ['projectType'])
+    .index('by_status', ['status']),
 
   // GA4 Connections
   ga4Connections: defineTable({

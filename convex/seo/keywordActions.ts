@@ -412,15 +412,16 @@ async function buildFallbackKeywords(
   project?: { industry?: string; name?: string }
 ): Promise<KeywordInput[]> {
   const base = (project?.industry || project?.name || 'growth marketing').toLowerCase();
+  // Semantic expansion: Prioritize lead generation (High Intent)
   const topics = [
-    `${base} strategy`,
-    `${base} software`,
-    `${base} tools`,
-    `${base} best practices`,
-    `${base} pricing`,
-    `${base} case studies`,
-    `${base} automation`,
-    `${base} templates`,
+    `hire ${base} expert`,             // Commercial
+    `best ${base} services`,           // Commercial
+    `${base} consultant for hire`,     // Transactional
+    `${base} pricing guide`,           // Transactional
+    `top rated ${base} firm`,          // Commercial
+    `${base} case studies`,            // Informational
+    `how to evaluate ${base}`,         // Informational
+    `${base} ROI calculator`,          // Transactional
   ];
 
   try {
@@ -723,8 +724,26 @@ function extractSearchTermsFromProject(project: {
     terms.push(...nameParts);
   }
 
-  // Deduplicate and limit
-  return [...new Set(terms)].slice(0, 5);
+  // Deduplicate and filter core terms
+  const coreTerms = [...new Set(terms)].slice(0, 3);
+  
+  // Native Commercial Mapping Enhancement
+  // We want the AI vector search to retrieve high-intent, transactional queries from the DB 
+  // rather than informational generalities. We map commercial intent natively below.
+  const commercialModifiers = ['services', 'agency', 'company', 'consultant', 'pricing'];
+  const enrichedTerms: string[] = [];
+  
+  for (const term of coreTerms) {
+    enrichedTerms.push(term);
+    enrichedTerms.push(`hire ${term}`);
+    enrichedTerms.push(`best ${term}`);
+    // Attach one random commercial modifier to expand breadth efficiently
+    const mod = commercialModifiers[Math.floor(Math.random() * commercialModifiers.length)];
+    enrichedTerms.push(`${term} ${mod}`);
+  }
+
+  // Cap at 6 semantic query terms to maintain DB execution speed
+  return [...new Set(enrichedTerms)].slice(0, 6);
 }
 
 /**
