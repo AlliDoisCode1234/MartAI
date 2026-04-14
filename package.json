@@ -94,6 +94,7 @@
     "convex:codegen": "convex codegen",
     "convex:deploy": "convex deploy",
     "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1",
+    "postinstall": "npm run convex:codegen",
     "prepare": "husky"
   },
   "eslintConfig": {
