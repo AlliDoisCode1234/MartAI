@@ -7,6 +7,7 @@ import {
   type PlatformCredentials,
   type EncryptedCredentials,
 } from '../lib/encryptedCredentials';
+import { requireProjectAccess } from '../lib/rbac';
 
 /**
  * Platform Connections - Queries & Mutations
@@ -35,6 +36,9 @@ export const getConnection = query({
     platform: platformValidator,
   },
   handler: async (ctx, args) => {
+    // GLASSWING-010: Verify caller has access — this endpoint returns DECRYPTED credentials
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
+
     const connection = await ctx.db
       .query('platformConnections')
       .withIndex('by_project_platform', (q) =>
@@ -64,6 +68,9 @@ export const listConnections = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
+    // GLASSWING-011: Verify caller has access — returns DECRYPTED credentials for all CMS platforms
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
+
     const connections = await ctx.db
       .query('platformConnections')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
@@ -103,6 +110,9 @@ export const saveConnection = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    // GLASSWING-012: Verify caller has editor access before storing CMS credentials
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
     // Check if connection already exists
     const existing = await ctx.db
       .query('platformConnections')
@@ -172,6 +182,10 @@ export const deleteConnection = mutation({
     connectionId: v.id('platformConnections'),
   },
   handler: async (ctx, args) => {
+    const connection = await ctx.db.get(args.connectionId);
+    if (!connection) throw new Error('Connection not found');
+    // GLASSWING-013: Verify caller has editor access before deleting CMS connection
+    await requireProjectAccess(ctx, connection.projectId, 'editor');
     await ctx.db.delete(args.connectionId);
     return { success: true };
   },

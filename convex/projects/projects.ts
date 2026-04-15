@@ -333,6 +333,13 @@ export const getProjectById = query({
     const project = await ctx.db.get(args.projectId);
     // Hide soft-deleted projects from direct UI component fetches
     if (project && project.status === 'deleted') return null;
+    if (!project) return null;
+    // GLASSWING-014: Verify caller has access to this project
+    try {
+      await requireProjectAccess(ctx, args.projectId, 'viewer');
+    } catch {
+      return null;
+    }
     return project;
   },
 });

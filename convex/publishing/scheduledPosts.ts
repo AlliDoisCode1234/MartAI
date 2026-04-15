@@ -3,6 +3,7 @@ import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
 import { rateLimits } from '../rateLimits';
+import { requireProjectAccess } from '../lib/rbac';
 
 /**
  * CREATE SCHEDULED POST
@@ -107,11 +108,14 @@ export const publishPost = internalMutation({
  */
 export const getScheduledPosts = query({
   args: { projectId: v.id('projects') },
-  handler: async (ctx, { projectId }) =>
-    ctx.db
+  handler: async (ctx, { projectId }) => {
+    // GLASSWING-001: Verify caller has access to this project
+    await requireProjectAccess(ctx, projectId, 'viewer');
+    return ctx.db
       .query('scheduledPosts')
       .withIndex('by_project', (q) => q.eq('projectId', projectId))
-      .collect(),
+      .collect();
+  },
 });
 
 /**
@@ -120,6 +124,8 @@ export const getScheduledPosts = query({
 export const getScheduledPostsByStatus = query({
   args: { projectId: v.id('projects'), status: v.string() },
   handler: async (ctx, args) => {
+    // GLASSWING-002: Verify caller has access to this project
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
     const posts = await ctx.db
       .query('scheduledPosts')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
@@ -184,11 +190,18 @@ export const updateScheduledPost = mutation({
  */
 export const cancelScheduledPost = mutation({
   args: { postId: v.id('scheduledPosts') },
-  handler: async (ctx, { postId }) =>
-    ctx.db.patch(postId, {
+  handler: async (ctx, { postId }) => {
+    const post = await ctx.db.get(postId);
+    if (!post) throw new Error('Post not found');
+    // GLASSWING-003: Verify access to the project owning this post
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, {
+      projectId: post.projectId,
+    });
+    return ctx.db.patch(postId, {
       status: 'cancelled',
       updatedAt: Date.now(),
-    }),
+    });
+  },
 });
 
 /**
@@ -196,7 +209,15 @@ export const cancelScheduledPost = mutation({
  */
 export const deleteScheduledPost = mutation({
   args: { postId: v.id('scheduledPosts') },
-  handler: async (ctx, { postId }) => ctx.db.delete(postId),
+  handler: async (ctx, { postId }) => {
+    const post = await ctx.db.get(postId);
+    if (!post) throw new Error('Post not found');
+    // GLASSWING-004: Verify access to the project owning this post
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, {
+      projectId: post.projectId,
+    });
+    await ctx.db.delete(postId);
+  },
 });
 
 /**
@@ -205,7 +226,11 @@ export const deleteScheduledPost = mutation({
 export const getScheduledPostById = query({
   args: { postId: v.id('scheduledPosts') },
   handler: async (ctx, { postId }) => {
-    return await ctx.db.get(postId);
+    const post = await ctx.db.get(postId);
+    if (!post) return null;
+    // GLASSWING-005: Verify caller has access to this project
+    await requireProjectAccess(ctx, post.projectId, 'viewer');
+    return post;
   },
 });
 
@@ -229,6 +254,10 @@ export const retryFailedPublish = mutation({
   handler: async (ctx, { postId }) => {
     const post = await ctx.db.get(postId);
     if (!post) throw new Error('Post not found');
+    // GLASSWING-006: Verify access to the project owning this post
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, {
+      projectId: post.projectId,
+    });
 
     if (post.status !== 'failed') {
       throw new Error('Post is not in failed status');
