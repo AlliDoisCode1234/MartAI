@@ -278,19 +278,19 @@ export function calculateAvgSeoScore(pieces: ContentPieceForInsights[]): number 
 
 /**
  * Estimate trend score based on article freshness.
- * More recently updated articles get a positive trend.
+ * Deterministic — no randomness. Consistent across re-renders.
  */
 export function estimateTrend(piece: ContentPieceForInsights): number {
   const now = Date.now();
   const ageMs = now - piece.updatedAt;
   const ageDays = ageMs / (1000 * 60 * 60 * 24);
 
-  // Recently updated (< 7 days) → positive trend
-  if (ageDays < 7) return Math.round(Math.random() * 10 + 5);
-  // Moderately fresh (< 30 days) → small positive
-  if (ageDays < 30) return Math.round(Math.random() * 5);
-  // Stale → negative trend
-  return -Math.round(Math.random() * 5);
+  // Recently updated (< 7 days) -> positive trend
+  if (ageDays < 7) return Math.round(15 - ageDays * 1.5);
+  // Moderately fresh (< 30 days) -> small positive
+  if (ageDays < 30) return Math.round(5 - (ageDays - 7) * 0.2);
+  // Stale -> negative trend proportional to staleness
+  return -Math.round(Math.min((ageDays - 30) * 0.1, 10));
 }
 
 /**
@@ -308,4 +308,14 @@ export function isQuickWin(piece: ContentPieceForInsights): boolean {
 export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return str.slice(0, maxLength - 1) + '\u2026';
+}
+
+/**
+ * Format a number into compact form (1.2K, 3.4M, etc.)
+ * Used by Insights page for large metric display.
+ */
+export function formatCompactNumber(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toLocaleString();
 }
