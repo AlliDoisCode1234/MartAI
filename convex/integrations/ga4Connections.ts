@@ -156,6 +156,9 @@ export const upsertGA4ConnectionInternal = internalMutation({
 export const getGA4Connection = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
+    // GLASSWING-008: Verify caller has access to this project
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
+
     const connection = await ctx.db
       .query('ga4Connections')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
@@ -320,6 +323,9 @@ export const saveServiceAccountConnection = mutation({
     serviceAccountKey: v.string(),
   },
   handler: async (ctx, args) => {
+    // GLASSWING-007: Verify caller has editor access before storing service account credentials
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
     // Check if connection exists
     const existing = await ctx.db
       .query('ga4Connections')

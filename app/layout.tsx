@@ -1,4 +1,19 @@
+import { Poppins, Inter } from 'next/font/google';
 import { type ReactNode } from 'react';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+  display: 'swap',
+  variable: '--font-poppins',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 import { ChakraProviderWrapper } from '@/src/providers/ChakraProvider';
 import { SecurityProvider } from '@/src/providers/SecurityProvider';
 import { ConvexProviderWrapper } from '@/src/providers/ConvexProvider';
@@ -61,15 +76,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${poppins.variable} ${inter.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
         {/* JSON-LD Structured Data — Organization + App + Breadcrumbs */}
         {/* NOTE: FAQPage schema removed from root @graph (March 2026).
             It was duplicating the pricing page's FAQPage, causing Google Search Console

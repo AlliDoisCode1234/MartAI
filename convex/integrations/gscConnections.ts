@@ -162,6 +162,9 @@ export const upsertGSCConnectionInternal = internalMutation({
 export const getGSCConnection = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
+    // GLASSWING-009: Verify caller has access to this project
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
+
     const connection = await ctx.db
       .query('gscConnections')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
