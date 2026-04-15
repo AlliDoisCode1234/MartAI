@@ -6,6 +6,8 @@
  *
  * OAuth-based connection for Google Analytics 4 and Search Console.
  * Uses combined scope to connect both with single OAuth flow.
+ * Supports multi-account property/site selection when a Google account
+ * has more than one GA4 property or GSC site.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -22,8 +24,9 @@ import {
   Link,
   Icon,
   useDisclosure,
+  Select,
 } from '@chakra-ui/react';
-import { FiExternalLink, FiTrash2, FiCheck, FiZap } from 'react-icons/fi';
+import { FiExternalLink, FiTrash2, FiCheck, FiZap, FiAlertCircle } from 'react-icons/fi';
 import { SiGoogleanalytics, SiGooglesearchconsole, SiGoogletagmanager } from 'react-icons/si';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -39,7 +42,6 @@ interface Props {
 // Brand colors
 const GA4_COLOR = '#E37400';
 const GSC_COLOR = '#458CF5';
-
 const GTM_COLOR = '#246FDB';
 
 export function GoogleConnect({ projectId }: Props) {
@@ -48,6 +50,10 @@ export function GoogleConnect({ projectId }: Props) {
   const { isOpen: isGtmOpen, onOpen: onGtmOpen, onClose: onGtmClose } = useDisclosure();
 
   const [connectingService, setConnectingService] = useState<'ga4' | 'gsc' | null>(null);
+  const [selectedGA4Property, setSelectedGA4Property] = useState<string>('');
+  const [selectedGSCSite, setSelectedGSCSite] = useState<string>('');
+  const [isSavingGA4, setIsSavingGA4] = useState(false);
+  const [isSavingGSC, setIsSavingGSC] = useState(false);
 
   // Convex hooks
   const ga4Connection = useQuery(api.integrations.ga4Connections.getGA4Connection, {
@@ -63,6 +69,15 @@ export function GoogleConnect({ projectId }: Props) {
   const generateAuthUrl = useAction(api.integrations.google.generateAuthUrl);
   const deleteGA4Connection = useMutation(api.integrations.ga4Connections.deleteGA4Connection);
   const deleteGSCConnection = useMutation(api.integrations.gscConnections.deleteGSCConnection);
+  const selectGA4PropertyMutation = useMutation(api.integrations.ga4Connections.selectGA4Property);
+  const switchGSCSiteMutation = useMutation(api.integrations.gscConnections.switchGSCSite);
+
+  // Derived state
+  const ga4Connected = !!ga4Connection;
+  const ga4PendingSelection = ga4Connection?.propertyId === 'PENDING_SELECTION';
+  const gscConnected = !!gscConnection;
+  const gscPendingSelection = gscConnection?.siteUrl === 'PENDING_SELECTION';
+  const gtmConnected = !!gtmConnection;
 
   // Check for OAuth callback success
   useEffect(() => {
@@ -170,6 +185,54 @@ export function GoogleConnect({ projectId }: Props) {
     }
   };
 
+  const handleSelectGA4Property = async () => {
+    if (!selectedGA4Property) return;
+    setIsSavingGA4(true);
+    try {
+      await selectGA4PropertyMutation({ projectId, propertyId: selectedGA4Property });
+      toast({
+        title: 'Property selected',
+        description: 'GA4 property configured. Analytics sync starting.',
+        status: 'success',
+        duration: 4000,
+      });
+      setSelectedGA4Property('');
+    } catch (error) {
+      toast({
+        title: 'Selection failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setIsSavingGA4(false);
+    }
+  };
+
+  const handleSelectGSCSite = async () => {
+    if (!selectedGSCSite) return;
+    setIsSavingGSC(true);
+    try {
+      await switchGSCSiteMutation({ projectId, siteUrl: selectedGSCSite });
+      toast({
+        title: 'Site selected',
+        description: 'Search Console site configured. Analytics sync starting.',
+        status: 'success',
+        duration: 4000,
+      });
+      setSelectedGSCSite('');
+    } catch (error) {
+      toast({
+        title: 'Selection failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setIsSavingGSC(false);
+    }
+  };
+
   // Loading state
   if (ga4Connection === undefined || gscConnection === undefined || gtmConnection === undefined) {
     return (
@@ -192,10 +255,6 @@ export function GoogleConnect({ projectId }: Props) {
     );
   }
 
-  const ga4Connected = !!ga4Connection;
-  const gscConnected = !!gscConnection;
-  const gtmConnected = !!gtmConnection;
-
   return (
     <VStack spacing={4} align="stretch">
       {/* Google Analytics 4 Card */}
@@ -203,14 +262,19 @@ export function GoogleConnect({ projectId }: Props) {
         p={4}
         borderWidth="1px"
         borderRadius="lg"
-        borderColor={ga4Connected ? 'green.200' : 'gray.200'}
-        bg={ga4Connected ? 'green.50' : 'white'}
+        borderColor={ga4PendingSelection ? 'orange.300' : ga4Connected ? 'green.200' : 'gray.200'}
+        bg={ga4PendingSelection ? 'orange.50' : ga4Connected ? 'green.50' : 'white'}
       >
         <HStack justify="space-between">
           <HStack spacing={3}>
             <Icon as={SiGoogleanalytics} boxSize={6} color={GA4_COLOR} />
             <Text fontWeight="bold">Google Analytics 4</Text>
-            {ga4Connected ? (
+            {ga4PendingSelection ? (
+              <Badge colorScheme="orange" display="flex" alignItems="center" gap={1}>
+                <FiAlertCircle size={12} />
+                Select Property
+              </Badge>
+            ) : ga4Connected ? (
               <Badge colorScheme="green" display="flex" alignItems="center" gap={1}>
                 <FiCheck size={12} />
                 Connected
@@ -242,7 +306,40 @@ export function GoogleConnect({ projectId }: Props) {
             </Button>
           )}
         </HStack>
-        {ga4Connected && ga4Connection && (
+
+        {/* Property Picker — shown when PENDING_SELECTION */}
+        {ga4PendingSelection && ga4Connection?.availableProperties && (
+          <VStack align="stretch" spacing={3} mt={3}>
+            <Text fontSize="sm" color="gray.600">
+              Multiple GA4 properties found. Select the one for this project:
+            </Text>
+            <Select
+              placeholder="Choose a GA4 property..."
+              value={selectedGA4Property}
+              onChange={(e) => setSelectedGA4Property(e.target.value)}
+              size="sm"
+            >
+              {ga4Connection.availableProperties.map((prop: { propertyId: string; propertyName: string; accountName: string }) => (
+                <option key={prop.propertyId} value={prop.propertyId}>
+                  {prop.propertyName} ({prop.accountName}) &mdash; {prop.propertyId}
+                </option>
+              ))}
+            </Select>
+            <Button
+              size="sm"
+              colorScheme="orange"
+              onClick={handleSelectGA4Property}
+              isDisabled={!selectedGA4Property}
+              isLoading={isSavingGA4}
+              loadingText="Saving..."
+            >
+              Confirm Selection
+            </Button>
+          </VStack>
+        )}
+
+        {/* Connected property details */}
+        {ga4Connected && !ga4PendingSelection && ga4Connection && (
           <VStack align="start" spacing={1} mt={2}>
             <HStack>
               <Text fontSize="sm" color="gray.600">
@@ -252,6 +349,43 @@ export function GoogleConnect({ projectId }: Props) {
                 {ga4Connection.propertyName || ga4Connection.propertyId}
               </Text>
             </HStack>
+            {/* Allow changing property if multiple are available */}
+            {ga4Connection.availableProperties && ga4Connection.availableProperties.length > 1 && (
+              <Select
+                placeholder="Switch property..."
+                size="xs"
+                mt={1}
+                value=""
+                onChange={async (e) => {
+                  if (e.target.value) {
+                    try {
+                      await selectGA4PropertyMutation({ projectId, propertyId: e.target.value });
+                      toast({
+                        title: 'Property switched',
+                        description: 'GA4 property updated. Analytics re-syncing.',
+                        status: 'success',
+                        duration: 4000,
+                      });
+                    } catch (err) {
+                      toast({
+                        title: 'Switch failed',
+                        description: err instanceof Error ? err.message : 'Unknown error',
+                        status: 'error',
+                        duration: 5000,
+                      });
+                    }
+                  }
+                }}
+              >
+                {ga4Connection.availableProperties
+                  .filter((p: { propertyId: string }) => p.propertyId !== ga4Connection.propertyId)
+                  .map((prop: { propertyId: string; propertyName: string; accountName: string }) => (
+                    <option key={prop.propertyId} value={prop.propertyId}>
+                      {prop.propertyName} ({prop.accountName})
+                    </option>
+                  ))}
+              </Select>
+            )}
           </VStack>
         )}
       </Box>
@@ -261,14 +395,19 @@ export function GoogleConnect({ projectId }: Props) {
         p={4}
         borderWidth="1px"
         borderRadius="lg"
-        borderColor={gscConnected ? 'green.200' : 'gray.200'}
-        bg={gscConnected ? 'green.50' : 'white'}
+        borderColor={gscPendingSelection ? 'orange.300' : gscConnected ? 'green.200' : 'gray.200'}
+        bg={gscPendingSelection ? 'orange.50' : gscConnected ? 'green.50' : 'white'}
       >
         <HStack justify="space-between">
           <HStack spacing={3}>
             <Icon as={SiGooglesearchconsole} boxSize={6} color={GSC_COLOR} />
             <Text fontWeight="bold">Google Search Console</Text>
-            {gscConnected ? (
+            {gscPendingSelection ? (
+              <Badge colorScheme="orange" display="flex" alignItems="center" gap={1}>
+                <FiAlertCircle size={12} />
+                Select Site
+              </Badge>
+            ) : gscConnected ? (
               <Badge colorScheme="green" display="flex" alignItems="center" gap={1}>
                 <FiCheck size={12} />
                 Connected
@@ -300,7 +439,40 @@ export function GoogleConnect({ projectId }: Props) {
             </Button>
           )}
         </HStack>
-        {gscConnected && gscConnection && (
+
+        {/* Site Picker — shown when PENDING_SELECTION */}
+        {gscPendingSelection && gscConnection?.availableSites && (
+          <VStack align="stretch" spacing={3} mt={3}>
+            <Text fontSize="sm" color="gray.600">
+              Multiple sites found. Select the one for this project:
+            </Text>
+            <Select
+              placeholder="Choose a Search Console site..."
+              value={selectedGSCSite}
+              onChange={(e) => setSelectedGSCSite(e.target.value)}
+              size="sm"
+            >
+              {gscConnection.availableSites.map((site: { siteUrl: string; permissionLevel: string }) => (
+                <option key={site.siteUrl} value={site.siteUrl}>
+                  {site.siteUrl} ({site.permissionLevel})
+                </option>
+              ))}
+            </Select>
+            <Button
+              size="sm"
+              colorScheme="orange"
+              onClick={handleSelectGSCSite}
+              isDisabled={!selectedGSCSite}
+              isLoading={isSavingGSC}
+              loadingText="Saving..."
+            >
+              Confirm Selection
+            </Button>
+          </VStack>
+        )}
+
+        {/* Connected site details */}
+        {gscConnected && !gscPendingSelection && gscConnection && (
           <VStack align="start" spacing={1} mt={2}>
             <HStack>
               <Text fontSize="sm" color="gray.600">
@@ -311,6 +483,43 @@ export function GoogleConnect({ projectId }: Props) {
                 <FiExternalLink style={{ display: 'inline', marginLeft: 4 }} />
               </Link>
             </HStack>
+            {/* Allow changing site if multiple are available */}
+            {gscConnection.availableSites && gscConnection.availableSites.length > 1 && (
+              <Select
+                placeholder="Switch site..."
+                size="xs"
+                mt={1}
+                value=""
+                onChange={async (e) => {
+                  if (e.target.value) {
+                    try {
+                      await switchGSCSiteMutation({ projectId, siteUrl: e.target.value });
+                      toast({
+                        title: 'Site switched',
+                        description: 'Search Console site updated. Analytics re-syncing.',
+                        status: 'success',
+                        duration: 4000,
+                      });
+                    } catch (err) {
+                      toast({
+                        title: 'Switch failed',
+                        description: err instanceof Error ? err.message : 'Unknown error',
+                        status: 'error',
+                        duration: 5000,
+                      });
+                    }
+                  }
+                }}
+              >
+                {gscConnection.availableSites
+                  .filter((s: { siteUrl: string }) => s.siteUrl !== gscConnection.siteUrl)
+                  .map((site: { siteUrl: string; permissionLevel: string }) => (
+                    <option key={site.siteUrl} value={site.siteUrl}>
+                      {site.siteUrl} ({site.permissionLevel})
+                    </option>
+                  ))}
+              </Select>
+            )}
           </VStack>
         )}
       </Box>

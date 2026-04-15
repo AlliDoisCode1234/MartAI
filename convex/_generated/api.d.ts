@@ -98,6 +98,7 @@ import type * as integrations_wordpress from "../integrations/wordpress.js";
 import type * as lib_aggregates from "../lib/aggregates.js";
 import type * as lib_api from "../lib/api.js";
 import type * as lib_apiResilience from "../lib/apiResilience.js";
+import type * as lib_constants from "../lib/constants.js";
 import type * as lib_encryptedCredentials from "../lib/encryptedCredentials.js";
 import type * as lib_encryption from "../lib/encryption.js";
 import type * as lib_engagementMilestones from "../lib/engagementMilestones.js";
@@ -280,6 +281,7 @@ declare const fullApi: ApiFromModules<{
   "lib/aggregates": typeof lib_aggregates;
   "lib/api": typeof lib_api;
   "lib/apiResilience": typeof lib_apiResilience;
+  "lib/constants": typeof lib_constants;
   "lib/encryptedCredentials": typeof lib_encryptedCredentials;
   "lib/encryption": typeof lib_encryption;
   "lib/engagementMilestones": typeof lib_engagementMilestones;

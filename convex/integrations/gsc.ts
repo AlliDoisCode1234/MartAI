@@ -2,6 +2,7 @@
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
+import { PENDING_SELECTION } from '../lib/constants';
 
 // Type for GSC API response
 type GSCRow = {
@@ -39,6 +40,10 @@ export const fetchKeywordData = action({
 
     if (!connection) {
       throw new Error('GSC not connected');
+    }
+
+    if (connection.siteUrl === PENDING_SELECTION) {
+      throw new Error('Please select a Search Console site in Settings before fetching keyword data.');
     }
 
     // 2. Fetch real data from GSC API (with explicit type cast to avoid TS7022)

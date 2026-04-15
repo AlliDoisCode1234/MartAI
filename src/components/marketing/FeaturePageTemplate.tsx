@@ -35,6 +35,7 @@ import { FiCheck, FiArrowRight } from 'react-icons/fi';
 import { type IconType } from 'react-icons';
 import { MegaMenuHeader, PremiumFooter, ProductScreenshot } from '@/src/components/marketing';
 import { IS_LAUNCHED, BETA_JOIN_HREF, LAUNCHED_PRICING_HREF } from '@/lib/constants/featureFlags';
+import { usePathname } from 'next/navigation';
 
 const MotionBox = motion(Box);
 
@@ -83,8 +84,41 @@ export function FeaturePageTemplate({
   differentiatorsSectionHighlight = 'different',
   children,
 }: Props) {
+  const pathname = usePathname();
+
+  // Build page-specific breadcrumb JSON-LD
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://www.phoo.ai',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Features',
+        item: 'https://www.phoo.ai/features',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: badge,
+        item: `https://www.phoo.ai${pathname}`,
+      },
+    ],
+  };
+
   return (
     <>
+      {/* Page-specific breadcrumb structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <MegaMenuHeader />
 
       {/* ── Hero Section ────────────────────────────────── */}

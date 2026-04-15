@@ -33,7 +33,7 @@ import { FiPlusCircle, FiZap, FiFileText, FiArrowRight } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { useProject } from '@/lib/hooks';
+import { useProjectContext } from '@/src/providers/ProjectProvider';
 import { CONTENT_TEMPLATES } from '@/lib/constants/contentTemplates';
 import type { ContentTemplate } from '@/lib/constants/contentTemplates';
 import { TemplateCard } from './TemplateCard';
@@ -54,7 +54,7 @@ type Props = {
 
 export function ContentStudioLanding({ onTemplateSelect }: Props) {
   const router = useRouter();
-  const { projectId } = useProject(null, { autoSelect: true });
+  const { projectId } = useProjectContext();
   const {
     isOpen: isPhooBuildOpen,
     onOpen: onPhooBuildOpen,

@@ -14,6 +14,7 @@ import type { Id } from '../_generated/dataModel';
 import type { GenericActionCtx } from 'convex/server';
 import type { DataModel } from '../_generated/dataModel';
 import type { NormalizedSerpUrl, NormalizedKeywordMetric } from '../integrations/dataForSeo';
+import { PENDING_SELECTION } from '../lib/constants';
 
 /** Shape of a single row returned by the GSC Search Analytics API */
 interface GSCRow {
@@ -185,8 +186,8 @@ export const generateClusters = action({
         }
       );
 
-      if (!connection?.accessToken || !connection?.siteUrl) {
-        return { success: false, count: 0, error: 'GSC is not connected. Please connect Google Search Console in Settings first.' };
+      if (!connection?.accessToken || !connection?.siteUrl || connection.siteUrl === PENDING_SELECTION) {
+        return { success: false, count: 0, error: connection?.siteUrl === PENDING_SELECTION ? 'Please select a Search Console site in Settings before importing keywords.' : 'GSC is not connected. Please connect Google Search Console in Settings first.' };
       }
 
       try {
