@@ -109,8 +109,8 @@ const colors = {
 // TYPOGRAPHY
 // ============================================
 const fonts = {
-  heading: 'Poppins, -apple-system, BlinkMacSystemFont, sans-serif',
-  body: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+  heading: 'var(--font-poppins), Poppins, -apple-system, BlinkMacSystemFont, sans-serif',
+  body: 'var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, sans-serif',
 };
 
 const fontSizes = {

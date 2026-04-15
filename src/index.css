@@ -84,8 +84,8 @@
   /* ===========================================
      TYPOGRAPHY
      =========================================== */
-  --phoo-font-display: 'Poppins', sans-serif;
-  --phoo-font-body: 'Inter', sans-serif;
+  --phoo-font-display: var(--font-poppins), 'Poppins', sans-serif;
+  --phoo-font-body: var(--font-inter), 'Inter', sans-serif;
 }
 
 /* ===========================================================================
