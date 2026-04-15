@@ -3,6 +3,7 @@ import { v } from 'convex/values';
 import { requireProjectAccess } from '../lib/rbac';
 import { encryptCredential, decryptCredential } from '../lib/encryption';
 import { internal } from '../_generated/api';
+import { PENDING_SELECTION } from '../lib/constants';
 
 // Create or update GSC connection
 export const upsertGSCConnection = mutation({
@@ -126,13 +127,16 @@ export const upsertGSCConnectionInternal = internalMutation({
       updatedAt: Date.now(),
     };
 
+    // Only trigger background sync if a real site was selected (not PENDING_SELECTION)
+    const shouldSync = args.siteUrl !== PENDING_SELECTION && process.env.VITEST !== 'true';
+
     if (existing) {
       if (!args.refreshToken) {
         delete connectionData.refreshToken;
       }
       const result = await ctx.db.patch(existing._id, connectionData);
       
-      if (process.env.VITEST !== 'true') {
+      if (shouldSync) {
         await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
           projectId: args.projectId,
         });
@@ -145,7 +149,7 @@ export const upsertGSCConnectionInternal = internalMutation({
       createdAt: Date.now(),
     });
     
-    if (process.env.VITEST !== 'true') {
+    if (shouldSync) {
       await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
         projectId: args.projectId,
       });
@@ -297,6 +301,13 @@ export const switchGSCSite = mutation({
       siteUrl: args.siteUrl,
       updatedAt: Date.now(),
     });
+
+    // Trigger analytics sync now that we have a real site selected
+    if (process.env.VITEST !== 'true') {
+      await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
+        projectId: args.projectId,
+      });
+    }
 
     console.log('[GSC] Site switched for project', args.projectId);
     return { success: true, siteUrl: args.siteUrl };

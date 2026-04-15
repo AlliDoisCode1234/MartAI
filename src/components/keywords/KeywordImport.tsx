@@ -27,11 +27,11 @@ import {
 import { FiUpload, FiDatabase, FiPlus, FiRefreshCw, FiCheck } from 'react-icons/fi';
 import { useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { useProject } from '@/lib/hooks';
+import { useProjectContext } from '@/src/providers/ProjectProvider';
 import { Id } from '@/convex/_generated/dataModel';
 
 export function KeywordImport() {
-  const { projectId } = useProject(null, { autoSelect: true });
+  const { projectId } = useProjectContext();
   const toast = useToast();
   const [isSyncingGsc, setIsSyncingGsc] = useState(false);
   const [isSyncingAi, setIsSyncingAi] = useState(false);

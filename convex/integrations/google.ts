@@ -4,6 +4,7 @@ import { action, internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
 import { fetchWithExponentialBackoff } from '../lib/apiResilience';
+import { PENDING_SELECTION } from '../lib/constants';
 import { verifyProjectAccess } from '../projects/projects';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -223,29 +224,33 @@ export const exchangeAndSave = action({
 
       if (ga4Response.ok) {
         const data = await ga4Response.json();
-        let firstPropertyId: string | null = null;
-        let firstPropertyName: string | null = null;
+        const allProperties: Array<{ propertyId: string; propertyName: string; accountName: string }> = [];
 
         for (const account of data.accountSummaries || []) {
           for (const prop of account.propertySummaries || []) {
-            if (!firstPropertyId) {
-                firstPropertyId = prop.property.replace('properties/', '');
-                firstPropertyName = prop.displayName;
-            }
+            allProperties.push({
+              propertyId: prop.property.replace('properties/', ''),
+              propertyName: prop.displayName,
+              accountName: account.displayName,
+            });
           }
         }
 
-        if (firstPropertyId && firstPropertyName) {
-          // Use internal mutation securely
+        if (allProperties.length > 0) {
+          // Auto-select if exactly 1 property, otherwise require user selection
+          const selectedId = allProperties.length === 1 ? allProperties[0].propertyId : PENDING_SELECTION;
+          const selectedName = allProperties.length === 1 ? allProperties[0].propertyName : 'Requires Selection';
+
           await ctx.runMutation(internal.integrations.ga4Connections.upsertGA4ConnectionInternal, {
             projectId: args.projectId,
-            propertyId: firstPropertyId,
-            propertyName: firstPropertyName,
+            propertyId: selectedId,
+            propertyName: selectedName,
             accessToken,
             refreshToken,
+            availableProperties: allProperties,
           });
           ga4Saved = true;
-          console.log('[GoogleOAuth][Convex] GA4 saved securely');
+          console.log(`[GoogleOAuth][Convex] GA4 saved: ${allProperties.length} properties found, selected=${selectedId}`);
         }
       }
     } catch (err) {
@@ -264,21 +269,25 @@ export const exchangeAndSave = action({
         gscSiteCount = sites.length;
 
         if (sites.length > 0) {
-          const site = sites.find((s: { permissionLevel: string }) => s.permissionLevel === 'siteOwner') || sites[0];
           const availableSites = sites.map((s: { siteUrl: string; permissionLevel: string }) => ({
             siteUrl: s.siteUrl,
             permissionLevel: s.permissionLevel,
           }));
 
+          // Auto-select if exactly 1 site, otherwise require user selection
+          const selectedSiteUrl = sites.length === 1
+            ? sites[0].siteUrl
+            : PENDING_SELECTION;
+
           await ctx.runMutation(internal.integrations.gscConnections.upsertGSCConnectionInternal, {
             projectId: args.projectId,
-            siteUrl: site.siteUrl,
+            siteUrl: selectedSiteUrl,
             accessToken,
             refreshToken,
             availableSites,
           });
           gscSaved = true;
-          console.log('[GoogleOAuth][Convex] GSC saved securely');
+          console.log(`[GoogleOAuth][Convex] GSC saved: ${sites.length} sites found, selected=${selectedSiteUrl}`);
         }
       }
     } catch (err) {
@@ -417,28 +426,33 @@ export const internalExchangeAndSave = internalAction({
 
       if (ga4Response.ok) {
         const data = await ga4Response.json();
-        let firstPropertyId: string | null = null;
-        let firstPropertyName: string | null = null;
+        const allProperties: Array<{ propertyId: string; propertyName: string; accountName: string }> = [];
 
         for (const account of data.accountSummaries || []) {
           for (const prop of account.propertySummaries || []) {
-            if (!firstPropertyId) {
-                firstPropertyId = prop.property.replace('properties/', '');
-                firstPropertyName = prop.displayName;
-            }
+            allProperties.push({
+              propertyId: prop.property.replace('properties/', ''),
+              propertyName: prop.displayName,
+              accountName: account.displayName,
+            });
           }
         }
 
-        if (firstPropertyId && firstPropertyName) {
+        if (allProperties.length > 0) {
+          // Auto-select if exactly 1 property, otherwise require user selection
+          const selectedId = allProperties.length === 1 ? allProperties[0].propertyId : PENDING_SELECTION;
+          const selectedName = allProperties.length === 1 ? allProperties[0].propertyName : 'Requires Selection';
+
           await ctx.runMutation(internal.integrations.ga4Connections.upsertGA4ConnectionInternal, {
             projectId: args.projectId,
-            propertyId: firstPropertyId,
-            propertyName: firstPropertyName,
+            propertyId: selectedId,
+            propertyName: selectedName,
             accessToken,
             refreshToken,
+            availableProperties: allProperties,
           });
           ga4Saved = true;
-          console.log('[GoogleOAuth][Convex] GA4 saved securely');
+          console.log(`[GoogleOAuth][Convex] GA4 saved: ${allProperties.length} properties found, selected=${selectedId}`);
         }
       }
     } catch (err) {
@@ -457,21 +471,25 @@ export const internalExchangeAndSave = internalAction({
         gscSiteCount = sites.length;
 
         if (sites.length > 0) {
-          const site = sites.find((s: { permissionLevel: string }) => s.permissionLevel === 'siteOwner') || sites[0];
           const availableSites = sites.map((s: { siteUrl: string; permissionLevel: string }) => ({
             siteUrl: s.siteUrl,
             permissionLevel: s.permissionLevel,
           }));
 
+          // Auto-select if exactly 1 site, otherwise require user selection
+          const selectedSiteUrl = sites.length === 1
+            ? sites[0].siteUrl
+            : PENDING_SELECTION;
+
           await ctx.runMutation(internal.integrations.gscConnections.upsertGSCConnectionInternal, {
             projectId: args.projectId,
-            siteUrl: site.siteUrl,
+            siteUrl: selectedSiteUrl,
             accessToken,
             refreshToken,
             availableSites,
           });
           gscSaved = true;
-          console.log('[GoogleOAuth][Convex] GSC saved securely');
+          console.log(`[GoogleOAuth][Convex] GSC saved: ${sites.length} sites found, selected=${selectedSiteUrl}`);
         }
       }
     } catch (err) {

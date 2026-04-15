@@ -44,7 +44,7 @@ import {
 import { FiZap, FiCheck, FiArrowRight, FiSend } from 'react-icons/fi';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { useProject } from '@/lib/hooks';
+import { useProjectContext } from '@/src/providers/ProjectProvider';
 import type { Id } from '@/convex/_generated/dataModel';
 
 type Props = {
@@ -64,7 +64,7 @@ interface KeywordOption {
 
 export function LetPhooBuildItModal({ isOpen, onClose }: Props) {
   const toast = useToast();
-  const { projectId } = useProject(null, { autoSelect: true });
+  const { projectId } = useProjectContext();
 
   const [step, setStep] = useState<Step>('keyword');
   const [selectedKeyword, setSelectedKeyword] = useState('');

@@ -3,6 +3,7 @@ import { v } from 'convex/values';
 import { encryptCredential, decryptCredential } from '../lib/encryption';
 import { requireProjectAccess } from '../lib/rbac';
 import { internal } from '../_generated/api';
+import { PENDING_SELECTION } from '../lib/constants';
 
 // Create or update GA4 connection
 export const upsertGA4Connection = mutation({
@@ -85,6 +86,15 @@ export const upsertGA4ConnectionInternal = internalMutation({
     propertyName: v.string(),
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
+    availableProperties: v.optional(
+      v.array(
+        v.object({
+          propertyId: v.string(),
+          propertyName: v.string(),
+          accountName: v.string(),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
     console.log('[GoogleOAuth][InternalMutation] upsertGA4ConnectionInternal called');
@@ -106,9 +116,13 @@ export const upsertGA4ConnectionInternal = internalMutation({
       isEncrypted: true,
       accessToken: encryptedAccessToken,
       refreshToken: encryptedRefreshToken,
+      availableProperties: args.availableProperties,
       lastSync: Date.now(),
       updatedAt: Date.now(),
     };
+
+    // Only trigger background sync if a real property was selected (not PENDING_SELECTION)
+    const shouldSync = args.propertyId !== PENDING_SELECTION && process.env.VITEST !== 'true';
 
     if (existing) {
       if (!args.refreshToken) {
@@ -116,7 +130,7 @@ export const upsertGA4ConnectionInternal = internalMutation({
       }
       const result = await ctx.db.patch(existing._id, connectionData);
       
-      if (process.env.VITEST !== 'true') {
+      if (shouldSync) {
         await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
           projectId: args.projectId,
         });
@@ -129,7 +143,7 @@ export const upsertGA4ConnectionInternal = internalMutation({
       createdAt: Date.now(),
     });
     
-    if (process.env.VITEST !== 'true') {
+    if (shouldSync) {
       await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
         projectId: args.projectId,
       });
@@ -154,6 +168,7 @@ export const getGA4Connection = query({
       projectId: connection.projectId,
       propertyId: connection.propertyId,
       propertyName: connection.propertyName,
+      availableProperties: connection.availableProperties,
       lastSync: connection.lastSync,
       createdAt: connection.createdAt,
       updatedAt: connection.updatedAt,
@@ -220,6 +235,57 @@ export const deleteGA4Connection = mutation({
     // Security: require editor access to delete connections
     await requireProjectAccess(ctx, args.projectId, 'editor');
     await ctx.db.delete(args.connectionId);
+  },
+});
+
+// Select a GA4 property from the available properties list (property picker)
+export const selectGA4Property = mutation({
+  args: {
+    projectId: v.id('projects'),
+    propertyId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Security: Require project editor access
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
+    const connection = await ctx.db
+      .query('ga4Connections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+
+    if (!connection) {
+      throw new Error('No GA4 connection found for this project');
+    }
+
+    // Verify the requested property is in the available list
+    if (!connection.availableProperties || connection.availableProperties.length === 0) {
+      throw new Error(
+        'No available properties list for this connection. Please reconnect Google Analytics.'
+      );
+    }
+
+    const selected = connection.availableProperties.find(
+      (p) => p.propertyId === args.propertyId
+    );
+    if (!selected) {
+      throw new Error('Selected property is not available in your Google account');
+    }
+
+    await ctx.db.patch(connection._id, {
+      propertyId: selected.propertyId,
+      propertyName: selected.propertyName,
+      updatedAt: Date.now(),
+    });
+
+    // Trigger analytics sync now that we have a real property
+    if (process.env.VITEST !== 'true') {
+      await ctx.scheduler.runAfter(0, internal.analytics.sync.syncProjectData, {
+        projectId: args.projectId,
+      });
+    }
+
+    console.log('[GA4] Property selected for project', args.projectId, ':', selected.propertyId);
+    return { success: true, propertyId: selected.propertyId, propertyName: selected.propertyName };
   },
 });
 

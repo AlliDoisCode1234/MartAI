@@ -31,7 +31,7 @@ import {
 import { FiSettings } from 'react-icons/fi';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { useProject } from '@/lib/hooks';
+import { useProjectContext } from '@/src/providers/ProjectProvider';
 import { trackEvent, ANALYTICS_EVENTS } from '@/src/lib/analyticsEvents';
 import type { ContentTemplate } from '@/lib/constants/contentTemplates';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -43,7 +43,7 @@ interface Props {
 
 export function TemplateBasedBriefCreator({ template }: Props) {
   const router = useRouter();
-  const { projectId } = useProject(null, { autoSelect: true });
+  const { projectId } = useProjectContext();
   const [title, setTitle] = useState('');
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
   const [qualityTier, setQualityTier] = useState<TaskTier>('standard');

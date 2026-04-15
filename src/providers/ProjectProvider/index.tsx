@@ -135,7 +135,19 @@ export const ProjectProvider: FC<Props> = ({
 export function useProjectContext(): ProjectContextValue {
   const context = useContext(ProjectContext);
   if (!context) {
-    throw new Error('useProjectContext must be used within a ProjectProvider');
+    throw new Error(
+      '[ProjectProvider] useProjectContext() was called outside a <ProjectProvider>. ' +
+      'Wrap the component tree with <ProjectProvider> or use useProjectContextSafe() if the provider is optional.'
+    );
   }
   return context;
+}
+
+/**
+ * Safe variant — returns null when called outside a ProjectProvider.
+ * Use this in components that may render in both provider and non-provider trees
+ * (e.g. WorkspaceHeader used across studio/keywords/settings layouts).
+ */
+export function useProjectContextSafe(): ProjectContextValue | null {
+  return useContext(ProjectContext);
 }

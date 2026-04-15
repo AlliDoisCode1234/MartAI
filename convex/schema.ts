@@ -569,6 +569,16 @@ export default defineSchema({
     connectionType: v.optional(v.union(v.literal('oauth'), v.literal('service_account'))),
     serviceAccountEmail: v.optional(v.string()),
     encryptedServiceAccountKey: v.optional(v.string()),
+    // All properties available in this Google account (for property picker)
+    availableProperties: v.optional(
+      v.array(
+        v.object({
+          propertyId: v.string(),
+          propertyName: v.string(),
+          accountName: v.string(),
+        })
+      )
+    ),
     // Metadata
     lastSync: v.number(),
     createdAt: v.number(),

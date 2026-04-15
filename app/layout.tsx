@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/src/components/shared/ErrorBoundary';
 import { CookieConsent } from '@/src/components/shared/CookieConsent';
 import { ConditionalGA4 } from '@/src/components/shared/ConditionalGA4';
 import { TrackingProvider } from '@/src/providers/TrackingProvider';
+import { Analytics } from '@vercel/analytics/next';
 import '@/src/index.css';
 import type { Metadata } from 'next';
 
@@ -127,20 +128,32 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     {
                       '@type': 'ListItem',
                       position: 2,
+                      name: 'How It Works',
+                      item: 'https://www.phoo.ai/how-it-works',
+                    },
+                    {
+                      '@type': 'ListItem',
+                      position: 3,
                       name: 'Product',
                       item: 'https://www.phoo.ai/product',
                     },
                     {
                       '@type': 'ListItem',
-                      position: 3,
+                      position: 4,
                       name: 'Pricing',
                       item: 'https://www.phoo.ai/pricing',
                     },
                     {
                       '@type': 'ListItem',
-                      position: 4,
-                      name: 'How It Works',
-                      item: 'https://www.phoo.ai/how-it-works',
+                      position: 5,
+                      name: 'Resources',
+                      item: 'https://www.phoo.ai/resources',
+                    },
+                    {
+                      '@type': 'ListItem',
+                      position: 6,
+                      name: 'About',
+                      item: 'https://www.phoo.ai/about',
                     },
                   ],
                 },
@@ -159,6 +172,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     <Layout>{children}</Layout>
                     <CookieConsent />
                     <ConditionalGA4 ga4Id={GA4_ID} />
+                    <Analytics />
                   </TrackingProvider>
                 </ChakraProviderWrapper>
               </SecurityProvider>

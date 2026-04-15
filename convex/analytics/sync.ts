@@ -3,6 +3,7 @@ import { internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
 import { THRESHOLDS } from '../config/thresholds';
+import { PENDING_SELECTION } from '../lib/constants';
 import {
   parseGA4Response,
   normalizeGA4Metrics,
@@ -43,18 +44,26 @@ export const syncProjectData = internalAction({
     }
 
     // 1. Fetch Connections
-    const ga4Connection = await ctx.runQuery(
+    const ga4ConnectionRaw = await ctx.runQuery(
       internal.integrations.ga4Connections.getGA4ConnectionInternal,
       {
         projectId,
       }
     );
-    const gscConnection = await ctx.runQuery(
+    const gscConnectionRaw = await ctx.runQuery(
       internal.integrations.gscConnections.getGSCConnectionInternal,
       {
         projectId,
       }
     );
+
+    // Guard: Skip connections that are still awaiting user property/site selection
+    const ga4Connection = ga4ConnectionRaw?.propertyId === PENDING_SELECTION
+      ? (() => { console.warn(`[Sync Guard] Skipping GA4 for ${projectId}: property selection pending`); return null; })()
+      : ga4ConnectionRaw;
+    const gscConnection = gscConnectionRaw?.siteUrl === PENDING_SELECTION
+      ? (() => { console.warn(`[Sync Guard] Skipping GSC for ${projectId}: site selection pending`); return null; })()
+      : gscConnectionRaw;
 
     let ga4Data: NormalizedGA4Metrics | null = null;
     let gscData: NormalizedGSCMetrics | null = null;

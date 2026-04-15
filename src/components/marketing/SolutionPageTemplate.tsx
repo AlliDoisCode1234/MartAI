@@ -35,6 +35,7 @@ import { FiArrowRight, FiCheck, FiX } from 'react-icons/fi';
 import { type IconType } from 'react-icons';
 import { MegaMenuHeader, PremiumFooter } from '@/src/components/marketing';
 import { IS_LAUNCHED, BETA_JOIN_HREF, LAUNCHED_PRICING_HREF } from '@/lib/constants/featureFlags';
+import { usePathname } from 'next/navigation';
 
 const MotionBox = motion(Box);
 
@@ -92,8 +93,41 @@ export function SolutionPageTemplate({
   roiSectionTitle = 'The numbers',
   roiSectionHighlight = 'speak for themselves',
 }: Props) {
+  const pathname = usePathname();
+
+  // Build page-specific breadcrumb JSON-LD
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://www.phoo.ai',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Solutions',
+        item: 'https://www.phoo.ai/solutions',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: persona,
+        item: `https://www.phoo.ai${pathname}`,
+      },
+    ],
+  };
+
   return (
     <>
+      {/* Page-specific breadcrumb structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <MegaMenuHeader />
 
       {/* ── Persona Hero ────────────────────────────────── */}

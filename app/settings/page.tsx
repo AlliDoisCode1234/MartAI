@@ -49,6 +49,8 @@ import {
   AccordionIcon,
   useToast,
   useDisclosure,
+  Skeleton,
+  SkeletonText,
 } from '@chakra-ui/react';
 import { WordPressConnect } from '@/src/components/settings/WordPressConnect';
 import { ShopifyConnect } from '@/src/components/settings/ShopifyConnect';
@@ -72,6 +74,8 @@ import {
   FiShield,
   FiSave,
   FiCreditCard,
+  FiGlobe,
+  FiChevronDown,
 } from 'react-icons/fi';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -135,9 +139,16 @@ export default function SettingsPage() {
   const searchParams = useSearchParams();
   const toast = useToast();
 
-  const { project: activeProject } = useProject(null, { autoSelect: true });
+  const { project: activeProject, setCurrentProject } = useProject(null, { autoSelect: true });
   const { me, loading: meLoading } = useMe();
   const cancelModal = useDisclosure();
+
+  // Fetch all projects for the project switcher
+  const allProjects = useQuery(
+    api.projects.projects.list,
+    me ? undefined : 'skip'
+  );
+  const hasMultipleProjects = (allProjects?.length ?? 0) > 1;
 
   const myOrganizations = useQuery(
     api.teams.teams.getMyOrganizations,
@@ -220,6 +231,98 @@ export default function SettingsPage() {
           <Heading size="2xl" fontWeight="bold" fontFamily="heading" color="gray.800">
             Settings
           </Heading>
+
+          {/* Project Context Indicator */}
+          {(() => {
+            // Still resolving project — show skeleton
+            if (!me) return null;
+            if (allProjects === undefined) {
+              return (
+                <HStack
+                  p={3}
+                  bg="orange.50"
+                  borderRadius="lg"
+                  borderWidth="1px"
+                  borderColor="orange.200"
+                  spacing={3}
+                >
+                  <Skeleton w="20px" h="20px" borderRadius="md" startColor="orange.100" endColor="orange.200" />
+                  <SkeletonText noOfLines={2} spacing={1} flex={1} startColor="orange.100" endColor="orange.200" />
+                </HStack>
+              );
+            }
+            // No project at all
+            if (!activeProject) {
+              return (
+                <HStack
+                  p={3}
+                  bg="red.50"
+                  borderRadius="lg"
+                  borderWidth="1px"
+                  borderColor="red.200"
+                  spacing={3}
+                >
+                  <Icon as={FiGlobe} color="red.400" boxSize={5} />
+                  <VStack align="start" spacing={0}>
+                    <Text fontSize="sm" fontWeight="semibold" color="red.600">
+                      No project selected
+                    </Text>
+                    <Text fontSize="xs" color="red.500">
+                      Integrations and brand settings require an active project.
+                    </Text>
+                  </VStack>
+                </HStack>
+              );
+            }
+            // Has project
+            return (
+              <HStack
+                p={3}
+                bg="orange.50"
+                borderRadius="lg"
+                borderWidth="1px"
+                borderColor="orange.200"
+                spacing={3}
+              >
+                <Icon as={FiGlobe} color="orange.500" boxSize={5} />
+                <VStack align="start" spacing={0} flex={1}>
+                  <Text fontSize="xs" color="orange.600" fontWeight="medium">
+                    Project-specific settings for
+                  </Text>
+                  {hasMultipleProjects ? (
+                    <Select
+                      size="sm"
+                      variant="unstyled"
+                      fontWeight="bold"
+                      color="gray.800"
+                      cursor="pointer"
+                      value={activeProject._id}
+                      onChange={(e) => {
+                        setCurrentProject(e.target.value);
+                      }}
+                      icon={<FiChevronDown />}
+                      maxW="300px"
+                    >
+                      {allProjects?.map((p: { _id: string; name: string; websiteUrl?: string }) => (
+                        <option key={p._id} value={p._id}>
+                          {p.name}{p.websiteUrl ? ` (${p.websiteUrl})` : ''}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <Text fontWeight="bold" color="gray.800" fontSize="sm">
+                      {activeProject.name}
+                      {activeProject.websiteUrl && (
+                        <Text as="span" fontWeight="normal" color="gray.500" ml={2}>
+                          {activeProject.websiteUrl}
+                        </Text>
+                      )}
+                    </Text>
+                  )}
+                </VStack>
+              </HStack>
+            );
+          })()}
 
           <Box bg="white" borderRadius="xl" shadow="md" overflow="hidden">
             <Tabs

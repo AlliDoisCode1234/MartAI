@@ -44,7 +44,7 @@ import {
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/lib/useAuth';
-import { useProjectContext } from '@/src/providers/ProjectProvider';
+import { useProjectContextSafe } from '@/src/providers/ProjectProvider';
 import { Id } from '@/convex/_generated/dataModel';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -107,14 +107,9 @@ export const WorkspaceHeader: FC<Props> = ({ collapsed = false, variant = 'dark'
   );
   const switchOrg = useMutation(api.users.switchOrganization);
 
-  // Context
-  let projectId: string | null = null;
-  try {
-    const ctx = useProjectContext();
-    projectId = ctx.projectId;
-  } catch {
-    // ProjectProvider may not be mounted yet
-  }
+  // Read project from context — safe variant returns null outside ProjectProvider
+  const projectCtx = useProjectContextSafe();
+  const projectId: string | null = projectCtx?.projectId ?? null;
 
   if (!user) return null;
 

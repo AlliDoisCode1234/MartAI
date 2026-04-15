@@ -47,7 +47,7 @@ import {
 } from '@chakra-ui/react';
 import { useQuery, useAction, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { useProject } from '@/lib/hooks';
+import { useProjectContext } from '@/src/providers/ProjectProvider';
 import { FiLayers, FiEdit3, FiTrendingUp, FiMoreVertical, FiTrash2, FiPlus } from 'react-icons/fi';
 import { Id } from '@/convex/_generated/dataModel';
 import { IntentBadge } from '@/src/components/keywords/IntentBadge';
@@ -64,7 +64,7 @@ const thStyle = {
 };
 
 export function KeywordClusters({ projectId: propProjectId }: { projectId?: string }) {
-  const { projectId: hookProjectId } = useProject(null, { autoSelect: true });
+  const { projectId: hookProjectId } = useProjectContext();
   const projectId = propProjectId || hookProjectId;
   
   const toast = useToast();
