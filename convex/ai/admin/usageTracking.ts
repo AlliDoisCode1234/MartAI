@@ -416,6 +416,15 @@ export const checkTokenLimit = internalQuery({
       throw new Error('[usageTracking] User not found during token limit check');
     }
     
+    // Admins bypass token limits for product testing/maintenance
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      return { 
+        allowed: true, 
+        usedTokens: 0, 
+        maxTokens: Number.MAX_SAFE_INTEGER 
+      };
+    }
+
     // We import getMaxTokensForTier dynamically or statically
     const maxTokens = getMaxTokensForTier(user.membershipTier || 'starter');
     

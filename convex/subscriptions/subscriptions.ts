@@ -270,6 +270,12 @@ export const recordUsage = mutation({
     amount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Admin bypass: admins are exempt from subscription quota checks
+    const user = await ctx.db.get(args.userId);
+    if (user && (user.role === 'admin' || user.role === 'super_admin')) {
+      return { success: true, remaining: 999999 };
+    }
+
     const subscription = await getActiveSubscription(ctx, args.userId);
     if (!subscription || subscription.status !== 'active') {
       throw new Error('Active subscription required');
@@ -307,6 +313,8 @@ export const recordUsage = mutation({
  * which is not guaranteed in workflow step execution.
  *
  * Same logic as recordUsage — accepts userId explicitly.
+ * Admin/super_admin users bypass subscription checks (consistent
+ * with rate limiter admin tier exemption).
  */
 export const internalRecordUsage = internalMutation({
   args: {
@@ -320,6 +328,13 @@ export const internalRecordUsage = internalMutation({
     amount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Admin bypass: admins are exempt from subscription quota checks.
+    // Consistent with rate limiter admin tier in contentGeneration.ts.
+    const user = await ctx.db.get(args.userId);
+    if (user && (user.role === 'admin' || user.role === 'super_admin')) {
+      return { success: true, remaining: 999999 };
+    }
+
     const subscription = await getActiveSubscription(ctx, args.userId);
     if (!subscription || subscription.status !== 'active') {
       throw new Error('Active subscription required');

@@ -28,7 +28,10 @@ import type { SEOScoreResult, SEOMetrics } from '../lib/seoScoring';
 
 // Quality threshold for A+ grade — 95% minimum for production content
 const QUALITY_THRESHOLD = 95;
-const MAX_GENERATION_ATTEMPTS = 3;
+const MAX_GENERATION_ATTEMPTS = 5;
+// Minimum word count ratio to accept a draft (60% of target)
+// Below this, the content is rejected immediately without finalization
+const MIN_WORD_COUNT_RATIO = 0.6;
 
 // ============================================================================
 // Industry Context Builder (CQ-1, CQ-3, CQ-6)
@@ -872,10 +875,22 @@ export const generateContentForPiece = internalAction({
         inventoryContext
       );
 
-      // ── Stage 2: Deterministic Editorial Review ──────────────────
-      console.log(`[generateContentForPiece] Stage 2: Reviewing content...`);
+      // ── Word Count Guard: Reject catastrophically short drafts ────
       const contentTypeConfigForReview = CONTENT_TYPES[piece.contentType as ContentTypeId];
       const targetWordCountForReview = contentTypeConfigForReview?.wordCount || 1200;
+      const draftWordCount = countWords(draftContent);
+      const minAcceptableWords = Math.floor(targetWordCountForReview * MIN_WORD_COUNT_RATIO);
+
+      if (draftWordCount < minAcceptableWords) {
+        console.warn(
+          `[generateContentForPiece] Draft too short: ${draftWordCount}/${targetWordCountForReview} words (min: ${minAcceptableWords}). Rejecting and retrying.`
+        );
+        // Don't waste an AI call on finalization — retry immediately
+        continue;
+      }
+
+      // ── Stage 2: Deterministic Editorial Review ──────────────────
+      console.log(`[generateContentForPiece] Stage 2: Reviewing content (${draftWordCount} words)...`);
       const initialScore = scoreContent(draftContent, outline, keywords, targetWordCountForReview);
       const suggestions = generateSuggestions(
         initialScore,
@@ -929,6 +944,10 @@ export const generateContentForPiece = internalAction({
         console.log(`[generateContentForPiece] Quality threshold met (${score})`);
         break;
       }
+    } // end while
+
+    if (!bestContent) {
+      throw new Error(`Pipeline failed to generate content meeting minimum quality constraints after ${MAX_GENERATION_ATTEMPTS} attempts. Please check AI quota limits.`);
     }
 
     // 6. Update piece with generated content and set status to 'scheduled'
@@ -1231,7 +1250,7 @@ Write the full article now, following the outline structure.`;
     const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
       prompt,
       systemPrompt,
-      maxTokens: 4000,
+      maxTokens: 8000,
       temperature: enhanceQuality ? 0.6 : 0.8, // Lower temp for quality retries
       taskType: 'generation',
       strategy: 'best_quality',
@@ -1289,6 +1308,7 @@ CRITICAL RULES:
 8. Include specific examples, statistics, or actionable tips in EVERY section
 9. Strong introduction (hook + promise) and conclusion (summary + CTA)
 10. Maintain the original article structure (H1 + H2s) unless the review specifically recommends changes
+11. CRITICAL WORD COUNT: The final version MUST be AT LEAST as long as the original draft. Do NOT shrink, summarize, or condense content. EXPAND if anything.
 ${personaInstructions}
 
 FORMAT: Output ONLY the finalized article in Markdown format. No meta-commentary, no "Here is the revised article", just the content itself.`;
@@ -1311,7 +1331,7 @@ Produce the final, publication-ready version now.`;
     const response = await ctx.runAction(api.ai.router.router.generateWithFallback, {
       prompt,
       systemPrompt,
-      maxTokens: 4000,
+      maxTokens: 8000,
       temperature: 0.5, // Balanced: creative enough to improve, consistent enough to not diverge
       taskType: 'generation',
       strategy: 'best_quality',

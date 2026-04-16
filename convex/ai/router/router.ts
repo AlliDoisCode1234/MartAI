@@ -152,6 +152,7 @@ const TASK_TIER_MAP: Record<string, 'cheap' | 'standard' | 'premium'> = {
   brief: 'standard',
   draft: 'standard',
   structured: 'standard',
+  generation: 'premium', // Content generation = heaviest writing task, needs best model
   vision: 'premium',
 };
 

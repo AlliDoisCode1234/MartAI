@@ -103,6 +103,7 @@ import type * as lib_encryptedCredentials from "../lib/encryptedCredentials.js";
 import type * as lib_encryption from "../lib/encryption.js";
 import type * as lib_engagementMilestones from "../lib/engagementMilestones.js";
 import type * as lib_eventTypes from "../lib/eventTypes.js";
+import type * as lib_functions from "../lib/functions.js";
 import type * as lib_hashing from "../lib/hashing.js";
 import type * as lib_rbac from "../lib/rbac.js";
 import type * as lib_rls from "../lib/rls.js";
@@ -286,6 +287,7 @@ declare const fullApi: ApiFromModules<{
   "lib/encryption": typeof lib_encryption;
   "lib/engagementMilestones": typeof lib_engagementMilestones;
   "lib/eventTypes": typeof lib_eventTypes;
+  "lib/functions": typeof lib_functions;
   "lib/hashing": typeof lib_hashing;
   "lib/rbac": typeof lib_rbac;
   "lib/rls": typeof lib_rls;

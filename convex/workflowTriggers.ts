@@ -9,16 +9,16 @@
  *   2. workflow.start -> begins durable workflow execution
  *   3. Return workflowId for client-side status polling
  *
- * Note: workflow.define() returns a RegisteredMutation<'internal', ...>
- * which is exactly what workflow.start() accepts as the second arg.
+ * CRITICAL: workflow.start() requires a FunctionReference from the generated API tree,
+ * NOT a direct JS import of the workflow.define() return value.
+ * Use: internal.workflows.<filename>.<exportName>
  */
 
 import { mutation } from './_generated/server';
 import { v } from 'convex/values';
 import { workflow } from './index';
+import { internal } from './_generated/api';
 import { requireProjectAccess } from './lib/rbac';
-import { contentGenerationWorkflow } from './workflows/contentGenerationWorkflow';
-import { calendarGenerationWorkflow } from './workflows/calendarGenerationWorkflow';
 import { contentTypeValidator } from './phoo/contentTypes';
 
 /**
@@ -40,12 +40,11 @@ export const startContentGeneration = mutation({
     const { userId } = await requireProjectAccess(ctx, args.projectId, 'editor');
 
     // Start durable workflow — userId derived from auth, not client args.
-    // workflow.define() returns a RegisteredMutation which is the correct
-    // FunctionReference type for workflow.start().
+    // Must use API reference, NOT direct import (Convex runtime wraps direct
+    // imports in a guard that is not a valid FunctionReference).
     const workflowId = await workflow.start(
       ctx,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      contentGenerationWorkflow as any,
+      internal.workflows.contentGenerationWorkflow.contentGenerationWorkflow,
       {
         projectId: args.projectId,
         userId,
@@ -81,8 +80,7 @@ export const startCalendarGeneration = mutation({
     // Start durable workflow — userId derived from auth, not client args
     const workflowId = await workflow.start(
       ctx,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      calendarGenerationWorkflow as any,
+      internal.workflows.calendarGenerationWorkflow.calendarGenerationWorkflow,
       {
         projectId: args.projectId,
         userId,
