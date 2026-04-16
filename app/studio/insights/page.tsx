@@ -316,7 +316,7 @@ export default function InsightsPage() {
           />
         </SimpleGrid>
 
-        {/* ── Market Intelligence Row (DataForSEO) ────────────── */}
+        {/* ── Market Intelligence Row (Phoo platform capability) ─ */}
         {marketIntel.hasData && (
           <>
             <MotionBox
@@ -336,7 +336,7 @@ export default function InsightsPage() {
                   borderRadius="full"
                   px={2}
                 >
-                  DataForSEO
+                  Phoo Intelligence
                 </Badge>
               </HStack>
             </MotionBox>
