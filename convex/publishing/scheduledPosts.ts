@@ -4,6 +4,7 @@ import { internal } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
 import { rateLimits } from '../rateLimits';
 import { requireProjectAccess } from '../lib/rbac';
+import { securedQuery } from '../lib/functions';
 
 /**
  * CREATE SCHEDULED POST
@@ -105,30 +106,28 @@ export const publishPost = internalMutation({
 
 /**
  * QUERY: Get scheduled posts for a project
+ * Migrated to securedQuery — RBAC enforced by construction (LDD_SECURED_FUNCTIONS)
  */
-export const getScheduledPosts = query({
-  args: { projectId: v.id('projects') },
-  handler: async (ctx, { projectId }) => {
-    // GLASSWING-001: Verify caller has access to this project
-    await requireProjectAccess(ctx, projectId, 'viewer');
+export const getScheduledPosts = securedQuery({
+  args: {},
+  handler: async (ctx) => {
     return ctx.db
       .query('scheduledPosts')
-      .withIndex('by_project', (q) => q.eq('projectId', projectId))
+      .withIndex('by_project', (q) => q.eq('projectId', ctx.projectId))
       .collect();
   },
 });
 
 /**
  * QUERY: Get posts filtered by status
+ * Migrated to securedQuery — RBAC enforced by construction (LDD_SECURED_FUNCTIONS)
  */
-export const getScheduledPostsByStatus = query({
-  args: { projectId: v.id('projects'), status: v.string() },
+export const getScheduledPostsByStatus = securedQuery({
+  args: { status: v.string() },
   handler: async (ctx, args) => {
-    // GLASSWING-002: Verify caller has access to this project
-    await requireProjectAccess(ctx, args.projectId, 'viewer');
     const posts = await ctx.db
       .query('scheduledPosts')
-      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .withIndex('by_project', (q) => q.eq('projectId', ctx.projectId))
       .collect();
 
     return posts.filter((p) => p.status === args.status);

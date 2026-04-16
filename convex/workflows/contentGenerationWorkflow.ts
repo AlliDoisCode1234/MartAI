@@ -64,17 +64,26 @@ export const contentGenerationWorkflow = workflow.define({
         metric: 'contentPieces' as const,
         amount: 1,
       });
-    } catch {
-      // Quota exceeded — clean up the empty piece shell
+    } catch (quotaError) {
+      // Quota/subscription check failed — clean up the empty piece shell
+      const errorMsg = quotaError instanceof Error ? quotaError.message : 'Unknown quota error';
+      console.error(`[ContentWorkflow] Quota step failed: ${errorMsg}`);
+
       await step.runMutation(internal.contentGeneration.updateContentPiece, {
         contentPieceId,
         status: 'draft',
       });
 
+      // Distinguish between subscription missing vs quota exceeded
+      const isSubscriptionError = errorMsg.includes('subscription required');
+      const userMessage = isSubscriptionError
+        ? 'An active subscription is required to generate content. Please subscribe or contact support.'
+        : 'Monthly content limit reached. Upgrade your plan for more content.';
+
       return {
         contentPieceId,
         status: 'failed' as const,
-        message: 'Monthly content limit reached. Upgrade your plan for more content.',
+        message: userMessage,
       };
     }
 

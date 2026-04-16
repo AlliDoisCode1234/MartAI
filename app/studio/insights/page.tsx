@@ -32,6 +32,8 @@ import {
   Divider,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { useConvexAuth } from 'convex/react';
+import type { Id } from '@/convex/_generated/dataModel';
 import {
   StudioLayout,
   HeroKPICard,
@@ -48,12 +50,22 @@ import {
   FiZap,
   FiActivity,
   FiStar,
+  FiDatabase,
+  FiDollarSign,
 } from 'react-icons/fi';
 // TODO: Re-enable when ContentJourney tooltip issue is fixed
 // import { ContentJourney } from '@/src/components/strategy';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useProject } from '@/lib/hooks';
+import { formatCompactNumber } from '@/lib/insightsTransforms';
+import {
+  resolveMarketIntelligence,
+  formatRevenue,
+  getDifficultyLabel,
+  getDifficultyColor,
+} from '@/lib/insightsEngine';
+import type { EnrichedKeywordForInsights } from '@/lib/insightsEngine';
 import {
   STUDIO_COLORS,
   STUDIO_CARD,
@@ -162,7 +174,8 @@ function StatusDot({ color, label, count }: { color: string; label: string; coun
 // ============================================================================
 
 export default function InsightsPage() {
-  const { projectId, project, isLoading: projectLoading } = useProject(null, { autoSelect: true });
+  const { isAuthenticated } = useConvexAuth();
+  const { projectId, project, hasGA4, hasGSC, isLoading: projectLoading } = useProject(null, { autoSelect: true });
 
   const contentPieces = useQuery(
     api.contentPieces.listByProject,
@@ -171,6 +184,22 @@ export default function InsightsPage() {
   const stats = useQuery(api.contentPieces.getStats, projectId ? { projectId } : 'skip');
   const mrScore = useQuery(api.scores.getProjectScore, projectId ? { projectId } : 'skip');
   const strategyData = useQuery(api.strategy.getFullStrategy, projectId ? { projectId } : 'skip');
+
+  // Real GA4 + GSC data (same queries as /studio dashboard)
+  const kpis = useQuery(
+    api.analytics.analytics.getDashboardKPIs,
+    projectId && isAuthenticated ? { projectId: projectId as Id<'projects'> } : 'skip'
+  );
+  const gscStats = useQuery(
+    api.analytics.gscKeywords.getGSCDashboardStats,
+    projectId && isAuthenticated ? { projectId: projectId as Id<'projects'> } : 'skip'
+  );
+
+  // DataForSEO enriched keywords (market intelligence)
+  const enrichedKeywords = useQuery(
+    api.seo.keywordsData.getKeywordsEnriched,
+    projectId && isAuthenticated ? { projectId: projectId as Id<'projects'> } : 'skip'
+  );
 
   // Loading state
   if (projectLoading) return <InsightsSkeleton />;
@@ -203,6 +232,22 @@ export default function InsightsPage() {
   const avgSeoScore = calculateAvgSeoScore(pieces);
   const keywordCount = strategyData?.stats?.keywordCount ?? 0;
 
+  // Real analytics values (fall back to content-based estimates when not connected)
+  const hasGA4Data = !!kpis?.hasGA4Data;
+  const hasGSCData = !!kpis?.hasGSCData;
+  const realSessions = hasGA4Data ? (kpis?.sessions?.value ?? 0) : 0;
+  const realClicks = hasGSCData ? (kpis?.clicks?.value ?? 0) : 0;
+  const realImpressions = hasGSCData ? (gscStats?.totalImpressions ?? 0) : 0;
+  const sessionsChange = hasGA4Data ? (kpis?.sessions?.change ?? null) : null;
+  const clicksChange = hasGSCData ? (kpis?.clicks?.change ?? null) : null;
+  const gscKeywordCount = gscStats?.keywordCount ?? 0;
+
+  // Market intelligence from DataForSEO-enriched keywords
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Convex query return type widening
+  const marketIntel = resolveMarketIntelligence(
+    (enrichedKeywords?.keywords ?? []) as EnrichedKeywordForInsights[]
+  );
+
   return (
     <StudioLayout>
       <VStack spacing={8} align="stretch">
@@ -225,52 +270,122 @@ export default function InsightsPage() {
         <SimpleGrid columns={{ base: 2, lg: 4 }} spacing={4}>
           <HeroKPICard
             icon={FiTrendingUp}
-            label="Organic Traffic"
-            value={stats?.published ? `${(stats.published * 47).toLocaleString()}` : '0'}
-            trend={stats?.published ? { value: 28, label: 'Last 30 Days' } : undefined}
+            label="Organic Sessions"
+            value={hasGA4Data ? realSessions.toLocaleString() : (stats?.published ? `~${(stats.published * 47).toLocaleString()}` : '0')}
+            trend={sessionsChange !== null ? { value: Math.round(sessionsChange), label: 'vs Previous Period' } : undefined}
             gradient={STUDIO_GRADIENTS.hero1}
             sparklineData={[20, 35, 28, 45, 52, 48, 65, 72]}
-            badge="New"
+            badge={hasGA4Data ? 'GA4' : 'Est.'}
             delay={0.1}
           />
           <HeroKPICard
             icon={FiTarget}
-            label="Revenue-Ready Rankings"
-            value={keywordCount}
-            trend={keywordCount > 0 ? { value: 18, label: 'This Month' } : undefined}
+            label="Ranking Keywords"
+            value={hasGSCData ? gscKeywordCount : keywordCount}
+            trend={hasGSCData && gscKeywordCount > 0 ? { value: gscKeywordCount, label: 'In Search Console' } : (keywordCount > 0 ? { value: keywordCount, label: 'Tracked' } : undefined)}
             gradient={STUDIO_GRADIENTS.hero2}
             sparklineData={[10, 15, 22, 30, 28, 35, 40, 45]}
             tags={[
-              { label: 'Cost', active: true },
-              { label: 'Near Me' },
-              { label: 'Service Topics' },
+              { label: 'GSC', active: hasGSCData },
+              { label: 'Tracked', active: !hasGSCData && keywordCount > 0 },
             ]}
             delay={0.2}
           />
           <HeroKPICard
             icon={FiZap}
-            label="High-Intent Traffic"
-            value={stats?.published ? `${Math.round(stats.published * 32)}` : '0'}
-            trend={stats?.published ? { value: 12, label: 'Money Keywords' } : undefined}
+            label="Search Clicks"
+            value={hasGSCData ? realClicks.toLocaleString() : (stats?.published ? `~${Math.round(stats.published * 32)}` : '0')}
+            trend={clicksChange !== null ? { value: Math.round(clicksChange), label: 'vs Previous Period' } : undefined}
             gradient={STUDIO_GRADIENTS.hero3}
             sparklineData={[15, 22, 18, 30, 42, 38, 50, 55]}
             tags={[
-              { label: 'Cost', active: true },
-              { label: 'Near Me', active: true },
-              { label: 'Service Topics' },
+              { label: 'GSC', active: hasGSCData },
+              { label: 'Estimated', active: !hasGSCData },
             ]}
+            badge={hasGSCData ? 'GSC' : 'Est.'}
             delay={0.3}
           />
           <HeroKPICard
             icon={FiStar}
             label="Content Contribution"
             value={`${contentContribution}%`}
-            trend={contentContribution > 0 ? { value: 11, label: 'This Month' } : undefined}
+            trend={contentContribution > 0 ? { value: 11, label: 'Published Ratio' } : undefined}
             gradient={STUDIO_GRADIENTS.hero4}
             sparklineData={[30, 35, 40, 38, 45, 50, 55, 60]}
             delay={0.4}
           />
         </SimpleGrid>
+
+        {/* ── Market Intelligence Row (Phoo platform capability) ─ */}
+        {marketIntel.hasData && (
+          <>
+            <MotionBox
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.3 }}
+            >
+              <HStack mb={2} mt={-2}>
+                <Icon as={FiDatabase} color={STUDIO_COLORS.blue} boxSize={5} />
+                <Text fontSize="sm" fontWeight="semibold" color="gray.600">
+                  Market Intelligence
+                </Text>
+                <Badge
+                  bg="rgba(59, 130, 246, 0.12)"
+                  color={STUDIO_COLORS.blue}
+                  fontSize="2xs"
+                  borderRadius="full"
+                  px={2}
+                >
+                  Phoo Intelligence
+                </Badge>
+              </HStack>
+            </MotionBox>
+            <SimpleGrid columns={{ base: 2, lg: 4 }} spacing={4}>
+              <HeroKPICard
+                icon={FiBarChart2}
+                label="Search Volume"
+                value={formatCompactNumber(marketIntel.totalSearchVolume)}
+                trend={marketIntel.keywordCount > 0 ? { value: marketIntel.keywordCount, label: 'Keywords Tracked' } : undefined}
+                gradient={STUDIO_GRADIENTS.hero2}
+                sparklineData={[10, 18, 25, 22, 30, 35, 40, 38]}
+                badge="Monthly"
+                delay={0.5}
+              />
+              <HeroKPICard
+                icon={FiTarget}
+                label="Avg. Difficulty"
+                value={marketIntel.avgDifficulty}
+                trend={{ value: marketIntel.avgDifficulty, label: getDifficultyLabel(marketIntel.avgDifficulty) }}
+                gradient={STUDIO_GRADIENTS.hero2}
+                sparklineData={[40, 38, 42, 35, 30, 32, 28, 25]}
+                tags={[
+                  { label: getDifficultyLabel(marketIntel.avgDifficulty), active: true },
+                ]}
+                delay={0.6}
+              />
+              <HeroKPICard
+                icon={FiZap}
+                label="Quick Wins"
+                value={marketIntel.quickWinCount}
+                trend={marketIntel.quickWinCount > 0 ? { value: marketIntel.quickWinCount, label: 'Keywords Near Page 1' } : undefined}
+                gradient={STUDIO_GRADIENTS.hero4}
+                sparklineData={[2, 4, 3, 5, 8, 7, 10, 12]}
+                badge={marketIntel.quickWinCount > 0 ? 'Action' : undefined}
+                delay={0.7}
+              />
+              <HeroKPICard
+                icon={FiDollarSign}
+                label="Revenue Opportunity"
+                value={formatRevenue(marketIntel.revenueOpportunity)}
+                trend={marketIntel.rankingCount > 0 ? { value: marketIntel.rankingCount, label: 'Ranking on Google' } : undefined}
+                gradient={STUDIO_GRADIENTS.hero4}
+                sparklineData={[5, 12, 18, 25, 22, 30, 35, 42]}
+                badge="CPC Value"
+                delay={0.8}
+              />
+            </SimpleGrid>
+          </>
+        )}
 
         {/* ── Middle Section (3 columns) ─────────────────────── */}
         <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={6}>
@@ -509,11 +624,15 @@ export default function InsightsPage() {
             <VStack spacing={4} align="stretch">
               <Flex justify="space-between" align="baseline">
                 <Text fontSize="xs" color={STUDIO_COLORS.textMuted}>
-                  Est. Monthly Visitors in 5 Months
+                  {hasGA4Data ? 'Monthly Sessions (GA4)' : marketIntel.hasData ? 'Addressable Search Volume' : 'Est. Monthly Visitors'}
                 </Text>
                 <HStack>
                   <Text fontSize="lg" fontWeight="bold" color="gray.800">
-                    +{(pipeline.published * 500).toLocaleString()}
+                    {hasGA4Data
+                      ? realSessions.toLocaleString()
+                      : marketIntel.hasData
+                        ? formatCompactNumber(marketIntel.totalSearchVolume)
+                        : `~${(pipeline.published * 500).toLocaleString()}`}
                   </Text>
                   <Icon as={FiTrendingUp} color={STUDIO_COLORS.green} boxSize={3} />
                 </HStack>
@@ -521,11 +640,14 @@ export default function InsightsPage() {
 
               <Flex justify="space-between" align="baseline">
                 <Text fontSize="xs" color={STUDIO_COLORS.textMuted}>
-                  Est. Leads Per Month
+                  {hasGSCData ? 'Search Impressions (GSC)' : marketIntel.hasData ? 'Revenue Opportunity (CPC)' : 'Est. Leads Per Month'}
                 </Text>
                 <Text fontSize="lg" fontWeight="bold" color="gray.800">
-                  {Math.max(Math.round(pipeline.published * 2.3), 0)}-
-                  {Math.max(Math.round(pipeline.published * 4.8), 0)}
+                  {hasGSCData
+                    ? realImpressions.toLocaleString()
+                    : marketIntel.hasData
+                      ? formatRevenue(marketIntel.revenueOpportunity)
+                      : `${Math.max(Math.round(pipeline.published * 2.3), 0)}-${Math.max(Math.round(pipeline.published * 4.8), 0)}`}
                 </Text>
               </Flex>
 
@@ -540,7 +662,7 @@ export default function InsightsPage() {
                 </HStack>
                 <HStack>
                   <Text fontSize="sm" fontWeight="bold" color="gray.800">
-                    {underperforming.filter((a) => a.quickWin).length}
+                    {marketIntel.hasData ? marketIntel.quickWinCount : underperforming.filter((a) => a.quickWin).length}
                   </Text>
                   <Badge
                     bg="rgba(255, 157, 0, 0.15)"
