@@ -14,7 +14,7 @@ import { Box, Container, Heading, Text, VStack } from '@chakra-ui/react';
 
 export function ProblemSection() {
   return (
-    <Box as="section" py={20} borderTop="1px solid" borderColor="whiteAlpha.100" bg="gray.900">
+    <Box as="section" py={20} borderTop="1px solid" borderColor="gray.100" bg="white">
       <Container maxW="4xl">
         <Heading
           as="h2"
@@ -22,7 +22,7 @@ export function ProblemSection() {
           fontWeight="bold"
           textAlign="center"
           mb={12}
-          color="white"
+          color="gray.800"
         >
           Does this sound familiar?
         </Heading>
@@ -40,13 +40,14 @@ export function ProblemSection() {
               alignItems="flex-start"
               p={6}
               borderRadius="xl"
-              bg="whiteAlpha.50"
+              bg="white"
               border="1px solid"
-              borderColor="whiteAlpha.100"
+              borderColor="gray.200"
+              boxShadow="sm"
               w="100%"
             >
               <Box w={2} h={2} borderRadius="full" bg="red.400" mt={2} flexShrink={0} />
-              <Text fontSize="lg" color="gray.300">
+              <Text fontSize="lg" color="gray.600">
                 {problem}
               </Text>
             </Box>
@@ -58,21 +59,22 @@ export function ProblemSection() {
           p={8}
           borderRadius="2xl"
           bgGradient="linear(to-r, brand.orange, pink.500)"
-          opacity={0.1}
+          opacity={0.05}
           position="absolute"
         />
         <Box
           mt={12}
           p={8}
           borderRadius="2xl"
-          bg="whiteAlpha.50"
+          bg="white"
+          boxShadow="md"
           border="1px solid"
           borderColor="brand.orange"
           textAlign="center"
           position="relative"
         >
-          <Text fontSize="xl" color="gray.300" lineHeight="relaxed">
-            <Text as="span" fontWeight="semibold" color="white">
+          <Text fontSize="xl" color="gray.600" lineHeight="relaxed">
+            <Text as="span" fontWeight="semibold" color="gray.800">
               You didn&apos;t start your business just to chase algorithms.
             </Text>
             <br />

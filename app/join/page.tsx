@@ -5,21 +5,23 @@
  *
  * Component Hierarchy:
  * └── app/join/page.tsx (this file)
+ *     ├── MegaMenuHeader
  *     ├── HeroSection
  *     ├── ProblemSection
  *     ├── FeaturesSection
  *     ├── AudienceSection
- *     ├── BetaSection
  *     ├── WaitlistForm
- *     └── Footer
+ *     └── PremiumFooter
  *
  * Public waitlist page for phoo.ai domain.
  * Accessible at phoo.ai/join.
- * Imports from src/components/landing (production copy from main branch).
+ *
+ * NOTE (Product Audit 04/17/2026): Added MegaMenuHeader so users
+ * have navigation and aren't trapped on a dark page with no escape.
+ * The landing components were unified to a light theme for brand cohesion.
  */
 
-import { Box, Container, Text, HStack, Link as ChakraLink } from '@chakra-ui/react';
-import Link from 'next/link';
+import { Box } from '@chakra-ui/react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, Suspense } from 'react';
 import {
@@ -29,7 +31,7 @@ import {
   AudienceSection,
   WaitlistForm,
 } from '@/src/components/landing';
-import { PremiumFooter } from '@/src/components/marketing/PremiumFooter';
+import { MegaMenuHeader, PremiumFooter } from '@/src/components/marketing';
 
 function JoinPageContent() {
   const searchParams = useSearchParams();
@@ -51,7 +53,9 @@ function JoinPageContent() {
   };
 
   return (
-    <Box minH="100vh" bg="gray.900" color="white">
+    <Box minH="100vh" bg="white" color="gray.800">
+      {/* MegaMenuHeader added per Product Audit so users can navigate away */}
+      <MegaMenuHeader />
       <HeroSection onCtaClick={scrollToForm} />
       <ProblemSection />
       <FeaturesSection />
@@ -64,7 +68,7 @@ function JoinPageContent() {
 
 export default function JoinPage() {
   return (
-    <Suspense fallback={<Box minH="100vh" bg="gray.900" />}>
+    <Suspense fallback={<Box minH="100vh" bg="white" />}>
       <JoinPageContent />
     </Suspense>
   );

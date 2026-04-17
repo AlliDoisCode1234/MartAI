@@ -42,13 +42,13 @@ const FEATURES: Array<{ icon: LucideIcon; color: string; title: string; descript
 
 export function FeaturesSection() {
   return (
-    <Box as="section" py={20} borderTop="1px solid" borderColor="whiteAlpha.100" bg="gray.900">
+    <Box as="section" py={20} borderTop="1px solid" borderColor="gray.100" bg="white">
       <Container maxW="4xl">
         <VStack textAlign="center" mb={12}>
-          <Heading as="h2" fontSize={{ base: '3xl', md: '4xl' }} fontWeight="bold" color="white">
+          <Heading as="h2" fontSize={{ base: '3xl', md: '4xl' }} fontWeight="bold" color="gray.800">
             What Phoo Does
           </Heading>
-          <Text fontSize="xl" color="gray.400">
+          <Text fontSize="xl" color="gray.600">
             Phoo is your automated SEO growth system.
           </Text>
         </VStack>
@@ -59,25 +59,26 @@ export function FeaturesSection() {
               key={feature.title}
               p={6}
               borderRadius="xl"
-              bg="whiteAlpha.50"
+              bg="white"
               border="1px solid"
-              borderColor="whiteAlpha.100"
+              borderColor="gray.200"
+              boxShadow="sm"
               display="flex"
               alignItems="flex-start"
               gap={4}
             >
               <Icon as={feature.icon} boxSize={6} color={feature.color} flexShrink={0} mt={1} />
               <Box>
-                <Heading as="h3" fontSize="lg" fontWeight="semibold" mb={2} color="white">
+                <Heading as="h3" fontSize="lg" fontWeight="semibold" mb={2} color="gray.800">
                   {feature.title}
                 </Heading>
-                <Text color="gray.400">{feature.description}</Text>
+                <Text color="gray.600">{feature.description}</Text>
               </Box>
             </Box>
           ))}
         </SimpleGrid>
 
-        <Text textAlign="center" fontSize="lg" color="gray.400" mt={10}>
+        <Text textAlign="center" fontSize="lg" color="gray.600" mt={10}>
           All without you needing to become a marketing expert.
         </Text>
       </Container>

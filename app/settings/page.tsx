@@ -106,6 +106,15 @@ const tierColors: Record<string, string> = {
   enterprise: 'orange',
 };
 
+// Tier display names — convert internal IDs to user-facing names
+// Source of truth: lib/constants/onboarding.ts PLANS array
+const TIER_DISPLAY_NAMES: Record<string, string> = {
+  starter: 'Lead Starter',
+  engine: 'Growth Engine',
+  agency: 'Agency',
+  enterprise: 'Enterprise',
+};
+
 // Form input styles for Brand tab
 const inputStyles = {
   bg: 'white',
@@ -217,7 +226,7 @@ export default function SettingsPage() {
   const tier = me?.membershipTier || 'starter';
   const isStarter = tier === 'starter';
   const initials = me ? getInitials(me.name, me.email) : 'U';
-  const memberSince = me?._creationTime ? formatLongDate(me._creationTime) : 'Unknown';
+  const memberSince = me?.createdAt ? formatLongDate(me.createdAt) : 'Unknown';
 
   return (
     <>
@@ -404,9 +413,8 @@ export default function SettingsPage() {
                                     px={2}
                                     py={0.5}
                                     borderRadius="full"
-                                    textTransform="capitalize"
                                   >
-                                    {tier}
+                                    {TIER_DISPLAY_NAMES[tier] || tier}
                                   </Badge>
                                 </HStack>
                                 <Text color="gray.500" fontSize="sm">{me.email}</Text>
@@ -519,8 +527,8 @@ export default function SettingsPage() {
                               <VStack align="start" spacing={1}>
                                 <Text fontSize="xs" color="gray.400">Current Plan</Text>
                                 <HStack spacing={2}>
-                                  <Text fontWeight="bold" fontSize="lg" textTransform="capitalize">
-                                    {tier}
+                                  <Text fontWeight="bold" fontSize="lg">
+                                    {TIER_DISPLAY_NAMES[tier] || tier}
                                   </Text>
                                   <Badge colorScheme="green" fontSize="xs">Active</Badge>
                                 </HStack>

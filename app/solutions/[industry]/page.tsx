@@ -9,8 +9,9 @@ export function generateStaticParams() {
   }));
 }
 
-export function generateMetadata({ params }: { params: { industry: string } }): Metadata {
-  const template = INDUSTRY_TEMPLATES[params.industry as IndustryId];
+export async function generateMetadata({ params }: { params: Promise<{ industry: string }> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const template = INDUSTRY_TEMPLATES[resolvedParams.industry as IndustryId];
   if (!template) {
     return { title: 'Solution Not Found | Phoo' };
   }
@@ -21,12 +22,13 @@ export function generateMetadata({ params }: { params: { industry: string } }): 
   };
 }
 
-export default function IndustrySolutionPage({ params }: { params: { industry: string } }) {
-  const template = INDUSTRY_TEMPLATES[params.industry as IndustryId];
+export default async function IndustrySolutionPage({ params }: { params: Promise<{ industry: string }> }) {
+  const resolvedParams = await params;
+  const template = INDUSTRY_TEMPLATES[resolvedParams.industry as IndustryId];
   
   if (!template) {
     notFound();
   }
 
-  return <IndustrySolutionClient industryId={params.industry as IndustryId} />;
+  return <IndustrySolutionClient industryId={resolvedParams.industry as IndustryId} />;
 }
