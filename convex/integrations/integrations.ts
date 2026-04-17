@@ -1,5 +1,6 @@
 import { query } from "../_generated/server";
 import { v } from "convex/values";
+import { requireProjectAccess } from "../lib/rbac";
 
 /**
  * Get all integration connections for a project
@@ -7,6 +8,9 @@ import { v } from "convex/values";
 export const getIntegrationsByProject = query({
   args: { projectId: v.id("projects") },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     // Get GA4 connection
     const ga4Connection = await ctx.db
       .query("ga4Connections")

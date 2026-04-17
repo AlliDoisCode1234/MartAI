@@ -220,6 +220,141 @@ export const generateFullCalendar = action({
 });
 
 /**
+ * Internal-only calendar generation for background orchestration workflows.
+ * Uses internal queries to avoid auth context loss in durable workflows.
+ */
+export const generateFullCalendarInternal = internalAction({
+  args: {
+    projectId: v.id('projects'),
+    userId: v.id('users'),
+    websiteUrl: v.optional(v.string()),
+    businessDescription: v.optional(v.string()),
+    monthsAhead: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<CalendarGenerationResult> => {
+    const months = args.monthsAhead || 6;
+
+    try {
+      // Get project via internal query (no auth needed)
+      const project = await ctx.runQuery(internal.projects.projects.getProjectInternal, {
+        projectId: args.projectId,
+      });
+
+      if (!project) {
+        return {
+          success: false,
+          industry: 'general',
+          itemsGenerated: 0,
+          contentPieceIds: [],
+          error: 'Project not found',
+        };
+      }
+
+      // Detect industry
+      const industryId = await ctx.runAction(internal.phoo.industryTemplates.detectIndustry, {
+        url: args.websiteUrl || project.websiteUrl || '',
+        businessDescription: args.businessDescription || project.industry || '',
+      });
+
+      const template = INDUSTRY_TEMPLATES[industryId as IndustryId] || INDUSTRY_TEMPLATES.general;
+
+      // Use template seed keywords (no GSC during onboarding)
+      const keywords: string[] = template.keywords;
+
+      // Generate calendar items
+      const calendarItems: GeneratedCalendarItem[] = [];
+      const now = Date.now();
+      const dayMs = 24 * 60 * 60 * 1000;
+
+      for (const planItem of template.contentPlan) {
+        if (planItem.month > months) continue;
+        if (BLOG_ONLY_MODE && !(LAUNCH_CONTENT_TYPES as readonly string[]).includes(planItem.contentType)) continue;
+
+        const contentType = CONTENT_TYPES[planItem.contentType];
+        if (!contentType) continue;
+
+        const baseOffset = 2 * dayMs;
+        const monthOffset = (planItem.month - 1) * 30 * dayMs;
+        const daySpread = (calendarItems.length % 7) * dayMs;
+        const scheduledDate = now + baseOffset + monthOffset + daySpread;
+
+        const location = 'Your City';
+        const companyName = project.name || 'Your Company';
+
+        const title = planItem.titleTemplate
+          .replace(/\{\{location\}\}/g, location)
+          .replace(/\{\{companyName\}\}/g, companyName)
+          .replace(/\{\{industry\}\}/g, template.name);
+
+        const itemKeywords = planItem.suggestedKeywords
+          .map((kw) =>
+            kw.replace(/\{\{location\}\}/g, location)
+              .replace(/\{\{companyName\}\}/g, companyName)
+              .replace(/\{\{industry\}\}/g, template.name)
+          )
+          .filter((kw) => !kw.includes('{{'));
+
+        calendarItems.push({
+          contentType: planItem.contentType,
+          title,
+          keywords: [...itemKeywords, ...keywords.slice(0, 3)],
+          scheduledDate,
+          priority: planItem.priority,
+        });
+      }
+
+      // Create content pieces via internal mutation (already internal)
+      const contentPieceIds = await ctx.runMutation(
+        internal.contentCalendar.generateCalendar.createCalendarContentPieces,
+        {
+          projectId: args.projectId,
+          items: calendarItems,
+        }
+      );
+
+      // Generate content for first pieces
+      const piecesToGenerate = contentPieceIds.slice(0, 3);
+      if (piecesToGenerate.length > 0) {
+        const firstPieceId = piecesToGenerate[0];
+        try {
+          await ctx.runAction(internal.contentGeneration.generateContentForPiece, {
+            contentPieceId: firstPieceId,
+            userId: args.userId,
+          });
+        } catch (error) {
+          console.error('[generateFullCalendarInternal] Failed to generate first piece:', error);
+        }
+
+        for (const pieceId of piecesToGenerate.slice(1)) {
+          if (process.env.VITEST !== 'true') {
+            await ctx.scheduler.runAfter(0, internal.contentGeneration.generateContentForPiece, {
+              contentPieceId: pieceId,
+              userId: args.userId,
+            });
+          }
+        }
+      }
+
+      return {
+        success: true,
+        industry: industryId,
+        itemsGenerated: contentPieceIds.length,
+        contentPieceIds,
+      };
+    } catch (error: unknown) {
+      console.error('[generateFullCalendarInternal] Error:', error);
+      return {
+        success: false,
+        industry: 'general',
+        itemsGenerated: 0,
+        contentPieceIds: [],
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+/**
  * Internal mutation to batch create content pieces
  */
 export const createCalendarContentPieces = internalMutation({

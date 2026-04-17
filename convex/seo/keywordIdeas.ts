@@ -1,5 +1,6 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
+import { requireProjectAccess } from "../lib/rbac";
 
 const keywordInput = {
   prospectId: v.optional(v.id("prospects")),
@@ -15,6 +16,36 @@ const keywordInput = {
   priority: v.optional(v.string()),
   status: v.optional(v.string()),
 };
+
+/**
+ * Validates write access. Resolves prospect associations to project contexts to prevent RBAC bypasses.
+ */
+async function verifyKeywordWriteAccess(ctx: any, args: any) {
+  let targetProjectId = args.projectId;
+  
+  if (!targetProjectId && args.ideaId) {
+    const existing = await ctx.db.get(args.ideaId);
+    targetProjectId = existing?.projectId;
+  }
+
+  // If no direct project ID but prospect is associated, resolve prospect to user project to enforce RBAC
+  if (!targetProjectId && args.prospectId) {
+    const prospect = await ctx.db.get(args.prospectId);
+    if (prospect && prospect.userId) {
+      const project = await ctx.db
+        .query("projects")
+        .withIndex("by_user", (q: any) => q.eq("userId", prospect.userId))
+        .first();
+      if (project) {
+        targetProjectId = project._id;
+      }
+    }
+  }
+
+  if (targetProjectId) {
+    await requireProjectAccess(ctx, targetProjectId, 'editor');
+  }
+}
 
 async function insertIdea(ctx: any, args: any) {
   const now = Date.now();
@@ -39,6 +70,7 @@ async function insertIdea(ctx: any, args: any) {
 export const createKeywordIdea = mutation({
   args: keywordInput,
   handler: async (ctx, args) => {
+    await verifyKeywordWriteAccess(ctx, args);
     return await insertIdea(ctx, args);
   },
 });
@@ -49,6 +81,8 @@ export const upsertKeywordIdea = mutation({
     ...keywordInput,
   },
   handler: async (ctx, args) => {
+    await verifyKeywordWriteAccess(ctx, args);
+    
     const { ideaId, ...rest } = args;
     if (!ideaId) {
       return await insertIdea(ctx, rest);
@@ -78,22 +112,27 @@ export const listKeywordIdeas = query({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Verify project-level access via requireProjectAccess (RBAC)
+    if (args.projectId) { 
+      await requireProjectAccess(ctx, args.projectId, 'viewer'); 
+    }
+    
     let builder = ctx.db.query("keywordIdeas").order("desc");
 
     if (args.prospectId) {
       builder = ctx.db
         .query("keywordIdeas")
-        .withIndex("by_prospect", (q) => q.eq("prospectId", args.prospectId))
+        .withIndex("by_prospect", (q: any) => q.eq("prospectId", args.prospectId))
         .order("desc");
     } else if (args.projectId) {
       builder = ctx.db
         .query("keywordIdeas")
-        .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+        .withIndex("by_project", (q: any) => q.eq("projectId", args.projectId))
         .order("desc");
     }
 
     const ideas = await builder.collect();
-    return args.status ? ideas.filter((idea) => idea.status === args.status) : ideas;
+    return args.status ? ideas.filter((idea: any) => idea.status === args.status) : ideas;
   },
 });
 
@@ -103,6 +142,8 @@ export const updateKeywordIdeaStatus = mutation({
     status: v.string(),
   },
   handler: async (ctx, args) => {
+    await verifyKeywordWriteAccess(ctx, args);
+    
     const { ideaId, status } = args;
     const existing = await ctx.db.get(ideaId);
     if (!existing) {
@@ -112,4 +153,3 @@ export const updateKeywordIdeaStatus = mutation({
     return { success: true };
   },
 });
-

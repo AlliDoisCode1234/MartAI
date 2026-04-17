@@ -1,4 +1,4 @@
-import { mutation, query, internalQuery } from '../_generated/server';
+import { mutation, query, internalQuery, internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
 
 import { planConfig } from '../subscriptions/subscriptions';
@@ -212,6 +212,19 @@ export const adminDeleteProject = mutation({
     const project = await ctx.db.get(args.projectId);
     if (!project) throw new Error('Project not found');
 
+    // CASCADE DELETE: Mirror deleteProject to prevent orphaned OAuth credentials
+    const ga4 = await ctx.db.query('ga4Connections').withIndex('by_project', (q) => q.eq('projectId', args.projectId)).collect();
+    for (const row of ga4) await ctx.db.delete(row._id);
+
+    const gsc = await ctx.db.query('gscConnections').withIndex('by_project', (q) => q.eq('projectId', args.projectId)).collect();
+    for (const row of gsc) await ctx.db.delete(row._id);
+
+    const gtm = await ctx.db.query('gtmConnections').withIndex('by_project', (q) => q.eq('projectId', args.projectId)).collect();
+    for (const row of gtm) await ctx.db.delete(row._id);
+
+    const platforms = await ctx.db.query('platformConnections').withIndex('by_project', (q) => q.eq('projectId', args.projectId)).collect();
+    for (const row of platforms) await ctx.db.delete(row._id);
+
     await ctx.db.delete(args.projectId);
 
     return { success: true };
@@ -313,7 +326,7 @@ export const getProjectsByOrganization = query({
       )
       .first();
 
-    if (!membership) {
+    if (!membership || membership.status !== 'active') {
       return [];
     }
 
@@ -357,52 +370,95 @@ export const verifyProjectAccess = internalQuery({
 });
 
 // Update project (requires project editor access)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dual-export handler shared by mutation + internalMutation; GenericMutationCtx union not expressible
+export const updateProjectInternalHandler = async (
+  ctx: any,
+  args: {
+    projectId: import('../_generated/dataModel').Id<'projects'>;
+    name?: string;
+    websiteUrl?: string;
+    industry?: string;
+    generationStatus?: 'pending' | 'generating' | 'complete' | 'error';
+    targetAudience?: string;
+    businessGoals?: string[];
+    competitors?: string[];
+    brandName?: string;
+    brandVoice?: string;
+    toneKeywords?: string[];
+    defaultWordCount?: number;
+  }
+) => {
+  // Guard: Verify project exists and is not soft-deleted
+  const project = await ctx.db.get(args.projectId);
+  if (!project) {
+    throw new Error('PROJECT_NOT_FOUND: Cannot update a project that does not exist.');
+  }
+  if (project.status === 'deleted') {
+    throw new Error('PROJECT_DELETED: Cannot update a soft-deleted project.');
+  }
+
+  // PROJ-001: Check if URL is locked before allowing URL changes
+  if (args.websiteUrl !== undefined && project.urlLocked) {
+    throw new Error('URL_LOCKED: Website URL cannot be changed after project creation.');
+  }
+
+  const updates: Record<string, unknown> = { updatedAt: Date.now() };
+  if (args.name !== undefined) updates.name = args.name;
+  if (args.websiteUrl !== undefined) updates.websiteUrl = args.websiteUrl;
+  if (args.industry !== undefined) updates.industry = args.industry;
+  if (args.generationStatus !== undefined) updates.generationStatus = args.generationStatus;
+  if (args.targetAudience !== undefined) updates.targetAudience = args.targetAudience;
+  if (args.businessGoals !== undefined) updates.businessGoals = args.businessGoals;
+  if (args.competitors !== undefined) updates.competitors = args.competitors;
+  if (args.brandName !== undefined) updates.brandName = args.brandName;
+  if (args.brandVoice !== undefined) updates.brandVoice = args.brandVoice;
+  if (args.toneKeywords !== undefined) updates.toneKeywords = args.toneKeywords;
+  if (args.defaultWordCount !== undefined) updates.defaultWordCount = args.defaultWordCount;
+
+  return await ctx.db.patch(args.projectId, updates);
+};
+
+export const updateProjectInternal = internalMutation({
+  args: {
+    projectId: v.id('projects'),
+    name: v.optional(v.string()),
+    websiteUrl: v.optional(v.string()),
+    industry: v.optional(v.string()),
+    generationStatus: v.optional(
+      v.union(v.literal('pending'), v.literal('generating'), v.literal('complete'), v.literal('error'))
+    ),
+    targetAudience: v.optional(v.string()),
+    businessGoals: v.optional(v.array(v.string())),
+    competitors: v.optional(v.array(v.string())),
+    brandName: v.optional(v.string()),
+    brandVoice: v.optional(v.string()),
+    toneKeywords: v.optional(v.array(v.string())),
+    defaultWordCount: v.optional(v.number()),
+  },
+  handler: updateProjectInternalHandler,
+});
+
 export const updateProject = mutation({
   args: {
     projectId: v.id('projects'),
     name: v.optional(v.string()),
     websiteUrl: v.optional(v.string()),
     industry: v.optional(v.string()),
-    organizationId: v.optional(v.id('organizations')),
+    generationStatus: v.optional(
+      v.union(v.literal('pending'), v.literal('generating'), v.literal('complete'), v.literal('error'))
+    ),
     targetAudience: v.optional(v.string()),
-    businessGoals: v.optional(v.string()),
+    businessGoals: v.optional(v.array(v.string())),
     competitors: v.optional(v.array(v.string())),
-    // Brand & Content Intelligence
     brandName: v.optional(v.string()),
     brandVoice: v.optional(v.string()),
     toneKeywords: v.optional(v.array(v.string())),
     defaultWordCount: v.optional(v.number()),
-    // Generation status for onboarding visibility
-    generationStatus: v.optional(
-      v.union(v.literal('idle'), v.literal('generating'), v.literal('complete'), v.literal('error'))
-    ),
   },
   handler: async (ctx, args) => {
     // Security: Require project access
     await requireProjectAccess(ctx, args.projectId, 'editor');
-
-    // PROJ-001: Check if URL is locked before allowing URL changes
-    if (args.websiteUrl !== undefined) {
-      const project = await ctx.db.get(args.projectId);
-      if (project?.urlLocked) {
-        throw new Error('URL_LOCKED: Website URL cannot be changed after project creation.');
-      }
-    }
-
-    const updates: Record<string, unknown> = { updatedAt: Date.now() };
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.websiteUrl !== undefined) updates.websiteUrl = args.websiteUrl;
-    if (args.industry !== undefined) updates.industry = args.industry;
-    if (args.generationStatus !== undefined) updates.generationStatus = args.generationStatus;
-    if (args.targetAudience !== undefined) updates.targetAudience = args.targetAudience;
-    if (args.businessGoals !== undefined) updates.businessGoals = args.businessGoals;
-    if (args.competitors !== undefined) updates.competitors = args.competitors;
-    if (args.brandName !== undefined) updates.brandName = args.brandName;
-    if (args.brandVoice !== undefined) updates.brandVoice = args.brandVoice;
-    if (args.toneKeywords !== undefined) updates.toneKeywords = args.toneKeywords;
-    if (args.defaultWordCount !== undefined) updates.defaultWordCount = args.defaultWordCount;
-
-    return await ctx.db.patch(args.projectId, updates);
+    return await updateProjectInternalHandler(ctx, args);
   },
 });
 
@@ -489,6 +545,9 @@ export const createTestProject = mutation({
       name: args.name,
       websiteUrl: args.websiteUrl,
       industry: 'Testing',
+      projectType: 'own',
+      urlLocked: false, // Test projects allow URL changes
+      serpAnalysisUsed: false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });

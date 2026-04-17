@@ -17,6 +17,7 @@
 
 import { v } from 'convex/values';
 import { mutation, query, internalMutation } from '../../_generated/server';
+import { requireProjectAccess } from "../../lib/rbac";
 
 /** Immutable Global Guidelines ensuring strictly high-authority generated content */
 export const GLOBAL_AI_CONSTRAINTS = [
@@ -78,6 +79,9 @@ export const getOrCreatePersona = mutation({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error('Not authenticated');
+
+    // Verify project-level access via requireProjectAccess (RBAC)
+    await requireProjectAccess(ctx, args.projectId, 'editor');
 
     // Check for existing active persona
     const existing = await ctx.db
@@ -181,6 +185,9 @@ export const getActivePersona = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return null;
 
+    // Verify project-level access via requireProjectAccess (RBAC)
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
+
     return await ctx.db
       .query('aiWriterPersonas')
       .withIndex('by_project_status', (q) =>
@@ -200,6 +207,9 @@ export const getProjectPersonas = query({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return [];
+
+    // Verify project-level access via requireProjectAccess (RBAC)
+    await requireProjectAccess(ctx, args.projectId, 'viewer');
 
     return await ctx.db
       .query('aiWriterPersonas')

@@ -1,5 +1,6 @@
 import { query } from '../_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from "../lib/rbac";
 
 /**
  * Quick Wins Query
@@ -15,6 +16,9 @@ export const getQuickWins = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     const keywords = await ctx.db
       .query('keywords')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
@@ -51,6 +55,9 @@ export const getQuickWinCount = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     const keywords = await ctx.db
       .query('keywords')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))

@@ -9,6 +9,9 @@ import { requireProjectAccess } from '../lib/rbac';
 export const getKeywordsByProject = query({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     // Get keywords directly by project
     const keywords = await ctx.db
       .query('keywords')

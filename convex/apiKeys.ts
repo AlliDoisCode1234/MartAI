@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query, internalQuery } from './_generated/server';
 import { Id } from './_generated/dataModel';
+import { requireProjectAccess } from "./lib/rbac";
 
 /**
  * API Keys Module
@@ -65,6 +66,9 @@ export const createApiKey = mutation({
     expiresInDays: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<{ keyId: Id<'apiKeys'>; apiKey: string }> => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'editor');
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error('Unauthorized');
@@ -132,6 +136,9 @@ export const listApiKeys = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error('Unauthorized');

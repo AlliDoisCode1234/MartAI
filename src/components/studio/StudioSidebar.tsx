@@ -52,7 +52,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/studio/create', label: 'Create', icon: FiPlusCircle },
-  { href: '/studio', label: 'Dashboard', icon: FiGrid },
+  { href: '/studio', label: 'Overview', icon: FiGrid },
   { href: '/studio/calendar', label: 'Calendar', icon: FiCalendar },
   {
     href: '/studio/library',

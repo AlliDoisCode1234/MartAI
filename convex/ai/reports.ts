@@ -1,5 +1,6 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
+import { requireProjectAccess } from "../lib/rbac";
 
 const metricsInput = v.object({
   coverageScore: v.optional(v.number()),
@@ -34,6 +35,9 @@ export const createAiReport = mutation({
     })),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          if (args.projectId) { await requireProjectAccess(ctx, args.projectId, 'editor'); }
     const now = Date.now();
     return await ctx.db.insert("aiReports", {
       prospectId: args.prospectId,
@@ -94,6 +98,9 @@ export const listAiReports = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          if (args.projectId) { await requireProjectAccess(ctx, args.projectId, 'viewer'); }
     let builder = ctx.db.query("aiReports").order("desc");
 
     if (args.prospectId) {
@@ -118,6 +125,9 @@ export const getLatestAiReport = query({
     projectId: v.optional(v.id("projects")),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          if (args.projectId) { await requireProjectAccess(ctx, args.projectId, 'viewer'); }
     if (!args.prospectId && !args.projectId) {
       throw new Error("prospectId or projectId is required");
     }

@@ -73,6 +73,7 @@ interface Props {
   featuresSectionHighlight?: string;
   roiSectionTitle?: string;
   roiSectionHighlight?: string;
+  customCtaHref?: string;
 }
 
 export function SolutionPageTemplate({
@@ -92,8 +93,10 @@ export function SolutionPageTemplate({
   featuresSectionHighlight = 'you work',
   roiSectionTitle = 'The numbers',
   roiSectionHighlight = 'speak for themselves',
+  customCtaHref,
 }: Props) {
   const pathname = usePathname();
+  const ctaLink = customCtaHref || (IS_LAUNCHED ? LAUNCHED_PRICING_HREF : BETA_JOIN_HREF);
 
   // Build page-specific breadcrumb JSON-LD
   const breadcrumbJsonLd = {
@@ -195,7 +198,7 @@ export function SolutionPageTemplate({
             >
               <Button
                 as="a"
-                href={IS_LAUNCHED ? LAUNCHED_PRICING_HREF : BETA_JOIN_HREF}
+                href={ctaLink}
                 size="lg"
                 bgGradient="linear(to-r, brand.orange, brand.red)"
                 color="white"
@@ -440,7 +443,7 @@ export function SolutionPageTemplate({
               </Text>
               <Button
                 as="a"
-                href={IS_LAUNCHED ? LAUNCHED_PRICING_HREF : BETA_JOIN_HREF}
+                href={ctaLink}
                 size="lg"
                 bg="white"
                 color="brand.orange"

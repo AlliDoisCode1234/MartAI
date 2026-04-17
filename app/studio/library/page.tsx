@@ -67,7 +67,7 @@ export default function LibraryPage() {
   const handleStatusChange = (status: StatusFilter) => {
     setStatusFilter(status);
     const url = status === 'all' ? '/studio/library' : `/studio/library?status=${status}`;
-    router.replace(url, { scroll: false });
+    window.history.replaceState(null, '', url);
   };
 
   const [searchQuery, setSearchQuery] = useState('');

@@ -8,6 +8,7 @@
 
 import { mutation, query, internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from "../lib/rbac";
 
 // Default SEO checklist from helps2
 const DEFAULT_SEO_CHECKLIST = [
@@ -28,6 +29,9 @@ export const getTemplateByPageType = query({
     pageType: v.string(),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          if (args.projectId) { await requireProjectAccess(ctx, args.projectId, 'viewer'); }
     // Try project-specific first
     if (args.projectId) {
       const projectTemplate = await ctx.db
@@ -55,6 +59,9 @@ export const getTemplatesByProject = query({
     projectId: v.optional(v.id('projects')),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          if (args.projectId) { await requireProjectAccess(ctx, args.projectId, 'viewer'); }
     if (args.projectId) {
       return await ctx.db
         .query('contentTemplates')
@@ -84,6 +91,9 @@ export const upsertTemplate = mutation({
     isDefault: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          if (args.projectId) { await requireProjectAccess(ctx, args.projectId, 'editor'); }
     const now = Date.now();
 
     if (args.templateId) {

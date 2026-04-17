@@ -33,7 +33,7 @@ interface FooterLink {
 const PRODUCT_LINKS: FooterLink[] = [
   { label: 'Content Studio', href: '/features/content-studio' },
   { label: 'Keyword Intelligence', href: '/features/keyword-intelligence' },
-  { label: 'Analytics Dashboard', href: '/features/analytics' },
+  { label: 'Intelligence Hub', href: '/features/intelligence-hub' },
   { label: 'CMS Publishing', href: '/features/publishing' },
   { label: 'GEO Optimization', href: '/features/geo-optimization' },
   { label: 'Content Calendar', href: '/features/content-calendar' },

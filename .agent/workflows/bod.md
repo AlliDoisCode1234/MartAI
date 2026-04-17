@@ -195,6 +195,9 @@ These personas act as historical anchors, representing definitive architectural 
 #### Context Node 00016 (docs/personas/bot_persona_BLAST_RADIUS_DISCIPLINE_00016_PERSONA.md)
 - Ask: "What is the mandatory blast radius protocol for route/constant changes? How do we prevent missing occurrences across the codebase?"
 
+#### Context Node 00017 (docs/personas/bot_persona_BUSINESS_PLG_STRATEGY_00017_PERSONA.md)
+- Ask: "What did we learn about bridging the Agency-to-SaaS gap for MartAI? How did we establish the 'keepMounted' baseline to resolve React router teardown jitters while respecting the Debugging Workflow?"
+
 ---
 
 ## Consultation Process

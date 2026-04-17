@@ -5,7 +5,7 @@ const nextConfig = {
   pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx'],
   eslint: {
     // Only ignore during builds in CI if needed, otherwise fix linting errors
-    ignoreDuringBuilds: process.env.CI === 'true' ? false : false,
+    ignoreDuringBuilds: process.env.CI === 'true',
   },
   typescript: {
     // TEMPORARY: Ignore TypeScript errors in production build
@@ -23,6 +23,17 @@ const nextConfig = {
   images: {
     domains: [],
     formats: ['image/avif', 'image/webp'],
+  },
+
+  // Set up Next.js redirects for deprecated or renamed paths
+  async redirects() {
+    return [
+      {
+        source: '/features/analytics',
+        destination: '/features/intelligence-hub',
+        permanent: true,
+      },
+    ];
   },
 
   // Environment variables that should be available on the client

@@ -14,6 +14,7 @@
 
 import { query } from '../_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from "../lib/rbac";
 
 /**
  * Metrics breakdown by status for detailed analysis
@@ -58,6 +59,9 @@ export const getCanonicalMetrics = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, { projectId }): Promise<CanonicalMetrics> => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, projectId, 'viewer');
     // Fetch keywords
     const keywords = await ctx.db
       .query('keywords')

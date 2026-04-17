@@ -187,7 +187,7 @@ export default function SettingsPage() {
   const handleTabChange = (index: number) => {
     setTabIndex(index);
     const tabName = INDEX_TO_TAB[index];
-    router.replace(`/settings?tab=${tabName}`, { scroll: false });
+    window.history.replaceState(null, '', `/settings?tab=${tabName}`);
   };
 
   useEffect(() => {
@@ -331,6 +331,7 @@ export default function SettingsPage() {
               colorScheme="orange"
               variant="enclosed"
               isLazy
+              lazyBehavior="keepMounted"
             >
               <TabList borderBottomWidth="1px" px={4}>
                 <Tab py={4} fontWeight="medium">
