@@ -57,6 +57,13 @@ import {
 } from '@/src/components/dashboard';
 import { STUDIO_COLORS, STUDIO_CARD } from '@/lib/constants/studioTokens';
 import { StudioLayout } from '@/src/components/studio';
+import {
+  DEMO_STATS,
+  DEMO_KEYWORDS_CLIMBED,
+  DEMO_QUICK_WINS,
+  DEMO_RECENT_CONTENT,
+  getDemoGrowthTimeline
+} from '@/src/components/dashboard/demoData';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Box);
@@ -213,14 +220,41 @@ export default function DashboardPage() {
   const hasGA4Data = !!kpis && kpis.hasGA4Data;
   const hasGSCData = !!kpis && kpis.hasGSCData;
   const hasKPIData = hasGA4Data || hasGSCData;
+  const showDemoData = !hasGA4 || !hasGSC;
 
-  // @ts-ignore
-  const quickWins = (enrichedKeywordsData.keywords || [])
-    // @ts-ignore
-    .filter((kw) => kw.isQuickWin)
-    // @ts-ignore
-    .sort((a, b) => (b.searchVolume || 0) - (a.searchVolume || 0))
-    .slice(0, 3);
+  // ── Mapped Data & Demo Fallbacks (Zero @ts-ignore) ────────────
+
+  const quickWins = showDemoData 
+    ? DEMO_QUICK_WINS 
+    : (enrichedKeywordsData.keywords || [])
+        // Use type narrowing or casting safely instead of ts-ignore
+        .filter((kw: any) => kw.isQuickWin)
+        .sort((a: any, b: any) => (b.searchVolume || 0) - (a.searchVolume || 0))
+        .slice(0, 3);
+
+  const dashboardKeywords = showDemoData
+    ? DEMO_KEYWORDS_CLIMBED
+    : gscStats?.topKeywords?.map((kw: any) => ({
+        keyword: kw.keyword,
+        rank: Math.round(kw.position),
+        clicks: kw.clicks,
+      })) || [];
+
+  const topContent = showDemoData
+    ? DEMO_RECENT_CONTENT
+    : (recentContent || []).map((item: any) => ({
+        _id: item._id,
+        title: item.title,
+        status: item.status,
+        // Map Convex metadata to expected shape
+        updatedAt: item._creationTime,
+        wordCount: typeof item.content === 'string' ? (item.content.match(/\S+/g) || []).length : 0,
+        contentType: 'article' // Fallback or read from metadata if added later
+      }));
+
+  const growthTimeline = showDemoData
+    ? getDemoGrowthTimeline()
+    : growthHistory || [];
 
   return (
     <StudioLayout>
@@ -298,21 +332,11 @@ export default function DashboardPage() {
           <OnboardingProgressBar hasGA4={hasGA4} hasGSC={hasGSC} />
 
           {/* ── Blurred Metrics Area ───────────────────────────── */}
-          <Box
-            position="relative"
-            sx={
-              (!hasGA4 || !hasGSC) ? {
-                filter: 'blur(5px)',
-                pointerEvents: 'none',
-                userSelect: 'none',
-                opacity: 0.8
-              } : {}
-            }
-          >
-            {(!hasGA4 || !hasGSC) && (
+          <Box position="relative">
+            {showDemoData && (
               <Flex
                 position="absolute"
-                top="80px"
+                top="40px"
                 left="0"
                 right="0"
                 zIndex={10}
@@ -331,78 +355,77 @@ export default function DashboardPage() {
                   textAlign="center"
                   maxW="sm"
                 >
-                  <Box bg="orange.50" p={4} borderRadius="full">
-                    <Icon as={FiZap} boxSize={8} color="orange.500" />
+                  <Box bg="purple.50" p={4} borderRadius="full" mb={2}>
+                    <Icon as={FiZap} boxSize={8} color="purple.500" />
                   </Box>
-                  <Heading size="md" color="gray.800">Live Data Locked</Heading>
+                  <Heading size="md" color="gray.800">Viewing Demo Data</Heading>
                   <Text color="gray.600" fontSize="sm">
-                    Connect your data sources above to deploy your autonomous SEO agents.
+                    Connect your analytics integrations to see live metrics and deploy autonomous SEO agents.
                   </Text>
-                  <Link href="/settings?tab=integrations" style={{ textDecoration: 'none' }}>
-                    <Button mt={2} colorScheme="brand" bg="brand.orange" color="white" _hover={{ bg: 'orange.600' }} rightIcon={<FiChevronRight />}>
-                      Connect Integrations
-                    </Button>
-                  </Link>
+                  <Box style={{ pointerEvents: 'auto' }} mt={2}>
+                    <Link href="/settings?tab=integrations" style={{ textDecoration: 'none' }}>
+                      <Button colorScheme="purple" bg="purple.500" color="white" _hover={{ bg: 'purple.600' }} rightIcon={<FiChevronRight />}>
+                        Connect Integrations
+                      </Button>
+                    </Link>
+                  </Box>
                 </VStack>
               </Flex>
             )}
 
             <VStack spacing={{ base: 5, md: 8 }} align="stretch">
               {/* ── Tier 1: The Executive Briefing ─────────────────── */}
-              <Box>
+              <Box opacity={showDemoData ? 0.6 : 1} transition="opacity 0.3s">
                 <DashboardStatRow
-                  sessions={kpis?.sessions?.value ?? 0}
-                  users={kpis?.users?.value ?? 0}
-                  pageViews={kpis?.pageViews?.value ?? 0}
-                  avgSessionDuration={kpis?.avgSessionDuration?.value ?? 0}
-                  avgPosition={gscStats?.avgPosition ?? 0}
-                  impressions={gscStats?.impressions ?? 0}
-                  visibilityScore={kpis?.visibilityScore ?? 0}
-                  visibilityChange={kpis?.visibilityScoreChange ?? 0}
-                  sessionsChange={kpis?.sessions?.change ?? 0}
-                  pageViewsChange={kpis?.pageViews?.change ?? 0}
-                  totalLeads={contentMetricsSummary?.totalLeads ?? 0}
-                  leadConversionRate={contentMetricsSummary?.leadConversionRate ?? 0}
-                  hasGA4Data={hasGA4Data}
-                  hasGSCData={hasGSCData}
-                  hasGA4={hasGA4}
+                  sessions={showDemoData ? DEMO_STATS.sessions : (kpis?.sessions?.value ?? 0)}
+                  users={showDemoData ? DEMO_STATS.users : (kpis?.users?.value ?? 0)}
+                  pageViews={showDemoData ? DEMO_STATS.pageViews : (kpis?.pageViews?.value ?? 0)}
+                  avgSessionDuration={showDemoData ? DEMO_STATS.avgSessionDuration : (kpis?.avgSessionDuration?.value ?? 0)}
+                  avgPosition={showDemoData ? DEMO_STATS.avgPosition : (gscStats?.avgPosition ?? 0)}
+                  impressions={showDemoData ? DEMO_STATS.impressions : (gscStats?.impressions ?? 0)}
+                  visibilityScore={showDemoData ? DEMO_STATS.visibilityScore : (kpis?.visibilityScore ?? 0)}
+                  visibilityChange={showDemoData ? DEMO_STATS.visibilityChange : (kpis?.visibilityScoreChange ?? 0)}
+                  sessionsChange={showDemoData ? DEMO_STATS.sessionsChange : (kpis?.sessions?.change ?? 0)}
+                  pageViewsChange={showDemoData ? DEMO_STATS.pageViewsChange : (kpis?.pageViews?.change ?? 0)}
+                  totalLeads={showDemoData ? DEMO_STATS.totalLeads : (contentMetricsSummary?.totalLeads ?? 0)}
+                  leadConversionRate={showDemoData ? DEMO_STATS.leadConversionRate : (contentMetricsSummary?.leadConversionRate ?? 0)}
+                  hasGA4Data={showDemoData || hasGA4Data}
+                  hasGSCData={showDemoData || hasGSCData}
+                  hasGA4={showDemoData || hasGA4}
                 />
               </Box>
 
               {/* ── Tier 2: The Action Center ──────────────────────── */}
-              <Grid templateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }} gap={6}>
+              <Grid templateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }} gap={6} opacity={showDemoData ? 0.6 : 1}>
                 <GridItem>
                   <KeywordsClimbedCard
-                    // @ts-ignore
-                    keywords={gscStats?.keywords || []}
+                    keywords={dashboardKeywords}
                     suggestedKeywords={quickWins}
-                    totalCount={gscStats?.keywordCount ?? 0}
-                    hasData={hasKPIData}
+                    totalCount={showDemoData ? 142 : (gscStats?.keywordCount ?? 0)}
+                    hasData={showDemoData || hasKPIData}
                   />
                 </GridItem>
                 <GridItem>
                   <TopPerformingContentCard
-                    // @ts-ignore
-                    content={recentContent || []}
+                    content={topContent}
                   />
                 </GridItem>
                 <GridItem>
                   <FastestGrowthCard
                     firstPageReadyCount={quickWins.length}
-                    contentRefreshCount={stats?.published ? Math.floor(stats.published * 0.1) : 0}
+                    contentRefreshCount={showDemoData ? 3 : (stats?.published ? Math.floor(stats.published * 0.1) : 0)}
                   />
                 </GridItem>
               </Grid>
 
               {/* ── Tier 3: Growth ─────────────────────────────────── */}
-              <Box>
+              <Box opacity={showDemoData ? 0.6 : 1}>
                 <CumulativeGrowthChart
-                  totalClicks={kpis?.clicks?.value ?? 0}
-                  keywordsInTop10={gscStats?.keywordCount ?? 0}
-                  hasData={hasKPIData}
-                  // @ts-ignore
-                  growthData={growthHistory ?? []}
-                  hasGA4={hasGA4}
+                  totalClicks={showDemoData ? DEMO_STATS.totalClicks : (kpis?.clicks?.value ?? 0)}
+                  keywordsInTop10={showDemoData ? DEMO_STATS.keywordsInTop10 : (gscStats?.keywordCount ?? 0)}
+                  hasData={showDemoData || hasKPIData}
+                  growthData={growthTimeline}
+                  hasGA4={showDemoData || hasGA4}
                 />
               </Box>
             </VStack>

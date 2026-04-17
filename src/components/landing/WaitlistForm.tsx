@@ -65,10 +65,10 @@ export function WaitlistForm() {
       return (
         <VStack spacing={4}>
           <Icon as={Users} boxSize={12} color="brand.orange" />
-          <Text fontSize="xl" color="white" fontWeight="medium">
+          <Text fontSize="xl" color="gray.800" fontWeight="medium">
             The Beta is Full!
           </Text>
-          <Text color="gray.400" textAlign="center" maxW="sm">
+          <Text color="gray.600" textAlign="center" maxW="sm">
             100+ businesses are already building with Phoo. We&apos;ll announce when more spots
             open.
           </Text>
@@ -80,11 +80,11 @@ export function WaitlistForm() {
     if (status === 'success') {
       return (
         <VStack spacing={4}>
-          <Icon as={CheckCircle2} boxSize={12} color="green.400" />
-          <Text fontSize="xl" color="green.300" fontWeight="medium">
+          <Icon as={CheckCircle2} boxSize={12} color="green.500" />
+          <Text fontSize="xl" color="green.600" fontWeight="medium">
             You&apos;re on the list!
           </Text>
-          <Text color="gray.400">We&apos;ll be in touch soon.</Text>
+          <Text color="gray.600">We&apos;ll be in touch soon.</Text>
         </VStack>
       );
     }
@@ -100,14 +100,14 @@ export function WaitlistForm() {
             placeholder="Enter your email"
             required
             size="lg"
-            bg="whiteAlpha.50"
+            bg="white"
             border="1px solid"
-            borderColor="whiteAlpha.100"
-            color="white"
+            borderColor="gray.200"
+            color="gray.800"
             _placeholder={{ color: 'gray.500' }}
             _focus={{
               borderColor: 'brand.orange',
-              boxShadow: '0 0 0 1px var(--chakra-colors-purple-500)',
+              boxShadow: '0 0 0 1px var(--chakra-colors-orange-500)',
             }}
             borderRadius="xl"
             py={7}
@@ -156,8 +156,8 @@ export function WaitlistForm() {
       id="join-beta"
       py={24}
       borderTop="1px solid"
-      borderColor="whiteAlpha.100"
-      bg="gray.900"
+      borderColor="gray.200"
+      bg="gray.50"
     >
       <Container maxW="xl" textAlign="center">
         <Heading
@@ -165,25 +165,25 @@ export function WaitlistForm() {
           fontSize={{ base: '3xl', md: '4xl' }}
           fontWeight="bold"
           mb={6}
-          color="white"
+          color="gray.800"
         >
           {isBetaFull
             ? "You're Early — That's a Good Sign"
             : 'Ready to make your website work for your business?'}
         </Heading>
-        <Text fontSize="xl" color="gray.400" mb={10}>
+        <Text fontSize="xl" color="gray.600" mb={10}>
           {isBetaFull
             ? "Our founding beta is at capacity, but stay tuned for what's next."
             : 'Join the Phoo beta and be part of building a smarter, more meaningful way to grow.'}
         </Text>
 
         <Box
-          bg="whiteAlpha.50"
-          backdropFilter="blur(8px)"
+          bg="white"
           borderRadius="2xl"
           p={8}
           border="1px solid"
-          borderColor={isBetaFull ? 'brand.orange' : 'whiteAlpha.100'}
+          borderColor={isBetaFull ? 'brand.orange' : 'gray.200'}
+          boxShadow="sm"
         >
           {renderFormContent()}
         </Box>
@@ -197,7 +197,7 @@ export function WaitlistForm() {
 
         {/* Social proof counter - show different message when full */}
         {waitlistData && waitlistData.count > 0 && (
-          <Text mt={4} fontSize="sm" color="gray.400">
+          <Text mt={4} fontSize="sm" color="gray.600">
             {isBetaFull
               ? `${waitlistData.count.toLocaleString()}+ businesses have joined the waitlist`
               : `Join ${waitlistData.count.toLocaleString()}+ others on the waitlist`}

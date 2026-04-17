@@ -142,14 +142,10 @@ export function OnboardingFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [(user as Record<string, unknown>)?.onboardingSteps, searchParams]);
 
-  // Prevent browser back button during onboarding
-  useEffect(() => {
-    const preventBack = () => window.history.pushState(null, '', window.location.href);
-    window.history.pushState(null, '', window.location.href);
-    window.addEventListener('popstate', preventBack);
-    return () => window.removeEventListener('popstate', preventBack);
-  }, []);
-
+  // NOTE: Browser back button manual overrides were removed, but this component deliberately uses 
+  // history.replaceState to sync ?step=N. This means browser back/forward navigation within the 
+  // wizard is overwritten in history, intentionally maintaining a single linear progress state 
+  // without back-button clutter.
   // Handle Stripe payment return during onboarding
   useEffect(() => {
     const payment = searchParams?.get('payment');

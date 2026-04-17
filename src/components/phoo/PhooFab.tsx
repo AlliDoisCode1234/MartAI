@@ -59,8 +59,8 @@ export default function PhooFab({ onOpenDrawer }: Props) {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0, opacity: 0 }}
           position="fixed"
-          bottom={{ base: '72px', md: 4 }}
-          right={4}
+          bottom={{ base: '96px', md: 6 }}
+          right={{ base: 4, md: 6 }}
           zIndex={1000}
         >
           <Tooltip label="Open Phoo" hasArrow>
@@ -89,8 +89,8 @@ export default function PhooFab({ onOpenDrawer }: Props) {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0, opacity: 0 }}
           position="fixed"
-          bottom={{ base: '72px', md: 4 }}
-          right={4}
+          bottom={{ base: '96px', md: 6 }}
+          right={{ base: 4, md: 6 }}
           zIndex={1000}
         >
           <Box

@@ -29,7 +29,7 @@ export function HeroSection({ onCtaClick }: Props) {
       as="header"
       position="relative"
       overflow="hidden"
-      bg="gray.900"
+      bg="white"
       minH={{ base: '90vh', lg: '100vh' }}
       display="flex"
       alignItems="center"
@@ -91,7 +91,7 @@ export function HeroSection({ onCtaClick }: Props) {
               boxShadow="0 0 30px rgba(237, 137, 54, 0.1)"
             >
               <Icon as={Sparkles} boxSize={4} color="brand.orange" />
-              <Text fontSize="sm" color="gray.300" fontWeight="medium">
+              <Text fontSize="sm" color="gray.600" fontWeight="medium">
                 Built by the team behind Helps2
               </Text>
             </HStack>
@@ -110,7 +110,7 @@ export function HeroSection({ onCtaClick }: Props) {
               fontWeight="bold"
               lineHeight="1.1"
               letterSpacing="-0.02em"
-              color="white"
+              color="gray.800"
             >
               Turn Your Website Into a
               <br />
@@ -122,7 +122,7 @@ export function HeroSection({ onCtaClick }: Props) {
                 Steady Source of Leads
               </Text>
               <br />
-              <Text as="span" color="gray.400" fontWeight="medium">
+              <Text as="span" color="gray.600" fontWeight="medium">
                 — Automatically
               </Text>
             </Heading>
@@ -137,7 +137,7 @@ export function HeroSection({ onCtaClick }: Props) {
           >
             <Text
               fontSize={{ base: 'lg', md: 'xl', lg: '2xl' }}
-              color="gray.400"
+              color="gray.600"
               maxW="3xl"
               mx="auto"
               lineHeight="1.7"
@@ -196,7 +196,7 @@ export function HeroSection({ onCtaClick }: Props) {
         left={0}
         right={0}
         h="30vh"
-        bgGradient="linear(to-t, gray.900, transparent)"
+        bgGradient="linear(to-t, white, transparent)"
         pointerEvents="none"
       />
     </Box>

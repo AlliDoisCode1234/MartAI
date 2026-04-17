@@ -39,7 +39,7 @@ const BETA_BENEFITS = [
 
 export function BetaSection() {
   return (
-    <Box as="section" py={20} borderTop="1px solid" borderColor="whiteAlpha.100" bg="gray.900">
+    <Box as="section" py={20} borderTop="1px solid" borderColor="gray.200" bg="gray.50">
       <Container maxW="4xl">
         <Heading
           as="h2"
@@ -47,11 +47,11 @@ export function BetaSection() {
           fontWeight="bold"
           textAlign="center"
           mb={6}
-          color="white"
+          color="gray.800"
         >
           Why Beta?
         </Heading>
-        <Text fontSize="xl" color="gray.400" textAlign="center" mb={12} maxW="2xl" mx="auto">
+        <Text fontSize="xl" color="gray.600" textAlign="center" mb={12} maxW="2xl" mx="auto">
           We&apos;re opening early beta access to a small group of businesses so we can:
         </Text>
 
@@ -60,18 +60,18 @@ export function BetaSection() {
           <Box
             p={8}
             borderRadius="2xl"
-            bg="whiteAlpha.50"
+            bg="white"
             border="1px solid"
-            borderColor="whiteAlpha.100"
+            borderColor="gray.200"
           >
-            <Heading as="h3" fontSize="xl" fontWeight="semibold" mb={6} color="gray.300">
+            <Heading as="h3" fontSize="xl" fontWeight="semibold" mb={6} color="gray.700">
               We want to:
             </Heading>
             <VStack align="start" spacing={4}>
               {OUR_GOALS.map((goal) => (
                 <HStack key={goal} gap={3}>
                   <Box w={1.5} h={1.5} borderRadius="full" bg="brand.orange" flexShrink={0} />
-                  <Text color="gray.400">{goal}</Text>
+                  <Text color="gray.600">{goal}</Text>
                 </HStack>
               ))}
             </VStack>
@@ -81,18 +81,18 @@ export function BetaSection() {
           <Box
             p={8}
             borderRadius="2xl"
-            bgGradient="linear(to-br, orange.900, red.900)"
+            bgGradient="linear(to-br, orange.50, red.50)"
             border="1px solid"
             borderColor="brand.orange"
           >
-            <Heading as="h3" fontSize="xl" fontWeight="semibold" mb={6} color="white">
+            <Heading as="h3" fontSize="xl" fontWeight="semibold" mb={6} color="gray.800">
               Beta users get:
             </Heading>
             <VStack align="start" spacing={4}>
               {BETA_BENEFITS.map((benefit) => (
                 <HStack key={benefit} gap={3}>
-                  <Icon as={Check} boxSize={5} color="green.400" flexShrink={0} />
-                  <Text color="white">{benefit}</Text>
+                  <Icon as={Check} boxSize={5} color="green.600" flexShrink={0} />
+                  <Text color="gray.800">{benefit}</Text>
                 </HStack>
               ))}
             </VStack>

@@ -198,6 +198,9 @@ These personas act as historical anchors, representing definitive architectural 
 #### Context Node 00017 (docs/personas/bot_persona_BUSINESS_PLG_STRATEGY_00017_PERSONA.md)
 - Ask: "What did we learn about bridging the Agency-to-SaaS gap for MartAI? How did we establish the 'keepMounted' baseline to resolve React router teardown jitters while respecting the Debugging Workflow?"
 
+#### Context Node 00018 (docs/personas/bot_persona_ORCHESTRATION_AUTH_HARDENING_00018_PERSONA.md)
+- Ask: "What decisions were made during orchestration auth hardening? What is the Dual-Export pattern for background workflows? Which BOLA/cascade gaps were patched?"
+
 ---
 
 ## Consultation Process
