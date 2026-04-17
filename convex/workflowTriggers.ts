@@ -94,3 +94,31 @@ export const startCalendarGeneration = mutation({
     return { workflowId };
   },
 });
+
+/**
+ * Start a durable onboarding orchestration workflow.
+ *
+ * Replaces: Client-side Promise.all sequence in OnboardingFlow.tsx
+ * With:     useMutation(api.workflowTriggers.startOnboardingOrchestration)
+ */
+export const startOnboardingOrchestration = mutation({
+  args: {
+    projectId: v.id('projects'),
+  },
+  handler: async (ctx, args): Promise<{ workflowId: any }> => {
+    // RBAC: verify caller has editor access to this project
+    const { userId } = await requireProjectAccess(ctx, args.projectId, 'editor');
+
+    // Start durable workflow
+    const workflowId = await workflow.start(
+      ctx,
+      internal.workflows.onboardingOrchestrationWorkflow.onboardingOrchestrationWorkflow,
+      {
+        projectId: args.projectId,
+        userId,
+      }
+    );
+
+    return { workflowId };
+  },
+});

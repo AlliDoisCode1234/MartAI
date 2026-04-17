@@ -20,6 +20,8 @@
 
 import { Box, Container, Text, HStack, Link as ChakraLink } from '@chakra-ui/react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, Suspense } from 'react';
 import {
   HeroSection,
   ProblemSection,
@@ -29,7 +31,21 @@ import {
 } from '@/src/components/landing';
 import { PremiumFooter } from '@/src/components/marketing/PremiumFooter';
 
-export default function JoinPage() {
+function JoinPageContent() {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const industryParam = searchParams.get('industry');
+    if (industryParam) {
+      // Stash industry intent securely before external auth strip
+      try {
+        localStorage.setItem('martAI_pending_industry', industryParam);
+      } catch (err) {
+        console.warn('Unable to persist industry intent due to strict environment constraints:', err);
+      }
+    }
+  }, [searchParams]);
+
   const scrollToForm = () => {
     document.getElementById('join-beta')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -43,5 +59,13 @@ export default function JoinPage() {
       <WaitlistForm />
       <PremiumFooter />
     </Box>
+  );
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense fallback={<Box minH="100vh" bg="gray.900" />}>
+      <JoinPageContent />
+    </Suspense>
   );
 }

@@ -19,3 +19,4 @@ export { KeywordsClimbedCard } from './KeywordsClimbedCard';
 export { TopPerformingContentCard } from './TopPerformingContentCard';
 export { FastestGrowthCard } from './FastestGrowthCard';
 export { CumulativeGrowthChart } from './CumulativeGrowthChart';
+export { OnboardingProgressBar } from './OnboardingProgressBar';

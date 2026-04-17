@@ -20,6 +20,7 @@
 
 import { query } from '../../_generated/server';
 import { v } from 'convex/values';
+import { requireProjectAccess } from "../../lib/rbac";
 
 /**
  * Rating component weights (must sum to 1.0)
@@ -70,6 +71,9 @@ export const getPhooRating = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args): Promise<PhooRatingResult> => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     const project = await ctx.db.get(args.projectId);
     if (!project) {
       return createDefaultRating('Project not found');

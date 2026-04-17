@@ -183,6 +183,7 @@ import type * as workflows_contentGenerationWorkflow from "../workflows/contentG
 import type * as workflows_contentWorkflows from "../workflows/contentWorkflows.js";
 import type * as workflows_index from "../workflows/index.js";
 import type * as workflows_keywordWorkflows from "../workflows/keywordWorkflows.js";
+import type * as workflows_onboardingOrchestrationWorkflow from "../workflows/onboardingOrchestrationWorkflow.js";
 import type * as workflows_onboardingWorkflows from "../workflows/onboardingWorkflows.js";
 
 import type {
@@ -367,6 +368,7 @@ declare const fullApi: ApiFromModules<{
   "workflows/contentWorkflows": typeof workflows_contentWorkflows;
   "workflows/index": typeof workflows_index;
   "workflows/keywordWorkflows": typeof workflows_keywordWorkflows;
+  "workflows/onboardingOrchestrationWorkflow": typeof workflows_onboardingOrchestrationWorkflow;
   "workflows/onboardingWorkflows": typeof workflows_onboardingWorkflows;
 }>;
 

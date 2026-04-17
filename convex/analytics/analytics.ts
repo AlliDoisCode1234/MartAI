@@ -1,6 +1,7 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
+import { requireProjectAccess } from "../lib/rbac";
 
 // Store analytics data point
 export const storeAnalyticsData = mutation({
@@ -27,6 +28,9 @@ export const storeAnalyticsData = mutation({
     conversions: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'editor');
     const { projectId, date, source, ...metrics } = args;
 
     // Check if data point exists
@@ -65,6 +69,9 @@ export const getAnalyticsData = query({
     source: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     let query = ctx.db
       .query('analyticsData')
       .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId));
@@ -90,6 +97,9 @@ export const getKPIs = query({
     endDate: v.number(),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     const allData = await ctx.db
       .query('analyticsData')
       .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
@@ -134,6 +144,9 @@ export const getDashboardKPIs = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     // Fetch all data for this project
     const allData = await ctx.db
       .query('analyticsData')
@@ -296,6 +309,9 @@ export const storeInsight = mutation({
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'editor');
     return await ctx.db.insert('insights', {
       projectId: args.projectId,
       type: args.type,
@@ -317,6 +333,9 @@ export const getInsights = query({
     type: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     let query = ctx.db
       .query('insights')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId));
@@ -368,6 +387,9 @@ export const getGrowthHistory = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     const snapshots = await ctx.db
       .query('analyticsData')
       .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))

@@ -164,6 +164,73 @@ export const getContentStats = internalQuery({
   },
 });
 
+export const generatePreliminaryScoreInternalHandler = async (
+  ctx: any,
+  args: { projectId: import('../_generated/dataModel').Id<'projects'> }
+) => {
+  // Don't overwrite existing scores
+  const existingScore = await ctx.db
+    .query('projectScores')
+    .withIndex('by_project_date', (q: any) => q.eq('projectId', args.projectId))
+    .first();
+
+  if (existingScore) return { _id: existingScore._id, overall: existingScore.overall, tier: existingScore.tier };
+
+  // Simple keyword/cluster-based preliminary score
+  const keywords = await ctx.db
+    .query('keywords')
+    .withIndex('by_project', (q: any) => q.eq('projectId', args.projectId))
+    .collect();
+
+  const clusters = await ctx.db
+    .query('keywordClusters')
+    .withIndex('by_project', (q: any) => q.eq('projectId', args.projectId))
+    .collect();
+
+  let keywordScore = 5;
+  if (keywords.length >= 10) keywordScore = 40;
+  else if (keywords.length >= 5) keywordScore = 25;
+  else if (keywords.length >= 1) keywordScore = 15;
+
+  let clusterScore = 5;
+  if (clusters.length >= 3) clusterScore = 30;
+  else if (clusters.length >= 1) clusterScore = 15;
+
+  const overall = Math.min(keywordScore + clusterScore + 10, 80);
+
+  let tier = 'needs_work';
+  if (overall >= 60) tier = 'good';
+  else if (overall >= 40) tier = 'fair';
+
+  const scoreId = await ctx.db.insert('projectScores', {
+    projectId: args.projectId,
+    date: Date.now(),
+    overall,
+    tier,
+    visibility: 0,
+    trafficHealth: 0,
+    ctrPerformance: 0,
+    engagementQuality: 0,
+    seoAudit: 0,
+    keywordStrategy: keywordScore,
+    contentExecution: clusterScore,
+    geoReadiness: 0,
+  });
+
+  console.log(`[PhooRating] Preliminary score for ${args.projectId}: ${overall} (${tier})`);
+  return { _id: scoreId, overall, tier };
+};
+
+/**
+ * Internal-only variant for background durable workflows bypassing RBAC.
+ */
+export const generatePreliminaryScoreInternal = internalMutation({
+  args: {
+    projectId: v.id('projects'),
+  },
+  handler: generatePreliminaryScoreInternalHandler,
+});
+
 /**
  * Generate preliminary score for early-stage projects (no GA4/GSC yet)
  * Gives users immediate feedback after onboarding
@@ -175,57 +242,6 @@ export const generatePreliminaryScore = mutation({
   handler: async (ctx, args) => {
     // RBAC: mutating a rating calculation requires editor access
     await requireProjectAccess(ctx, args.projectId, 'editor');
-
-    // Don't overwrite existing scores
-    const existingScore = await ctx.db
-      .query('projectScores')
-      .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
-      .first();
-
-    if (existingScore) return existingScore;
-
-    // Simple keyword/cluster-based preliminary score
-    const keywords = await ctx.db
-      .query('keywords')
-      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
-      .collect();
-
-    const clusters = await ctx.db
-      .query('keywordClusters')
-      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
-      .collect();
-
-    let keywordScore = 5;
-    if (keywords.length >= 10) keywordScore = 40;
-    else if (keywords.length >= 5) keywordScore = 25;
-    else if (keywords.length >= 1) keywordScore = 15;
-
-    let clusterScore = 5;
-    if (clusters.length >= 3) clusterScore = 30;
-    else if (clusters.length >= 1) clusterScore = 15;
-
-    const overall = Math.min(keywordScore + clusterScore + 10, 80);
-
-    let tier = 'needs_work';
-    if (overall >= 60) tier = 'good';
-    else if (overall >= 40) tier = 'fair';
-
-    const scoreId = await ctx.db.insert('projectScores', {
-      projectId: args.projectId,
-      date: Date.now(),
-      overall,
-      tier,
-      visibility: 0,
-      trafficHealth: 0,
-      ctrPerformance: 0,
-      engagementQuality: 0,
-      seoAudit: 0,
-      keywordStrategy: keywordScore,
-      contentExecution: clusterScore,
-      geoReadiness: 0,
-    });
-
-    console.log(`[PhooRating] Preliminary score for ${args.projectId}: ${overall} (${tier})`);
-    return { _id: scoreId, overall, tier };
+    return await generatePreliminaryScoreInternalHandler(ctx, args);
   },
 });

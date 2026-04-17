@@ -41,6 +41,7 @@ import {
   FiEdit3,
   FiGlobe,
   FiTarget,
+  FiChevronRight,
 } from 'react-icons/fi';
 import { useProject } from '@/lib/hooks';
 import Link from 'next/link';
@@ -52,6 +53,7 @@ import {
   TopPerformingContentCard,
   FastestGrowthCard,
   CumulativeGrowthChart,
+  OnboardingProgressBar,
 } from '@/src/components/dashboard';
 import { STUDIO_COLORS, STUDIO_CARD } from '@/lib/constants/studioTokens';
 import { StudioLayout } from '@/src/components/studio';
@@ -246,10 +248,10 @@ export default function DashboardPage() {
                   py={0.5}
                   borderRadius="full"
                 >
-                  Dashboard
+                  Overview
                 </Badge>
                 <Heading size={{ base: 'xl', md: '2xl' }} color="gray.800" fontWeight="bold">
-                  Overview Dashboard
+                  Studio Overview
                 </Heading>
                 <HStack spacing={4} flexWrap="wrap">
                   <Button
@@ -292,107 +294,118 @@ export default function DashboardPage() {
             </Flex>
           </MotionBox>
 
-          {/* ── Tier 1: The Executive Briefing ─────────────────── */}
-          <Box>
-            <DashboardStatRow
-              sessions={kpis?.sessions?.value ?? 0}
-              users={kpis?.users?.value ?? 0}
-              pageViews={kpis?.pageViews?.value ?? 0}
-              avgSessionDuration={kpis?.avgSessionDuration?.value ?? 0}
-              avgPosition={gscStats?.avgPosition ?? 0}
-              impressions={gscStats?.impressions ?? 0}
-              visibilityScore={kpis?.visibilityScore ?? 0}
-              visibilityChange={kpis?.visibilityScoreChange ?? 0}
-              sessionsChange={kpis?.sessions?.change ?? 0}
-              pageViewsChange={kpis?.pageViews?.change ?? 0}
-              totalLeads={contentMetricsSummary?.totalLeads ?? 0}
-              leadConversionRate={contentMetricsSummary?.leadConversionRate ?? 0}
-              hasGA4Data={hasGA4Data}
-              hasGSCData={hasGSCData}
-              hasGA4={hasGA4}
-            />
-          </Box>
+          {/* ── Onboarding Journey ─────────────────────────────── */}
+          <OnboardingProgressBar hasGA4={hasGA4} hasGSC={hasGSC} />
 
-          {/* ── Connect Scanners ───────────────────────────────── */}
-          {(!hasGA4 || !hasGSC) && (
-            <MotionCard
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              bg="white"
-              borderWidth="1px"
-              borderColor="orange.200"
-              borderRadius="xl"
-              p={{ base: 5, md: 6 }}
-              mt={2}
-            >
-              <Flex align="center" gap={4} flexWrap="wrap">
-                <Box bg="orange.50" borderRadius="full" p={3}>
-                  <FiBarChart2 color="#F99F2A" size={24} />
-                </Box>
-                <VStack align="start" spacing={1} flex={1}>
-                  <Heading size="sm" color="gray.800">
-                    Connect your data sources
-                  </Heading>
-                  <Text color="gray.500" fontSize="sm">
-                    Link Google Analytics and Search Console to unlock real-time SEO metrics.
+          {/* ── Blurred Metrics Area ───────────────────────────── */}
+          <Box
+            position="relative"
+            sx={
+              (!hasGA4 || !hasGSC) ? {
+                filter: 'blur(5px)',
+                pointerEvents: 'none',
+                userSelect: 'none',
+                opacity: 0.8
+              } : {}
+            }
+          >
+            {(!hasGA4 || !hasGSC) && (
+              <Flex
+                position="absolute"
+                top="80px"
+                left="0"
+                right="0"
+                zIndex={10}
+                justify="center"
+                align="center"
+                style={{ pointerEvents: 'none' }}
+              >
+                <VStack
+                  bg="white"
+                  p={6}
+                  borderRadius="xl"
+                  boxShadow="2xl"
+                  borderWidth="1px"
+                  borderColor="orange.200"
+                  spacing={4}
+                  textAlign="center"
+                  maxW="sm"
+                >
+                  <Box bg="orange.50" p={4} borderRadius="full">
+                    <Icon as={FiZap} boxSize={8} color="orange.500" />
+                  </Box>
+                  <Heading size="md" color="gray.800">Live Data Locked</Heading>
+                  <Text color="gray.600" fontSize="sm">
+                    Connect your data sources above to deploy your autonomous SEO agents.
                   </Text>
+                  <Link href="/settings?tab=integrations" style={{ textDecoration: 'none' }}>
+                    <Button mt={2} colorScheme="brand" bg="brand.orange" color="white" _hover={{ bg: 'orange.600' }} rightIcon={<FiChevronRight />}>
+                      Connect Integrations
+                    </Button>
+                  </Link>
                 </VStack>
-                <HStack spacing={3}>
-                  {!hasGA4 && (
-                    <Link href="/settings">
-                      <Button size="sm" colorScheme="orange" variant="outline">
-                        Connect GA4
-                      </Button>
-                    </Link>
-                  )}
-                  {!hasGSC && (
-                    <Link href="/settings">
-                      <Button size="sm" colorScheme="orange" variant="outline">
-                        Connect GSC
-                      </Button>
-                    </Link>
-                  )}
-                </HStack>
               </Flex>
-            </MotionCard>
-          )}
+            )}
 
-          {/* ── Tier 2: The Action Center ──────────────────────── */}
-          <Grid templateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }} gap={6}>
-            <GridItem>
-              <KeywordsClimbedCard
-                // @ts-ignore
-                keywords={gscStats?.keywords || []}
-                suggestedKeywords={quickWins}
-                totalCount={gscStats?.keywordCount ?? 0}
-                hasData={hasKPIData}
-              />
-            </GridItem>
-            <GridItem>
-              <TopPerformingContentCard
-                // @ts-ignore
-                content={recentContent || []}
-              />
-            </GridItem>
-            <GridItem>
-              <FastestGrowthCard
-                firstPageReadyCount={quickWins.length}
-                contentRefreshCount={stats?.published ? Math.floor(stats.published * 0.1) : 0}
-              />
-            </GridItem>
-          </Grid>
+            <VStack spacing={{ base: 5, md: 8 }} align="stretch">
+              {/* ── Tier 1: The Executive Briefing ─────────────────── */}
+              <Box>
+                <DashboardStatRow
+                  sessions={kpis?.sessions?.value ?? 0}
+                  users={kpis?.users?.value ?? 0}
+                  pageViews={kpis?.pageViews?.value ?? 0}
+                  avgSessionDuration={kpis?.avgSessionDuration?.value ?? 0}
+                  avgPosition={gscStats?.avgPosition ?? 0}
+                  impressions={gscStats?.impressions ?? 0}
+                  visibilityScore={kpis?.visibilityScore ?? 0}
+                  visibilityChange={kpis?.visibilityScoreChange ?? 0}
+                  sessionsChange={kpis?.sessions?.change ?? 0}
+                  pageViewsChange={kpis?.pageViews?.change ?? 0}
+                  totalLeads={contentMetricsSummary?.totalLeads ?? 0}
+                  leadConversionRate={contentMetricsSummary?.leadConversionRate ?? 0}
+                  hasGA4Data={hasGA4Data}
+                  hasGSCData={hasGSCData}
+                  hasGA4={hasGA4}
+                />
+              </Box>
 
-          {/* ── Tier 3: Growth ─────────────────────────────────── */}
-          <Box>
-            <CumulativeGrowthChart
-              totalClicks={kpis?.clicks?.value ?? 0}
-              keywordsInTop10={gscStats?.keywordCount ?? 0}
-              hasData={hasKPIData}
-              // @ts-ignore
-              growthData={growthHistory ?? []}
-              hasGA4={hasGA4}
-            />
+              {/* ── Tier 2: The Action Center ──────────────────────── */}
+              <Grid templateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }} gap={6}>
+                <GridItem>
+                  <KeywordsClimbedCard
+                    // @ts-ignore
+                    keywords={gscStats?.keywords || []}
+                    suggestedKeywords={quickWins}
+                    totalCount={gscStats?.keywordCount ?? 0}
+                    hasData={hasKPIData}
+                  />
+                </GridItem>
+                <GridItem>
+                  <TopPerformingContentCard
+                    // @ts-ignore
+                    content={recentContent || []}
+                  />
+                </GridItem>
+                <GridItem>
+                  <FastestGrowthCard
+                    firstPageReadyCount={quickWins.length}
+                    contentRefreshCount={stats?.published ? Math.floor(stats.published * 0.1) : 0}
+                  />
+                </GridItem>
+              </Grid>
+
+              {/* ── Tier 3: Growth ─────────────────────────────────── */}
+              <Box>
+                <CumulativeGrowthChart
+                  totalClicks={kpis?.clicks?.value ?? 0}
+                  keywordsInTop10={gscStats?.keywordCount ?? 0}
+                  hasData={hasKPIData}
+                  // @ts-ignore
+                  growthData={growthHistory ?? []}
+                  hasGA4={hasGA4}
+                />
+              </Box>
+            </VStack>
           </Box>
         </VStack>
       </Container>

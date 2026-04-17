@@ -1,6 +1,6 @@
 'use node';
 
-import { action } from '../_generated/server';
+import { action, internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
 import { auth } from '../auth';
@@ -408,6 +408,127 @@ export const generateClusters = action({
   },
 });
 
+/**
+ * Internal-only cluster generation for background orchestration workflows.
+ * Skips auth/rate-limiting (validated at trigger level).
+ * Uses only internal.* mutations to avoid auth context loss.
+ */
+export const generateClustersInternal = internalAction({
+  args: {
+    projectId: v.id('projects'),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean; count: number; error?: string }> => {
+    // Get project via internal query (no auth needed)
+    const project = await ctx.runQuery(internal.projects.projects.getProjectInternal, {
+      projectId: args.projectId,
+    });
+    if (!project) {
+      return { success: false, count: 0, error: 'Project not found' };
+    }
+
+    // Build keyword inputs from fallback (onboarding has no GSC)
+    const keywordInputs = await buildFallbackKeywords(ctx, project);
+    if (keywordInputs.length === 0) {
+      return { success: false, count: 0, error: 'Unable to find keywords to cluster.' };
+    }
+
+    // Generate clusters via AI (pure function, no Convex calls)
+    const clusters = await generateKeywordClusters(
+      keywordInputs,
+      project.websiteUrl,
+      project.industry
+    );
+
+    // Optional: Batch SERP fetch
+    const serpsToFetch = clusters
+      .filter((c) => c.keywords.length > 0)
+      .map((c) => c.keywords[0]);
+    if (serpsToFetch.length > 0) {
+      try {
+        const bulkSerps = await ctx.runAction(internal.integrations.dataForSeo.getBulkTopSerpUrls, {
+          keywords: serpsToFetch,
+          limit: 5,
+        }) as any[];
+        for (const cluster of clusters) {
+          if (cluster.keywords.length > 0) {
+            const match = bulkSerps.find((s) => s.keyword === cluster.keywords[0]);
+            if (match?.urls?.length > 0) {
+              cluster.topSerpUrls = match.urls.map((u: any) => u.url);
+            }
+          }
+        }
+      } catch (serpError) {
+        console.warn('[generateClustersInternal] Bulk SERP fetch failed:', serpError);
+      }
+    }
+
+    // Store clusters via internal mutations
+    let createdCount = 0;
+    for (const cluster of clusters) {
+      try {
+        await ctx.runMutation(internal.seo.keywordClusters.createClusterInternal, {
+          projectId: args.projectId,
+          clusterName: cluster.clusterName,
+          keywords: cluster.keywords,
+          intent: cluster.intent,
+          difficulty: cluster.difficulty,
+          volumeRange: cluster.volumeRange,
+          impactScore: cluster.impactScore,
+          topSerpUrls: cluster.topSerpUrls || [],
+          status: 'active',
+          createdAt: Date.now(),
+          userId: args.userId,
+        });
+        createdCount++;
+      } catch (error) {
+        console.error('[generateClustersInternal] Failed to store cluster:', error);
+      }
+    }
+
+    // Insert individual keywords via internal mutation (with dedup)
+    const existingKeywords = await ctx.runQuery(internal.seo.keywords.getKeywordsByProjectInternal, {
+      projectId: args.projectId,
+    }) as Array<{ keyword: string }>;
+    const existingSet = new Set(existingKeywords.map((k) => k.keyword.toLowerCase().trim()));
+
+    // Deduplicate incoming keywords against DB and within batch
+    const seen = new Set<string>();
+    const newKeywords = keywordInputs.filter((k) => {
+      const normalized = k.keyword.toLowerCase().trim();
+      if (existingSet.has(normalized) || seen.has(normalized)) return false;
+      seen.add(normalized);
+      return true;
+    });
+
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < newKeywords.length; i += BATCH_SIZE) {
+      const batch = newKeywords.slice(i, i + BATCH_SIZE);
+      try {
+        await ctx.runMutation(internal.seo.keywords.createKeywordsInternal, {
+          projectId: args.projectId,
+          keywords: batch.map((k) => ({
+            keyword: k.keyword,
+            searchVolume: k.volume,
+            difficulty: k.difficulty,
+            intent: k.intent,
+          })),
+          userId: args.userId,
+        });
+      } catch (error) {
+        console.error('[generateClustersInternal] Failed to insert keywords batch:', error);
+      }
+    }
+
+    // Link keywords to clusters
+    await ctx.runMutation(internal.seo.keywords.linkKeywordsToClustersInternal, {
+      projectId: args.projectId,
+    });
+
+    return { success: true, count: createdCount };
+  },
+});
+
 async function buildFallbackKeywords(
   ctx: Pick<GenericActionCtx<DataModel>, 'runAction' | 'runQuery' | 'runMutation'>,
   project?: { industry?: string; name?: string }
@@ -576,34 +697,24 @@ export const reclusterKeywords = action({
  * 2. Searching the semantic keyword library for related keywords
  * 3. Adding discovered keywords to the project
  */
-export const generateKeywordsFromUrl = action({
-  args: {
-    projectId: v.id('projects'),
-    limit: v.optional(v.number()),
-  },
-  handler: async (
-    ctx,
-    args
-  ): Promise<{
-    success: boolean;
-    count: number;
-    error?: string;
-    keywords: Array<{ keyword: string; volume: number; difficulty: number; intent: string }>;
-  }> => {
-    // Get authenticated user
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
-      return { success: false, count: 0, keywords: [], error: 'Unauthorized' };
-    }
+export const generateKeywordsFromUrlHandler = async (
+  ctx: any,
+  args: { projectId: Id<'projects'>; limit?: number; },
+  userId: string
+): Promise<{
+  success: boolean;
+  count: number;
+  error?: string;
+  keywords: Array<{ keyword: string; volume: number; difficulty: number; intent: string }>;
+}> => {
+  // Use internal query since workflows (or internal actions) don't have ctx.auth implicitly when hitting public API queries
+  const project = await ctx.runQuery(internal.projects.projects.getProjectInternal, {
+    projectId: args.projectId,
+  });
 
-    // Get project details
-    const project = await ctx.runQuery(api.projects.projects.getProjectById, {
-      projectId: args.projectId,
-    });
-
-    if (!project) {
-      return { success: false, count: 0, keywords: [], error: 'Project not found' };
-    }
+  if (!project) {
+    return { success: false, count: 0, keywords: [], error: 'Project not found' };
+  }
 
     // Extract search terms from URL and project info
     const searchTerms = extractSearchTermsFromProject(project);
@@ -653,7 +764,8 @@ export const generateKeywordsFromUrl = action({
 
     // Store keywords in the project
     if (allKeywords.length > 0) {
-      await ctx.runMutation(api.seo.keywords.createKeywords, {
+      // Use internal mutation so auth passes through
+      await ctx.runMutation(internal.seo.keywords.createKeywordsInternal, {
         projectId: args.projectId,
         keywords: allKeywords.map((k) => ({
           keyword: k.keyword,
@@ -661,6 +773,7 @@ export const generateKeywordsFromUrl = action({
           difficulty: k.difficulty,
           intent: k.intent,
         })),
+        userId,
       });
     }
 
@@ -669,8 +782,33 @@ export const generateKeywordsFromUrl = action({
       count: allKeywords.length,
       keywords: allKeywords.slice(0, limit),
     };
+};
+
+export const generateKeywordsFromUrlInternal = internalAction({
+  args: {
+    projectId: v.id('projects'),
+    userId: v.id('users'),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    return await generateKeywordsFromUrlHandler(ctx, args, args.userId);
   },
 });
+
+export const generateKeywordsFromUrl = action({
+  args: {
+    projectId: v.id('projects'),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      return { success: false, count: 0, keywords: [], error: 'Unauthorized' };
+    }
+    return await generateKeywordsFromUrlHandler(ctx, args, userId);
+  },
+});
+
 
 /**
  * Extract search terms from project URL and metadata

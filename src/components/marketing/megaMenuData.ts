@@ -48,7 +48,7 @@ export const FEATURES_MENU: MegaMenuItem[] = [
   },
   {
     icon: FiBarChart2,
-    label: 'Analytics Dashboard',
+    label: 'Intelligence Hub',
     description: 'Track rankings, traffic & PR scores',
     href: '/features/analytics',
   },

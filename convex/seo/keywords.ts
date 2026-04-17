@@ -1,8 +1,71 @@
-import { mutation, query } from '../_generated/server';
+import { mutation, query, internalMutation, internalQuery } from '../_generated/server';
 import { internal } from '../_generated/api';
 import { v } from 'convex/values';
 import type { Id } from '../_generated/dataModel';
 import { requireProjectAccess } from '../lib/rbac';
+
+export const createKeywordsInternalHandler = async (
+  ctx: any,
+  args: {
+    projectId: import('../_generated/dataModel').Id<'projects'>;
+    keywords: Array<{
+      keyword: string;
+      searchVolume?: number;
+      difficulty?: number;
+      cpc?: number;
+      intent?: string;
+      priority?: string;
+    }>;
+  },
+  userId: import('../_generated/dataModel').Id<'users'>
+) => {
+  const keywordIds = [];
+  for (const kw of args.keywords) {
+    const id = await ctx.db.insert('keywords', {
+      projectId: args.projectId,
+      keyword: kw.keyword,
+      searchVolume: kw.searchVolume,
+      difficulty: kw.difficulty,
+      cpc: kw.cpc,
+      intent: kw.intent,
+      priority: kw.priority || 'medium',
+      status: 'suggested',
+      createdAt: Date.now(),
+    });
+    keywordIds.push(id);
+  }
+
+  // Track engagement milestone (ADMIN-003)
+  if (keywordIds.length > 0 && userId && process.env.VITEST !== 'true') {
+    await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
+      userId,
+      milestone: 'keyword',
+      incrementTotal: true,
+    });
+  }
+
+  return keywordIds;
+};
+
+export const createKeywordsInternal = internalMutation({
+  args: {
+    projectId: v.id('projects'),
+    keywords: v.array(
+      v.object({
+        keyword: v.string(),
+        searchVolume: v.optional(v.number()),
+        difficulty: v.optional(v.number()),
+        cpc: v.optional(v.number()),
+        intent: v.optional(v.string()),
+        priority: v.optional(v.string()),
+      })
+    ),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    return await createKeywordsInternalHandler(ctx, args, args.userId);
+  },
+});
 
 // Create keywords (requires project editor access)
 export const createKeywords = mutation({
@@ -22,33 +85,8 @@ export const createKeywords = mutation({
   handler: async (ctx, args) => {
     // Security: Require project access
     const project = await requireProjectAccess(ctx, args.projectId, 'editor');
-
-    const keywordIds = [];
-    for (const kw of args.keywords) {
-      const id = await ctx.db.insert('keywords', {
-        projectId: args.projectId,
-        keyword: kw.keyword,
-        searchVolume: kw.searchVolume,
-        difficulty: kw.difficulty,
-        cpc: kw.cpc,
-        intent: kw.intent,
-        priority: kw.priority || 'medium',
-        status: 'suggested',
-        createdAt: Date.now(),
-      });
-      keywordIds.push(id);
-    }
-
-    // Track engagement milestone (ADMIN-003)
-    if (keywordIds.length > 0 && project.userId && process.env.VITEST !== 'true') {
-      await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
-        userId: project.userId,
-        milestone: 'keyword',
-        incrementTotal: true,
-      });
-    }
-
-    return keywordIds;
+    if (!project.userId) throw new Error('Project missing userId');
+    return await createKeywordsInternalHandler(ctx, args, project.userId);
   },
 });
 
@@ -63,6 +101,17 @@ export const getKeywordsByProject = query({
       .query('keywords')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .order('desc')
+      .collect();
+  },
+});
+
+// Internal: Get keywords by project for background workflows (no auth)
+export const getKeywordsByProjectInternal = internalQuery({
+  args: { projectId: v.id('projects') },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('keywords')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
       .collect();
   },
 });
@@ -409,6 +458,49 @@ export const assignKeywordToCluster = mutation({
   },
 });
 
+export const linkKeywordsToClustersInternalHandler = async (
+  ctx: any,
+  args: { projectId: import('../_generated/dataModel').Id<'projects'> }
+) => {
+  // Get all clusters for this project
+  const clusters = await ctx.db
+    .query('keywordClusters')
+    .withIndex('by_project', (q: any) => q.eq('projectId', args.projectId))
+    .collect();
+
+  // Build a map: lowercase keyword text -> cluster ID
+  const keywordToCluster = new Map<string, import('../_generated/dataModel').Id<'keywordClusters'>>();
+  for (const cluster of clusters) {
+    for (const kw of cluster.keywords) {
+      keywordToCluster.set(kw.toLowerCase(), cluster._id);
+    }
+  }
+
+  // Get all unlinked keywords (no clusterId) for this project
+  const keywords = await ctx.db
+    .query('keywords')
+    .withIndex('by_project', (q: any) => q.eq('projectId', args.projectId))
+    .collect();
+
+  let linked = 0;
+  for (const kw of keywords) {
+    if (!kw.clusterId) {
+      const clusterId = keywordToCluster.get(kw.keyword.toLowerCase());
+      if (clusterId) {
+        await ctx.db.patch(kw._id, { clusterId });
+        linked++;
+      }
+    }
+  }
+
+  return { linked };
+};
+
+export const linkKeywordsToClustersInternal = internalMutation({
+  args: { projectId: v.id('projects') },
+  handler: linkKeywordsToClustersInternalHandler,
+});
+
 /**
  * Link unlinked keyword rows to their clusters by matching keyword text.
  * Called after generateClusters to connect orphaned keyword rows.
@@ -417,38 +509,7 @@ export const linkKeywordsToClusters = mutation({
   args: { projectId: v.id('projects') },
   handler: async (ctx, args) => {
     await requireProjectAccess(ctx, args.projectId, 'editor');
-
-    // Get all clusters for this project
-    const clusters = await ctx.db
-      .query('keywordClusters')
-      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
-      .collect();
-
-    // Build a map: lowercase keyword text -> cluster ID
-    const keywordToCluster = new Map<string, Id<'keywordClusters'>>();
-    for (const cluster of clusters) {
-      for (const kw of cluster.keywords) {
-        keywordToCluster.set(kw.toLowerCase(), cluster._id);
-      }
-    }
-
-    // Get all unlinked keywords (no clusterId) for this project
-    const keywords = await ctx.db
-      .query('keywords')
-      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
-      .collect();
-
-    let linked = 0;
-    for (const kw of keywords) {
-      if (!kw.clusterId) {
-        const clusterId = keywordToCluster.get(kw.keyword.toLowerCase());
-        if (clusterId) {
-          await ctx.db.patch(kw._id, { clusterId });
-          linked++;
-        }
-      }
-    }
-
-    return { linked };
+    return await linkKeywordsToClustersInternalHandler(ctx, args);
   },
 });
+

@@ -61,16 +61,8 @@ export function OnboardingFlow() {
   const updateOnboardingStep = useMutation(api.onboarding.updateOnboardingStep);
   const updateMultipleSteps = useMutation(api.onboarding.updateMultipleSteps);
   const createOnboardingProspect = useMutation(api.prospects.prospects.createOnboardingProspect);
-  const generateKeywordsFromUrl = useAction(api.seo.keywordActions.generateKeywordsFromUrl);
-  const generateClusters = useAction(api.seo.keywordActions.generateClusters);
-  // NOTE: Old briefActions and quarterlyPlanActions removed - use generateContentCalendar instead
   const generateAuthUrl = useAction(api.integrations.google.generateAuthUrl);
-  const generatePreliminaryScore = useMutation(
-    api.analytics.martaiRatingQueries.generatePreliminaryScore
-  );
-  const generateContentCalendar = useAction(
-    api.contentCalendar.generateCalendar.generateFullCalendar
-  );
+  const startOnboardingOrchestration = useMutation(api.workflowTriggers.startOnboardingOrchestration);
 
   // Query for existing projects - if user has one, use it instead of creating new
   // Using projects.list which gets userId from auth context (no args needed)
@@ -103,6 +95,14 @@ export function OnboardingFlow() {
   useEffect(() => {
     if (isAuthenticated && user && step === 1) {
       updateOnboardingStep({ step: 'signupCompleted', value: true }).catch(console.error);
+
+      // Auto-populate industry from Gamification/PLG drop if exists
+      const pendingIndustry = localStorage.getItem('martAI_pending_industry');
+      if (pendingIndustry) {
+        setFormData((prev) => ({ ...prev, industry: pendingIndustry }));
+        // Clean it up so it only happens once
+        localStorage.removeItem('martAI_pending_industry');
+      }
     }
   }, [isAuthenticated, user, step, updateOnboardingStep]);
 
@@ -420,65 +420,13 @@ export function OnboardingFlow() {
             ],
           }).catch(console.error);
 
-          // FIRE-AND-FORGET: All generation happens in background
+          // FIRE-AND-FORGET: All generation happens in robust backend orchestrator
           // User proceeds immediately to GA4/GSC step
-          (async () => {
-            try {
-              // Set status to generating
-              await convex.mutation(api.projects.projects.updateProject, {
-                projectId: newProjectId as Id<'projects'>,
-                generationStatus: 'generating',
-              });
-
-              console.log('[ONBOARDING DEBUG] Starting background generation...');
-              console.log('[ONBOARDING DEBUG] Calling generateKeywordsFromUrl...');
-              const kwResult = await generateKeywordsFromUrl({
-                projectId: newProjectId as Id<'projects'>,
-                limit: 30,
-              });
-              if (!kwResult.success && 'error' in kwResult) {
-                throw new Error((kwResult as Extract<typeof kwResult, { error?: string }>).error || 'Keyword Generation failed');
-              }
-              console.log('[ONBOARDING DEBUG] generateKeywordsFromUrl SUCCESS:', kwResult);
-
-              console.log('[ONBOARDING DEBUG] Calling generateClusters...');
-              const clusterResult = await generateClusters({ projectId: newProjectId as Id<'projects'> });
-              if (!clusterResult.success && 'error' in clusterResult) {
-                throw new Error((clusterResult as Extract<typeof clusterResult, { error?: string }>).error || 'Clustering failed');
-              }
-              console.log('[ONBOARDING DEBUG] generateClusters completed');
-
-              // Generate content calendar using the working system
-              console.log('[ONBOARDING DEBUG] Calling generateContentCalendar...');
-              const calendarResult = await generateContentCalendar({
-                projectId: newProjectId as Id<'projects'>,
-                useGa4Gsc: false, // GA4/GSC not connected yet at this step
-              });
-              console.log(
-                `[ONBOARDING DEBUG] Calendar generated: ${calendarResult.itemsGenerated} items for ${calendarResult.industry} industry`
-              );
-
-              // Generate MR score
-              console.log('[ONBOARDING DEBUG] Calling generatePreliminaryScore...');
-              await generatePreliminaryScore({ projectId: newProjectId as Id<'projects'> });
-              console.log('[ONBOARDING DEBUG] All background generation complete!');
-
-              // Set status to complete
-              await convex.mutation(api.projects.projects.updateProject, {
-                projectId: newProjectId as Id<'projects'>,
-                generationStatus: 'complete',
-              });
-            } catch (bgError) {
-              console.warn('[ONBOARDING DEBUG] Background generation error:', bgError);
-              // Set status to error
-              await convex
-                .mutation(api.projects.projects.updateProject, {
-                  projectId: newProjectId as Id<'projects'>,
-                  generationStatus: 'error',
-                })
-                .catch(console.error);
-            }
-          })();
+          startOnboardingOrchestration({
+            projectId: newProjectId as Id<'projects'>,
+          }).catch((err) => {
+            console.error('[ONBOARDING] Failed to trigger durable orchestration:', err);
+          });
         }
       }
     } catch (err) {
@@ -583,23 +531,8 @@ export function OnboardingFlow() {
   const handleStep4Next = async () => {
     setLoading(true);
 
-    // Fire-and-forget: Generate zero-click content calendar in background
-    if (projectId) {
-      (async () => {
-        try {
-          console.log('[ONBOARDING] Generating zero-click content calendar...');
-          const calendarResult = await generateContentCalendar({
-            projectId: projectId as Id<'projects'>,
-            useGa4Gsc: ga4Connected,
-          });
-          console.log(
-            `[ONBOARDING] Calendar generated: ${calendarResult.itemsGenerated} items for ${calendarResult.industry} industry`
-          );
-        } catch (err) {
-          console.warn('[ONBOARDING] Calendar generation error:', err);
-        }
-      })();
-    }
+    // Fire-and-forget logic stripped here. 
+    // Handled perfectly by backend orchestrator at Step 3 project creation.
 
     // Mark onboarding complete and redirect to dashboard
     await completeOnboarding();

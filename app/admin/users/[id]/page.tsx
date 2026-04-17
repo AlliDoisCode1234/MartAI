@@ -57,6 +57,7 @@ import {
 // Utils and types
 import { calculateOnboardingProgress } from '@/lib/utils/onboarding';
 import type { OnboardingSteps, EngagementMilestones, HealthData } from '@/types/admin';
+import { OnboardingProgressBar } from '@/src/components/dashboard/OnboardingProgressBar';
 
 export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -254,7 +255,14 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         </SimpleGrid>
 
         <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
-          <OnboardingJourneyCard steps={user.onboardingSteps as OnboardingSteps} />
+          <VStack align="stretch" spacing={6}>
+            <OnboardingJourneyCard steps={user.onboardingSteps as OnboardingSteps} />
+            <OnboardingProgressBar 
+              hasGA4={!!user.onboardingSteps?.ga4Connected} 
+              hasGSC={!!user.onboardingSteps?.gscConnected} 
+              readOnly={true} 
+            />
+          </VStack>
           <ProjectsTableCard projects={projects} />
         </SimpleGrid>
 

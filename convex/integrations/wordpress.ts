@@ -5,12 +5,16 @@ import {
   type EncryptedCredentials,
   type PlatformCredentials,
 } from '../lib/encryptedCredentials';
+import { requireProjectAccess } from "../lib/rbac";
 
 export const getConnection = query({
   args: {
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     // Use platformConnections (replaced legacy oauthTokens + clients pattern)
     const connection = await ctx.db
       .query('platformConnections')

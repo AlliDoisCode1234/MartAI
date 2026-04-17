@@ -6,6 +6,7 @@
 
 import { v } from 'convex/values';
 import { mutation, query, internalMutation, internalQuery } from '../_generated/server';
+import { requireProjectAccess } from "../lib/rbac";
 
 /**
  * Store a keyword snapshot (internal - called during sync)
@@ -42,6 +43,9 @@ export const getLatestKeywords = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     const keywords = await ctx.db
       .query('gscKeywordSnapshots')
       .withIndex('by_project_date', (q) => q.eq('projectId', args.projectId))
@@ -70,6 +74,9 @@ export const getKeywordHistory = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     return await ctx.db
       .query('gscKeywordSnapshots')
       .withIndex('by_project_keyword', (q) =>
@@ -194,6 +201,9 @@ export const getGSCDashboardStats = query({
     projectId: v.id('projects'),
   },
   handler: async (ctx, args) => {
+
+          // GLASSWING BOLA PATCH: Verify project-level RBAC via Glasswing Protocol
+          await requireProjectAccess(ctx, args.projectId, 'viewer');
     // Get most recent snapshots (last 7 days worth)
     const snapshots = await ctx.db
       .query('gscKeywordSnapshots')

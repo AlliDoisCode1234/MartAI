@@ -1,4 +1,4 @@
-import { action, mutation, query } from '../_generated/server';
+import { action, mutation, query, internalMutation } from '../_generated/server';
 import { internal } from '../_generated/api';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
@@ -9,6 +9,98 @@ const keywordInputArg = v.object({
   volume: v.optional(v.number()),
   difficulty: v.optional(v.number()),
   intent: v.optional(v.string()),
+});
+
+export const createClusterInternalHandler = async (
+  ctx: any,
+  args: {
+    projectId: import('../_generated/dataModel').Id<'projects'>;
+    clusterName: string;
+    keywords: string[];
+    intent: string;
+    difficulty: number;
+    volumeRange: {
+      min: number;
+      max: number;
+    };
+    impactScore: number;
+    topSerpUrls: string[];
+    status: string;
+    createdAt: number;
+  },
+  userId: import('../_generated/dataModel').Id<'users'>
+) => {
+  // Upsert: check for existing cluster with same name in this project
+  const existing = await ctx.db
+    .query('keywordClusters')
+    .withIndex('by_project', (q: any) => q.eq('projectId', args.projectId))
+    .filter((q: any) => q.eq(q.field('clusterName'), args.clusterName))
+    .first();
+
+  if (existing) {
+    // Update existing cluster — merge keywords, refresh metrics
+    const mergedKeywords = [...new Set([...existing.keywords, ...args.keywords])];
+    await ctx.db.patch(existing._id, {
+      keywords: mergedKeywords,
+      intent: args.intent,
+      difficulty: args.difficulty,
+      volumeRange: args.volumeRange,
+      impactScore: args.impactScore,
+      topSerpUrls: args.topSerpUrls,
+      status: args.status || existing.status,
+      updatedAt: Date.now(),
+    });
+    return existing._id;
+  }
+
+  const clusterId = await ctx.db.insert('keywordClusters', {
+    projectId: args.projectId,
+    clusterName: args.clusterName,
+    keywords: args.keywords,
+    intent: args.intent,
+    difficulty: args.difficulty,
+    volumeRange: args.volumeRange,
+    impactScore: args.impactScore,
+    topSerpUrls: args.topSerpUrls,
+    status: args.status || 'active',
+    createdAt: args.createdAt || Date.now(),
+    updatedAt: Date.now(),
+  });
+
+  // Track cluster milestone (DATA-2)
+  try {
+    if (process.env.VITEST !== 'true' && userId) {
+      await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
+        userId,
+        milestone: 'cluster',
+        incrementTotal: true,
+      });
+    }
+  } catch { /* fire-and-forget */ }
+
+  return clusterId;
+};
+
+export const createClusterInternal = internalMutation({
+  args: {
+    projectId: v.id('projects'),
+    clusterName: v.string(),
+    keywords: v.array(v.string()),
+    intent: v.string(),
+    difficulty: v.number(),
+    volumeRange: v.object({
+      min: v.number(),
+      max: v.number(),
+    }),
+    impactScore: v.number(),
+    topSerpUrls: v.array(v.string()),
+    status: v.string(),
+    createdAt: v.number(),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    return await createClusterInternalHandler(ctx, args, args.userId);
+  },
 });
 
 // Create keyword cluster (requires project editor access)
@@ -31,56 +123,7 @@ export const createCluster = mutation({
   handler: async (ctx, args) => {
     // Security: Require project access
     const { userId } = await requireProjectAccess(ctx, args.projectId, 'editor');
-
-    // Upsert: check for existing cluster with same name in this project
-    const existing = await ctx.db
-      .query('keywordClusters')
-      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
-      .filter((q) => q.eq(q.field('clusterName'), args.clusterName))
-      .first();
-
-    if (existing) {
-      // Update existing cluster — merge keywords, refresh metrics
-      const mergedKeywords = [...new Set([...existing.keywords, ...args.keywords])];
-      await ctx.db.patch(existing._id, {
-        keywords: mergedKeywords,
-        intent: args.intent,
-        difficulty: args.difficulty,
-        volumeRange: args.volumeRange,
-        impactScore: args.impactScore,
-        topSerpUrls: args.topSerpUrls,
-        status: args.status || existing.status,
-        updatedAt: Date.now(),
-      });
-      return existing._id;
-    }
-
-    const clusterId = await ctx.db.insert('keywordClusters', {
-      projectId: args.projectId,
-      clusterName: args.clusterName,
-      keywords: args.keywords,
-      intent: args.intent,
-      difficulty: args.difficulty,
-      volumeRange: args.volumeRange,
-      impactScore: args.impactScore,
-      topSerpUrls: args.topSerpUrls,
-      status: args.status || 'active',
-      createdAt: args.createdAt || Date.now(),
-      updatedAt: Date.now(),
-    });
-
-    // Track cluster milestone (DATA-2)
-    try {
-      if (process.env.VITEST !== 'true') {
-        await ctx.scheduler.runAfter(0, internal.lib.engagementMilestones.trackEngagement, {
-          userId,
-          milestone: 'cluster',
-          incrementTotal: true,
-        });
-      }
-    } catch { /* fire-and-forget */ }
-
-    return clusterId;
+    return await createClusterInternalHandler(ctx, args, userId);
   },
 });
 
@@ -260,6 +303,14 @@ export const mergeClusters = mutation({
 
     // Security: Require project access on primary cluster
     await requireProjectAccess(ctx, primary.projectId, 'editor');
+
+    // Security: Verify ALL clusters belong to the same project as primary
+    // Prevents BOLA: attacker cannot merge/delete clusters from another project
+    for (const cluster of clusters) {
+      if (cluster.projectId !== primary.projectId) {
+        throw new Error('CROSS_PROJECT_MERGE: All clusters must belong to the same project.');
+      }
+    }
 
     // Merge keywords (unique)
     const allKeywords = new Set<string>();
