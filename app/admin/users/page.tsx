@@ -46,6 +46,9 @@ import {
   useToast,
   Button,
   Select,
+  Input,
+  FormControl,
+  FormLabel,
   SimpleGrid,
   Stat,
   StatLabel,
@@ -137,11 +140,41 @@ export default function AdminUsersPage() {
 
   const { isOpen: isRoleOpen, onOpen: onRoleOpen, onClose: onRoleClose } = useDisclosure();
   const { isOpen: isSuspendOpen, onOpen: onSuspendOpen, onClose: onSuspendClose } = useDisclosure();
+  const { isOpen: isProvisionOpen, onOpen: onProvisionOpen, onClose: onProvisionClose } = useDisclosure();
+
+  const provisionUser = useMutation(api.admin.users.provisionUser);
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<string>('user');
+  
+  const [provisionEmail, setProvisionEmail] = useState('');
+  const [provisionName, setProvisionName] = useState('');
+  const [provisionRole, setProvisionRole] = useState('user');
+
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
+
+  const handleProvision = async () => {
+    if (!provisionEmail || !provisionName) {
+      toast({ title: 'Error', description: 'Name and email required', status: 'error' });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await provisionUser({
+        email: provisionEmail,
+        name: provisionName,
+        role: provisionRole as 'user' | 'admin' | 'super_admin' | 'viewer',
+      });
+      toast({ title: 'Success', description: 'User provisioned successfully', status: 'success' });
+      setProvisionEmail(''); setProvisionName(''); setProvisionRole('user');
+      onProvisionClose();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, status: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleRoleChange = async () => {
     if (!selectedUser) return;
@@ -201,9 +234,14 @@ export default function AdminUsersPage() {
 
   return (
     <Container maxW="container.xl">
-      <Box mb={8}>
-        <Heading size="lg">Users</Heading>
-        <Text color="gray.600">Manage registered accounts and subscriptions.</Text>
+      <Box mb={8} display="flex" justifyContent="space-between" alignItems="center">
+        <Box>
+          <Heading size="lg">Users</Heading>
+          <Text color="gray.600">Manage registered accounts and subscriptions.</Text>
+        </Box>
+        <Button leftIcon={<FiUserPlus />} colorScheme="purple" onClick={onProvisionOpen}>
+          Provision User
+        </Button>
       </Box>
 
       {/* Stats Row */}
@@ -451,6 +489,44 @@ export default function AdminUsersPage() {
               isLoading={isLoading}
             >
               {selectedUser?.accountStatus === 'suspended' ? 'Reactivate' : 'Suspend'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Provision User Modal */}
+      <Modal isOpen={isProvisionOpen} onClose={onProvisionClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Provision New User</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>Name</FormLabel>
+                <Input value={provisionName} onChange={(e) => setProvisionName(e.target.value)} placeholder="Jane Doe" />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Email</FormLabel>
+                <Input type="email" value={provisionEmail} onChange={(e) => setProvisionEmail(e.target.value)} placeholder="jane@example.com" />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Role</FormLabel>
+                <Select value={provisionRole} onChange={(e) => setProvisionRole(e.target.value)}>
+                  <option value="user">User</option>
+                  <option value="viewer">Viewer</option>
+                  <option value="admin">Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                </Select>
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onProvisionClose}>
+              Cancel
+            </Button>
+            <Button colorScheme="purple" onClick={handleProvision} isLoading={isLoading}>
+              Provision
             </Button>
           </ModalFooter>
         </ModalContent>

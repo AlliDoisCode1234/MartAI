@@ -298,9 +298,9 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         isOpen={resetModal.isOpen}
         onClose={resetModal.onClose}
         onConfirm={handleReset}
-        title="Reset Onboarding?"
-        message={`Reset for <strong>${user.name || user.email}</strong>?`}
-        confirmLabel="Reset"
+        title="Deep Reset Onboarding?"
+        message={`Are you sure you want to completely clear onboarding progress for <strong>${user.name || user.email}</strong>?<br/><br/><strong style="color:red;">Warning: This is a destructive Deep Reset.</strong> It will wipe all completion steps and irrevocably force the user back to Step 1 (Profile Creation).`}
+        confirmLabel="Deep Reset"
         isLoading={isLoading}
       />
       <ConfirmModal

@@ -515,7 +515,19 @@ export default function SettingsPage() {
                           <AccordionIcon />
                         </AccordionButton>
                         <AccordionPanel px={6} pb={6}>
-                          <VStack align="stretch" spacing={4}>
+                          {process.env.NEXT_PUBLIC_CONVEX_URL?.includes('staging') && (
+                             <Box mb={4} p={3} bg="orange.50" border="1px solid" borderColor="orange.200" borderRadius="md">
+                               <Text fontSize="sm" color="orange.800">
+                                  <strong>Staging Mode:</strong> Live Stripe Billing is Disabled
+                               </Text>
+                             </Box>
+                          )}
+                          <VStack 
+                            align="stretch" 
+                            spacing={4} 
+                            opacity={process.env.NEXT_PUBLIC_CONVEX_URL?.includes('staging') ? 0.6 : 1} 
+                            pointerEvents={process.env.NEXT_PUBLIC_CONVEX_URL?.includes('staging') ? 'none' : 'auto'}
+                          >
                             <HStack
                               justify="space-between"
                               p={4}
