@@ -11,6 +11,10 @@ import { api, internal } from './_generated/api';
 
 /**
  * Public mutation for frontend to update onboarding step
+ * 
+ * GLASSWING-017: Onboarding Boundary
+ * strictly enforces that onboarding endpoints CANNOT manipulate the `internalAdmins` 
+ * table and MUST NOT touch the `role` field on the `users` table.
  */
 export const updateOnboardingStep = mutation({
   args: {
@@ -201,6 +205,9 @@ export const getProgress = internalQuery({
 /**
  * Mark onboarding as complete
  *
+ * GLASSWING-018: Onboarding Boundary
+ * Strictly sets status and fires generation endpoints. Does not escalate RBAC rank or `role`.
+ * 
  * Sets onboardingStatus = 'completed' and:
  * - If user has active subscription → accountStatus = 'active'
  * - If no subscription (beta/bypass) but BYPASS_PAYMENT → accountStatus = 'active'

@@ -202,9 +202,11 @@ export const getUserByEmail = query({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
 
+    const sanitizedEmail = args.email.trim().toLowerCase();
+
     const user = await ctx.db
       .query('users')
-      .withIndex('email', (q) => q.eq('email', args.email))
+      .withIndex('email', (q) => q.eq('email', sanitizedEmail))
       .first();
 
     if (!user) return null;
@@ -256,6 +258,64 @@ export const listAdmins = query({
 // ============================================
 
 /**
+ * Provision a new user explicitly from the Admin portal.
+ * Security: Super Admin only
+ */
+export const provisionUser = mutation({
+  args: {
+    email: v.string(),
+    name: v.string(),
+    role: v.union(
+      v.literal('user'),
+      v.literal('admin'),
+      v.literal('super_admin'),
+      v.literal('viewer')
+    ),
+  },
+  handler: async (ctx, args) => {
+    const sanitizedEmail = args.email.trim().toLowerCase();
+
+    // GLASSWING-015: Verify caller has super admin access to provision explicitly
+    await requireSuperAdmin(ctx);
+
+    const existingUser = await ctx.db
+      .query('users')
+      .withIndex('email', (q) => q.eq('email', sanitizedEmail))
+      .first();
+
+    if (existingUser) {
+      throw new Error(`User with email ${sanitizedEmail} already exists`);
+    }
+
+    const now = Date.now();
+    
+    // Explicitly set onboardingStatus to 'not_started' 
+    const userId = await ctx.db.insert('users', {
+      email: sanitizedEmail,
+      name: args.name,
+      role: args.role === 'super_admin' || args.role === 'admin' ? 'user' : args.role,
+      onboardingStatus: 'not_started',
+      accountStatus: 'active',
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    if (args.role === 'admin' || args.role === 'super_admin') {
+      await ctx.db.insert('internalAdmins', {
+        userId,
+        role: args.role,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    console.log(`[AdminProvision] User ${userId} provisioned with role ${args.role}`);
+
+    return { success: true, userId };
+  },
+});
+
+/**
  * Update a user's role (Super Admin only)
  */
 export const updateUserRole = mutation({
@@ -290,6 +350,12 @@ export const updateUserRole = mutation({
         await ctx.db.insert('internalAdmins', { userId: args.userId, role: args.role, createdAt: Date.now(), updatedAt: Date.now() });
       }
     }
+
+    // Keep canonical users document in sync
+    await ctx.db.patch(args.userId, { 
+      role: args.role === 'super_admin' || args.role === 'admin' ? 'user' : args.role,
+      updatedAt: Date.now() 
+    });
 
     console.log(`[AdminRoleChange] User ${args.userId} role changed to ${args.role}`);
 

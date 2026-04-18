@@ -67,6 +67,15 @@ export const seedTestData = mutation({
       updatedAt: Date.now(),
     });
 
+    // Create user specifically to test onboarding flows
+    const onboardingUserId = await ctx.db.insert('users', {
+      email: 'onboarding@phoo.ai',
+      name: 'Onboarding Tester',
+      role: 'user',
+      createdAt: Date.now(),
+      onboardingStatus: 'not_started',
+    });
+
     // Create viewer user for RBAC testing
     const viewerUserId = await ctx.db.insert('users', {
       email: 'viewer@phoo.ai',
@@ -83,6 +92,7 @@ export const seedTestData = mutation({
       testProjectId,
       adminUserId,
       viewerUserId,
+      onboardingUserId,
       alreadySeeded: false,
     };
   },
@@ -102,7 +112,7 @@ export const clearStagingData = mutation({
     }
 
     // Delete users created by seed script
-    const seedEmails = ['test@phoo.ai', 'admin@phoo.ai', 'viewer@phoo.ai'];
+    const seedEmails = ['test@phoo.ai', 'admin@phoo.ai', 'viewer@phoo.ai', 'onboarding@phoo.ai'];
 
     let deletedCount = 0;
     for (const email of seedEmails) {

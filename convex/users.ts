@@ -148,7 +148,28 @@ export const resetOnboarding = mutation({
     if (!isAdmin) {
       throw new Error('Unauthorized: Admin access required');
     }
-    await ctx.db.patch(args.userId, { onboardingStatus: 'in_progress' });
+    // GLASSWING-016: Prevent downgrade BOLA on super admins
+    const targetUser = await ctx.db.get(args.userId);
+    if (!targetUser) {
+      throw new Error('Target user not found');
+    }
+
+    const targetInternal = await ctx.db
+      .query('internalAdmins')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .first();
+
+    if (targetInternal?.role === 'super_admin' || targetUser.role === 'super_admin') {
+      const isViewerSuperAdmin = await checkAdminRole(ctx, 'super_admin');
+      if (!isViewerSuperAdmin) {
+        throw new Error('GLASSWING BOLA: unauthorized to reset onboarding state for a super admin');
+      }
+    }
+
+    await ctx.db.patch(args.userId, { 
+      onboardingStatus: 'not_started',
+      onboardingSteps: undefined,
+    });
   },
 });
 
