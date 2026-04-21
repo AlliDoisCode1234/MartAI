@@ -43,6 +43,8 @@ export const IS_LAUNCHED = process.env.NEXT_PUBLIC_IS_LAUNCHED === 'true';
 /** Beta waitlist destination used when IS_LAUNCHED is false */
 export const BETA_JOIN_HREF = '/join';
 
+export const PRIMARY_CTA_TEXT = IS_LAUNCHED ? 'Start Getting Leads' : 'Join Beta';
+
 /** Launched primary CTA destination used when IS_LAUNCHED is true */
 export const LAUNCHED_SIGNUP_HREF = '/auth/signup';
 

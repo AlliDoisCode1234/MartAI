@@ -191,12 +191,12 @@ This roadmap outlines the development priorities and milestones for MartAI, an A
 
 ### Pricing Model (BILL-Approved)
 
-| Tier       | Price   | AI Cost | Profit  | Margin | Target          |
-| ---------- | ------- | ------- | ------- | ------ | --------------- |
-| Solo       | $59/mo  | $0.15   | $58.85  | 99.7%  | Solopreneurs    |
-| Growth     | $149/mo | $0.45   | $148.55 | 99.7%  | SMBs <$500k     |
-| Team       | $299/mo | $1.50   | $297.50 | 99.5%  | Marketing Teams |
-| Enterprise | Custom  | ~$4     | Custom  | N/A    | Large Orgs      |
+| Tier                 | Price              | Target Customer          |
+| -------------------- | ------------------ | ------------------------ |
+| **Lead Starter**     | $164/mo (Annual)   | Solopreneurs             |
+| **Growth Engine**    | $330/mo (Annual)   | SMBs <$500k              |
+| **Agency**           | $580/mo (Annual)   | Marketing Teams/Agencies |
+| **Enterprise**       | Custom             | Large Orgs               |
 
 **Key Insight**: AI costs are <1% of revenue. Price on VALUE, not tokens.
 

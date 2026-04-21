@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTestContext, seedUser, seedProject } from './testHelpers';
+import { createTestContext, seedUser, seedProject, asUser } from './testHelpers';
 import { api } from '../../convex/_generated/api';
 
 describe('Quick Wins', () => {
@@ -38,11 +38,12 @@ describe('Quick Wins', () => {
       });
     });
 
-    const quickWins = await t.query(api.content.quickWins.getQuickWins, { projectId });
+    const authed = asUser(t, userId);
+    const quickWins = await authed.query(api.content.quickWins.getQuickWins, { projectId });
     expect(quickWins.length).toBe(1);
     expect(quickWins[0].keyword).toBe('best seo tool');
 
-    const count = await t.query(api.content.quickWins.getQuickWinCount, { projectId });
+    const count = await authed.query(api.content.quickWins.getQuickWinCount, { projectId });
     expect(count).toBe(1);
   });
 });

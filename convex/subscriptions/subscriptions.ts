@@ -258,6 +258,63 @@ export const listSubscriptions = query({
   },
 });
 
+async function verifyAndApplyUsage(
+  ctx: any,
+  userId: any,
+  metric: 'urls' | 'keywordIdeas' | 'aiReports' | 'contentPieces',
+  amount?: number
+) {
+  const user = await ctx.db.get(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  // Admin bypass: check internalAdmins table and user.role
+  const internalAdmin = await ctx.db
+    .query('internalAdmins')
+    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .first();
+
+  const isLegacyAdmin = user.role === 'admin' || user.role === 'super_admin';
+  const isInternalAdmin = internalAdmin && (internalAdmin.role === 'admin' || internalAdmin.role === 'super_admin');
+
+  if (isLegacyAdmin || isInternalAdmin) {
+    return { success: true, remaining: 999999 };
+  }
+
+  // Beta user bypass: QA testers and beta users are exempt from subscription checks
+  if (user.isQATester === true) {
+    return { success: true, remaining: 999999 };
+  }
+
+  const subscription = await getActiveSubscription(ctx, userId);
+  if (!subscription || subscription.status !== 'active') {
+    throw new Error('Active subscription required');
+  }
+
+  const config = planConfig(subscription.planTier);
+  const dateObj = new Date(Date.now());
+  const start = startOfMonth(dateObj).getTime();
+  const end = endOfMonth(dateObj).getTime();
+  const usageDoc = await getUsageDoc(ctx, userId, start, end);
+
+  const field = metricToField[metric];
+  const limitField = fieldToLimit[field];
+  const increment = amount ?? 1;
+  const nextValue = usageDoc[field] + increment;
+
+  if (nextValue > config.features[limitField]) {
+    throw new Error(`Plan limit reached for ${metric}`);
+  }
+
+  await ctx.db.patch(usageDoc._id, {
+    [field]: nextValue,
+    updatedAt: Date.now(),
+  });
+
+  return { success: true, remaining: config.features[limitField] - nextValue };
+}
+
 export const recordUsage = mutation({
   args: {
     userId: v.id('users'),
@@ -270,38 +327,7 @@ export const recordUsage = mutation({
     amount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Admin bypass: admins are exempt from subscription quota checks
-    const user = await ctx.db.get(args.userId);
-    if (user && (user.role === 'admin' || user.role === 'super_admin')) {
-      return { success: true, remaining: 999999 };
-    }
-
-    const subscription = await getActiveSubscription(ctx, args.userId);
-    if (!subscription || subscription.status !== 'active') {
-      throw new Error('Active subscription required');
-    }
-
-    const config = planConfig(subscription.planTier);
-    const dateObj = new Date(Date.now());
-    const start = startOfMonth(dateObj).getTime();
-    const end = endOfMonth(dateObj).getTime();
-    const usageDoc = await getUsageDoc(ctx, args.userId, start, end);
-
-    const field = metricToField[args.metric];
-    const limitField = fieldToLimit[field];
-    const increment = args.amount ?? 1;
-    const nextValue = usageDoc[field] + increment;
-
-    if (nextValue > config.features[limitField]) {
-      throw new Error(`Plan limit reached for ${args.metric}`);
-    }
-
-    await ctx.db.patch(usageDoc._id, {
-      [field]: nextValue,
-      updatedAt: Date.now(),
-    });
-
-    return { success: true, remaining: config.features[limitField] - nextValue };
+    return verifyAndApplyUsage(ctx, args.userId, args.metric, args.amount);
   },
 });
 
@@ -328,39 +354,7 @@ export const internalRecordUsage = internalMutation({
     amount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Admin bypass: admins are exempt from subscription quota checks.
-    // Consistent with rate limiter admin tier in contentGeneration.ts.
-    const user = await ctx.db.get(args.userId);
-    if (user && (user.role === 'admin' || user.role === 'super_admin')) {
-      return { success: true, remaining: 999999 };
-    }
-
-    const subscription = await getActiveSubscription(ctx, args.userId);
-    if (!subscription || subscription.status !== 'active') {
-      throw new Error('Active subscription required');
-    }
-
-    const config = planConfig(subscription.planTier);
-    const dateObj = new Date(Date.now());
-    const start = startOfMonth(dateObj).getTime();
-    const end = endOfMonth(dateObj).getTime();
-    const usageDoc = await getUsageDoc(ctx, args.userId, start, end);
-
-    const field = metricToField[args.metric];
-    const limitField = fieldToLimit[field];
-    const increment = args.amount ?? 1;
-    const nextValue = usageDoc[field] + increment;
-
-    if (nextValue > config.features[limitField]) {
-      throw new Error(`Plan limit reached for ${args.metric}`);
-    }
-
-    await ctx.db.patch(usageDoc._id, {
-      [field]: nextValue,
-      updatedAt: Date.now(),
-    });
-
-    return { success: true, remaining: config.features[limitField] - nextValue };
+    return verifyAndApplyUsage(ctx, args.userId, args.metric, args.amount);
   },
 });
 

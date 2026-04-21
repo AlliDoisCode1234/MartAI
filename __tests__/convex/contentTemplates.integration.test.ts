@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createTestContext, seedUser, seedProject } from './testHelpers';
+import { createTestContext, seedUser, seedProject, asUser } from './testHelpers';
 import { api, internal } from '../../convex/_generated/api';
 
 describe('Content Templates', () => {
@@ -21,15 +21,16 @@ describe('Content Templates', () => {
     const t = createTestContext();
     const userId = await seedUser(t);
     const projectId = await seedProject(t, userId);
+    const authed = asUser(t, userId);
 
-    await t.mutation(api.content.contentTemplates.upsertTemplate, {
+    await authed.mutation(api.content.contentTemplates.upsertTemplate, {
       projectId,
       pageType: 'blog',
       name: 'Custom Blog Post Template',
       promptTemplate: 'Write a custom blog post.',
     });
 
-    const customTemplate = await t.query(api.content.contentTemplates.getTemplateByPageType, {
+    const customTemplate = await authed.query(api.content.contentTemplates.getTemplateByPageType, {
       projectId,
       pageType: 'blog',
     });

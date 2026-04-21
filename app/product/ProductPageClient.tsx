@@ -89,7 +89,7 @@ export default function ProductPageClient() {
                 transition="all 0.3s ease"
                 rightIcon={<FiArrowRight />}
               >
-                {IS_LAUNCHED ? 'Start Free Trial' : 'Join Beta'}
+                {IS_LAUNCHED ? 'Start Getting Leads' : 'Join Beta'}
               </Button>
               <Button
                 as={Link}

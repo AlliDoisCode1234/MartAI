@@ -26,7 +26,7 @@ import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import Link from 'next/link';
 import { FiArrowRight, FiAlertTriangle, FiTarget, FiTrendingUp } from 'react-icons/fi';
-import { IS_LAUNCHED, BETA_JOIN_HREF, LAUNCHED_SIGNUP_HREF } from '@/lib/constants/featureFlags';
+import { IS_LAUNCHED, BETA_JOIN_HREF, LAUNCHED_SIGNUP_HREF, PRIMARY_CTA_TEXT } from '@/lib/constants/featureFlags';
 
 const MotionBox = motion(Box);
 
@@ -170,7 +170,7 @@ export function DarkGradientAISection() {
                 transition="all 0.3s ease"
                 rightIcon={<FiArrowRight />}
               >
-                {IS_LAUNCHED ? 'Start Free Trial' : 'Join Beta'}
+                {PRIMARY_CTA_TEXT}
               </Button>
             </HStack>
           </VStack>

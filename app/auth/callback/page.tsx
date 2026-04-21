@@ -51,9 +51,14 @@ export default function AuthCallbackPage() {
   const MAX_WAIT_ATTEMPTS = 5; // 5 seconds max wait
   const MAX_USER_NULL_RETRIES = 2; // 2 extra seconds for DB sync
 
+  const logDebug = (...args: any[]) => {
+    if (process.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+      console.log('[AuthCallback]', ...args);
+    }
+  };
+
   useEffect(() => {
-    // Debug logging
-    console.log('[AuthCallback] State:', {
+    logDebug('State:', {
       authLoading,
       isAuthenticated,
       waitAttempts,
@@ -65,45 +70,34 @@ export default function AuthCallbackPage() {
     if (authLoading) return;
 
     // If not authenticated yet, wait with timeout before redirecting
-    // This prevents race condition where OAuth redirect arrives before session cookie is set
     if (!isAuthenticated) {
       if (waitAttempts < MAX_WAIT_ATTEMPTS) {
-        console.log(
-          `[AuthCallback] Waiting for auth state (attempt ${waitAttempts + 1}/${MAX_WAIT_ATTEMPTS})...`
-        );
         const timer = setTimeout(() => {
           setWaitAttempts((prev) => prev + 1);
         }, 1000);
         return () => clearTimeout(timer);
       }
 
+      console.warn('[AuthCallback] Auth timeout, redirecting to login');
       // After max attempts, redirect to login with error indicator
-      console.log('[AuthCallback] Auth timeout, redirecting to login');
       logout('/auth/login?error=auth_timeout').catch(() => {
-        // Fallback: force navigate if logout fails
         window.location.href = '/auth/login?error=auth_timeout';
       });
       return;
     }
 
-    // Authenticated - reset wait counter and continue
-    if (waitAttempts > 0) {
-      console.log(`[AuthCallback] Auth confirmed after ${waitAttempts} attempts`);
-    }
+    logDebug(`Auth confirmed after ${waitAttempts} attempts`);
 
     // Wait for user data to load
     if (user === undefined) {
-      console.log('[AuthCallback] Waiting for user data...');
+      logDebug('Waiting for user data...');
       return;
     }
 
     // User authenticated but no user record found
-    // Give it a short delay to allow Convex DB to catch up (race condition)
     if (user === null) {
       if (userNullRetries < MAX_USER_NULL_RETRIES) {
-        console.log(
-          `[AuthCallback] No user record yet, waiting (retry ${userNullRetries + 1}/${MAX_USER_NULL_RETRIES})...`
-        );
+        logDebug(`No user record yet, waiting (retry ${userNullRetries + 1}/${MAX_USER_NULL_RETRIES})...`);
         const timer = setTimeout(() => {
           setUserNullRetries((prev) => prev + 1);
         }, 1000);
@@ -111,48 +105,41 @@ export default function AuthCallbackPage() {
       }
 
       // ── Login-intent gate ──────────────────────────────────
-      // If the user initiated from /auth/login and no account exists,
-      // they should NOT have an account created. Sign out and redirect.
-      let authFlow = 'signup'; // default: allow creation (backward compatible)
+      let authFlow = 'signup';
       try {
         authFlow = sessionStorage.getItem('authFlow') || 'signup';
         sessionStorage.removeItem('authFlow');
       } catch {
-        // sessionStorage unavailable (Safari private browsing)
+        logDebug('sessionStorage unavailable');
       }
 
       if (authFlow === 'login') {
-        console.log('[AuthCallback] Login-intent gate: no existing account, redirecting to signup');
+        console.warn('[AuthCallback] Login-intent gate: no existing account, redirecting to signup');
         logout('/auth/signup?error=no_account').catch(() => {
-          // Fallback: force navigate if logout fails
           window.location.href = '/auth/signup?error=no_account';
         });
         return;
       }
 
-      console.log('[AuthCallback] No user record after wait, passing to onboarding');
+      logDebug('No user record after wait, passing to onboarding');
       router.replace('/onboarding');
       return;
     }
 
     // Route based on onboarding status
     if (user.onboardingStatus !== 'completed') {
-      console.log('[AuthCallback] Onboarding incomplete, redirecting to onboarding');
+      logDebug('Onboarding incomplete, redirecting to onboarding');
       router.replace('/onboarding');
       return;
     }
 
-    // Check for a saved returnTo from the login page (e.g. pricing checkout flow)
-    // Security: Validate returnTo is a relative path to prevent Open Redirect attacks
     try {
       const savedReturnTo = sessionStorage.getItem('authReturnTo');
-      // Clean up auth flow state
       sessionStorage.removeItem('authFlow');
       if (savedReturnTo) {
         sessionStorage.removeItem('authReturnTo');
-        // Only allow relative paths — block protocol-relative URLs and absolute URLs
         if (savedReturnTo.startsWith('/') && !savedReturnTo.startsWith('//')) {
-          console.log('[AuthCallback] Redirecting to saved returnTo');
+          logDebug('Redirecting to saved returnTo');
           router.replace(savedReturnTo);
           return;
         } else {
@@ -160,11 +147,10 @@ export default function AuthCallbackPage() {
         }
       }
     } catch {
-      // sessionStorage may throw in Safari private browsing
-      console.warn('[AuthCallback] sessionStorage unavailable');
+      logDebug('sessionStorage unavailable');
     }
 
-    console.log('[AuthCallback] User found, redirecting to dashboard');
+    logDebug('User found, redirecting to dashboard');
     router.replace('/studio');
   }, [authLoading, isAuthenticated, user, router, waitAttempts, userNullRetries, logout]);
 

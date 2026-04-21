@@ -26,6 +26,8 @@ function filterUserTableFields(user: any, subscription: any | null, internalRole
     name: user.name,
     email: user.email,
     role: internalRole || 'user',
+    isQATester: user.isQATester ?? false,
+    acquisitionSource: user.acquisitionSource ?? null,
     accountStatus: user.accountStatus ?? 'active',
     subscriptionStatus: subscription?.status ?? null,
     subscriptionPlan: subscription?.planTier ?? null,
@@ -53,8 +55,10 @@ function filterUserDetailFields(user: any, subscription: any | null, projects: a
     createdAt: user.createdAt ?? user._creationTime,
     updatedAt: user.updatedAt,
 
-    // Account status
+    // Account status & QA Tracking
     accountStatus: user.accountStatus ?? 'active',
+    isQATester: user.isQATester ?? false,
+    acquisitionSource: user.acquisitionSource ?? null,
     churnedAt: user.churnedAt,
     churnReason: user.churnReason,
     reactivatedAt: user.reactivatedAt,
@@ -271,6 +275,8 @@ export const provisionUser = mutation({
       v.literal('super_admin'),
       v.literal('viewer')
     ),
+    isBetaUser: v.optional(v.boolean()),
+    betaNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const sanitizedEmail = args.email.trim().toLowerCase();
@@ -296,6 +302,8 @@ export const provisionUser = mutation({
       role: args.role === 'super_admin' || args.role === 'admin' ? 'user' : args.role,
       onboardingStatus: 'not_started',
       accountStatus: 'active',
+      isBetaUser: args.isBetaUser ?? false,
+      betaNotes: args.betaNotes,
       createdAt: now,
       updatedAt: now,
     });
@@ -308,8 +316,6 @@ export const provisionUser = mutation({
         updatedAt: now,
       });
     }
-
-    console.log(`[AdminProvision] User ${userId} provisioned with role ${args.role}`);
 
     return { success: true, userId };
   },
@@ -357,7 +363,6 @@ export const updateUserRole = mutation({
       updatedAt: Date.now() 
     });
 
-    console.log(`[AdminRoleChange] User ${args.userId} role changed to ${args.role}`);
 
     return { success: true, previousRole: user.role, newRole: args.role };
   },
@@ -478,5 +483,48 @@ export const sendPasswordResetEmail = mutation({
       name: user.name,
       token: rawToken,
     };
+  },
+});
+
+/**
+ * Update Data Hygiene parameters (Super Admin only)
+ * Explicit tracking to exclude Internal testing data from BI reports
+ */
+export const updateHygieneTags = mutation({
+  args: {
+    userId: v.id('users'),
+    isQATester: v.optional(v.boolean()),
+    acquisitionSource: v.optional(
+      v.union(
+        v.literal('waitlist_beta'),
+        v.literal('organic'),
+        v.literal('referral'),
+        v.literal('partner'),
+        v.literal('paid'),
+        v.literal('migration')
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const updates: Record<string, any> = {};
+    if (args.isQATester !== undefined) updates.isQATester = args.isQATester;
+    if (args.acquisitionSource !== undefined) updates.acquisitionSource = args.acquisitionSource;
+
+    if (Object.keys(updates).length > 0) {
+      updates.updatedAt = Date.now();
+      await ctx.db.patch(args.userId, updates);
+      console.log(`[Admin] Hygiene tags updated for user ${args.userId}`, updates);
+    } else {
+      console.log(`[Admin] No hygiene tags updated for user ${args.userId} (empty updates)`);
+    }
+
+    return { success: true };
   },
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTestContext, seedUser, seedProject } from './testHelpers';
+import { createTestContext, seedUser, seedProject, asUser } from './testHelpers';
 import { api } from '../../convex/_generated/api';
 
 describe('Analytics Core module', () => {
@@ -7,12 +7,13 @@ describe('Analytics Core module', () => {
     const t = createTestContext();
     const userId = await seedUser(t);
     const projectId = await seedProject(t, userId);
+    const authed = asUser(t, userId);
 
     const now = Date.now();
     const oneDay = 24 * 60 * 60 * 1000;
 
     // 1. Store GA4 Data
-    await t.mutation(api.analytics.analytics.storeAnalyticsData, {
+    await authed.mutation(api.analytics.analytics.storeAnalyticsData, {
       projectId,
       date: now,
       source: 'ga4',
@@ -24,7 +25,7 @@ describe('Analytics Core module', () => {
     });
 
     // 2. Store GSC Data
-    await t.mutation(api.analytics.analytics.storeAnalyticsData, {
+    await authed.mutation(api.analytics.analytics.storeAnalyticsData, {
       projectId,
       date: now,
       source: 'gsc',
@@ -34,7 +35,7 @@ describe('Analytics Core module', () => {
     });
 
     // 3. Update existing data
-    await t.mutation(api.analytics.analytics.storeAnalyticsData, {
+    await authed.mutation(api.analytics.analytics.storeAnalyticsData, {
       projectId,
       date: now,
       source: 'gsc',
@@ -45,7 +46,7 @@ describe('Analytics Core module', () => {
     });
 
     // 4. Get Data range
-    const range = await t.query(api.analytics.analytics.getAnalyticsData, {
+    const range = await authed.query(api.analytics.analytics.getAnalyticsData, {
       projectId,
       startDate: now - oneDay,
       endDate: now + oneDay,
@@ -53,7 +54,7 @@ describe('Analytics Core module', () => {
     expect(range).toHaveLength(2);
 
     // 5. Get aggregated KPIs
-    const kpis = await t.query(api.analytics.analytics.getKPIs, {
+    const kpis = await authed.query(api.analytics.analytics.getKPIs, {
       projectId,
       startDate: now - oneDay,
       endDate: now + oneDay,
@@ -63,7 +64,7 @@ describe('Analytics Core module', () => {
     expect(kpis.avgPosition).toBe(11.5);
 
     // 6. Get Dashboard KPIs (rolling comparison logic)
-    const dashboard = await t.query(api.analytics.analytics.getDashboardKPIs, {
+    const dashboard = await authed.query(api.analytics.analytics.getDashboardKPIs, {
       projectId,
     });
     expect(dashboard.hasGA4Data).toBe(true);
@@ -73,7 +74,7 @@ describe('Analytics Core module', () => {
     expect(dashboard.pageViews.value).toBe(1000);
 
     // 7. Get Growth History
-    const history = await t.query(api.analytics.analytics.getGrowthHistory, {
+    const history = await authed.query(api.analytics.analytics.getGrowthHistory, {
       projectId,
     });
     expect(history).toHaveLength(1);
@@ -85,24 +86,25 @@ describe('Analytics Core module', () => {
     const t = createTestContext();
     const userId = await seedUser(t);
     const projectId = await seedProject(t, userId);
+    const authed = asUser(t, userId);
 
-    const insightId = await t.mutation(api.analytics.analytics.storeInsight, {
+    const insightId = await authed.mutation(api.analytics.analytics.storeInsight, {
       projectId,
       type: 'underperformer',
       title: 'Fix H1s',
       description: 'Multiple missing H1 tags',
     });
 
-    let insights = await t.query(api.analytics.analytics.getInsights, {
+    let insights = await authed.query(api.analytics.analytics.getInsights, {
       projectId,
     });
     expect(insights).toHaveLength(1);
     expect(insights[0].status).toBe('active');
 
     // Apply it
-    await t.mutation(api.analytics.analytics.applyInsight, { insightId });
+    await authed.mutation(api.analytics.analytics.applyInsight, { insightId });
 
-    insights = await t.query(api.analytics.analytics.getInsights, {
+    insights = await authed.query(api.analytics.analytics.getInsights, {
       projectId,
     });
     expect(insights).toHaveLength(0); // Only gets active

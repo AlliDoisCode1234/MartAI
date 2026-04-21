@@ -52,8 +52,11 @@ describe('Canonical Metrics Query', () => {
     testProjectId = result.projectId;
   });
 
+  // Helper to get authenticated test context
+  const authed = () => t.withIdentity({ subject: testUserId });
+
   test('should return zero counts for empty project', async () => {
-    const metrics = await t.query(api.canonical.metrics.getCanonicalMetrics, {
+    const metrics = await authed().query(api.canonical.metrics.getCanonicalMetrics, {
       projectId: testProjectId,
     });
 
@@ -78,7 +81,7 @@ describe('Canonical Metrics Query', () => {
       }
     });
 
-    const metrics = await t.query(api.canonical.metrics.getCanonicalMetrics, {
+    const metrics = await authed().query(api.canonical.metrics.getCanonicalMetrics, {
       projectId: testProjectId,
     });
 
@@ -106,7 +109,7 @@ describe('Canonical Metrics Query', () => {
       }
     });
 
-    const metrics = await t.query(api.canonical.metrics.getCanonicalMetrics, {
+    const metrics = await authed().query(api.canonical.metrics.getCanonicalMetrics, {
       projectId: testProjectId,
     });
 
@@ -157,7 +160,7 @@ describe('Canonical Metrics Query', () => {
       });
     });
 
-    const metrics = await t.query(api.canonical.metrics.getCanonicalMetrics, {
+    const metrics = await authed().query(api.canonical.metrics.getCanonicalMetrics, {
       projectId: testProjectId,
     });
 
@@ -183,7 +186,7 @@ describe('Canonical Metrics Query', () => {
     });
 
     // Query from canonical source (what Dashboard uses)
-    const metrics = await t.query(api.canonical.metrics.getCanonicalMetrics, {
+    const metrics = await authed().query(api.canonical.metrics.getCanonicalMetrics, {
       projectId: testProjectId,
     });
 
@@ -452,6 +455,9 @@ describe('Data Consistency Verification', () => {
     testUserId = result.userId;
   });
 
+  // Helper to get authenticated test context
+  const authed = () => t.withIdentity({ subject: testUserId });
+
   test('metrics and rating should calculate from same data source', async () => {
     await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId: testProjectId });
 
@@ -478,7 +484,7 @@ describe('Data Consistency Verification', () => {
   test('should never show zero when data exists (P0 bug)', async () => {
     await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId: testProjectId });
 
-    const metrics = await t.query(api.canonical.metrics.getCanonicalMetrics, {
+    const metrics = await authed().query(api.canonical.metrics.getCanonicalMetrics, {
       projectId: testProjectId,
     });
 

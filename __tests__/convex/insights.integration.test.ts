@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTestContext, seedUser, seedProject } from './testHelpers';
+import { createTestContext, seedUser, seedProject, asUser } from './testHelpers';
 import { internal } from '../../convex/_generated/api';
 
 describe('Analytics Insights Actions', () => {
@@ -8,7 +8,7 @@ describe('Analytics Insights Actions', () => {
     const userId = await seedUser(t);
     const projectId = await seedProject(t, userId);
 
-    const insights = await t.action(internal.analytics.insights.generateInsights, {
+    const insights = await authed.action(internal.analytics.insights.generateInsights, {
       projectId,
       ga4Data: {},
       gscData: {},
@@ -26,7 +26,7 @@ describe('Analytics Insights Actions', () => {
     // These call AI SDK which may throw if keys are missing in test context,
     // so we wrap in try-catch to verify the route is valid and args are accepted.
     try {
-      const advanced = await t.action(internal.analytics.insights.generateEnhancedInsights, {
+      const advanced = await authed.action(internal.analytics.insights.generateEnhancedInsights, {
         projectId,
       });
       expect(Array.isArray(advanced)).toBe(true);
@@ -35,7 +35,7 @@ describe('Analytics Insights Actions', () => {
     }
 
     try {
-      const gaps = await t.action(internal.analytics.insights.findContentGaps, {
+      const gaps = await authed.action(internal.analytics.insights.findContentGaps, {
         projectId,
       });
       expect(Array.isArray(gaps)).toBe(true);
@@ -48,9 +48,10 @@ describe('Analytics Insights Actions', () => {
     const t = createTestContext();
     const userId = await seedUser(t);
     const projectId = await seedProject(t, userId);
+    const authed = asUser(t, userId);
 
     // If no keywords exist, it should gracefully return empty
-    const clusters = await t.action(internal.analytics.insights.suggestKeywordClusters, {
+    const clusters = await authed.action(internal.analytics.insights.suggestKeywordClusters, {
       projectId,
     });
     expect(clusters).toHaveLength(0);
@@ -60,8 +61,9 @@ describe('Analytics Insights Actions', () => {
     const t = createTestContext();
     const userId = await seedUser(t);
     const projectId = await seedProject(t, userId);
+    const authed = asUser(t, userId);
 
-    const briefs = await t.action(internal.analytics.insights.suggestBriefs, {
+    const briefs = await authed.action(internal.analytics.insights.suggestBriefs, {
       projectId,
     });
     expect(Array.isArray(briefs)).toBe(true);
