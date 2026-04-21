@@ -89,11 +89,9 @@ export default function SignupPage() {
 
       // If from invite, redirect back to invite page to accept
       if (isInviteFlow && inviteToken) {
-        console.log('[Signup] Signup successful, redirecting to invite page');
         router.push(`/invite/${inviteToken}`);
       } else {
         // Regular signup - go to onboarding
-        console.log('[Signup] Signup successful, redirecting to /onboarding');
         router.push('/onboarding');
       }
     } catch (err) {

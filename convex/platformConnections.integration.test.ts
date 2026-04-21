@@ -43,9 +43,12 @@ describe('PlatformConnections CRUD Integration', () => {
     testProjectId = result.projectId;
   });
 
+  // Helper to get authenticated test context
+  const authed = () => t.withIdentity({ subject: testUserId });
+
   describe('Save Connection', () => {
     test('should create new WordPress connection', async () => {
-      const connectionId = await t.mutation(api.integrations.platformConnections.saveConnection, {
+      const connectionId = await authed().mutation(api.integrations.platformConnections.saveConnection, {
         projectId: testProjectId,
         platform: 'wordpress',
         siteUrl: 'https://blog.example.com',
@@ -58,7 +61,7 @@ describe('PlatformConnections CRUD Integration', () => {
 
       expect(connectionId).toBeDefined();
 
-      const connection = await t.query(api.integrations.platformConnections.getConnection, {
+      const connection = await authed().query(api.integrations.platformConnections.getConnection, {
         projectId: testProjectId,
         platform: 'wordpress',
       });
@@ -71,7 +74,7 @@ describe('PlatformConnections CRUD Integration', () => {
     });
 
     test('should create new Shopify connection', async () => {
-      const connectionId = await t.mutation(api.integrations.platformConnections.saveConnection, {
+      const connectionId = await authed().mutation(api.integrations.platformConnections.saveConnection, {
         projectId: testProjectId,
         platform: 'shopify',
         siteUrl: 'https://mystore.myshopify.com',
@@ -83,7 +86,7 @@ describe('PlatformConnections CRUD Integration', () => {
 
       expect(connectionId).toBeDefined();
 
-      const connection = await t.query(api.integrations.platformConnections.getConnection, {
+      const connection = await authed().query(api.integrations.platformConnections.getConnection, {
         projectId: testProjectId,
         platform: 'shopify',
       });
@@ -93,7 +96,7 @@ describe('PlatformConnections CRUD Integration', () => {
     });
 
     test('should create new Wix connection', async () => {
-      const connectionId = await t.mutation(api.integrations.platformConnections.saveConnection, {
+      const connectionId = await authed().mutation(api.integrations.platformConnections.saveConnection, {
         projectId: testProjectId,
         platform: 'wix',
         siteUrl: 'https://user123.wixsite.com/mysite',
@@ -106,7 +109,7 @@ describe('PlatformConnections CRUD Integration', () => {
 
       expect(connectionId).toBeDefined();
 
-      const connection = await t.query(api.integrations.platformConnections.getConnection, {
+      const connection = await authed().query(api.integrations.platformConnections.getConnection, {
         projectId: testProjectId,
         platform: 'wix',
       });
@@ -117,7 +120,7 @@ describe('PlatformConnections CRUD Integration', () => {
 
     test('should update existing connection (upsert behavior)', async () => {
       // Create initial connection
-      await t.mutation(api.integrations.platformConnections.saveConnection, {
+      await authed().mutation(api.integrations.platformConnections.saveConnection, {
         projectId: testProjectId,
         platform: 'wordpress',
         siteUrl: 'https://old-url.com',
@@ -129,7 +132,7 @@ describe('PlatformConnections CRUD Integration', () => {
       });
 
       // Update with new values
-      await t.mutation(api.integrations.platformConnections.saveConnection, {
+      await authed().mutation(api.integrations.platformConnections.saveConnection, {
         projectId: testProjectId,
         platform: 'wordpress',
         siteUrl: 'https://new-url.com',
@@ -141,7 +144,7 @@ describe('PlatformConnections CRUD Integration', () => {
       });
 
       // Should only have one connection
-      const connections = await t.query(api.integrations.platformConnections.listConnections, {
+      const connections = await authed().query(api.integrations.platformConnections.listConnections, {
         projectId: testProjectId,
       });
 
@@ -154,28 +157,28 @@ describe('PlatformConnections CRUD Integration', () => {
   describe('List Connections', () => {
     test('should list all connections for a project', async () => {
       // Create multiple connections
-      await t.mutation(api.integrations.platformConnections.saveConnection, {
+      await authed().mutation(api.integrations.platformConnections.saveConnection, {
         projectId: testProjectId,
         platform: 'wordpress',
         siteUrl: 'https://wp.example.com',
         credentials: { username: 'admin', applicationPassword: 'pass' },
       });
 
-      await t.mutation(api.integrations.platformConnections.saveConnection, {
+      await authed().mutation(api.integrations.platformConnections.saveConnection, {
         projectId: testProjectId,
         platform: 'shopify',
         siteUrl: 'https://store.myshopify.com',
         credentials: { accessToken: 'token' },
       });
 
-      await t.mutation(api.integrations.platformConnections.saveConnection, {
+      await authed().mutation(api.integrations.platformConnections.saveConnection, {
         projectId: testProjectId,
         platform: 'wix',
         siteUrl: 'https://wix.example.com',
         credentials: { accessToken: 'wix-token' },
       });
 
-      const connections = await t.query(api.integrations.platformConnections.listConnections, {
+      const connections = await authed().query(api.integrations.platformConnections.listConnections, {
         projectId: testProjectId,
       });
 
@@ -188,7 +191,7 @@ describe('PlatformConnections CRUD Integration', () => {
     });
 
     test('should return empty array for project with no connections', async () => {
-      const connections = await t.query(api.integrations.platformConnections.listConnections, {
+      const connections = await authed().query(api.integrations.platformConnections.listConnections, {
         projectId: testProjectId,
       });
 
@@ -198,7 +201,7 @@ describe('PlatformConnections CRUD Integration', () => {
 
   describe('Get Connection', () => {
     test('should return null for non-existent connection', async () => {
-      const connection = await t.query(api.integrations.platformConnections.getConnection, {
+      const connection = await authed().query(api.integrations.platformConnections.getConnection, {
         projectId: testProjectId,
         platform: 'shopify',
       });
@@ -208,14 +211,14 @@ describe('PlatformConnections CRUD Integration', () => {
 
     test('should get specific platform connection', async () => {
       // Create WordPress and Shopify
-      await t.mutation(api.integrations.platformConnections.saveConnection, {
+      await authed().mutation(api.integrations.platformConnections.saveConnection, {
         projectId: testProjectId,
         platform: 'wordpress',
         siteUrl: 'https://wp.example.com',
         credentials: { username: 'wp-admin', applicationPassword: 'pass' },
       });
 
-      await t.mutation(api.integrations.platformConnections.saveConnection, {
+      await authed().mutation(api.integrations.platformConnections.saveConnection, {
         projectId: testProjectId,
         platform: 'shopify',
         siteUrl: 'https://store.myshopify.com',
@@ -223,7 +226,7 @@ describe('PlatformConnections CRUD Integration', () => {
       });
 
       // Get only Shopify
-      const shopify = await t.query(api.integrations.platformConnections.getConnection, {
+      const shopify = await authed().query(api.integrations.platformConnections.getConnection, {
         projectId: testProjectId,
         platform: 'shopify',
       });
@@ -235,7 +238,7 @@ describe('PlatformConnections CRUD Integration', () => {
 
   describe('Delete Connection', () => {
     test('should remove connection', async () => {
-      const connectionId = await t.mutation(api.integrations.platformConnections.saveConnection, {
+      const connectionId = await authed().mutation(api.integrations.platformConnections.saveConnection, {
         projectId: testProjectId,
         platform: 'wordpress',
         siteUrl: 'https://to-delete.com',
@@ -243,19 +246,19 @@ describe('PlatformConnections CRUD Integration', () => {
       });
 
       // Verify it exists
-      let connection = await t.query(api.integrations.platformConnections.getConnection, {
+      let connection = await authed().query(api.integrations.platformConnections.getConnection, {
         projectId: testProjectId,
         platform: 'wordpress',
       });
       expect(connection).not.toBeNull();
 
       // Delete
-      await t.mutation(api.integrations.platformConnections.deleteConnection, {
+      await authed().mutation(api.integrations.platformConnections.deleteConnection, {
         connectionId,
       });
 
       // Verify it's gone
-      connection = await t.query(api.integrations.platformConnections.getConnection, {
+      connection = await authed().query(api.integrations.platformConnections.getConnection, {
         projectId: testProjectId,
         platform: 'wordpress',
       });
@@ -267,6 +270,7 @@ describe('PlatformConnections CRUD Integration', () => {
 describe('PlatformConnections Edge Cases', () => {
   let t: ReturnType<typeof convexTest>;
   let testProjectId: Id<'projects'>;
+  let testUserId: Id<'users'>;
 
   beforeEach(async () => {
     t = convexTest(schema);
@@ -288,14 +292,18 @@ describe('PlatformConnections Edge Cases', () => {
         updatedAt: Date.now(),
       });
 
-      return { projectId };
+      return { userId, projectId };
     });
 
+    testUserId = result.userId;
     testProjectId = result.projectId;
   });
 
+  // Helper to get authenticated test context
+  const authed = () => t.withIdentity({ subject: testUserId });
+
   test('should handle connection with default settings', async () => {
-    await t.mutation(api.integrations.platformConnections.saveConnection, {
+    await authed().mutation(api.integrations.platformConnections.saveConnection, {
       projectId: testProjectId,
       platform: 'wordpress',
       siteUrl: 'https://defaults.example.com',
@@ -304,7 +312,7 @@ describe('PlatformConnections Edge Cases', () => {
       defaultStatus: 'draft',
     });
 
-    const connection = await t.query(api.integrations.platformConnections.getConnection, {
+    const connection = await authed().query(api.integrations.platformConnections.getConnection, {
       projectId: testProjectId,
       platform: 'wordpress',
     });
@@ -314,14 +322,14 @@ describe('PlatformConnections Edge Cases', () => {
   });
 
   test('should handle connection with no siteName', async () => {
-    await t.mutation(api.integrations.platformConnections.saveConnection, {
+    await authed().mutation(api.integrations.platformConnections.saveConnection, {
       projectId: testProjectId,
       platform: 'shopify',
       siteUrl: 'https://no-name.myshopify.com',
       credentials: { accessToken: 'token' },
     });
 
-    const connection = await t.query(api.integrations.platformConnections.getConnection, {
+    const connection = await authed().query(api.integrations.platformConnections.getConnection, {
       projectId: testProjectId,
       platform: 'shopify',
     });
@@ -331,8 +339,8 @@ describe('PlatformConnections Edge Cases', () => {
   });
 
   test('should isolate connections between projects', async () => {
-    // Create second project
-    const project2Id = await t.run(async (ctx) => {
+    // Create second project with its own user
+    const { user2Id, project2Id } = await t.run(async (ctx) => {
       const userId = await ctx.db.insert('users', {
         email: 'project2@test.com',
         role: 'user',
@@ -340,17 +348,20 @@ describe('PlatformConnections Edge Cases', () => {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
-      return ctx.db.insert('projects', {
+      const projId = await ctx.db.insert('projects', {
         userId,
         name: 'Project 2',
         websiteUrl: 'https://project2.com',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      return { user2Id: userId, project2Id: projId };
     });
 
+    const authed2 = () => t.withIdentity({ subject: user2Id });
+
     // Add WordPress to project 1
-    await t.mutation(api.integrations.platformConnections.saveConnection, {
+    await authed().mutation(api.integrations.platformConnections.saveConnection, {
       projectId: testProjectId,
       platform: 'wordpress',
       siteUrl: 'https://project1-wp.com',
@@ -358,7 +369,7 @@ describe('PlatformConnections Edge Cases', () => {
     });
 
     // Add WordPress to project 2
-    await t.mutation(api.integrations.platformConnections.saveConnection, {
+    await authed2().mutation(api.integrations.platformConnections.saveConnection, {
       projectId: project2Id,
       platform: 'wordpress',
       siteUrl: 'https://project2-wp.com',
@@ -366,10 +377,10 @@ describe('PlatformConnections Edge Cases', () => {
     });
 
     // Each project should only see its own
-    const p1Connections = await t.query(api.integrations.platformConnections.listConnections, {
+    const p1Connections = await authed().query(api.integrations.platformConnections.listConnections, {
       projectId: testProjectId,
     });
-    const p2Connections = await t.query(api.integrations.platformConnections.listConnections, {
+    const p2Connections = await authed2().query(api.integrations.platformConnections.listConnections, {
       projectId: project2Id,
     });
 

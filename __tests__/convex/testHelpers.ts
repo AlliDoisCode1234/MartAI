@@ -17,6 +17,15 @@ import { Id } from '../../convex/_generated/dataModel';
 export const createTestContext = () => convexTest(schema, modules);
 
 /**
+ * Wrap a test context with a user identity for RBAC-protected endpoints.
+ * Usage: asUser(t, userId).query(api.some.query, { ... })
+ */
+export function asUser(t: ReturnType<typeof convexTest>, userId: Id<'users'>) {
+  return t.withIdentity({ subject: userId });
+}
+
+
+/**
  * Seed a user in the test database
  */
 export async function seedUser(

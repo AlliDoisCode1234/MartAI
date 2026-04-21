@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createTestContext, seedUser, seedProject } from './testHelpers';
+import { createTestContext, seedUser, seedProject, asUser } from './testHelpers';
 import { api, internal } from '../../convex/_generated/api';
 
 (globalThis as any).vi = vi;
@@ -66,7 +66,8 @@ describe('Canonical Data Layer', () => {
         });
       });
 
-      const metrics = await t.query(api.canonical.metrics.getCanonicalMetrics, { projectId });
+      const authed = asUser(t, userId);
+      const metrics = await authed.query(api.canonical.metrics.getCanonicalMetrics, { projectId });
 
       expect(metrics.keywordCount).toBe(2);
       expect(metrics.keywords.byStatus['implemented']).toBe(1);
@@ -119,7 +120,7 @@ describe('Canonical Data Layer', () => {
           });
         }
       });
-      await t.action(internal.analytics.martaiRating.calculatePhooRating, { projectId });
+      await authT.action(internal.analytics.martaiRating.calculatePhooRating, { projectId });
       const boostedRating = await authT.query(api.canonical.rating.getCanonicalRating, { projectId });
       expect(boostedRating.rating).toBeGreaterThan(initialRating.rating);
 

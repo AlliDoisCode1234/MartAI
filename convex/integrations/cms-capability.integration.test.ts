@@ -42,6 +42,9 @@ describe('CMS Capability Flags', () => {
     });
   });
 
+  // Helper to get authenticated test context
+  const authed = () => t.withIdentity({ subject: testUserId });
+
   afterEach(async () => {
     // Clean up
     await t.run(async (ctx) => {
@@ -62,7 +65,7 @@ describe('CMS Capability Flags', () => {
 
   describe('listConnections Query', () => {
     it('should return empty array when no CMS is connected', async () => {
-      const connections = await t.query(api.integrations.platformConnections.listConnections, {
+      const connections = await authed().query(api.integrations.platformConnections.listConnections, {
         projectId: testProjectId,
       });
 
@@ -87,7 +90,7 @@ describe('CMS Capability Flags', () => {
         });
       });
 
-      const connections = await t.query(api.integrations.platformConnections.listConnections, {
+      const connections = await authed().query(api.integrations.platformConnections.listConnections, {
         projectId: testProjectId,
       });
 
@@ -120,7 +123,7 @@ describe('CMS Capability Flags', () => {
         });
       });
 
-      const connections = await t.query(api.integrations.platformConnections.listConnections, {
+      const connections = await authed().query(api.integrations.platformConnections.listConnections, {
         projectId: testProjectId,
       });
 
@@ -132,7 +135,7 @@ describe('CMS Capability Flags', () => {
 
   describe('Publishing Capability Logic', () => {
     it('hasCmsConnection should be false when no connections exist', async () => {
-      const connections = await t.query(api.integrations.platformConnections.listConnections, {
+      const connections = await authed().query(api.integrations.platformConnections.listConnections, {
         projectId: testProjectId,
       });
 
@@ -155,7 +158,7 @@ describe('CMS Capability Flags', () => {
         });
       });
 
-      const connections = await t.query(api.integrations.platformConnections.listConnections, {
+      const connections = await authed().query(api.integrations.platformConnections.listConnections, {
         projectId: testProjectId,
       });
 
@@ -178,7 +181,7 @@ describe('CMS Capability Flags', () => {
         });
       });
 
-      const connections = await t.query(api.integrations.platformConnections.listConnections, {
+      const connections = await authed().query(api.integrations.platformConnections.listConnections, {
         projectId: testProjectId,
       });
 
@@ -189,3 +192,4 @@ describe('CMS Capability Flags', () => {
     });
   });
 });
+

@@ -101,6 +101,13 @@ export default function LoginPage() {
     };
   }, [syncAutofillValues]);
 
+  // E2E Testing Injection - securely gated
+  useEffect(() => {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      (window as any).__E2E_SIGN_IN__ = signIn;
+    }
+  }, [signIn]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -147,7 +154,6 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
-    console.log('[GoogleLogin] Button clicked');
     setLoading(true);
     setError(null);
     try {
@@ -165,24 +171,18 @@ export default function LoginPage() {
       } catch {
         // sessionStorage unavailable in Safari private browsing
       }
-      console.log('[GoogleLogin] Calling signIn("google")...');
       const result = await signIn('google', { redirectTo: '/auth/callback' });
-      console.log('[GoogleLogin] signIn result:', result);
 
       // For OAuth flows, signIn returns a redirect URL we must navigate to
       if (result?.redirect) {
-        console.log('[GoogleLogin] Redirecting to OAuth URL:', result.redirect.toString());
         window.location.href = result.redirect.toString();
       } else if (result?.signingIn) {
-        console.log('[GoogleLogin] User signed in immediately');
         router.replace(returnTo);
       } else {
-        console.log('[GoogleLogin] No redirect or signingIn - unexpected state');
         setError('Failed to start Google sign-in flow');
         setLoading(false);
       }
     } catch (err: unknown) {
-      console.error('[GoogleLogin] Error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in with Google';
       setError(errorMessage);
       setLoading(false);

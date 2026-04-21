@@ -43,7 +43,7 @@ describe('AI Writer Personas', () => {
 
       // Act: Get or create persona
       const persona = await t
-        .withIdentity({ email: 'test@example.com' })
+        .withIdentity({ subject: userId })
         .mutation(api.ai.writerPersonas.index.getOrCreatePersona, {
           projectId,
         });
@@ -91,7 +91,7 @@ describe('AI Writer Personas', () => {
 
       // Act
       const persona = await t
-        .withIdentity({ email: 'test@example.com' })
+        .withIdentity({ subject: userId })
         .mutation(api.ai.writerPersonas.index.getOrCreatePersona, {
           projectId,
         });
@@ -136,7 +136,7 @@ describe('AI Writer Personas', () => {
 
       // Act
       const updated = await t
-        .withIdentity({ email: 'test@example.com' })
+        .withIdentity({ subject: userId })
         .mutation(api.ai.writerPersonas.index.updatePersona, {
           personaId,
           brandVoice: {
@@ -190,7 +190,7 @@ describe('AI Writer Personas', () => {
 
       // Act
       await t
-        .withIdentity({ email: 'test@example.com' })
+        .withIdentity({ subject: userId })
         .mutation(api.ai.writerPersonas.index.addLearnedRule, {
           personaId,
           rule: 'Always use Oxford comma',

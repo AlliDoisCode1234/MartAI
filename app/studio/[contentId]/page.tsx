@@ -88,6 +88,8 @@ import { useProject } from '@/lib/hooks';
 // Feedback type for persona learning
 type FeedbackType = 'suggestion_accepted' | 'suggestion_dismissed' | 'custom';
 
+import { notFound } from 'next/navigation';
+
 export default function ContentEditorPage() {
   const params = useParams();
   const router = useRouter();
@@ -96,9 +98,15 @@ export default function ContentEditorPage() {
   const contentId = params.contentId as string;
 
   // Fetch content piece early so we can derive the canonical projectId
-  const contentPiece = useQuery(api.contentPieces.getById, {
-    contentPieceId: contentId as Id<'contentPieces'>,
-  });
+  // Guard against Next.js passing file names (like "page.tsx") as dynamic route params
+  const isValidId = !contentId.includes('.');
+  const queryResult = useQuery(
+    api.contentPieces.getById,
+    isValidId ? { contentPieceId: contentId as Id<'contentPieces'> } : null
+  );
+  
+  // If the ID is invalid, instantly treat it as 'not found' (null) rather than infinite loading (undefined).
+  const contentPiece = isValidId ? queryResult : null;
 
   // SEC-001-C: Use the content piece's owning projectId — NOT autoSelect.
   // autoSelect picks from localStorage which may be a different project.
@@ -130,7 +138,7 @@ export default function ContentEditorPage() {
   // Check for CMS connections (Wave 3: CMS capability flags)
   const connections = useQuery(
     api.integrations.platformConnections.listConnections,
-    contentPiece?.projectId ? { projectId: contentPiece.projectId } : 'skip'
+    contentPiece?.projectId ? { projectId: contentPiece.projectId } : null
   );
   const hasCmsConnection = (connections?.length ?? 0) > 0; // Reserved for future CMS gate
 
@@ -617,17 +625,17 @@ export default function ContentEditorPage() {
   if (contentPiece === null) {
     return (
       <StudioLayout>
-        <VStack spacing={8} py={20} textAlign="center">
-          <Heading size="lg" color="gray.800">
+        <VStack align="center" justify="center" spacing={4} py={20}>
+          <Heading size="md" color="gray.800">
             Content Not Found
           </Heading>
-          <Text color="gray.500">This content piece may have been deleted or moved.</Text>
+          <Text color="gray.500">This content piece does not exist or has been deleted.</Text>
           <Link href="/studio/library">
             <Button
-              variant="ghost"
-              color="gray.500"
+              variant="outline"
+              borderColor="gray.300"
+              color="gray.600"
               leftIcon={<Icon as={FiArrowLeft} />}
-              _hover={{ color: 'gray.800' }}
             >
               Back to Library
             </Button>

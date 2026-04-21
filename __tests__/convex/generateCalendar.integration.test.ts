@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createTestContext, seedUser, seedProject } from './testHelpers';
+import { createTestContext, seedUser, seedProject, asUser } from './testHelpers';
 import { api, internal } from '../../convex/_generated/api';
 
 describe('Generate Calendar', () => {
@@ -15,8 +15,9 @@ describe('Generate Calendar', () => {
     const t = createTestContext();
     const userId = await seedUser(t);
     const projectId = await seedProject(t, userId);
+    const authed = asUser(t, userId);
 
-    const result = await t.action(api.contentCalendar.generateCalendar.generateFullCalendar, {
+    const result = await authed.action(api.contentCalendar.generateCalendar.generateFullCalendar, {
       projectId,
       useGa4Gsc: false, // Force template fallback to avoid real API calls
     });

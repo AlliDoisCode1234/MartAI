@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTestContext, seedUser, seedProject } from './testHelpers';
+import { createTestContext, seedUser, seedProject, asUser } from './testHelpers';
 import { api } from '../../convex/_generated/api';
 
 describe('Keywords Data', () => {
@@ -7,6 +7,7 @@ describe('Keywords Data', () => {
     const t = createTestContext();
     const userId = await seedUser(t);
     const projectId = await seedProject(t, userId);
+    const authed = asUser(t, userId);
 
     // Insert multiple keywords to test sorting
     await t.run(async (ctx) => {
@@ -36,7 +37,7 @@ describe('Keywords Data', () => {
       });
     });
 
-    const result = await t.query(api.seo.keywordsData.getKeywordsByProject, { projectId });
+    const result = await authed.query(api.seo.keywordsData.getKeywordsByProject, { projectId });
 
     expect(result.keywords).toHaveLength(3);
     expect(result.stats.total).toBe(3);

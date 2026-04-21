@@ -143,6 +143,8 @@ export default defineSchema({
     isBetaUser: v.optional(v.boolean()),
     betaExpiresAt: v.optional(v.number()), // Unix timestamp - calculated as onboardingCompletedAt + 6 months
     betaNotes: v.optional(v.string()), // Admin notes about beta user
+    // QA Tester tracking (exempt from billing/analytics)
+    isQATester: v.optional(v.boolean()),
     // Founding Member badge - permanent, never expires (for beta cohort recognition)
     isFoundingMember: v.optional(v.boolean()),
     foundingMemberCohort: v.optional(v.string()), // e.g., "Beta 2026"

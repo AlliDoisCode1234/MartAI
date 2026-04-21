@@ -55,5 +55,29 @@ module.exports = async () => {
     },
   });
 
-  return withMDX(nextConfig);
+  const mdxConfig = withMDX(nextConfig);
+  
+  // Wrap the final config with Sentry
+  let withSentryConfig;
+  try {
+    withSentryConfig = require('@sentry/nextjs').withSentryConfig;
+  } catch (e) {
+    console.warn('[@sentry/nextjs] Package not found, skipping Sentry configuration.');
+  }
+
+  if (withSentryConfig) {
+    return withSentryConfig(mdxConfig, {
+      org: "phoo-t6",
+      project: "phoo-frontend",
+      silent: !process.env.CI,
+      widenClientFileUpload: true,
+      tunnelRoute: "/monitoring",
+      hideSourceMaps: true,
+      // Removed unsupported nested `webpack` configurations
+      reactComponentAnnotation: { enabled: true },
+      automaticVercelMonitors: true,
+    });
+  }
+
+  return mdxConfig;
 };

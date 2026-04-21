@@ -15,7 +15,7 @@ import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import Link from 'next/link';
 import { FiArrowRight, FiCheckCircle } from 'react-icons/fi';
-import { IS_LAUNCHED, BETA_JOIN_HREF, LAUNCHED_SIGNUP_HREF } from '@/lib/constants/featureFlags';
+import { IS_LAUNCHED, BETA_JOIN_HREF, LAUNCHED_SIGNUP_HREF, PRIMARY_CTA_TEXT } from '@/lib/constants/featureFlags';
 
 const MotionBox = motion(Box);
 
@@ -68,7 +68,7 @@ export function CTASection() {
                 transition="all 0.3s ease"
                 rightIcon={<FiArrowRight />}
               >
-                {IS_LAUNCHED ? 'Start Free Trial' : 'Join Beta'}
+                {PRIMARY_CTA_TEXT}
               </Button>
               <Button
                 as={Link}
@@ -96,13 +96,13 @@ export function CTASection() {
               <HStack spacing={2}>
                 <Icon as={FiCheckCircle} color="green.400" boxSize={4} />
                 <Text fontSize="sm" color="rgba(255, 255, 255, 0.7)">
-                  {IS_LAUNCHED ? 'No credit card required' : '$700+ value FREE for 6 months'}
+                  {IS_LAUNCHED ? 'Cancel anytime' : '$700+ value FREE for 6 months'}
                 </Text>
               </HStack>
               <HStack spacing={2}>
                 <Icon as={FiCheckCircle} color="green.400" boxSize={4} />
                 <Text fontSize="sm" color="rgba(255, 255, 255, 0.7)">
-                  {IS_LAUNCHED ? '14-day free trial' : 'White-glove onboarding'}
+                  {IS_LAUNCHED ? 'Instant activation' : 'White-glove onboarding'}
                 </Text>
               </HStack>
             </HStack>

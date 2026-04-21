@@ -167,12 +167,12 @@ lib/hooks/useProject.ts(173): error TS2339: Property 'plan' does not exist
 
 ### Pricing Tiers (NO FREE TIER)
 
-| Tier           | Price   | URLs | AI Cost | Profit  | Margin |
-| -------------- | ------- | ---- | ------- | ------- | ------ |
-| **Solo**       | $59/mo  | 1    | $0.15   | $58.85  | 99.7%  |
-| **Growth**     | $149/mo | 3    | $0.45   | $148.55 | 99.7%  |
-| **Team**       | $299/mo | 10   | $1.50   | $297.50 | 99.5%  |
-| **Enterprise** | Custom  | 50+  | ~$4     | Custom  | N/A    |
+| Tier                 | Price              | URLs | AI Cost | Target Customer     |
+| -------------------- | ------------------ | ---- | ------- | ------------------- |
+| **Lead Starter**     | $164/mo (Annual)   | 1    | ~$0.50  | Solopreneurs        |
+| **Growth Engine**    | $330/mo (Annual)   | 3    | ~$1.50  | SMBs <$500k         |
+| **Agency**           | $580/mo (Annual)   | 10   | ~$5.00  | Marketing Teams     |
+| **Enterprise**       | Custom             | 50+  | Custom  | Large Orgs          |
 
 ### Billing Integration
 
