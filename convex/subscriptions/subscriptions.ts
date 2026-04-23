@@ -282,12 +282,47 @@ async function verifyAndApplyUsage(
     return { success: true, remaining: 999999 };
   }
 
-  // Beta user bypass: QA testers and beta users are exempt from subscription checks
+  // QA tester bypass: exempt from all subscription checks
   if (user.isQATester === true) {
     return { success: true, remaining: 999999 };
   }
 
+  // Beta user bypass (Board Decision 2026-04-20, 0.95 confidence):
+  // Founding 100 free users get starter-tier limits without a subscription doc.
+  // Usage is still tracked for conversion analytics (DANE's data lineage mandate).
+  // MUST check betaExpiresAt to prevent infinite free rides (TYLER/Context Node 00011).
+  const isBetaActive =
+    user.isBetaUser === true &&
+    typeof user.betaExpiresAt === 'number' &&
+    user.betaExpiresAt > Date.now();
+
   const subscription = await getActiveSubscription(ctx, userId);
+
+  // If beta user also has a real subscription, prefer the subscription (BARRY: conversion tracking)
+  if (isBetaActive && (!subscription || subscription.status !== 'active')) {
+    const betaConfig = PLAN_LIMITS.starter;
+    const dateObj = new Date(Date.now());
+    const start = startOfMonth(dateObj).getTime();
+    const end = endOfMonth(dateObj).getTime();
+    const usageDoc = await getUsageDoc(ctx, userId, start, end);
+
+    const field = metricToField[metric];
+    const limitField = fieldToLimit[field];
+    const increment = amount ?? 1;
+    const nextValue = usageDoc[field] + increment;
+
+    if (nextValue > betaConfig.features[limitField]) {
+      throw new Error(`Beta plan limit reached for ${metric}. Upgrade to continue.`);
+    }
+
+    await ctx.db.patch(usageDoc._id, {
+      [field]: nextValue,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, remaining: betaConfig.features[limitField] - nextValue };
+  }
+
   if (!subscription || subscription.status !== 'active') {
     throw new Error('Active subscription required');
   }

@@ -164,7 +164,7 @@ export default function AdminUsersPage() {
       await provisionUser({
         email: provisionEmail,
         name: provisionName,
-        role: provisionRole as 'user' | 'admin' | 'super_admin' | 'viewer',
+        role: provisionRole as 'user' | 'viewer',
       });
       toast({ title: 'Success', description: 'User provisioned successfully', status: 'success' });
       setProvisionEmail(''); setProvisionName(''); setProvisionRole('user');
@@ -515,8 +515,6 @@ export default function AdminUsersPage() {
                 <Select value={provisionRole} onChange={(e) => setProvisionRole(e.target.value)}>
                   <option value="user">User</option>
                   <option value="viewer">Viewer</option>
-                  <option value="admin">Admin</option>
-                  <option value="super_admin">Super Admin</option>
                 </Select>
               </FormControl>
             </VStack>

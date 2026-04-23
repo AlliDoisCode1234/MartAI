@@ -55,7 +55,7 @@ export const runIntegrationDiagnostics = internalAction({
       console.log('[DataForSEO Test] ✅ SCHEMA VALIDATION PASSED');
       
       // Check environmental modes
-      const hasRealKeys = !!process.env.DATAFORSEO_LOGIN && !!process.env.DATAFORSEO_PASSWORD;
+      const hasRealKeys = !!process.env.DATAFORSEO_USERNAME && !!process.env.DATAFORSEO_PASSWORD;
 
       return {
         status: 'Pass',

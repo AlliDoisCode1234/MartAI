@@ -85,7 +85,7 @@ export interface NormalizedBulkSerpResult {
  * Gracefully degrades into Mock Mode if credentials vanish.
  */
 function getAuthHeader(): string | null {
-  const login = process.env.DATAFORSEO_LOGIN;
+  const login = process.env.DATAFORSEO_USERNAME;
   const password = process.env.DATAFORSEO_PASSWORD;
 
   if (!login || !password) {
@@ -166,6 +166,21 @@ export async function performDfsRequest(
       });
     } catch (e) {
       console.warn(`[DataForSEO] Cache write failed:`, e);
+    }
+
+    // ── Cost Tracking (Enterprise Governance) ──
+    // DFS responses include a `cost` field at root level (USD)
+    const responseCost = typeof json.cost === 'number' ? json.cost : 0;
+    if (responseCost > 0) {
+      try {
+        await ctx.runMutation(internal.integrations.dfsCache.recordDfsCost, {
+          endpoint: endpointPath,
+          costUsd: responseCost,
+        });
+      } catch (e) {
+        // Cost tracking is non-critical — never block the pipeline
+        console.warn(`[DataForSEO] Cost tracking failed:`, e);
+      }
     }
   }
 
