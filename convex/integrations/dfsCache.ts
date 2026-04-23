@@ -94,11 +94,30 @@ export const recordDfsCost = internalMutation({
         updatedAt: now,
       });
     } else {
-      // Placeholder userId for system-level DFS tracking
-      // DFS calls are internal actions without user context — use a synthetic key
-      // We query by provider='dataforseo' so userId is just for schema compliance
-      const systemUser = await ctx.db.query('users').first();
-      if (!systemUser) return; // Impossible in production, but safe guard
+      // DFS calls are internal actions without user context.
+      // Use a deterministic system account for schema compliance (userId is required).
+      // Lookup order: well-known system email → first admin → first user (last resort)
+      const SYSTEM_EMAIL = 'system@phoo.ai';
+      let systemUser = await ctx.db
+        .query('users')
+        .withIndex('email', (q) => q.eq('email', SYSTEM_EMAIL))
+        .first();
+
+      if (!systemUser) {
+        // Fallback: use first available user, but warn about misattribution
+        systemUser = await ctx.db.query('users').first();
+        if (systemUser) {
+          console.warn(
+            `[DFS Cost] No system@phoo.ai user found. Falling back to userId=${systemUser._id}. ` +
+            `Create a user with email '${SYSTEM_EMAIL}' to fix attribution.`
+          );
+        }
+      }
+
+      if (!systemUser) {
+        console.error('[DFS Cost] No users exist in database. Cannot record DFS cost.');
+        return;
+      }
 
       await ctx.db.insert('aiUsage', {
         userId: systemUser._id,
