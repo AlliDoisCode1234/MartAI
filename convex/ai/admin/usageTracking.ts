@@ -79,12 +79,14 @@ export const recordUsage = internalMutation({
     outputTokens: v.number(),
     cachedTokens: v.optional(v.number()),
     cacheCreationTokens: v.optional(v.number()),
+    // For external APIs (e.g., DataForSEO) that report cost directly instead of tokens
+    costOverrideUsd: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const dateKey = getDateKey();
     const cachedTokens = args.cachedTokens || 0;
     const cacheCreationTokens = args.cacheCreationTokens || 0;
-    const cost = calculateCost(args.model, args.inputTokens, args.outputTokens, cachedTokens, cacheCreationTokens);
+    const cost = args.costOverrideUsd ?? calculateCost(args.model, args.inputTokens, args.outputTokens, cachedTokens, cacheCreationTokens);
     const now = Date.now();
 
     // Try to find existing aggregation record for this user/project/provider/model/day

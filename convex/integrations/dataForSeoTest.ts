@@ -2,6 +2,7 @@ import { action, internalAction } from '../_generated/server';
 import { internal } from '../_generated/api';
 import { v } from 'convex/values';
 import { NormalizedKeywordMetric } from './dataForSeo';
+import { hasDfsCredentials } from './dfsEnv';
 
 
 /**
@@ -55,7 +56,7 @@ export const runIntegrationDiagnostics = internalAction({
       console.log('[DataForSEO Test] ✅ SCHEMA VALIDATION PASSED');
       
       // Check environmental modes
-      const hasRealKeys = !!process.env.DATAFORSEO_LOGIN && !!process.env.DATAFORSEO_PASSWORD;
+      const hasRealKeys = hasDfsCredentials();
 
       return {
         status: 'Pass',

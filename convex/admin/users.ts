@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { query, mutation } from '../_generated/server';
 import { requireAdmin, requireSuperAdmin } from '../lib/rbac';
+import { api } from '../_generated/api';
 
 /**
  * Admin User Management
@@ -262,8 +263,12 @@ export const listAdmins = query({
 // ============================================
 
 /**
- * Provision a new user explicitly from the Admin portal.
- * Security: Super Admin only
+ * Provision a new member user from the Admin portal.
+ * Security: Super Admin only.
+ *
+ * NOTE: This mutation creates member-level users ONLY (user/viewer).
+ * To grant admin/super_admin privileges, use updateUserRole after provisioning.
+ * This enforces separation of concerns: user creation vs privilege escalation.
  */
 export const provisionUser = mutation({
   args: {
@@ -271,12 +276,19 @@ export const provisionUser = mutation({
     name: v.string(),
     role: v.union(
       v.literal('user'),
-      v.literal('admin'),
-      v.literal('super_admin'),
       v.literal('viewer')
     ),
     isBetaUser: v.optional(v.boolean()),
+    isQATester: v.optional(v.boolean()),
     betaNotes: v.optional(v.string()),
+    membershipTier: v.optional(
+      v.union(
+        v.literal('starter'),
+        v.literal('engine'),
+        v.literal('agency'),
+        v.literal('enterprise')
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const sanitizedEmail = args.email.trim().toLowerCase();
@@ -294,28 +306,39 @@ export const provisionUser = mutation({
     }
 
     const now = Date.now();
-    
-    // Explicitly set onboardingStatus to 'not_started' 
+    const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
+    const isBeta = args.isBetaUser ?? false;
+
+    // QA testers default to agency tier (team invites, multi-project)
+    // Beta users default to starter tier
+    // Non-beta users get no tier (subscription required)
+    const tier = args.membershipTier
+      ?? (args.isQATester ? 'agency' : isBeta ? 'starter' : undefined);
+
     const userId = await ctx.db.insert('users', {
       email: sanitizedEmail,
       name: args.name,
-      role: args.role === 'super_admin' || args.role === 'admin' ? 'user' : args.role,
+      role: args.role,
       onboardingStatus: 'not_started',
       accountStatus: 'active',
-      isBetaUser: args.isBetaUser ?? false,
+      isBetaUser: isBeta,
+      isQATester: args.isQATester ?? false,
+      // Beta users: set expiry so recordUsage bypass works (Board Decision 2026-04-20)
+      // QA testers: also get expiry for consistency, but bypass via isQATester anyway
+      betaExpiresAt: isBeta || args.isQATester ? now + SIX_MONTHS_MS : undefined,
       betaNotes: args.betaNotes,
+      membershipTier: tier,
+      acquisitionSource: isBeta ? 'waitlist_beta' : args.isQATester ? 'migration' : 'organic',
+      acquisitionDate: now,
       createdAt: now,
       updatedAt: now,
     });
 
-    if (args.role === 'admin' || args.role === 'super_admin') {
-      await ctx.db.insert('internalAdmins', {
-        userId,
-        role: args.role,
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
+    // Schedule HubSpot sync (non-blocking, fire-and-forget)
+    // Matches waitlist path provisioning completeness
+    await ctx.scheduler.runAfter(0, api.integrations.hubspot.syncUserToHubspot, {
+      userId,
+    });
 
     return { success: true, userId };
   },

@@ -2,6 +2,7 @@ import { action, internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import { fetchWithExponentialBackoff } from '../lib/apiResilience';
 import { internal } from '../_generated/api';
+import { getDfsCredentials } from './dfsEnv';
 
 /**
  * DATAFORSEO INTEGRATION ARCHITECTURE SYNC
@@ -85,15 +86,13 @@ export interface NormalizedBulkSerpResult {
  * Gracefully degrades into Mock Mode if credentials vanish.
  */
 function getAuthHeader(): string | null {
-  const login = process.env.DATAFORSEO_LOGIN;
-  const password = process.env.DATAFORSEO_PASSWORD;
-
-  if (!login || !password) {
+  const creds = getDfsCredentials();
+  if (!creds) {
     return null;
   }
 
   // Base64 encode the string "login:password"
-  const authString = `${login}:${password}`;
+  const authString = `${creds.login}:${creds.password}`;
   return `Basic ${btoa(authString)}`;
 }
 
@@ -166,6 +165,21 @@ export async function performDfsRequest(
       });
     } catch (e) {
       console.warn(`[DataForSEO] Cache write failed:`, e);
+    }
+
+    // ── Cost Tracking (Enterprise Governance) ──
+    // DFS responses include a `cost` field at root level (USD)
+    const responseCost = typeof json.cost === 'number' ? json.cost : 0;
+    if (responseCost > 0) {
+      try {
+        await ctx.runMutation(internal.integrations.dfsCache.recordDfsCost, {
+          endpoint: endpointPath,
+          costUsd: responseCost,
+        });
+      } catch (e) {
+        // Cost tracking is non-critical — never block the pipeline
+        console.warn(`[DataForSEO] Cost tracking failed:`, e);
+      }
     }
   }
 

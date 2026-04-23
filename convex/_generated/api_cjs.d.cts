@@ -84,6 +84,7 @@ import type * as index from "../index.js";
 import type * as integrations_dataForSeo from "../integrations/dataForSeo.js";
 import type * as integrations_dataForSeoTest from "../integrations/dataForSeoTest.js";
 import type * as integrations_dfsCache from "../integrations/dfsCache.js";
+import type * as integrations_dfsEnv from "../integrations/dfsEnv.js";
 import type * as integrations_ga4Connections from "../integrations/ga4Connections.js";
 import type * as integrations_google from "../integrations/google.js";
 import type * as integrations_gsc from "../integrations/gsc.js";
@@ -269,6 +270,7 @@ declare const fullApi: ApiFromModules<{
   "integrations/dataForSeo": typeof integrations_dataForSeo;
   "integrations/dataForSeoTest": typeof integrations_dataForSeoTest;
   "integrations/dfsCache": typeof integrations_dfsCache;
+  "integrations/dfsEnv": typeof integrations_dfsEnv;
   "integrations/ga4Connections": typeof integrations_ga4Connections;
   "integrations/google": typeof integrations_google;
   "integrations/gsc": typeof integrations_gsc;

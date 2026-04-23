@@ -137,7 +137,7 @@ export async function generateDemoData(request: DemoRequest): Promise<DemoData> 
   let keywordClusters = defaultMockClusters;
 
   const targetKeywords = Array.from(new Set(defaultMockClusters.flatMap((c) => c.keywords)));
-  const login = process.env.DATAFORSEO_LOGIN;
+  const login = process.env.DATAFORSEO_USERNAME;
   const password = process.env.DATAFORSEO_PASSWORD;
   const enableLive = process.env.ENABLE_LIVE_ONBOARDING === 'true';
 
