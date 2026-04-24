@@ -114,7 +114,7 @@ export default function LoginPage() {
     setLoading(true);
 
     // Sync any autofilled values right before submit
-    const email = emailInputRef.current?.value || formData.email;
+    const email = (emailInputRef.current?.value || formData.email).trim().toLowerCase();
     const password = passwordInputRef.current?.value || formData.password;
 
     try {

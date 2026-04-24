@@ -60,7 +60,7 @@ function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const toast = useToast();
-  const { signIn } = useAuthActions();
+  const { signIn, signOut } = useAuthActions();
 
   const token = searchParams.get('token');
   const isSetup = searchParams.get('setup') === 'true';
@@ -102,17 +102,20 @@ function ResetPasswordContent() {
           flow: isSetup ? 'signUp' : 'signIn',
         });
 
+        // Immediately sign out to force the user through the standard login flow
+        await signOut();
+
         setSuccess(true);
         toast({
-          title: 'Password Reset Successful',
-          description: 'You are now signed in with your new password.',
+          title: 'Password Set Successfully',
+          description: 'Please log in with your new password.',
           status: 'success',
           duration: 5000,
         });
 
-        // Redirect to dashboard after short delay
+        // Redirect to login after short delay
         setTimeout(() => {
-          router.push('/studio');
+          router.push('/auth/login');
         }, 2000);
       }
     } catch (err) {
