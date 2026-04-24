@@ -600,3 +600,56 @@ export const updateHygieneTags = mutation({
     return { success: true };
   },
 });
+
+/**
+ * Resend the setup email for an existing user
+ * Useful if the initial email failed to send (e.g. missing environment variables in prod)
+ */
+export const resendSetupEmail = mutation({
+  args: {
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return { success: false, error: 'User not found' };
+    }
+
+    if (!user.email) {
+      return { success: false, error: 'User has no email address' };
+    }
+
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const { token: rawToken, tokenHash } = await generateTokenPair();
+
+    const adminIdentity = await ctx.auth.getUserIdentity();
+    const adminEmail = adminIdentity?.email;
+    const adminUser = typeof adminEmail === 'string'
+      ? await ctx.db.query('users').withIndex('email', (q) => q.eq('email', adminEmail)).first()
+      : null;
+
+    await ctx.db.insert('passwordResetTokens', {
+      userId: user._id,
+      tokenHash,
+      expiresAt: now + TWENTY_FOUR_HOURS,
+      createdAt: now,
+      triggeredBy: adminUser?._id,
+    });
+
+    try {
+      await ctx.scheduler.runAfter(0, api.email.emailActions.sendEmail, {
+        to: user.email,
+        template: 'account_setup',
+        data: { name: user.name || '', token: rawToken },
+      });
+    } catch (e) {
+      console.error(`[resendSetupEmail] Failed to schedule setup email for userId=${user._id}`, e);
+      return { success: false, error: 'Failed to schedule email sending' };
+    }
+
+    return { success: true };
+  },
+});
