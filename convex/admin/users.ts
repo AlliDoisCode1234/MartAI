@@ -323,6 +323,36 @@ export const provisionUser = mutation({
     const tier = args.membershipTier
       ?? (args.isQATester ? 'agency' : isBeta ? 'starter' : undefined);
 
+    // GAP 2 FIX: Ghost Account Cleanup
+    // If an admin deleted the user but left the Convex Auth credentials intact,
+    // signUp will fail with "Email already in use". We clean up any ghost 'password' accounts first.
+    // Note: We safely ignore 'google' provider accounts to preserve SSO links.
+    const ghostAccounts = await ctx.db
+      .query('authAccounts')
+      .withIndex('providerAndAccountId', (q) => 
+        q.eq('provider', 'password').eq('providerAccountId', sanitizedEmail)
+      )
+      .collect();
+
+    for (const ghost of ghostAccounts) {
+      await ctx.db.delete(ghost._id);
+      console.log(`[Provision] Cleaned up ghost authAccount with id=${ghost._id}`);
+    }
+
+    // GAP 1 FIX: Onboarding State Desync
+    // Pre-populate steps so QA testers don't see a blank Step 1 and bypass billing naturally
+    const onboardingSteps = (isBeta || args.isQATester) ? {
+      signupCompleted: true,
+      signupCompletedAt: now,
+      planSelected: tier,
+      planSelectedAt: now,
+      paymentCompleted: true,
+      paymentCompletedAt: now,
+    } : {
+      signupCompleted: true,
+      signupCompletedAt: now,
+    };
+
     const userId = await ctx.db.insert('users', {
       email: sanitizedEmail,
       name: args.name,
@@ -340,7 +370,30 @@ export const provisionUser = mutation({
       acquisitionDate: now,
       createdAt: now,
       updatedAt: now,
+      onboardingSteps,
     });
+
+    // GAP 3 FIX: Phantom Tier Subscription
+    // Insert a formal 0-dollar subscription to ensure frontend feature gates and usage limit checks
+    // don't resolve to null and crash for QA testers despite them having an 'agency' label.
+    if (isBeta || args.isQATester) {
+      await ctx.db.insert('subscriptions', {
+        userId,
+        planTier: tier ?? 'starter',
+        status: 'active',
+        billingCycle: 'monthly',
+        startsAt: now,
+        renewsAt: now + SIX_MONTHS_MS,
+        cancelAt: now + SIX_MONTHS_MS,
+        priceMonthly: 0,
+        createdAt: now,
+        updatedAt: now,
+        features: tier === 'agency' 
+          ? { maxUrls: 10, maxKeywordIdeas: 5000, maxAiReports: 100, maxContentPieces: 100, maxTeamMembers: 25 }
+          : { maxUrls: 1, maxKeywordIdeas: 500, maxAiReports: 10, maxContentPieces: 15, maxTeamMembers: 1 }
+      });
+      console.log(`[Provision] Created Phantom Subscription for userId=${userId}`);
+    }
 
     // Schedule HubSpot sync (non-blocking, fire-and-forget)
     // Matches waitlist path provisioning completeness
