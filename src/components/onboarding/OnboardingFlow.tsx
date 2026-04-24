@@ -309,7 +309,8 @@ export function OnboardingFlow() {
   }, [authLoading, user?.onboardingStatus, router]);
 
   // Beta users, QA testers, and admin-provisioned users with pre-assigned tiers skip pricing
-  const skipPricing = Boolean(user?.isBetaUser || user?.isQATester || user?.membershipTier);
+  // TEMPORARY OVERRIDE: Skip billing for ALL users to unblock testing
+  const skipPricing = true; // Boolean(user?.isBetaUser || user?.isQATester || user?.membershipTier);
 
   // Fallback auto-forwarder: If a bypassed user somehow lands on step 2 or 3 (e.g. via URL or state restoration),
   // bump them to step 4 instantly so they don't see a blank screen.
