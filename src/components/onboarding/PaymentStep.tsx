@@ -172,7 +172,7 @@ export function PaymentStep({ selectedPlan, onNext, onBack, loading }: Props) {
 
             {/* Features — compact two-column on wider views */}
             <VStack align="start" spacing={1.5}>
-              {plan?.features.map((f) => (
+              {plan?.features?.map((f) => (
                 <HStack key={f} spacing={2}>
                   <Icon as={FiCheck} color="green.500" boxSize={3.5} flexShrink={0} />
                   <Text fontSize="sm" color="gray.600">

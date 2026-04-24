@@ -290,7 +290,7 @@ export function mapUserToHubSpot(user: {
     props.phoo_onboarding_status = user.onboardingStatus;
   }
   if (user.accountStatus) {
-    props.phoo_account_status = user.accountStatus;
+    props.phoo_account_status = user.accountStatus === 'initial_submitted' ? 'inactive' : user.accountStatus;
   }
   if (user.projectCount !== undefined) {
     props.phoo_project_count = user.projectCount;
