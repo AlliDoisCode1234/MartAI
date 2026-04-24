@@ -356,6 +356,19 @@ export const provisionUser = mutation({
     // Reuses passwordResetTokens table — architecturally identical to password reset
     // but with 24-hour expiry (user may not check email immediately)
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    
+    // Invalidate any existing unused tokens for this user
+    const existingTokens = await ctx.db
+      .query('passwordResetTokens')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect();
+
+    for (const t of existingTokens) {
+      if (!t.usedAt && t.expiresAt > now) {
+        await ctx.db.patch(t._id, { usedAt: now });
+      }
+    }
+
     const { token: rawToken, tokenHash } = await generateTokenPair();
 
     // Get admin who triggered this for audit trail
@@ -623,6 +636,19 @@ export const resendSetupEmail = mutation({
 
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
     const now = Date.now();
+    
+    // Invalidate any existing unused tokens for this user
+    const existingTokens = await ctx.db
+      .query('passwordResetTokens')
+      .withIndex('by_user', (q) => q.eq('userId', user._id))
+      .collect();
+
+    for (const t of existingTokens) {
+      if (!t.usedAt && t.expiresAt > now) {
+        await ctx.db.patch(t._id, { usedAt: now });
+      }
+    }
+
     const { token: rawToken, tokenHash } = await generateTokenPair();
 
     const adminIdentity = await ctx.auth.getUserIdentity();

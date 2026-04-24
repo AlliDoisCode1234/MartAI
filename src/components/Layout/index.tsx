@@ -192,10 +192,11 @@ export const Layout: FC<Props> = ({ children }) => {
   }
 
   // Determine if bottom tab bar should show
-  // Only for authenticated member portal pages (not studio, admin, standalone)
+  // Only for authenticated member portal pages (not studio, admin, standalone, or onboarding)
   const isStudioRoute = pathname?.startsWith('/studio');
   const isAdminRoute = pathname?.startsWith('/admin');
-  const showBottomTabBar = isAuthenticated && !isStudioRoute && !isAdminRoute;
+  const isOnboardingRoute = pathname?.startsWith('/onboarding');
+  const showBottomTabBar = isAuthenticated && !isStudioRoute && !isAdminRoute && !isOnboardingRoute;
 
   return (
     <Box minH="100vh" w="100%" bg="brand.light">
