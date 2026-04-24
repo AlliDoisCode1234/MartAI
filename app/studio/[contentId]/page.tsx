@@ -138,7 +138,7 @@ export default function ContentEditorPage() {
   // Check for CMS connections (Wave 3: CMS capability flags)
   const connections = useQuery(
     api.integrations.platformConnections.listConnections,
-    contentPiece?.projectId ? { projectId: contentPiece.projectId } : null
+    contentPiece?.projectId ? { projectId: contentPiece.projectId } : 'skip'
   );
   const hasCmsConnection = (connections?.length ?? 0) > 0; // Reserved for future CMS gate
 

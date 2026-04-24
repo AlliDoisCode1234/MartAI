@@ -361,8 +361,8 @@ export function OnboardingFlow() {
   // Step handlers (only reached if guards pass)
   // ==========================================================================
 
-  // Beta users skip pricing (step 2) and payment (step 3) - they get solo tier
-  const skipPricing = user?.isBetaUser ?? false;
+  // Beta users, QA testers, and admin-provisioned users with pre-assigned tiers skip pricing
+  const skipPricing = Boolean(user?.isBetaUser || user?.isQATester || user?.membershipTier);
 
   // For beta: 1 -> 4
   // For regular users: 1 -> 2 -> 3 -> 4
@@ -527,18 +527,30 @@ export function OnboardingFlow() {
   const handleStep4Next = async () => {
     setLoading(true);
 
-    // Fire-and-forget logic stripped here. 
-    // Handled perfectly by backend orchestrator at Step 3 project creation.
-
-    // Mark onboarding complete and redirect to dashboard
-    await completeOnboarding();
-
     try {
-      sessionStorage.setItem('onboarding_just_completed', 'true');
-    } catch {}
+      // Fire-and-forget logic stripped here. 
+      // Handled perfectly by backend orchestrator at Step 3 project creation.
 
-    // Go directly to dashboard - content generation happens in background
-    router.push('/studio');
+      // Mark onboarding complete and redirect to dashboard
+      await completeOnboarding();
+
+      try {
+        sessionStorage.setItem('onboarding_just_completed', 'true');
+      } catch {}
+
+      // Go directly to dashboard - content generation happens in background
+      router.push('/studio');
+    } catch (err) {
+      console.error('Failed to complete onboarding:', err);
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to finalize setup. Please try again.',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Main render (guards already handled above)

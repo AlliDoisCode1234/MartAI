@@ -25,7 +25,8 @@ function getResendClient(): Resend {
 
 // From address - verified domain
 const FROM_EMAIL = 'Phoo <hello@phoo.ai>';
-const APP_URL = process.env.SITE_URL || 'http://localhost:3000';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || 'https://phoo.ai';
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@phoo.ai';
 
 // Email templates
 const EMAIL_TEMPLATES: Record<
@@ -193,7 +194,7 @@ const EMAIL_TEMPLATES: Record<
           <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
           
           <p style="color: #999; font-size: 12px;">
-            Questions? Contact us at <a href="mailto:phoosupport@helps2.com" style="color: #F99F2A;">phoosupport@helps2.com</a>
+            Questions? Contact us at <a href="mailto:${SUPPORT_EMAIL}" style="color: #F99F2A;">${SUPPORT_EMAIL}</a>
           </p>
           <p style="color: #999; font-size: 12px;">
             — The Phoo Team
@@ -242,7 +243,7 @@ const EMAIL_TEMPLATES: Record<
           <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
           
           <p style="color: #999; font-size: 12px;">
-            Questions? Reply to this email or contact us at <a href="mailto:phoosupport@helps2.com" style="color: #F99F2A;">phoosupport@helps2.com</a>
+            Questions? Reply to this email or contact us at <a href="mailto:${SUPPORT_EMAIL}" style="color: #F99F2A;">${SUPPORT_EMAIL}</a>
           </p>
           <p style="color: #999; font-size: 12px;">
             — The Phoo Team
@@ -251,6 +252,44 @@ const EMAIL_TEMPLATES: Record<
       </div>
       `;
     },
+  },
+
+  account_setup: {
+    getSubject: () => 'Welcome to Phoo - Set Up Your Account',
+    getHtml: (data) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9fafb; padding: 32px;">
+        <div style="background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          <img src="https://phoo.ai/images/phoo-logo-orange.png" alt="Phoo" style="height: 40px; margin-bottom: 24px;" />
+          
+          <h1 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">Welcome to Phoo!</h1>
+          
+          <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
+            Hey${data.name ? ` ${data.name}` : ''}! An account has been created for you on Phoo, the inbound lead generation platform.
+          </p>
+          
+          <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
+            Click the button below to set your password and get started:
+          </p>
+          
+          <a href="${APP_URL}/auth/reset-password?token=${data.token}&setup=true" style="display: inline-block; background: linear-gradient(135deg, #F99F2A 0%, #e53e3e 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; margin: 24px 0; font-weight: 600; font-size: 16px;">
+            Set Your Password
+          </a>
+          
+          <p style="color: #888; font-size: 14px; margin-top: 24px;">
+            This link expires in 24 hours. If you didn't expect this, you can safely ignore this email.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+          
+          <p style="color: #999; font-size: 12px;">
+            Questions? Contact us at <a href="mailto:${SUPPORT_EMAIL}" style="color: #F99F2A;">${SUPPORT_EMAIL}</a>
+          </p>
+          <p style="color: #999; font-size: 12px;">
+            — The Phoo Team
+          </p>
+        </div>
+      </div>
+    `,
   },
 };
 

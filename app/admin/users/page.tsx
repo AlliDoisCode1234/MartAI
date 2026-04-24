@@ -55,6 +55,8 @@ import {
   StatNumber,
   StatHelpText,
   Icon,
+  Checkbox,
+  FormHelperText,
 } from '@chakra-ui/react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -150,27 +152,53 @@ export default function AdminUsersPage() {
   const [provisionEmail, setProvisionEmail] = useState('');
   const [provisionName, setProvisionName] = useState('');
   const [provisionRole, setProvisionRole] = useState('user');
+  const [bypassBilling, setBypassBilling] = useState(true);
+
+  const currentUser = useQuery(api.users.me);
 
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
   const handleProvision = async () => {
-    if (!provisionEmail || !provisionName) {
+    if (!provisionEmail.trim() || !provisionName.trim()) {
       toast({ title: 'Error', description: 'Name and email required', status: 'error' });
       return;
     }
     setIsLoading(true);
     try {
-      await provisionUser({
+      const result = await provisionUser({
         email: provisionEmail,
         name: provisionName,
         role: provisionRole as 'user' | 'viewer',
+        isQATester: bypassBilling,
       });
-      toast({ title: 'Success', description: 'User provisioned successfully', status: 'success' });
+
+      if (!result.success) {
+        if (result.code === 'ALREADY_EXISTS' || (result.error && result.error.includes('already exists'))) {
+          toast({ 
+            title: 'User Already Exists', 
+            description: `An account for ${provisionEmail.trim()} already exists. Would you like to provision a different user?`, 
+            status: 'info',
+            duration: 6000
+          });
+          setProvisionEmail(''); // Clear email to allow rapid retry, keep modal open
+        } else {
+          toast({ title: 'Error', description: result.error || 'Failed to provision user', status: 'error' });
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      toast({ 
+        title: 'Success', 
+        description: 'Account created and setup email sent', 
+        status: 'success' 
+      });
       setProvisionEmail(''); setProvisionName(''); setProvisionRole('user');
       onProvisionClose();
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, status: 'error' });
+      // Only runs on network failure or complete backend crash
+      toast({ title: 'Error', description: error.message || 'An unexpected error occurred', status: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -517,6 +545,21 @@ export default function AdminUsersPage() {
                   <option value="viewer">Viewer</option>
                 </Select>
               </FormControl>
+              
+              {currentUser?.role === 'super_admin' && (
+                <FormControl mt={2}>
+                  <Checkbox 
+                    isChecked={bypassBilling} 
+                    onChange={(e) => setBypassBilling(e.target.checked)}
+                    colorScheme="purple"
+                  >
+                    <Text fontWeight="medium">Bypass Onboarding Billing Step</Text>
+                  </Checkbox>
+                  <FormHelperText mt={1} fontSize="xs">
+                    If checked, the user skips the Stripe checkout. Uncheck to test the live billing flow.
+                  </FormHelperText>
+                </FormControl>
+              )}
             </VStack>
           </ModalBody>
           <ModalFooter>

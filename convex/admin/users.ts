@@ -1,7 +1,8 @@
-import { v } from 'convex/values';
+import { v, ConvexError } from 'convex/values';
 import { query, mutation } from '../_generated/server';
 import { requireAdmin, requireSuperAdmin } from '../lib/rbac';
 import { api } from '../_generated/api';
+import { generateTokenPair } from '../lib/hashing';
 
 /**
  * Admin User Management
@@ -292,6 +293,13 @@ export const provisionUser = mutation({
   },
   handler: async (ctx, args) => {
     const sanitizedEmail = args.email.trim().toLowerCase();
+    
+    if (!sanitizedEmail) {
+      return { success: false, error: "A valid email address is required" };
+    }
+    if (!args.name.trim()) {
+      return { success: false, error: "A valid name is required" };
+    }
 
     // GLASSWING-015: Verify caller has super admin access to provision explicitly
     await requireSuperAdmin(ctx);
@@ -302,7 +310,7 @@ export const provisionUser = mutation({
       .first();
 
     if (existingUser) {
-      throw new Error(`User with email ${sanitizedEmail} already exists`);
+      return { success: false, error: `User with email ${sanitizedEmail} already exists`, code: 'ALREADY_EXISTS' };
     }
 
     const now = Date.now();
@@ -336,9 +344,50 @@ export const provisionUser = mutation({
 
     // Schedule HubSpot sync (non-blocking, fire-and-forget)
     // Matches waitlist path provisioning completeness
-    await ctx.scheduler.runAfter(0, api.integrations.hubspot.syncUserToHubspot, {
+    try {
+      await ctx.scheduler.runAfter(0, api.integrations.hubspot.syncUserToHubspot, {
+        userId,
+      });
+    } catch (e) {
+      console.error(`[Provision] Failed to schedule HubSpot sync for userId=${userId}`, e);
+    }
+
+    // Generate setup token and send invitation email
+    // Reuses passwordResetTokens table — architecturally identical to password reset
+    // but with 24-hour expiry (user may not check email immediately)
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    const { token: rawToken, tokenHash } = await generateTokenPair();
+
+    // Get admin who triggered this for audit trail
+    const adminIdentity = await ctx.auth.getUserIdentity();
+    const adminEmail = adminIdentity?.email;
+    const adminUser = typeof adminEmail === 'string'
+      ? await ctx.db
+          .query('users')
+          .withIndex('email', (q) => q.eq('email', adminEmail))
+          .first()
+      : null;
+
+    await ctx.db.insert('passwordResetTokens', {
       userId,
+      tokenHash,
+      expiresAt: now + TWENTY_FOUR_HOURS,
+      createdAt: now,
+      triggeredBy: adminUser?._id,
     });
+
+    // Schedule setup email (non-blocking)
+    try {
+      await ctx.scheduler.runAfter(0, api.email.emailActions.sendEmail, {
+        to: sanitizedEmail,
+        template: 'account_setup',
+        data: { name: args.name, token: rawToken },
+      });
+    } catch (e) {
+      console.error(`[Provision] Failed to schedule setup email for userId=${userId}`, e);
+    }
+
+    console.log(`[Provision] User provisioned and setup email scheduled for userId=${userId}`);
 
     return { success: true, userId };
   },
