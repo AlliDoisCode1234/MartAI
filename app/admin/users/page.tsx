@@ -155,22 +155,44 @@ export default function AdminUsersPage() {
   const toast = useToast();
 
   const handleProvision = async () => {
-    if (!provisionEmail || !provisionName) {
+    if (!provisionEmail.trim() || !provisionName.trim()) {
       toast({ title: 'Error', description: 'Name and email required', status: 'error' });
       return;
     }
     setIsLoading(true);
     try {
-      await provisionUser({
+      const result = await provisionUser({
         email: provisionEmail,
         name: provisionName,
         role: provisionRole as 'user' | 'viewer',
       });
-      toast({ title: 'Success', description: 'User provisioned successfully', status: 'success' });
+
+      if (!result.success) {
+        if (result.code === 'ALREADY_EXISTS' || (result.error && result.error.includes('already exists'))) {
+          toast({ 
+            title: 'User Already Exists', 
+            description: `An account for ${provisionEmail.trim()} already exists. Would you like to provision a different user?`, 
+            status: 'info',
+            duration: 6000
+          });
+          setProvisionEmail(''); // Clear email to allow rapid retry, keep modal open
+        } else {
+          toast({ title: 'Error', description: result.error || 'Failed to provision user', status: 'error' });
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      toast({ 
+        title: 'Success', 
+        description: 'Account created and setup email sent', 
+        status: 'success' 
+      });
       setProvisionEmail(''); setProvisionName(''); setProvisionRole('user');
       onProvisionClose();
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, status: 'error' });
+      // Only runs on network failure or complete backend crash
+      toast({ title: 'Error', description: error.message || 'An unexpected error occurred', status: 'error' });
     } finally {
       setIsLoading(false);
     }

@@ -63,6 +63,7 @@ function ResetPasswordContent() {
   const { signIn } = useAuthActions();
 
   const token = searchParams.get('token');
+  const isSetup = searchParams.get('setup') === 'true';
 
   // Validate token
   const validation = useQuery(api.auth.passwordReset.validateToken, token ? { token } : 'skip');
@@ -93,11 +94,12 @@ function ResetPasswordContent() {
       const result = await resetPassword({ token, newPassword });
 
       if (result.success && result.email) {
-        // Auto sign in with new password
+        // For setup (provisioned user with no auth account): use signUp to CREATE credentials
+        // For reset (existing user): use signIn with existing credentials
         await signIn('password', {
           email: result.email,
           password: newPassword,
-          flow: 'signIn',
+          flow: isSetup ? 'signUp' : 'signIn',
         });
 
         setSuccess(true);
@@ -194,8 +196,12 @@ function ResetPasswordContent() {
     <Container maxW="md" py={20}>
       <VStack spacing={8} align="stretch">
         <VStack spacing={2} textAlign="center">
-          <Heading size="xl">Set New Password</Heading>
-          <Text color="gray.600">Enter a new password for your account</Text>
+          <Heading size="xl">{isSetup ? 'Set Your Password' : 'Set New Password'}</Heading>
+          <Text color="gray.600">
+            {isSetup
+              ? 'Create a password to activate your Phoo account'
+              : 'Enter a new password for your account'}
+          </Text>
         </VStack>
 
         <Box bg="white" p={8} borderRadius="lg" shadow="md">
@@ -270,7 +276,7 @@ function ResetPasswordContent() {
                 isDisabled={!canSubmit}
                 loadingText="Resetting..."
               >
-                Reset Password
+                {isSetup ? 'Activate Account' : 'Reset Password'}
               </Button>
             </VStack>
           </form>
