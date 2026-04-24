@@ -12,7 +12,7 @@ const providers: any[] = [
     clientId: process.env.AUTH_GOOGLE_ID,
     clientSecret: process.env.AUTH_GOOGLE_SECRET,
   }),
-  Password({ verify: Resend({ from: RESEND_FROM }) }),
+  Password(), // Disabled mandatory email verification for frictionless signup
   // Standalone Resend for magic link login
   Resend({
     id: 'resend',
