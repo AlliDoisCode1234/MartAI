@@ -55,6 +55,8 @@ import {
   StatNumber,
   StatHelpText,
   Icon,
+  Checkbox,
+  FormHelperText,
 } from '@chakra-ui/react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -150,6 +152,9 @@ export default function AdminUsersPage() {
   const [provisionEmail, setProvisionEmail] = useState('');
   const [provisionName, setProvisionName] = useState('');
   const [provisionRole, setProvisionRole] = useState('user');
+  const [bypassBilling, setBypassBilling] = useState(true);
+
+  const currentUser = useQuery(api.users.me);
 
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
@@ -165,6 +170,7 @@ export default function AdminUsersPage() {
         email: provisionEmail,
         name: provisionName,
         role: provisionRole as 'user' | 'viewer',
+        isQATester: bypassBilling,
       });
 
       if (!result.success) {
@@ -539,6 +545,21 @@ export default function AdminUsersPage() {
                   <option value="viewer">Viewer</option>
                 </Select>
               </FormControl>
+              
+              {currentUser?.role === 'super_admin' && (
+                <FormControl mt={2}>
+                  <Checkbox 
+                    isChecked={bypassBilling} 
+                    onChange={(e) => setBypassBilling(e.target.checked)}
+                    colorScheme="purple"
+                  >
+                    <Text fontWeight="medium">Bypass Onboarding Billing Step</Text>
+                  </Checkbox>
+                  <FormHelperText mt={1} fontSize="xs">
+                    If checked, the user skips the Stripe checkout. Uncheck to test the live billing flow.
+                  </FormHelperText>
+                </FormControl>
+              )}
             </VStack>
           </ModalBody>
           <ModalFooter>
