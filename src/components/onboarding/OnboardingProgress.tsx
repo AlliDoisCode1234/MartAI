@@ -14,16 +14,19 @@ import { TOTAL_STEPS } from '@/lib/constants/onboarding';
 
 type Props = {
   step: number;
+  skipPricing?: boolean;
 };
 
-export function OnboardingProgress({ step }: Props) {
-  const progress = (step / TOTAL_STEPS) * 100;
+export function OnboardingProgress({ step, skipPricing }: Props) {
+  const displayTotalSteps = skipPricing ? 2 : TOTAL_STEPS;
+  const displayStep = skipPricing ? (step === 4 ? 2 : 1) : step;
+  const progress = (displayStep / displayTotalSteps) * 100;
 
   return (
     <Box>
       <HStack justify="space-between" mb={2}>
         <Text fontSize="sm" color="gray.500">
-          Step {step} of {TOTAL_STEPS}
+          Step {displayStep} of {displayTotalSteps}
         </Text>
         <Text fontSize="sm" color="gray.500">
           {Math.round(progress)}% complete

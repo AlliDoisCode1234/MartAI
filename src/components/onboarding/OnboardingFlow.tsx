@@ -364,6 +364,14 @@ export function OnboardingFlow() {
   // Beta users, QA testers, and admin-provisioned users with pre-assigned tiers skip pricing
   const skipPricing = Boolean(user?.isBetaUser || user?.isQATester || user?.membershipTier);
 
+  // Fallback auto-forwarder: If a bypassed user somehow lands on step 2 or 3 (e.g. via URL or state restoration),
+  // bump them to step 4 instantly so they don't see a blank screen.
+  useEffect(() => {
+    if (skipPricing && (step === 2 || step === 3)) {
+      setStep(4);
+    }
+  }, [skipPricing, step]);
+
   // For beta: 1 -> 4
   // For regular users: 1 -> 2 -> 3 -> 4
   const nextStep = () => {
@@ -558,7 +566,7 @@ export function OnboardingFlow() {
     <Box minH="100vh" bg="brand.light" py={12}>
       <Container maxW="container.md">
         <VStack spacing={8} align="stretch">
-          <OnboardingProgress step={step} />
+          <OnboardingProgress step={step} skipPricing={skipPricing} />
 
           <AnimatePresence mode="wait">
             {step === 1 && (
