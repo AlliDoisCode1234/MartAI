@@ -55,9 +55,8 @@ export function OnboardingFlow() {
   const [ga4Connected, setGa4Connected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  // TEMPORARY OVERRIDE: Skip billing for ALL users to unblock testing
-  // Original: Boolean(user?.isBetaUser || user?.isQATester || user?.membershipTier);
-  const skipPricing = true;
+  // Boolean flag derived from user state (not hardcoded)
+  const skipPricing = Boolean(user?.isBetaUser || user?.isQATester || user?.membershipTier);
 
   // Mutations & Actions
   const createProject = useMutation(api.projects.projects.createProject);

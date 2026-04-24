@@ -281,3 +281,56 @@ export const markComplete = internalMutation({
     return { success: true, accountStatus: shouldActivate ? 'active' : user.accountStatus };
   },
 });
+
+/**
+ * Fallback bypass for organic users to bypass Stripe during testing
+ */
+export const skipBillingForTesting = mutation({
+  args: {
+    planTier: v.union(v.literal('starter'), v.literal('engine'), v.literal('agency'), v.literal('enterprise')),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error('Unauthorized');
+
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error('User not found');
+
+    const now = Date.now();
+    const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
+    
+    // Update user to QA Tester
+    const currentSteps = user.onboardingSteps || {};
+    await ctx.db.patch(userId, {
+      isQATester: true,
+      membershipTier: args.planTier,
+      onboardingSteps: {
+        ...currentSteps,
+        planSelected: args.planTier,
+        planSelectedAt: now,
+        paymentCompleted: true,
+        paymentCompletedAt: now,
+      },
+      updatedAt: now,
+    });
+
+    // Create the phantom subscription
+    await ctx.db.insert('subscriptions', {
+      userId,
+      planTier: args.planTier,
+      status: 'active',
+      billingCycle: 'monthly',
+      startsAt: now,
+      renewsAt: now + SIX_MONTHS_MS,
+      cancelAt: now + SIX_MONTHS_MS,
+      priceMonthly: 0,
+      createdAt: now,
+      updatedAt: now,
+      features: args.planTier === 'agency' 
+        ? { maxUrls: 10, maxKeywordIdeas: 5000, maxAiReports: 100, maxContentPieces: 100, maxTeamMembers: 25 }
+        : { maxUrls: 1, maxKeywordIdeas: 500, maxAiReports: 10, maxContentPieces: 15, maxTeamMembers: 1 }
+    });
+    
+    return { success: true };
+  }
+});

@@ -24,7 +24,7 @@ import {
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { FiArrowRight, FiArrowLeft, FiCreditCard, FiCheck, FiShield } from 'react-icons/fi';
-import { useAction } from 'convex/react';
+import { useAction, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { PLANS } from '@/lib/constants/onboarding';
 import { BRAND } from '@/lib/constants/brand';
@@ -51,6 +51,23 @@ export function PaymentStep({ selectedPlan, onNext, onBack, loading }: Props) {
   const toast = useToast();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const createCheckout = useAction(api.stripe.checkout.createSubscriptionCheckout);
+  const skipBillingForTesting = useMutation(api.onboarding.skipBillingForTesting);
+
+  const handleSkipBilling = async () => {
+    setCheckoutLoading(true);
+    try {
+      await skipBillingForTesting({ planTier: selectedPlan });
+      onNext();
+    } catch (error) {
+      toast({
+        title: 'Skip Failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        status: 'error',
+        duration: 5000,
+      });
+      setCheckoutLoading(false);
+    }
+  };
 
   const handleCheckout = async () => {
     // Enterprise plan — contact sales
@@ -184,6 +201,17 @@ export function PaymentStep({ selectedPlan, onNext, onBack, loading }: Props) {
               transition="all 0.2s"
             >
               {selectedPlan === 'enterprise' ? 'Contact Sales' : 'Subscribe & Continue'}
+            </Button>
+
+            <Button
+              variant="outline"
+              colorScheme="gray"
+              size="sm"
+              w="full"
+              onClick={handleSkipBilling}
+              isLoading={checkoutLoading}
+            >
+              Skip Billing (QA / Testing Only)
             </Button>
 
             {/* Trust signal */}
