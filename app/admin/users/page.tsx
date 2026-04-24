@@ -72,6 +72,7 @@ import {
   FiUserPlus,
   FiActivity,
   FiUserX,
+  FiMail,
 } from 'react-icons/fi';
 import Link from 'next/link';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -139,6 +140,7 @@ export default function AdminUsersPage() {
   const users = useQuery(api.admin.users.listUsers, { limit: 100 });
   const updateAccountStatus = useMutation(api.admin.users.updateAccountStatus);
   const updateUserRole = useMutation(api.admin.users.updateUserRole);
+  const resendEmail = useMutation(api.admin.users.resendSetupEmail);
 
   const { isOpen: isRoleOpen, onOpen: onRoleOpen, onClose: onRoleClose } = useDisclosure();
   const { isOpen: isSuspendOpen, onOpen: onSuspendOpen, onClose: onSuspendClose } = useDisclosure();
@@ -255,6 +257,22 @@ export default function AdminUsersPage() {
         status: 'error',
         duration: 3000,
       });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendEmail = async (userId: Id<'users'>) => {
+    setIsLoading(true);
+    try {
+      const result = await resendEmail({ userId });
+      if (!result.success) {
+        toast({ title: 'Error', description: result.error, status: 'error' });
+      } else {
+        toast({ title: 'Email Sent', description: 'Setup email has been queued', status: 'success' });
+      }
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message || 'Failed to send email', status: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -434,6 +452,12 @@ export default function AdminUsersPage() {
                             }}
                           >
                             Change Role
+                          </MenuItem>
+                          <MenuItem 
+                            icon={<FiMail />} 
+                            onClick={() => handleResendEmail(user._id)}
+                          >
+                            Resend Setup Email
                           </MenuItem>
                           <MenuDivider />
                           <MenuItem
