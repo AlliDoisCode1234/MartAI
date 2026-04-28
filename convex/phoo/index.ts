@@ -17,8 +17,7 @@
 // PhooAgent - Chat interface
 export * from './agent';
 
-// PhooLib - Semantic knowledge library
-export * from './lib';
+
 
 // PhooBrain - AI processing (re-exports from convex/ai/)
 // Note: Use specific imports from './brain/providers', './brain/router', './brain/health'

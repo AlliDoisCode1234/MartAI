@@ -124,8 +124,6 @@ import type * as phoo_brain_router from "../phoo/brain/router.js";
 import type * as phoo_contentTypes from "../phoo/contentTypes.js";
 import type * as phoo_index from "../phoo/index.js";
 import type * as phoo_industryTemplates from "../phoo/industryTemplates.js";
-import type * as phoo_lib_index from "../phoo/lib/index.js";
-import type * as phoo_lib_rating from "../phoo/lib/rating.js";
 import type * as projects_projects from "../projects/projects.js";
 import type * as prospects_prospects from "../prospects/prospects.js";
 import type * as publishing_scheduledPosts from "../publishing/scheduledPosts.js";
@@ -310,8 +308,6 @@ declare const fullApi: ApiFromModules<{
   "phoo/contentTypes": typeof phoo_contentTypes;
   "phoo/index": typeof phoo_index;
   "phoo/industryTemplates": typeof phoo_industryTemplates;
-  "phoo/lib/index": typeof phoo_lib_index;
-  "phoo/lib/rating": typeof phoo_lib_rating;
   "projects/projects": typeof projects_projects;
   "prospects/prospects": typeof prospects_prospects;
   "publishing/scheduledPosts": typeof publishing_scheduledPosts;

@@ -109,6 +109,17 @@ export async function GET(req: NextRequest) {
       stateRaw: stateParam,
     });
 
+    // GTM-only flow: token saved, redirect with setup=gtm to auto-open modal
+    if (result.type === 'gtm') {
+      console.log('[GoogleOAuth][Callback] GTM token saved — redirecting with setup=gtm');
+      const redirectPath = returnTo || '/settings?tab=integrations';
+      const redirectUrl = new URL(redirectPath, baseUrl);
+      redirectUrl.searchParams.set('setup', 'gtm');
+      redirectUrl.searchParams.set('success', 'true');
+      redirectUrl.searchParams.set('type', 'gtm');
+      return NextResponse.redirect(redirectUrl);
+    }
+
     const ga4Saved = result.ga4Saved;
     const gscSaved = result.gscSaved;
     const gscSiteCount = result.gscSiteCount;
