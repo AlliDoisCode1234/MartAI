@@ -201,8 +201,14 @@ export const executeDfsRequest = internalAction({
 // ==========================================
 
 /**
- * Get Keyword Ideas (Live)
- * Automatically translates the massive DataForSEO payload into SEAN's validated nomenclature UI schema.
+ * Get Keyword Ideas (Live) — Two-Step Pipeline
+ *
+ * Step 1: keyword_ideas/live → search volume, CPC, competition
+ * Step 2: bulk_keyword_difficulty/live → real difficulty scores (0-100)
+ *
+ * The keyword_ideas endpoint returns keyword_difficulty as 0 for most results.
+ * The dedicated bulk_keyword_difficulty endpoint provides accurate scores.
+ * Step 2 is wrapped in try/catch — gracefully degrades if difficulty lookup fails.
  */
 export const getKeywordIdeas = internalAction({
   args: {
@@ -242,14 +248,70 @@ export const getKeywordIdeas = internalAction({
 
     const rawItems: DfsKeywordIdeaResult[] = rootResult.items;
 
-    // Nomenclature mapping loop
-    return rawItems.map((item) => ({
+    // Step 1: Build initial results with metrics from keyword_ideas
+    const results: NormalizedKeywordMetric[] = rawItems.map((item) => ({
       keyword: item.keyword,
       monthlySearches: item.keyword_info?.search_volume ?? 0,
       adCostCpc: item.keyword_info?.cpc ?? 0,
       paidCompetition: item.keyword_info?.competition_level ?? 'UNKNOWN',
       rankingDifficulty: item.keyword_difficulty ?? 0,
     }));
+
+    // Step 2: Enrich with real difficulty scores from bulk_keyword_difficulty
+    // This endpoint returns logarithmic 0-100 difficulty for up to 1000 keywords per call
+    const keywordsForDifficulty = results
+      .map((r) => r.keyword)
+      .filter(Boolean)
+      .slice(0, 1000); // DFS limit per payload
+
+    if (keywordsForDifficulty.length > 0) {
+      try {
+        const difficultyPayload = [
+          {
+            keywords: keywordsForDifficulty,
+            location_name: args.locationName || 'United States',
+            language_name: args.languageName || 'English',
+          },
+        ];
+
+        const difficultyResponse = await performDfsRequest(
+          ctx,
+          '/dataforseo_labs/google/bulk_keyword_difficulty/live',
+          difficultyPayload
+        );
+
+        const diffTasks = difficultyResponse.tasks;
+        if (diffTasks && diffTasks.length > 0 && diffTasks[0].result) {
+          const diffItems: Array<{ keyword: string; keyword_difficulty: number | null }> =
+            diffTasks[0].result[0]?.items ?? [];
+
+          // Build a lookup map for O(1) merging
+          const difficultyMap = new Map<string, number>();
+          for (const item of diffItems) {
+            if (item.keyword && typeof item.keyword_difficulty === 'number') {
+              difficultyMap.set(item.keyword.toLowerCase(), item.keyword_difficulty);
+            }
+          }
+
+          // Merge difficulty scores into results
+          for (const result of results) {
+            const realDifficulty = difficultyMap.get(result.keyword.toLowerCase());
+            if (realDifficulty !== undefined) {
+              result.rankingDifficulty = realDifficulty;
+            }
+          }
+
+          console.log(
+            `[DataForSEO] Enriched ${difficultyMap.size}/${results.length} keywords with real difficulty scores`
+          );
+        }
+      } catch (diffError) {
+        // Non-fatal: difficulty enrichment failed, results still have volume/CPC/competition
+        console.warn('[DataForSEO] bulk_keyword_difficulty enrichment failed, using fallback:', diffError);
+      }
+    }
+
+    return results;
   },
 });
 

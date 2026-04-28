@@ -10,20 +10,33 @@ import { verifyProjectAccess } from '../projects/projects';
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
-const SCOPES = [
-  'https://www.googleapis.com/auth/analytics.readonly',
-  'https://www.googleapis.com/auth/webmasters.readonly',
-  'https://www.googleapis.com/auth/tagmanager.edit.containers',
-  'openid',
-  'email',
-  'profile',
-].join(' ');
+// Scope sets for incremental authorization
+// GA4 (analytics.readonly) is the only verified sensitive scope — use as default
+// for a clean consent screen. GSC & GTM are requested incrementally when needed.
+const BASE_SCOPES = ['openid', 'email', 'profile'];
+const GA4_SCOPE = 'https://www.googleapis.com/auth/analytics.readonly';
+const GSC_SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly';
+const GTM_SCOPE = 'https://www.googleapis.com/auth/tagmanager.edit.containers';
+
+type ScopeSet = 'ga4' | 'gsc' | 'gtm' | 'combined';
+
+function getScopesForSet(scopeSet: ScopeSet): string {
+  switch (scopeSet) {
+    case 'ga4': return [...BASE_SCOPES, GA4_SCOPE].join(' ');
+    case 'gsc': return [...BASE_SCOPES, GA4_SCOPE, GSC_SCOPE].join(' ');
+    case 'gtm': return [...BASE_SCOPES, GTM_SCOPE].join(' ');
+    case 'combined': return [...BASE_SCOPES, GA4_SCOPE, GSC_SCOPE, GTM_SCOPE].join(' ');
+  }
+}
 
 export const generateAuthUrl = action({
   // Accept projectId and returnTo to pass as state
   args: {
     projectId: v.optional(v.id('projects')),
     returnTo: v.optional(v.string()), // Where to redirect after OAuth
+    scopeSet: v.optional(v.union(
+      v.literal('ga4'), v.literal('gsc'), v.literal('gtm'), v.literal('combined')
+    )),
   },
   handler: async (ctx, args) => {
     // SECURITY: Ensure caller is authenticated and actually owns the Project ID
@@ -33,9 +46,12 @@ export const generateAuthUrl = action({
       await ctx.runQuery(internal.projects.projects.verifyProjectAccess, { projectId: args.projectId });
     }
 
+    const resolvedScopeSet: ScopeSet = args.scopeSet ?? 'ga4';
+
     console.log('[GoogleOAuth][Convex] generateAuthUrl called with:', {
       projectId: args.projectId,
       returnTo: args.returnTo,
+      scopeSet: resolvedScopeSet,
     });
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -55,9 +71,14 @@ export const generateAuthUrl = action({
     url.searchParams.append('client_id', clientId);
     url.searchParams.append('redirect_uri', redirectUri);
     url.searchParams.append('response_type', 'code');
-    url.searchParams.append('scope', SCOPES);
+    url.searchParams.append('scope', getScopesForSet(resolvedScopeSet));
     url.searchParams.append('access_type', 'offline'); // Crucial for refresh token
     url.searchParams.append('prompt', 'consent'); // Force re-consent to ensure refresh token
+    // For incremental auth (GSC/GTM added after initial GA4 grant),
+    // preserve previously granted scopes per Google's incremental auth spec
+    if (resolvedScopeSet !== 'ga4') {
+      url.searchParams.append('include_granted_scopes', 'true');
+    }
 
     // Encode projectId and returnTo in state as JSON
     const stateData: Record<string, string> = {};

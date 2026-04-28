@@ -13,7 +13,7 @@ import * as crypto from 'node:crypto';
 import type { Id } from '../_generated/dataModel';
 import type { GenericActionCtx } from 'convex/server';
 import type { DataModel } from '../_generated/dataModel';
-import type { NormalizedSerpUrl, NormalizedKeywordMetric } from '../integrations/dataForSeo';
+import type { NormalizedSerpUrl, NormalizedKeywordMetric, NormalizedBulkSerpResult } from '../integrations/dataForSeo';
 import { PENDING_SELECTION } from '../lib/constants';
 
 /** Shape of a single row returned by the GSC Search Analytics API */
@@ -337,13 +337,13 @@ export const generateClusters = action({
         const bulkSerps = await ctx.runAction(internal.integrations.dataForSeo.getBulkTopSerpUrls, {
           keywords: serpsToFetch,
           limit: 5
-        }) as any[];
+        }) as NormalizedBulkSerpResult[];
         
         for (const cluster of clusters) {
           if (cluster.keywords.length > 0) {
             const match = bulkSerps.find(s => s.keyword === cluster.keywords[0]);
             if (match && match.urls && match.urls.length > 0) {
-              cluster.topSerpUrls = match.urls.map((u: any) => u.url);
+              cluster.topSerpUrls = match.urls.map((u: NormalizedSerpUrl) => u.url);
             }
           }
         }
@@ -449,12 +449,12 @@ export const generateClustersInternal = internalAction({
         const bulkSerps = await ctx.runAction(internal.integrations.dataForSeo.getBulkTopSerpUrls, {
           keywords: serpsToFetch,
           limit: 5,
-        }) as any[];
+        }) as NormalizedBulkSerpResult[];
         for (const cluster of clusters) {
           if (cluster.keywords.length > 0) {
             const match = bulkSerps.find((s) => s.keyword === cluster.keywords[0]);
-            if (match?.urls?.length > 0) {
-              cluster.topSerpUrls = match.urls.map((u: any) => u.url);
+            if (match && match.urls && match.urls.length > 0) {
+              cluster.topSerpUrls = match.urls.map((u: NormalizedSerpUrl) => u.url);
             }
           }
         }
@@ -633,10 +633,10 @@ export const createManualClusterWithMetrics = action({
         const bulkSerps = (await ctx.runAction(internal.integrations.dataForSeo.getBulkTopSerpUrls, {
           keywords: [keywords[0]],
           limit: 5,
-        })) as any[];
+        })) as NormalizedBulkSerpResult[];
 
         if (bulkSerps && bulkSerps.length > 0 && bulkSerps[0].urls) {
-          topSerpUrls = bulkSerps[0].urls.map((u: any) => u.url);
+          topSerpUrls = bulkSerps[0].urls.map((u: NormalizedSerpUrl) => u.url);
         }
       }
     } catch (e) {

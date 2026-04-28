@@ -122,7 +122,7 @@ export function GoogleConnect({ projectId }: Props) {
     setConnectingService(service);
     try {
       console.log('[GoogleOAuth][Client] Calling generateAuthUrl Convex action...');
-      const authUrl = await generateAuthUrl({ projectId });
+      const authUrl = await generateAuthUrl({ projectId, scopeSet: service });
       console.log(
         '[GoogleOAuth][Client] Received authUrl:',
         authUrl ? `${authUrl.substring(0, 80)}...` : 'NULL'
