@@ -80,7 +80,7 @@ export const generateAuthUrl = action({
       url.searchParams.append('include_granted_scopes', 'true');
     }
 
-    // Encode projectId and returnTo in state as JSON
+    // Encode projectId, returnTo, and scopeSet (as type) in state as JSON
     const stateData: Record<string, string> = {};
     if (args.projectId) {
       stateData.projectId = args.projectId;
@@ -88,6 +88,8 @@ export const generateAuthUrl = action({
     if (args.returnTo) {
       stateData.returnTo = args.returnTo;
     }
+    // Pass scopeSet so the callback knows the intent (ga4/gsc/gtm/combined)
+    stateData.type = resolvedScopeSet;
     // Removed redirectUri from state to enforce strict environment URL
     if (Object.keys(stateData).length > 0) {
       const payloadStr = JSON.stringify(stateData);

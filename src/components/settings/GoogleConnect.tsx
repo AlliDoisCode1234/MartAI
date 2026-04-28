@@ -54,6 +54,7 @@ export function GoogleConnect({ projectId }: Props) {
   const [selectedGSCSite, setSelectedGSCSite] = useState<string>('');
   const [isSavingGA4, setIsSavingGA4] = useState(false);
   const [isSavingGSC, setIsSavingGSC] = useState(false);
+  const [isConnectingGtm, setIsConnectingGtm] = useState(false);
 
   // Convex hooks
   const ga4Connection = useQuery(api.integrations.ga4Connections.getGA4Connection, {
@@ -115,7 +116,20 @@ export function GoogleConnect({ projectId }: Props) {
         duration: 5000,
       });
     }
-  }, [searchParams, toast]);
+
+    // GTM OAuth callback — token now has GTM scopes, auto-open modal
+    if (setup === 'gtm' || (success === 'true' && type === 'gtm')) {
+      console.log('[GoogleOAuth][Client] GTM OAuth complete — auto-opening provisioning modal');
+      toast({
+        title: 'GTM authorized',
+        description: 'Opening Tag Manager setup...',
+        status: 'success',
+        duration: 3000,
+      });
+      // Small delay to ensure Convex has the updated token
+      setTimeout(() => onGtmOpen(), 500);
+    }
+  }, [searchParams, toast, onGtmOpen]);
 
   const handleConnect = async (service: 'ga4' | 'gsc') => {
     console.log('[GoogleOAuth][Client] handleConnect triggered with projectId:', projectId, 'service:', service);
@@ -568,7 +582,35 @@ export function GoogleConnect({ projectId }: Props) {
               colorScheme="orange"
               variant="outline"
               leftIcon={<FiZap />}
-              onClick={onGtmOpen}
+              isLoading={isConnectingGtm}
+              loadingText="Authorizing..."
+              onClick={async () => {
+                // GTM requires tagmanager.edit.containers scope.
+                // Trigger OAuth with scopeSet='gtm' first, then auto-open modal on callback.
+                console.log('[GTM] Starting OAuth pre-authorization for GTM scope');
+                setIsConnectingGtm(true);
+                try {
+                  const authUrl = await generateAuthUrl({
+                    projectId,
+                    scopeSet: 'gtm',
+                    returnTo: '/settings?tab=integrations',
+                  });
+                  if (authUrl) {
+                    window.location.href = authUrl;
+                  } else {
+                    throw new Error('Failed to generate GTM auth URL');
+                  }
+                } catch (err) {
+                  console.error('[GTM] OAuth pre-authorization failed:', err);
+                  toast({
+                    title: 'GTM authorization failed',
+                    description: err instanceof Error ? err.message : 'Please try again.',
+                    status: 'error',
+                    duration: 5000,
+                  });
+                  setIsConnectingGtm(false);
+                }
+              }}
             >
               Automate Setup
             </Button>

@@ -241,6 +241,64 @@ export const deleteGA4Connection = mutation({
   },
 });
 
+/**
+ * Refresh only the access/refresh tokens on an existing GA4 connection.
+ * Does NOT overwrite propertyId, propertyName, or availableProperties.
+ * Used by the GTM OAuth callback to upgrade token scope without clobbering
+ * the user's GA4 property selection.
+ */
+export const refreshTokensForProject = mutation({
+  args: {
+    projectId: v.id('projects'),
+    accessToken: v.string(),
+    refreshToken: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Security: require editor access
+    await requireProjectAccess(ctx, args.projectId, 'editor');
+
+    const existing = await ctx.db
+      .query('ga4Connections')
+      .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+      .first();
+
+    const encryptedAccessToken = await encryptCredential(args.accessToken);
+    const encryptedRefreshToken = args.refreshToken
+      ? await encryptCredential(args.refreshToken)
+      : undefined;
+
+    if (existing) {
+      // Only update tokens + timestamps — preserve property metadata
+      const updates: Record<string, unknown> = {
+        accessToken: encryptedAccessToken,
+        isEncrypted: true,
+        updatedAt: Date.now(),
+      };
+      if (encryptedRefreshToken) {
+        updates.refreshToken = encryptedRefreshToken;
+      }
+      await ctx.db.patch(existing._id, updates);
+      console.log('[GA4] Token refreshed for project (property preserved):', args.projectId);
+      return { updated: true, created: false };
+    }
+
+    // No existing connection — create one with PENDING_SELECTION
+    await ctx.db.insert('ga4Connections', {
+      projectId: args.projectId,
+      propertyId: PENDING_SELECTION,
+      propertyName: 'Requires Selection',
+      isEncrypted: true,
+      accessToken: encryptedAccessToken,
+      refreshToken: encryptedRefreshToken,
+      lastSync: Date.now(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    console.log('[GA4] New connection created for GTM flow (pending property selection):', args.projectId);
+    return { updated: false, created: true };
+  },
+});
+
 // Select a GA4 property from the available properties list (property picker)
 export const selectGA4Property = mutation({
   args: {
