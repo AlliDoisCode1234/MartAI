@@ -218,6 +218,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Handle GTM OAuth — save the new token (which now includes GTM scopes)
+    // back to the GA4 connection so provisionTenantContainer can use it.
+    // Uses refreshTokensForProject to update ONLY tokens, preserving property metadata.
+    if (type === 'gtm') {
+      console.log('[GoogleOAuth][NewerCallback] GTM-scoped OAuth flow — updating GA4 token...');
+      try {
+        if (api && projectId) {
+          await callMutation(api.integrations.ga4Connections.refreshTokensForProject, {
+            projectId: projectId as any,
+            accessToken: tokens.access_token,
+            refreshToken: tokens.refresh_token,
+          });
+          console.log('[GoogleOAuth][NewerCallback] GA4 token updated with GTM scopes (property preserved)');
+        }
+      } catch (e) {
+        console.error('[GoogleOAuth][NewerCallback] Failed to update token for GTM:', e);
+      }
+
+      return oauthResponse(baseUrl, returnTo, {
+        success: true,
+        type: 'gtm',
+        setup: 'gtm',
+      });
+    }
+
     console.log('[GoogleOAuth][NewerCallback] === SUMMARY ===', {
       ga4PropertyName,
       ga4Saved,
