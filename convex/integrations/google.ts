@@ -343,7 +343,7 @@ export const serverExchangeAndSave = action({
   handler: async (
     ctx,
     args
-  ): Promise<{ ga4Saved: boolean; gscSaved: boolean; gscSiteCount: number }> => {
+  ): Promise<{ ga4Saved: boolean; gscSaved: boolean; gscSiteCount: number; type?: string }> => {
     // Gate 1: Validate server-to-server shared secret
     const expectedSecret = process.env.CONVEX_SERVER_SECRET;
     if (!expectedSecret || args.serverSecret !== expectedSecret) {
@@ -356,7 +356,7 @@ export const serverExchangeAndSave = action({
       code: args.code,
       projectId: args.projectId,
       stateRaw: args.stateRaw,
-    })) as { ga4Saved: boolean; gscSaved: boolean; gscSiteCount: number };
+    })) as { ga4Saved: boolean; gscSaved: boolean; gscSiteCount: number; type?: string };
   },
 });
 
@@ -379,6 +379,7 @@ export const internalExchangeAndSave = internalAction({
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
     let finalRedirectUri = process.env.GOOGLE_REDIRECT_URI;
+    let stateType: string | undefined;
 
     // Security: Validate Secure State HMAC if provided (Prevents Forgery)
     if (args.stateRaw && clientSecret) {
@@ -393,6 +394,10 @@ export const internalExchangeAndSave = internalAction({
        
        const payload = JSON.parse(secureState.p);
        if (payload.projectId !== args.projectId) throw new Error('ProjectId payload swap detected - OAuth execution blocked');
+
+       // Extract the scope type from state (ga4/gsc/gtm/combined)
+       stateType = payload.type;
+       console.log('[GoogleOAuth][Convex] State type:', stateType);
 
        // Legacy grace period for in-flight authorization requests
        if (typeof payload.redirectUri === 'string') {
@@ -435,6 +440,17 @@ export const internalExchangeAndSave = internalAction({
 
     if (!accessToken) {
       throw new Error('No access token received from Google');
+    }
+
+    // GTM-only flow: save tokens without clobbering GA4 property metadata
+    if (stateType === 'gtm') {
+      console.log('[GoogleOAuth][Convex] GTM-scoped OAuth — saving tokens only (preserving GA4 property)');
+      await ctx.runMutation(internal.integrations.ga4Connections.refreshTokensInternal, {
+        projectId: args.projectId,
+        accessToken,
+        refreshToken,
+      });
+      return { ga4Saved: false, gscSaved: false, gscSiteCount: 0, type: 'gtm' };
     }
 
     let ga4Saved = false;
@@ -519,7 +535,7 @@ export const internalExchangeAndSave = internalAction({
       console.error('[GoogleOAuth][Convex] GSC lookup failed:', err);
     }
 
-    return { ga4Saved, gscSaved, gscSiteCount };
+    return { ga4Saved, gscSaved, gscSiteCount, type: stateType };
   },
 });
 

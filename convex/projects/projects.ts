@@ -230,21 +230,6 @@ export const adminDeleteProject = mutation({
     return { success: true };
   }
 });
-/**
- * @deprecated Use `projects.list` (org-aware, auth-scoped) for frontend consumers.
- * For server-side internal operations, use `getProjectsByUserInternal` instead.
- * This public query bypasses org membership validation and will be removed in a future release.
- */
-export const getProjectsByUser = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
-    const projects = await ctx.db
-      .query('projects')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
-      .collect();
-    return projects.filter((p) => p.status !== 'deleted');
-  },
-});
 
 /**
  * Internal-only: Get all projects for a user regardless of org context.
