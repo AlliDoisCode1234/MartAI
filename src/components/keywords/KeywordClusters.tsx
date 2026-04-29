@@ -53,9 +53,11 @@ import { Id } from '@/convex/_generated/dataModel';
 import { IntentBadge } from '@/src/components/keywords/IntentBadge';
 import { AddToClusterModal } from './AddToClusterModal';
 
+import { STUDIO_COLORS } from '@/lib/constants/studioTokens';
+
 const thStyle = {
-  color: 'gray.500',
-  borderColor: 'rgba(255,255,255,0.06)',
+  color: STUDIO_COLORS.tableHeaderColor,
+  borderColor: STUDIO_COLORS.tableBorderColor,
   fontSize: '10px',
   fontWeight: 'bold',
   textTransform: 'uppercase' as const,
@@ -188,10 +190,10 @@ export function KeywordClusters({ projectId: propProjectId }: { projectId?: stri
       <VStack spacing={6} py={16} align="center">
         <Icon as={FiLayers} boxSize={12} color="#F99F2A" opacity={0.5} />
         <VStack spacing={2}>
-          <Text color="white" fontSize="xl" fontWeight="bold">
+          <Text color="gray.800" fontSize="xl" fontWeight="bold">
             No Clusters Yet
           </Text>
-          <Text color="gray.400" fontSize="sm" maxW="420px" textAlign="center">
+          <Text color="gray.500" fontSize="sm" maxW="420px" textAlign="center">
             Group related keywords into topic clusters to plan content strategy and maximize topical
             authority.
           </Text>
@@ -220,16 +222,16 @@ export function KeywordClusters({ projectId: propProjectId }: { projectId?: stri
       {/* Header row */}
       <HStack justify="space-between">
         <HStack spacing={2}>
-          <Icon as={FiLayers} color="#F99F2A" boxSize={5} />
-          <Text color="white" fontSize="lg" fontWeight="bold">
+          <Icon as={FiLayers} color={STUDIO_COLORS.amber} boxSize={5} />
+          <Text color="gray.800" fontSize="lg" fontWeight="bold">
             {clusters.length} Cluster{clusters.length !== 1 ? 's' : ''}
           </Text>
         </HStack>
         <Button
           size="sm"
-          bg="#F99F2A"
+          bg={STUDIO_COLORS.amber}
           color="white"
-          _hover={{ bg: '#e8901f' }}
+          _hover={{ bg: STUDIO_COLORS.amberDark }}
           leftIcon={<FiPlus />}
           onClick={() => setShowCreateModal(true)}
         >
@@ -278,14 +280,15 @@ export function KeywordClusters({ projectId: propProjectId }: { projectId?: stri
 
       {/* Table */}
       <Box
-        bg="#1a1230"
+        bg="white"
         borderRadius="xl"
-        border="1px solid rgba(255,255,255,0.06)"
+        border="1px solid"
+        borderColor="gray.200"
         overflowX="auto"
       >
         <Table variant="unstyled" size="sm">
           <Thead>
-            <Tr borderBottom="1px solid rgba(255,255,255,0.06)">
+            <Tr borderBottom="1px solid" borderColor="gray.200">
               <Th {...thStyle} w="40px">
                 <Checkbox
                   isChecked={!!allSelected}
@@ -320,8 +323,9 @@ export function KeywordClusters({ projectId: propProjectId }: { projectId?: stri
               return (
                 <Tr
                   key={cluster._id}
-                  borderBottom="1px solid rgba(255,255,255,0.04)"
-                  _hover={{ bg: 'rgba(255,255,255,0.03)' }}
+                  borderBottom="1px solid"
+                  borderBottomColor="gray.100"
+                  _hover={{ bg: 'gray.50' }}
                   transition="background 0.15s"
                 >
                   {/* Checkbox */}
@@ -337,10 +341,10 @@ export function KeywordClusters({ projectId: propProjectId }: { projectId?: stri
                   {/* Cluster Name */}
                   <Td borderColor="transparent" py={3} maxW="260px">
                     <VStack align="start" spacing={0.5}>
-                      <Text color="white" fontSize="sm" fontWeight="medium" noOfLines={1}>
+                      <Text color="gray.700" fontSize="sm" fontWeight="medium" noOfLines={1}>
                         {cluster.clusterName}
                       </Text>
-                      <Text color="gray.600" fontSize="xs" noOfLines={1}>
+                      <Text color="gray.500" fontSize="xs" noOfLines={1}>
                         {cluster.keywords.slice(0, 3).join(', ')}
                         {cluster.keywords.length > 3 && ` +${cluster.keywords.length - 3}`}
                       </Text>
@@ -380,7 +384,7 @@ export function KeywordClusters({ projectId: propProjectId }: { projectId?: stri
 
                   {/* Volume Range */}
                   <Td borderColor="transparent" py={3} isNumeric>
-                    <Text color="gray.300" fontSize="sm">
+                    <Text color="gray.600" fontSize="sm">
                       {cluster.volumeRange.min.toLocaleString()} -{' '}
                       {cluster.volumeRange.max.toLocaleString()}
                     </Text>
@@ -445,12 +449,12 @@ export function KeywordClusters({ projectId: propProjectId }: { projectId?: stri
                         variant="ghost"
                         size="xs"
                         color="gray.500"
-                        _hover={{ color: 'white', bg: 'rgba(255,255,255,0.08)' }}
+                        _hover={{ color: 'gray.700', bg: 'gray.100' }}
                         aria-label="Cluster actions"
                       />
                       <MenuList
-                        bg="#1e1640"
-                        borderColor="rgba(255,255,255,0.1)"
+                        bg="white"
+                        borderColor="gray.200"
                         boxShadow="lg"
                         minW="160px"
                         py={1}
@@ -478,11 +482,11 @@ export function KeywordClusters({ projectId: propProjectId }: { projectId?: stri
       {/* Bulk Delete Confirm Dialog */}
       <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose} isCentered>
         <AlertDialogOverlay bg="blackAlpha.700">
-          <AlertDialogContent bg="#1e1640" border="1px solid rgba(255,255,255,0.1)">
-            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="white">
+          <AlertDialogContent bg="white" border="1px solid" borderColor="gray.200">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="gray.800">
               Delete {selectedIds.length} Cluster{selectedIds.length > 1 ? 's' : ''}
             </AlertDialogHeader>
-            <AlertDialogBody color="gray.400">
+            <AlertDialogBody color="gray.600">
               This action cannot be undone. The selected clusters and their keyword groupings will
               be permanently removed.
             </AlertDialogBody>

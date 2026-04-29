@@ -54,9 +54,15 @@ export function PaymentStep({ selectedPlan, onNext, onBack, loading }: Props) {
   const skipBillingForTesting = useMutation(api.onboarding.skipBillingForTesting);
 
   const handleSkipBilling = async () => {
+    const qaBypassCode = window.prompt('Enter QA Bypass Code to skip billing in production:');
+    
+    if (!qaBypassCode) {
+      return; // User cancelled or entered empty string
+    }
+
     setCheckoutLoading(true);
     try {
-      await skipBillingForTesting({ planTier: selectedPlan });
+      await skipBillingForTesting({ planTier: selectedPlan, qaBypassCode });
       onNext();
     } catch (error) {
       toast({

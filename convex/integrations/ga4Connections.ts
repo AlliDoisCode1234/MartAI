@@ -172,6 +172,7 @@ export const getGA4Connection = query({
       propertyId: connection.propertyId,
       propertyName: connection.propertyName,
       availableProperties: connection.availableProperties,
+      status: connection.status,
       lastSync: connection.lastSync,
       createdAt: connection.createdAt,
       updatedAt: connection.updatedAt,
@@ -193,6 +194,7 @@ export const getGA4ConnectionInternal = internalQuery({
     // Decrypt tokens for use (handle both OAuth and service account connections)
     let finalAccessToken = connection.accessToken;
     let finalRefreshToken = connection.refreshToken;
+    let decryptionFailed = false;
 
     try {
       if (connection.isEncrypted === true && connection.accessToken) {
@@ -205,12 +207,14 @@ export const getGA4ConnectionInternal = internalQuery({
       console.warn('[GA4] Failed to decrypt connection token. Marking as invalid.', error);
       finalAccessToken = undefined;
       finalRefreshToken = undefined;
+      decryptionFailed = true;
     }
 
     return {
       ...connection,
       accessToken: finalAccessToken,
       refreshToken: finalRefreshToken,
+      decryptionFailed,
     };
   },
 });
@@ -223,6 +227,20 @@ export const updateLastSync = internalMutation({
   handler: async (ctx, args) => {
     return await ctx.db.patch(args.connectionId, {
       lastSync: Date.now(),
+      status: 'active', // Ensure it is marked active upon successful sync
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// Mark connection as invalid due to decryption or API failure
+export const markConnectionInvalid = internalMutation({
+  args: {
+    connectionId: v.id('ga4Connections'),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.patch(args.connectionId, {
+      status: 'invalid',
       updatedAt: Date.now(),
     });
   },

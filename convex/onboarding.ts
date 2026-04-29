@@ -288,10 +288,18 @@ export const markComplete = internalMutation({
 export const skipBillingForTesting = mutation({
   args: {
     planTier: v.union(v.literal('starter'), v.literal('engine'), v.literal('agency'), v.literal('enterprise')),
+    qaBypassCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error('Unauthorized');
+
+    const expectedPassword = process.env.PHOO_BETA_PASSWORD;
+    
+    // Check if the QA password matches
+    if (!expectedPassword || args.qaBypassCode !== expectedPassword) {
+      throw new Error('Invalid QA Bypass Code. You cannot skip billing in production without authorization.');
+    }
 
     const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');

@@ -201,6 +201,9 @@ These personas act as historical anchors, representing definitive architectural 
 #### Context Node 00018 (docs/personas/bot_persona_ORCHESTRATION_AUTH_HARDENING_00018_PERSONA.md)
 - Ask: "What decisions were made during orchestration auth hardening? What is the Dual-Export pattern for background workflows? Which BOLA/cascade gaps were patched?"
 
+#### Context Node 00019 (docs/personas/bot_persona_GTM_OAUTH_ZOMBIE_CLEANUP_00019_PERSONA.md)
+- Ask: "What decisions were made regarding GTM OAuth Pre-Authorization, token-only refreshes, and the purging of Zombie API routes?"
+
 ---
 
 ## Consultation Process

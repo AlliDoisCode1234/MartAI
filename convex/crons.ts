@@ -51,4 +51,11 @@ crons.weekly(
   internal.seo.googleSeoFeed.fetchGoogleSeoFeed
 );
 
+// Metrics Enrichment Pipeline sweeper (runs every 5 minutes)
+crons.interval(
+  'metrics-enrichment-sweeper',
+  { minutes: 5 },
+  internal.seo.metricsEnrichment.processEnrichmentBatch
+);
+
 export default crons;
