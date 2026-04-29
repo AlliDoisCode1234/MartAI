@@ -594,6 +594,84 @@ export const listGA4Properties = action({
 });
 
 /**
+ * Fetch the GA4 Measurement ID (G-XXXXXXX) for a given property.
+ * Uses the GA4 Admin API dataStreams endpoint. Requires analytics.readonly scope.
+ * Called by GtmAutomationModal to auto-populate the measurement ID field.
+ */
+export const fetchMeasurementId = action({
+  args: { projectId: v.id('projects') },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ measurementId: string | null; error?: string }> => {
+    // RBAC: verify caller has access to this project (CR-001)
+    await ctx.runQuery(internal.projects.projects.verifyProjectAccess, {
+      projectId: args.projectId,
+    });
+
+    // Fetch decrypted tokens server-side
+    const ga4Connection = await ctx.runQuery(
+      internal.integrations.ga4Connections.getGA4ConnectionInternal,
+      { projectId: args.projectId }
+    );
+
+    if (!ga4Connection?.accessToken || !ga4Connection.propertyId) {
+      return { measurementId: null, error: 'No GA4 connection or property selected.' };
+    }
+
+    // Skip if property is still pending selection (use shared constant)
+    if (ga4Connection.propertyId === PENDING_SELECTION) {
+      return { measurementId: null, error: 'GA4 property not yet selected.' };
+    }
+
+    const dataStreamsUrl = `https://analyticsadmin.googleapis.com/v1beta/properties/${ga4Connection.propertyId}/dataStreams`;
+    let token = ga4Connection.accessToken;
+
+    try {
+      let response = await fetchWithExponentialBackoff(dataStreamsUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Refresh token on 401 and retry (matches fetchGA4Metrics pattern)
+      if (response.status === 401 && ga4Connection.refreshToken) {
+        const newTokens = await refreshAccessToken(ga4Connection.refreshToken);
+        token = newTokens.access_token;
+        // Persist refreshed tokens
+        await ctx.runMutation(internal.integrations.ga4Connections.refreshTokensInternal, {
+          projectId: args.projectId,
+          accessToken: token,
+          refreshToken: newTokens.refresh_token,
+        });
+        response = await fetchWithExponentialBackoff(dataStreamsUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      if (!response.ok) {
+        console.error('[GoogleOAuth] Failed to fetch data streams, status:', response.status);
+        return { measurementId: null, error: 'Failed to fetch data streams.' };
+      }
+
+      const data = await response.json();
+      const streams = data.dataStreams || [];
+
+      // Find the first web data stream with a measurement ID
+      for (const stream of streams) {
+        if (stream.webStreamData?.measurementId) {
+          console.log('[GoogleOAuth] Measurement ID auto-detected for project');
+          return { measurementId: stream.webStreamData.measurementId };
+        }
+      }
+
+      return { measurementId: null, error: 'No web data stream found for this property.' };
+    } catch (err) {
+      console.error('[GoogleOAuth] Error fetching measurement ID:', err);
+      return { measurementId: null, error: 'Failed to fetch measurement ID.' };
+    }
+  },
+});
+
+/**
  * List user's verified GSC sites (for site picker)
  */
 export const listGSCSites = action({

@@ -82,6 +82,7 @@ export const listUserContainers = action({
   ): Promise<{
     success: boolean;
     containers: Array<{ name: string; publicId: string; containerId: string; accountId: string }>;
+    noAccount?: boolean;
     error?: string;
   }> => {
     // CR-001: actions lack ctx.db — use internal query for access check
@@ -112,7 +113,12 @@ export const listUserContainers = action({
       const accounts = accountsData.account || [];
 
       if (accounts.length === 0) {
-        return { success: true, containers: [] };
+        return {
+          success: false,
+          containers: [],
+          noAccount: true,
+          error: 'No GTM account found. Please create one at tagmanager.google.com.',
+        };
       }
 
       // Fetch containers from ALL accounts (not just the first)
