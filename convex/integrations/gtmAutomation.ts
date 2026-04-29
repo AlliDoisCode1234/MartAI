@@ -544,13 +544,32 @@ export const provisionTenantContainer = internalAction({
       console.log(`[GTM] Lead tracking tags and triggers created successfully`);
 
       // 6. Publish Version
-      console.log(`[GTM] Publishing container workspace...`);
-      const publishRes = await fetchWithExponentialBackoff(`${workspacePath}/versions`, {
+      console.log(`[GTM] Creating container version...`);
+      const createVersionRes = await fetchWithExponentialBackoff(`${workspacePath}:create_version`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
           name: 'Initial Automated Setup (Phoo.ai)',
         }),
+      });
+      if (!createVersionRes.ok) {
+        const body = await createVersionRes.text();
+        console.error(`[GTM] Failed to create version (${createVersionRes.status}):`, body);
+        throw new Error('GTM_PUBLISH_ERROR');
+      }
+
+      const versionData = await createVersionRes.json();
+      const versionPath = versionData.containerVersion?.path;
+
+      if (!versionPath) {
+        console.error(`[GTM] Missing version path in create_version response:`, versionData);
+        throw new Error('GTM_PUBLISH_ERROR');
+      }
+
+      console.log(`[GTM] Publishing version ${versionPath}...`);
+      const publishRes = await fetchWithExponentialBackoff(`${GTM_API_ROOT}/${versionPath}:publish`, {
+        method: 'POST',
+        headers,
       });
       if (!publishRes.ok) {
         const body = await publishRes.text();
@@ -811,15 +830,29 @@ export const upgradeExistingContainer = internalAction({
       if (!leadTagRes.ok) throw new Error('Failed to create generate_lead tag');
 
       // Publish new version
-      const publishRes = await fetchWithExponentialBackoff(`${workspacePath}/versions`, {
+      console.log(`[GTM Upgrade] Creating container version...`);
+      const createVersionRes = await fetchWithExponentialBackoff(`${workspacePath}:create_version`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
           name: 'Lead Tracking Upgrade (Phoo.ai)',
         }),
       });
-      if (!publishRes.ok) {
-        console.warn(`[GTM Upgrade] Failed to publish — changes saved as draft`);
+      
+      if (!createVersionRes.ok) {
+        console.warn(`[GTM Upgrade] Failed to create version — changes saved as draft`);
+      } else {
+        const versionData = await createVersionRes.json();
+        const versionPath = versionData.containerVersion?.path;
+        if (versionPath) {
+          const publishRes = await fetchWithExponentialBackoff(`${GTM_API_ROOT}/${versionPath}:publish`, {
+            method: 'POST',
+            headers,
+          });
+          if (!publishRes.ok) {
+            console.warn(`[GTM Upgrade] Failed to publish version — changes saved as draft`);
+          }
+        }
       }
 
       console.log(`[GTM Upgrade] Successfully upgraded container for project ${args.projectId}`);
