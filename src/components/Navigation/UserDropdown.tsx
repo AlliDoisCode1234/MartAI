@@ -26,6 +26,7 @@ import { FiUser, FiSettings, FiCreditCard, FiShield, FiLogOut, FiMessageSquare }
 import Link from 'next/link';
 import { useAuth } from '@/lib/useAuth';
 import { getUserDisplayName } from '@/lib/funNames';
+import { FoundingMemberBadge } from '../badges/FoundingMemberBadge';
 
 interface Props {
   /** Optional custom trigger element. Defaults to the user avatar. */
@@ -72,6 +73,14 @@ export const UserDropdown: FC<Props> = ({ triggerElement }) => {
         </MenuButton>
       )}
       <MenuList>
+        {user.isBetaUser && (
+          <>
+            <Box px={3} py={2} pb={1} display="flex" justifyContent="center">
+              <FoundingMemberBadge size="sm" />
+            </Box>
+            <MenuDivider />
+          </>
+        )}
         <MenuItem as={Link} href="/profile" icon={<Icon as={FiUser} />}>
           Profile
         </MenuItem>

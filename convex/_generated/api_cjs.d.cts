@@ -23,6 +23,7 @@ import type * as aiStorage from "../aiStorage.js";
 import type * as ai_admin_modelConfig from "../ai/admin/modelConfig.js";
 import type * as ai_admin_usageTracking from "../ai/admin/usageTracking.js";
 import type * as ai_analysis from "../ai/analysis.js";
+import type * as ai_contentAngles from "../ai/contentAngles.js";
 import type * as ai_health_circuitBreaker from "../ai/health/circuitBreaker.js";
 import type * as ai_health_healthActions from "../ai/health/healthActions.js";
 import type * as ai_health_seedProviders from "../ai/health/seedProviders.js";
@@ -209,6 +210,7 @@ declare const fullApi: ApiFromModules<{
   "ai/admin/modelConfig": typeof ai_admin_modelConfig;
   "ai/admin/usageTracking": typeof ai_admin_usageTracking;
   "ai/analysis": typeof ai_analysis;
+  "ai/contentAngles": typeof ai_contentAngles;
   "ai/health/circuitBreaker": typeof ai_health_circuitBreaker;
   "ai/health/healthActions": typeof ai_health_healthActions;
   "ai/health/seedProviders": typeof ai_health_seedProviders;

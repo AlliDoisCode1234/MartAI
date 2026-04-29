@@ -9,6 +9,7 @@ import { mutation, internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
 import type { Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
+import { api } from '../_generated/api';
 
 // Internal helper to update engagement milestones
 async function updateMilestone(
@@ -59,6 +60,13 @@ async function updateMilestone(
         ...updates,
       },
     });
+
+    // If a "first time" milestone was hit, trigger HubSpot sync (fire-and-forget execution, but awaited scheduling)
+    if (updates[fields.first]) {
+      await ctx.scheduler.runAfter(0, api.integrations.hubspot.syncUserToHubspot, {
+        userId,
+      });
+    }
   }
 }
 

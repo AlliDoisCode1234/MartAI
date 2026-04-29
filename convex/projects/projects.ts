@@ -19,6 +19,7 @@ export const createProject = mutation({
     targetAudience: v.optional(v.string()),
     businessGoals: v.optional(v.string()),
     competitors: v.optional(v.array(v.string())),
+    uniqueValuePropositions: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
@@ -113,6 +114,7 @@ export const createProject = mutation({
       targetAudience: args.targetAudience,
       businessGoals: args.businessGoals,
       competitors: args.competitors,
+      uniqueValuePropositions: args.uniqueValuePropositions,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });

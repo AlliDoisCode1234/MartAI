@@ -199,7 +199,7 @@ export default function DashboardPage() {
   const handleQuickLaunch = (type: string, keyword?: string) => {
     let url = `/studio/create?type=${type}`;
     if (keyword) {
-      url += `&keyword=${encodeURIComponent(keyword)}&title=${encodeURIComponent(keyword)}&fromStrategy=true`;
+      url += `&keyword=${encodeURIComponent(keyword)}&title=${encodeURIComponent(keyword)}`;
     }
     router.push(url);
   };

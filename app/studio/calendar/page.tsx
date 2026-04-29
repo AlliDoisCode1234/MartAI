@@ -417,18 +417,9 @@ export default function CalendarPage() {
             <Heading size="md" color="gray.800" mb={2}>
               No Content Scheduled
             </Heading>
-            <Text color="gray.500" mb={4}>
-              Your content calendar will populate during onboarding or when you schedule content.
+            <Text color="gray.500">
+              Your content calendar will populate during onboarding or when you schedule content using the + icons.
             </Text>
-            <Link href="/studio/create?fromStrategy=true">
-              <Button
-                bg="linear-gradient(135deg, #FF9D00, #FF6B00)"
-                color="white"
-                _hover={{ opacity: 0.9 }}
-              >
-                Create from Strategy
-              </Button>
-            </Link>
           </Box>
         )}
 

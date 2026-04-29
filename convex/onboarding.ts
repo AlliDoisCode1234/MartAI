@@ -66,6 +66,13 @@ export const updateOnboardingStep = mutation({
 
     await ctx.db.patch(userId, patchData);
 
+    // Fire-and-forget HubSpot sync only for significant milestones to prevent rate-limiting abuse
+    if (['signupCompleted', 'paymentCompleted', 'projectCreated'].includes(args.step)) {
+      ctx.scheduler.runAfter(0, api.integrations.hubspot.syncUserToHubspot, {
+        userId,
+      });
+    }
+
     return { success: true };
   },
 });
@@ -113,6 +120,14 @@ export const updateMultipleSteps = mutation({
       updatedAt: now,
     });
 
+    // Fire-and-forget HubSpot sync only if significant milestones were included
+    const hasSignificantStep = args.steps.some(s => ['signupCompleted', 'paymentCompleted', 'projectCreated'].includes(s.step));
+    if (hasSignificantStep) {
+      ctx.scheduler.runAfter(0, api.integrations.hubspot.syncUserToHubspot, {
+        userId,
+      });
+    }
+
     return { success: true };
   },
 });
@@ -150,6 +165,11 @@ export const updateStep = internalMutation({
       onboardingStatus: 'in_progress',
       lastActiveAt: now,
       updatedAt: now,
+    });
+
+    // Fire-and-forget HubSpot sync (will skip if no API key)
+    ctx.scheduler.runAfter(0, api.integrations.hubspot.syncUserToHubspot, {
+      userId: args.userId,
     });
 
     return { success: true };
