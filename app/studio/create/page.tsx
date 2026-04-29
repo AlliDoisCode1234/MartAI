@@ -91,7 +91,7 @@ export default function CreateContentPage() {
   const toast = useToast();
 
   const preselectedType = searchParams.get('type') as ContentType | null;
-  const fromStrategy = searchParams.get('fromStrategy') === 'true';
+
   const scheduledDateParam = searchParams.get('scheduledDate');
   const parsedDate = scheduledDateParam ? new Date(Number(scheduledDateParam)) : null;
   const scheduledDate = parsedDate && !isNaN(parsedDate.getTime()) ? parsedDate : null;
@@ -396,6 +396,18 @@ export default function CreateContentPage() {
         duration: 5000,
       });
 
+      // Auto-schedule if created from calendar
+      if (scheduledDate && scheduledDate.getTime() > Date.now()) {
+        try {
+          await scheduleMutation({
+            contentPieceId: result.contentPieceId,
+            publishDate: scheduledDate.getTime(),
+          });
+        } catch (err) {
+          console.error('Failed to auto-schedule content:', err);
+        }
+      }
+
       // Brief pause to show completion, then navigate
       setTimeout(() => {
         router.push(`/studio/${result.contentPieceId}`);
@@ -421,7 +433,7 @@ export default function CreateContentPage() {
         comeBackTimerRef.current = null;
       }
     }
-  }, [activeProject, autoGenerateContent, keywords, router, selectedType, title, toast, isGenerating]);
+  }, [activeProject, autoGenerateContent, keywords, router, selectedType, title, toast, isGenerating, scheduledDate, scheduleMutation]);
 
   return (
     <StudioLayout>
@@ -455,20 +467,7 @@ export default function CreateContentPage() {
               </Text>
             </Box>
           </HStack>
-          {fromStrategy && (
-            <HStack
-              bg="rgba(255, 157, 0, 0.1)"
-              border="1px solid rgba(255, 157, 0, 0.3)"
-              borderRadius="8px"
-              px={3}
-              py={2}
-            >
-              <Icon as={FiTarget} color="#FF9D00" />
-              <Text color="#FF9D00" fontSize="sm">
-                Recommended from Strategy
-              </Text>
-            </HStack>
-          )}
+
         </HStack>
 
         {/* Step 1: Type Selection (hidden in BLOG_ONLY_MODE) */}

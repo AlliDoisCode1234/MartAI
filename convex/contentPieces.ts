@@ -154,8 +154,10 @@ export const listByScheduledDate = query({
       if (p.scheduledDate == null || !validStatuses.includes(p.status)) return false;
       // Generating pieces shown even without wordCount (for skeleton UI)
       if (p.status === 'generating') return true;
-      // Published/scheduled pieces need actual content
-      return (p.wordCount ?? 0) > 0;
+      // Published pieces need actual content
+      if (p.status === 'published') return (p.wordCount ?? 0) > 0;
+      // Scheduled pieces don't need actual content yet
+      return true;
     });
 
     if (args.startDate) {

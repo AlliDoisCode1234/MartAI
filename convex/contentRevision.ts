@@ -149,9 +149,10 @@ export const reviseWithPersona = action({
 
     console.log(`[PhooCoach] System prompt length: ${systemPrompt.length} chars (~${Math.ceil(systemPrompt.length / 4)} tokens)`);
 
-    // ── Delegate to AI Router ───────────────────────────────────────
+    // ── 1. Delegate to AI Router (Draft) ────────────────────────────
     // Explicit type to break circular inference (Convex Trap #30)
-    const result: { content: string; usage: { totalTokens: number } } =
+    let totalTokens = 0;
+    const draftResult: { content: string; usage: { totalTokens: number } } =
       await ctx.runAction(api.ai.router.router.generateWithFallback, {
         prompt,
         systemPrompt,
@@ -162,6 +163,79 @@ export const reviseWithPersona = action({
         userId,
         enableCache: true,
       });
+
+    let finalContent = draftResult.content;
+    totalTokens += draftResult.usage.totalTokens;
+
+    // ── 2. Strict Verification (Audit) ──────────────────────────────
+    // The Iron Law of AI Quality: Verify before returning to user
+    const auditSystemPrompt = `You are an expert QA auditor for a content platform.
+Your job is to bluntly verify if the following DRAFT successfully followed the USER INSTRUCTION and improved the ORIGINAL content without hallucinating or breaking formatting.
+If the draft is perfect, strictly follows the instruction, and only makes the content better, return EXACTLY the word "PASS".
+Otherwise, return a concise list of specific failures.`;
+
+    const auditPrompt = `USER INSTRUCTION:
+${sanitizedInstruction}
+
+ORIGINAL CONTENT:
+${args.currentContent.substring(0, 5000)}...
+
+GENERATED DRAFT:
+${finalContent.substring(0, 5000)}...`;
+
+    console.log(`[PhooCoach] Auditing draft...`);
+    const auditResult = await ctx.runAction(api.ai.router.router.generateWithFallback, {
+      prompt: auditPrompt,
+      systemPrompt: auditSystemPrompt,
+      maxTokens: 500,
+      temperature: 0.1,
+      taskType: 'chat',
+      strategy: 'balanced',
+      userId,
+      enableCache: false, // Don't cache audits to ensure fresh verification
+    });
+
+    totalTokens += auditResult.usage.totalTokens;
+    const auditResponse = auditResult.content.trim();
+
+    // ── 3. Refinement (Correction) ──────────────────────────────────
+    // We check for exact 'PASS' or starting with 'PASS' to avoid false positives like 'NOT PASS'
+    const isApproved = auditResponse === 'PASS' || /^PASS/.test(auditResponse);
+    
+    if (!isApproved) {
+      console.log(`[PhooCoach] Audit failed. Refining draft. Issues: ${auditResponse}`);
+      
+      const refineSystemPrompt = `You are an expert editor. You must rewrite the DRAFT to fix the following QA FAILURES.
+Do not output anything other than the corrected content. Preserve all formatting (markdown/HTML).
+
+QA FAILURES:
+${auditResponse}
+
+USER INSTRUCTION:
+${sanitizedInstruction}`;
+
+      let refinePrompt = `DRAFT TO FIX:\n${finalContent}`;
+      if (args.currentContent && !isGenerateMode) {
+        refinePrompt = `ORIGINAL CONTENT:\n${args.currentContent.substring(0, 5000)}...\n\n` + refinePrompt;
+      }
+
+      const refineResult = await ctx.runAction(api.ai.router.router.generateWithFallback, {
+        prompt: refinePrompt,
+        systemPrompt: refineSystemPrompt,
+        maxTokens: isGenerateMode ? 8192 : 4096,
+        temperature: 0.3,
+        taskType: 'draft',
+        strategy: 'balanced',
+        userId,
+        enableCache: false,
+      });
+
+      finalContent = refineResult.content;
+      totalTokens += refineResult.usage.totalTokens;
+      console.log(`[PhooCoach] Refinement complete.`);
+    } else {
+      console.log(`[PhooCoach] Audit passed! No refinement needed.`);
+    }
 
     // ── Record feedback + update persona metrics ────────────────────
     try {
@@ -187,10 +261,10 @@ export const reviseWithPersona = action({
     }
 
     return {
-      revisedContent: result.content.length > MAX_CONTENT_LENGTH
-        ? result.content.slice(0, MAX_CONTENT_LENGTH)
-        : result.content,
-      tokensUsed: result.usage.totalTokens,
+      revisedContent: finalContent.length > MAX_CONTENT_LENGTH
+        ? finalContent.slice(0, MAX_CONTENT_LENGTH)
+        : finalContent,
+      tokensUsed: totalTokens,
       mode: isGenerateMode ? 'generate' : 'revise',
     };
   },

@@ -545,6 +545,7 @@ export default defineSchema({
     targetAudience: v.optional(v.string()),
     businessGoals: v.optional(v.string()),
     competitors: v.optional(v.array(v.string())),
+    uniqueValuePropositions: v.optional(v.array(v.string())),
     // Brand & Content Intelligence (Phase 1)
     brandName: v.optional(v.string()),
     brandVoice: v.optional(v.string()),       // "professional", "casual", "technical", etc.

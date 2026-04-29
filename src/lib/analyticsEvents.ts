@@ -7,6 +7,9 @@
  * Reference: docs/project/USER_FLOW_LDD.md
  */
 
+import { useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+
 // Event categories
 export const EVENT_CATEGORIES = {
   ONBOARDING: 'onboarding',
@@ -39,6 +42,12 @@ export const ANALYTICS_EVENTS = {
   BRIEF_COMPLETED: 'brief_completed',
   CONTENT_PUBLISHED: 'content_published',
   CALENDAR_ITEM_SCHEDULED: 'calendar_item_scheduled',
+
+  // Generic Feature actions
+  FEATURE_CREATED: 'feature_created',
+  FEATURE_UPDATED: 'feature_updated',
+  FEATURE_DELETED: 'feature_deleted',
+  FEATURE_VIEWED: 'feature_viewed',
 
   // Engagement
   MART_GUIDE_VIEWED: 'mart_guide_viewed',
@@ -82,78 +91,6 @@ export interface EventProperties {
 }
 
 /**
- * Track an analytics event
- * Wrapper around existing tracking system
- */
-export function trackEvent(event: AnalyticsEvent, properties: EventProperties = {}): void {
-  const enrichedProperties = {
-    ...properties,
-    timestamp: Date.now(),
-    url: typeof window !== 'undefined' ? window.location.pathname : '',
-  };
-
-  // Log in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[Analytics]', event, enrichedProperties);
-  }
-
-  // This would call the actual tracking mutation
-  // Example: trackEventMutation({ event, properties: enrichedProperties });
-}
-
-/**
- * Track phase transition
- */
-export function trackPhaseTransition(
-  newPhase: number,
-  previousPhase: number,
-  projectId?: string
-): void {
-  trackEvent(ANALYTICS_EVENTS.PHASE_ENTERED, {
-    phase: newPhase,
-    previousPhase,
-    projectId,
-  });
-
-  if (previousPhase < newPhase) {
-    trackEvent(ANALYTICS_EVENTS.PHASE_COMPLETED, {
-      phase: previousPhase,
-      projectId,
-    });
-  }
-}
-
-/**
- * Track feature usage
- */
-export function trackFeatureUsage(
-  feature: string,
-  action: 'created' | 'updated' | 'deleted' | 'viewed',
-  count?: number
-): void {
-  trackEvent(`feature_${action}` as AnalyticsEvent, {
-    featureName: feature,
-    count,
-  });
-}
-
-/**
- * Track error
- */
-export function trackError(errorType: string, errorMessage?: string, didRetry = false): void {
-  trackEvent(ANALYTICS_EVENTS.ERROR_DISPLAYED, {
-    errorType,
-    errorMessage,
-  });
-
-  if (didRetry) {
-    trackEvent(ANALYTICS_EVENTS.ERROR_RETRY_CLICKED, {
-      errorType,
-    });
-  }
-}
-
-/**
  * Funnel step tracking
  */
 export const ONBOARDING_FUNNEL = [
@@ -171,6 +108,85 @@ export const ONBOARDING_FUNNEL = [
  * Hook for component-level tracking
  */
 export function useAnalytics() {
+  const trackMutation = useMutation(api.analytics.eventTracking.trackEvent);
+
+  const trackEvent = (event: AnalyticsEvent, properties: EventProperties = {}): void => {
+    const enrichedProperties = {
+      ...properties,
+      timestamp: Date.now(),
+      url: typeof window !== 'undefined' ? window.location.pathname : '',
+    };
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Analytics]', event, enrichedProperties);
+    }
+
+    try {
+      trackMutation({ 
+        event: event, 
+        properties: enrichedProperties as any,
+        sessionId: properties.sessionId as string | undefined,
+        url: enrichedProperties.url as string | undefined,
+        referrer: properties.referrer as string | undefined,
+        userAgent: properties.userAgent as string | undefined,
+      }).catch(e => {
+        console.warn('[Analytics] Failed to track event', e);
+      });
+    } catch (e) {
+      console.warn('[Analytics] Failed to track event', e);
+    }
+  };
+
+  const trackPhaseTransition = (
+    newPhase: number,
+    previousPhase: number,
+    projectId?: string
+  ): void => {
+    trackEvent(ANALYTICS_EVENTS.PHASE_ENTERED, {
+      phase: newPhase,
+      previousPhase,
+      projectId,
+    });
+
+    if (previousPhase < newPhase) {
+      trackEvent(ANALYTICS_EVENTS.PHASE_COMPLETED, {
+        phase: previousPhase,
+        projectId,
+      });
+    }
+  };
+
+  const trackFeatureUsage = (
+    feature: string,
+    action: 'created' | 'updated' | 'deleted' | 'viewed',
+    count?: number
+  ): void => {
+    const eventMap: Record<string, AnalyticsEvent> = {
+      created: ANALYTICS_EVENTS.FEATURE_CREATED,
+      updated: ANALYTICS_EVENTS.FEATURE_UPDATED,
+      deleted: ANALYTICS_EVENTS.FEATURE_DELETED,
+      viewed: ANALYTICS_EVENTS.FEATURE_VIEWED,
+    };
+    
+    trackEvent(eventMap[action], {
+      featureName: feature,
+      count,
+    });
+  };
+
+  const trackError = (errorType: string, errorMessage?: string, didRetry = false): void => {
+    trackEvent(ANALYTICS_EVENTS.ERROR_DISPLAYED, {
+      errorType,
+      errorMessage,
+    });
+
+    if (didRetry) {
+      trackEvent(ANALYTICS_EVENTS.ERROR_RETRY_CLICKED, {
+        errorType,
+      });
+    }
+  };
+
   return {
     trackEvent,
     trackPhaseTransition,
@@ -178,4 +194,30 @@ export function useAnalytics() {
     trackError,
     events: ANALYTICS_EVENTS,
   };
+}
+
+/**
+ * Pure function for tracking events outside of React components.
+ * Warning: Fire-and-forget. Does not use React Query/Mutation state.
+ */
+export async function trackEventPure(event: AnalyticsEvent, properties: EventProperties = {}): Promise<void> {
+  const enrichedProperties = {
+    ...properties,
+    timestamp: Date.now(),
+    url: typeof window !== 'undefined' ? window.location.pathname : '',
+  };
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Analytics Pure]', event, enrichedProperties);
+  }
+
+  try {
+    // If not using convex React hooks, you can use a fetch call to an HTTP action or
+    // rely on backend tracking. If the codebase has an api reference, we can use a direct convex client
+    // if configured, but normally pure functions without convex hooks need the convex client instance.
+    // For now, we will log it as a stub to avoid breaking non-React callers until convexClient is passed.
+    console.warn('[Analytics Pure] Event captured, but Convex client not provided for pure function tracking.', event);
+  } catch (e) {
+    console.warn('[Analytics Pure] Failed to track event', e);
+  }
 }

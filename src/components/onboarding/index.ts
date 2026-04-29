@@ -6,6 +6,8 @@
 
 export { OnboardingProgress } from './OnboardingProgress';
 export { WelcomeStep } from './WelcomeStep';
+export { BetaWelcomeStep } from './BetaWelcomeStep';
+export { BetaOnboardingFlow } from './BetaOnboardingFlow';
 export { PlanSelectionStep } from './PlanSelectionStep';
 export { PaymentStep } from './PaymentStep';
 export { IntegrationStep } from './IntegrationStep';

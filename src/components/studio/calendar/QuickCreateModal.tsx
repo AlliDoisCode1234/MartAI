@@ -1,16 +1,17 @@
 'use client';
 
 /**
- * QuickCreateModal
+ * ScheduleModal (formerly QuickCreateModal)
  *
  * Component Hierarchy:
  * App → StudioLayout → CalendarPage → QuickCreateModal (this file)
  *
- * Modal dialog to schedule a new content piece from the calendar.
- * Creates a shell content piece and immediately schedules it.
+ * Modal dialog to select a publish date and time from the calendar.
+ * Routes the user to the Create page with the scheduledDate param.
  */
 
-import { useState, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Modal,
   ModalOverlay,
@@ -23,45 +24,12 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Select,
   VStack,
   useToast,
   Icon,
 } from '@chakra-ui/react';
-import { FiCalendar, FiPlus } from 'react-icons/fi';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
+import { FiCalendar, FiArrowRight } from 'react-icons/fi';
 import { Id } from '@/convex/_generated/dataModel';
-import { BLOG_ONLY_MODE, LAUNCH_CONTENT_TYPES } from '@/lib/constants/featureFlags';
-import { ContentTypeId } from '@/convex/phoo/contentTypes';
-
-// Content Types mapped exactly from convex/phoo/contentTypes.ts
-const ALL_CONTENT_TYPES = [
-  { value: 'blog', label: 'Blog Post' },
-  { value: 'blogVersus', label: 'Comparison Post' },
-  { value: 'blogVideo', label: 'Video Post' },
-  { value: 'contentRefresh', label: 'Content Refresh' },
-  { value: 'landing', label: 'Landing Page' },
-  { value: 'service', label: 'Service Page' },
-  { value: 'about', label: 'About Page' },
-  { value: 'homepage', label: 'Homepage' },
-  { value: 'leadMagnet', label: 'Lead Magnet' },
-  { value: 'paidProduct', label: 'Paid Product' },
-  { value: 'areasWeServe', label: 'Areas We Serve' },
-  { value: 'employment', label: 'Employment' },
-  { value: 'mentorship', label: 'Mentorship' },
-  { value: 'donate', label: 'Donate' },
-  { value: 'events', label: 'Events' },
-  { value: 'partner', label: 'Partner' },
-  { value: 'program', label: 'Program' },
-];
-
-// Launch gating: filter to only enabled types
-const CONTENT_TYPES = BLOG_ONLY_MODE
-  ? ALL_CONTENT_TYPES.filter((ct) =>
-      (LAUNCH_CONTENT_TYPES as readonly string[]).includes(ct.value)
-    )
-  : ALL_CONTENT_TYPES;
 
 export interface QuickCreateModalProps {
   isOpen: boolean;
@@ -76,78 +44,68 @@ export function QuickCreateModal({
   selectedDate,
   projectId,
 }: QuickCreateModalProps) {
+  const router = useRouter();
   const toast = useToast();
-  const [title, setTitle] = useState('');
-  const [keyword, setKeyword] = useState('');
-  const [type, setType] = useState('blog');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  // UX-044: Synchronous ref guard — prevents double-create from rapid clicks
-  const isSubmittingRef = useRef(false);
+  
+  const [dateStr, setDateStr] = useState('');
+  const [timeStr, setTimeStr] = useState('09:00');
 
-  // Mutations
-  const createPiece = useMutation(api.contentPieces.create);
-  const schedulePiece = useMutation(api.contentPieces.schedule);
+  useEffect(() => {
+    if (isOpen) {
+      const d = selectedDate ? new Date(selectedDate) : new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      setDateStr(`${year}-${month}-${day}`);
+      setTimeStr('09:00');
+    }
+  }, [isOpen, selectedDate]);
 
-  const handleSubmit = async () => {
-    if (!title || !projectId || !selectedDate) {
+  const handleSubmit = () => {
+    if (!dateStr || !timeStr) {
       toast({
         title: 'Missing information',
-        description: 'Please provide at least a title.',
+        description: 'Please select a date and time.',
         status: 'warning',
         duration: 3000,
       });
       return;
     }
 
-    // UX-044: Synchronous guard prevents concurrent submissions
-    if (isSubmittingRef.current) return;
-    isSubmittingRef.current = true;
-    setIsSubmitting(true);
     try {
-      // 1. Create a raw shell with generating/draft status
-      const pieceId = await createPiece({
-        projectId,
-        title,
-        contentType: type as ContentTypeId,
-        keywords: keyword ? [keyword] : [],
-      });
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const [hour, minute] = timeStr.split(':').map(Number);
+      
+      const scheduledTimestamp = Date.UTC(year, month - 1, day, hour, minute);
 
-      // 2. Schedule it immediately (sets status: 'scheduled' and scheduledDate)
-      await schedulePiece({
-        contentPieceId: pieceId,
-        publishDate: selectedDate.getTime(),
-      });
+      if (scheduledTimestamp <= Date.now()) {
+        toast({
+          title: 'Invalid Date',
+          description: 'Please select a future date and time.',
+          status: 'warning',
+          duration: 3000,
+        });
+        return;
+      }
 
-      toast({
-        title: 'Content Scheduled',
-        description: `Scheduled for ${selectedDate.toLocaleDateString()}`,
-        status: 'success',
-      });
-
-      // Reset & Close
-      setTitle('');
-      setKeyword('');
-      setType('blog');
       onClose();
+      router.push(`/studio/create?scheduledDate=${scheduledTimestamp}`);
     } catch (e) {
       toast({
-        title: 'Error scheduling content',
-        description: e instanceof Error ? e.message : 'Unknown error',
+        title: 'Error',
+        description: 'Invalid date or time format.',
         status: 'error',
       });
-    } finally {
-      isSubmittingRef.current = false;
-      setIsSubmitting(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
+    <Modal isOpen={isOpen} onClose={onClose} isCentered size="sm">
       <ModalOverlay backdropFilter="blur(4px)" bg="blackAlpha.700" />
       <ModalContent bg="white" border="1px solid" borderColor="gray.200">
         <ModalHeader color="gray.800" borderBottom="1px solid" borderColor="gray.100">
           <Icon as={FiCalendar} mr={2} color="#F99F2A" />
-          Schedule Content
+          Select Publish Date
         </ModalHeader>
         <ModalCloseButton color="gray.400" mt={1} />
 
@@ -155,12 +113,12 @@ export function QuickCreateModal({
           <VStack spacing={4}>
             <FormControl>
               <FormLabel color="gray.600" fontSize="sm">
-                Title
+                Date
               </FormLabel>
               <Input
-                placeholder="Content Title..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                type="date"
+                value={dateStr}
+                onChange={(e) => setDateStr(e.target.value)}
                 bg="gray.50"
                 border="1px solid"
                 borderColor="gray.200"
@@ -171,12 +129,12 @@ export function QuickCreateModal({
 
             <FormControl>
               <FormLabel color="gray.600" fontSize="sm">
-                Target Keyword (Optional)
+                Time
               </FormLabel>
               <Input
-                placeholder="e.g. digital marketing tips"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+                type="time"
+                value={timeStr}
+                onChange={(e) => setTimeStr(e.target.value)}
                 bg="gray.50"
                 border="1px solid"
                 borderColor="gray.200"
@@ -184,30 +142,6 @@ export function QuickCreateModal({
                 _focus={{ borderColor: '#F99F2A', boxShadow: '0 0 0 1px #F99F2A' }}
               />
             </FormControl>
-
-            {/* Hide type selector when only one type is available */}
-            {!BLOG_ONLY_MODE && (
-              <FormControl>
-                <FormLabel color="gray.600" fontSize="sm">
-                  Content Type
-                </FormLabel>
-                <Select
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  bg="gray.50"
-                  border="1px solid"
-                  borderColor="gray.200"
-                  color="gray.800"
-                  _focus={{ borderColor: '#F99F2A', boxShadow: '0 0 0 1px #F99F2A' }}
-                >
-                  {CONTENT_TYPES.map((ct) => (
-                    <option key={ct.value} value={ct.value} style={{ background: 'white' }}>
-                      {ct.label}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
           </VStack>
         </ModalBody>
 
@@ -219,14 +153,14 @@ export function QuickCreateModal({
             bg="#F99F2A"
             color="white"
             _hover={{ bg: '#FFB859' }}
-            leftIcon={<Icon as={FiPlus} />}
-            isLoading={isSubmitting}
+            rightIcon={<Icon as={FiArrowRight} />}
             onClick={handleSubmit}
           >
-            Create & Schedule
+            Continue to Studio
           </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
   );
 }
+

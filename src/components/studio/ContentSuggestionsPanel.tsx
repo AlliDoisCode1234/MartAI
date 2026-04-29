@@ -331,7 +331,7 @@ export function ContentSuggestionsPanel({
               Instruct Phoo Coach
             </Text>
             <Text fontSize="xs" color="gray.400" mb={2}>
-              Tell Phoo how to improve this content (max 500 chars). The instruction applies only to the content on this page.
+              Tell Phoo how to improve this content (max 500 chars). This generates a preview diff for your strict review.
             </Text>
             <Box position="relative">
               <Textarea
@@ -455,7 +455,7 @@ function SuggestionCard({ suggestion, onFeedback, onFixWithPhoo, onRestoreConten
                 isLoading={isFixing}
                 loadingText="Fixing..."
               >
-                Fix with Phoo
+                Preview Fix
               </Button>
             )}
           </HStack>

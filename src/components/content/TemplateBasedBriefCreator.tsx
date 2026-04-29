@@ -32,7 +32,7 @@ import { FiSettings } from 'react-icons/fi';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useProjectContext } from '@/src/providers/ProjectProvider';
-import { trackEvent, ANALYTICS_EVENTS } from '@/src/lib/analyticsEvents';
+import { useAnalytics } from '@/src/lib/analyticsEvents';
 import type { ContentTemplate } from '@/lib/constants/contentTemplates';
 import type { Id } from '@/convex/_generated/dataModel';
 import { AIQualityTier, type TaskTier } from '@/src/components/shared/AIQualityTier';
@@ -49,6 +49,7 @@ export function TemplateBasedBriefCreator({ template }: Props) {
   const [qualityTier, setQualityTier] = useState<TaskTier>('standard');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [creating, setCreating] = useState(false);
+  const { trackEvent, events: ANALYTICS_EVENTS } = useAnalytics();
 
   const clusters = useQuery(
     api.seo.keywordClusters.getActiveClusters,

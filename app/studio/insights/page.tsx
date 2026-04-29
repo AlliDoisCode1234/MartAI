@@ -53,8 +53,6 @@ import {
   FiDatabase,
   FiDollarSign,
 } from 'react-icons/fi';
-// TODO: Re-enable when ContentJourney tooltip issue is fixed
-// import { ContentJourney } from '@/src/components/strategy';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useProject } from '@/lib/hooks';
@@ -509,27 +507,6 @@ export default function InsightsPage() {
             <GrowthActionCard actions={growthActions} />
           </MotionBox>
         </SimpleGrid>
-
-        {/* TODO: Re-enable ContentJourney when tooltip issue is fixed
-        {stats?.byType && (
-          <ContentJourney
-            contentByStage={{
-              ready_to_buy:
-                ((stats.byType as Record<string, number>)?.landing ?? 0) +
-                ((stats.byType as Record<string, number>)?.paidProduct ?? 0),
-              comparing_options:
-                ((stats.byType as Record<string, number>)?.blogVersus ?? 0) +
-                ((stats.byType as Record<string, number>)?.service ?? 0),
-              learning_solutions: (stats.byType as Record<string, number>)?.blog ?? 0,
-              discovering_needs:
-                ((stats.byType as Record<string, number>)?.about ?? 0) +
-                ((stats.byType as Record<string, number>)?.homepage ?? 0),
-              building_awareness: (stats.byType as Record<string, number>)?.areasWeServe ?? 0,
-            }}
-            totalContent={stats.total ?? 0}
-          />
-        )}
-        */}
 
         {/* ── Bottom Trio ────────────────────────────────────── */}
         <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={6}>
