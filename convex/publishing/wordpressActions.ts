@@ -2,7 +2,8 @@
 
 import { v } from 'convex/values';
 import { action } from '../_generated/server';
-import { api } from '../_generated/api';
+import { api, internal } from '../_generated/api';
+import type { Id } from '../_generated/dataModel';
 import { WordPressClient } from '../../lib/integrations/wordpress';
 import { markdownToGutenberg, generateSlug, extractExcerpt } from '../../lib/contentMappers';
 
@@ -200,6 +201,8 @@ export const publishContentPieceToWordPress = action({
     console.log('=== [WP PUBLISH] Step 0: Action called ===');
     console.log('[WP PUBLISH] Args:', JSON.stringify(args, null, 2));
 
+    let connectionId: Id<'platformConnections'> | null = null;
+
     try {
       // 1. Get WordPress connection
       console.log('[WP PUBLISH] Step 1: Fetching WordPress connection...');
@@ -207,6 +210,9 @@ export const publishContentPieceToWordPress = action({
         projectId: args.projectId,
         platform: 'wordpress',
       });
+      if (connection) {
+        connectionId = connection._id;
+      }
 
       console.log('[WP PUBLISH] Step 1 result:', {
         hasConnection: !!connection,
@@ -324,7 +330,25 @@ export const publishContentPieceToWordPress = action({
         error instanceof Error ? error.message : String(error)
       );
       console.error('[WP PUBLISH] Error stack:', error instanceof Error ? error.stack : 'No stack');
-      const message = error instanceof Error ? error.message : 'Publish failed';
+      let message = error instanceof Error ? error.message : 'Publish failed';
+      
+      if (message.includes('(401)') || message.includes('(403)')) {
+        message = 'WordPress Application Password Invalid. The site owner may have revoked the password. Please reconnect your WordPress site.';
+        
+        // Mark the connection as invalid so the user is prompted to reconnect
+        if (connectionId) {
+          try {
+            await ctx.runMutation(internal.integrations.platformConnections.updateValidationStatus, {
+              connectionId: connectionId,
+              isValid: false,
+              validationError: message
+            });
+          } catch (e) {
+            console.error('[WP PUBLISH] Failed to mark connection invalid', e);
+          }
+        }
+      }
+
       return {
         success: false,
         error: message,

@@ -45,6 +45,21 @@ export const STUDIO_COLORS = {
   textSecondary: '#4A5568',
   textMuted: '#A0AEC0',
   textDim: '#CBD5E0',
+  secondaryText: '#4A5568', // Explicit hex for gray.600
+  warning: '#F99F2A',
+  danger: '#EF4444',
+
+  // Semantic Backgrounds (for Badges and Alerts)
+  successBg: 'rgba(34, 197, 94, 0.15)',
+  warningBg: 'rgba(247, 148, 30, 0.15)',
+  dangerBg: 'rgba(239, 68, 68, 0.15)',
+  amberBg: 'rgba(247, 148, 30, 0.15)', // Alias for warningBg using the amber hue
+
+  // Semantic Table Elements
+  tableHeaderColor: '#718096', // Explicit hex for gray.500
+  tableBorderColor: '#E2E8F0', // Explicit hex for gray.200
+  tableRowHoverBg: '#F7FAFC',  // Explicit hex for gray.50
+  tableRowBorder: '#EDF2F7',   // Explicit hex for gray.100
 } as const;
 
 // ============================================================================

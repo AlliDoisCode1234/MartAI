@@ -1,4 +1,5 @@
-import { mutation, query } from "../_generated/server";
+import { mutation, query, MutationCtx } from "../_generated/server";
+import { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import { requireProjectAccess } from "../lib/rbac";
 
@@ -20,7 +21,7 @@ const keywordInput = {
 /**
  * Validates write access. Resolves prospect associations to project contexts to prevent RBAC bypasses.
  */
-async function verifyKeywordWriteAccess(ctx: any, args: any) {
+async function verifyKeywordWriteAccess(ctx: MutationCtx, args: { projectId?: Id<"projects">, ideaId?: Id<"keywordIdeas">, prospectId?: Id<"prospects"> }) {
   let targetProjectId = args.projectId;
   
   if (!targetProjectId && args.ideaId) {
@@ -31,10 +32,11 @@ async function verifyKeywordWriteAccess(ctx: any, args: any) {
   // If no direct project ID but prospect is associated, resolve prospect to user project to enforce RBAC
   if (!targetProjectId && args.prospectId) {
     const prospect = await ctx.db.get(args.prospectId);
-    if (prospect && prospect.userId) {
+    const prospectUserId = prospect?.userId;
+    if (prospectUserId) {
       const project = await ctx.db
         .query("projects")
-        .withIndex("by_user", (q: any) => q.eq("userId", prospect.userId))
+        .withIndex("by_user", (q) => q.eq("userId", prospectUserId))
         .first();
       if (project) {
         targetProjectId = project._id;
@@ -47,7 +49,20 @@ async function verifyKeywordWriteAccess(ctx: any, args: any) {
   }
 }
 
-async function insertIdea(ctx: any, args: any) {
+async function insertIdea(ctx: MutationCtx, args: {
+  prospectId?: Id<"prospects">;
+  projectId?: Id<"projects">;
+  primaryKeyword: string;
+  supportingKeywords?: string[];
+  intent?: string;
+  trafficPotential?: number;
+  kdScore?: number;
+  cpc?: number;
+  entities?: string[];
+  serpNotes?: string;
+  priority?: string;
+  status?: string;
+}) {
   const now = Date.now();
   return await ctx.db.insert("keywordIdeas", {
     prospectId: args.prospectId,
@@ -93,7 +108,7 @@ export const upsertKeywordIdea = mutation({
       throw new Error("Keyword idea not found");
     }
 
-    const updates: Record<string, any> = { updatedAt: Date.now() };
+    const updates: Record<string, unknown> = { updatedAt: Date.now() };
     for (const [key, value] of Object.entries(rest)) {
       if (value !== undefined) {
         updates[key] = value;
@@ -122,17 +137,17 @@ export const listKeywordIdeas = query({
     if (args.prospectId) {
       builder = ctx.db
         .query("keywordIdeas")
-        .withIndex("by_prospect", (q: any) => q.eq("prospectId", args.prospectId))
+        .withIndex("by_prospect", (q) => q.eq("prospectId", args.prospectId))
         .order("desc");
     } else if (args.projectId) {
       builder = ctx.db
         .query("keywordIdeas")
-        .withIndex("by_project", (q: any) => q.eq("projectId", args.projectId))
+        .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
         .order("desc");
     }
 
     const ideas = await builder.collect();
-    return args.status ? ideas.filter((idea: any) => idea.status === args.status) : ideas;
+    return args.status ? ideas.filter((idea) => idea.status === args.status) : ideas;
   },
 });
 

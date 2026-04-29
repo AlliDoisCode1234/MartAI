@@ -50,6 +50,7 @@ import { IntentBadge } from './IntentBadge';
 import { PhooScoreBadge, computeKeywordPhooScore } from './PhooScoreBadge';
 import { useRef, useState } from 'react';
 import { AddToClusterModal } from './AddToClusterModal';
+import { STUDIO_COLORS } from '@/lib/constants/studioTokens';
 
 interface EnrichedKeyword {
   _id: string;
@@ -74,8 +75,8 @@ interface Props {
 }
 
 const thStyle = {
-  color: 'gray.500',
-  borderColor: 'gray.200',
+  color: STUDIO_COLORS.tableHeaderColor,
+  borderColor: STUDIO_COLORS.tableBorderColor,
   fontSize: '10px',
   fontWeight: 'bold',
   textTransform: 'uppercase' as const,
@@ -135,7 +136,7 @@ export function KeywordTable({
           mb={3}
         >
           <HStack justify="space-between">
-            <Text color="gray.600" fontSize="sm">
+            <Text color={STUDIO_COLORS.secondaryText} fontSize="sm">
               {selectedIds.length} keyword{selectedIds.length > 1 ? 's' : ''} selected
             </Text>
             <HStack spacing={2}>
@@ -152,7 +153,7 @@ export function KeywordTable({
                 size="xs"
                 leftIcon={<FiTrash2 />}
                 bg="rgba(239, 68, 68, 0.15)"
-                color="#ef4444"
+                color={STUDIO_COLORS.danger}
                 border="1px solid rgba(239, 68, 68, 0.3)"
                 _hover={{ bg: 'rgba(239, 68, 68, 0.25)' }}
                 onClick={onOpen}
@@ -173,8 +174,8 @@ export function KeywordTable({
                   isChecked={allSelected}
                   isIndeterminate={selectedIds.length > 0 && !allSelected}
                   onChange={toggleAll}
-                  borderColor="gray.600"
-                  sx={{ '[data-checked] > span': { bg: '#F99F2A', borderColor: '#F99F2A' } }}
+                  borderColor={STUDIO_COLORS.secondaryText}
+                  sx={{ '[data-checked] > span': { bg: STUDIO_COLORS.warning, borderColor: STUDIO_COLORS.warning } }}
                 />
               </Th>
               <Th {...thStyle}>Keyword</Th>
@@ -231,8 +232,8 @@ export function KeywordTable({
                     <Checkbox
                       isChecked={selectedIds.includes(kw._id)}
                       onChange={() => toggleOne(kw._id)}
-                      borderColor="gray.600"
-                      sx={{ '[data-checked] > span': { bg: '#F99F2A', borderColor: '#F99F2A' } }}
+                      borderColor={STUDIO_COLORS.secondaryText}
+                      sx={{ '[data-checked] > span': { bg: STUDIO_COLORS.warning, borderColor: STUDIO_COLORS.warning } }}
                     />
                   </Td>
                   <Td borderColor="transparent" py={3} maxW="280px">
@@ -240,7 +241,7 @@ export function KeywordTable({
                       as={NextLink}
                       href={`/keywords/${kw._id}`}
                       color="gray.700"
-                      _hover={{ color: '#F99F2A', textDecor: 'underline' }}
+                      _hover={{ color: STUDIO_COLORS.warning, textDecor: 'underline' }}
                       fontSize="sm"
                       fontWeight="medium"
                     >
@@ -273,7 +274,7 @@ export function KeywordTable({
                     <PhooScoreBadge score={phooScore} />
                   </Td>
                   <Td borderColor="transparent" py={3} isNumeric>
-                    <Text color="gray.600" fontSize="sm">
+                    <Text color={STUDIO_COLORS.secondaryText} fontSize="sm">
                       {kw.searchVolume !== null ? kw.searchVolume.toLocaleString() : '--'}
                     </Text>
                   </Td>
@@ -305,7 +306,7 @@ export function KeywordTable({
                         <MenuItem
                           icon={<FiLayers />}
                           fontSize="sm"
-                          color="gray.600"
+                          color={STUDIO_COLORS.secondaryText}
                           bg="transparent"
                           _hover={{ bg: 'gray.50', color: 'gray.800' }}
                           onClick={() => setClusterModalKeyword({ id: kw._id, text: kw.keyword })}
@@ -316,7 +317,7 @@ export function KeywordTable({
                         <MenuItem
                           icon={<FiTrash2 />}
                           fontSize="sm"
-                          color="#ef4444"
+                          color={STUDIO_COLORS.danger}
                           bg="transparent"
                           _hover={{ bg: 'rgba(239,68,68,0.1)' }}
                           onClick={() => onDelete?.([kw._id])}
@@ -348,7 +349,7 @@ export function KeywordTable({
             <AlertDialogHeader fontSize="lg" fontWeight="bold" color="gray.800">
               Delete {selectedIds.length} Keyword{selectedIds.length > 1 ? 's' : ''}
             </AlertDialogHeader>
-            <AlertDialogBody color="gray.600">
+            <AlertDialogBody color={STUDIO_COLORS.secondaryText}>
               This action cannot be undone. The selected keywords will be permanently removed from
               your library.
             </AlertDialogBody>
@@ -363,7 +364,7 @@ export function KeywordTable({
                 Cancel
               </Button>
               <Button
-                bg="#ef4444"
+                bg={STUDIO_COLORS.danger}
                 color="white"
                 _hover={{ bg: '#dc2626' }}
                 onClick={handleBulkDelete}
@@ -390,7 +391,7 @@ function DifficultyBadge({ difficulty }: { difficulty: number | null }) {
   }
 
   const label = difficulty <= 30 ? 'Easy' : difficulty <= 60 ? 'Medium' : 'Hard';
-  const color = difficulty <= 30 ? '#22C55E' : difficulty <= 60 ? '#F7941E' : '#EF4444';
+  const color = difficulty <= 30 ? '#22C55E' : difficulty <= 60 ? STUDIO_COLORS.warning : STUDIO_COLORS.danger;
   const bg =
     difficulty <= 30
       ? 'rgba(34, 197, 94, 0.15)'
@@ -438,7 +439,7 @@ function RankChangeCell({ position, change }: { position: number | null; change:
   if (change === null || change === 0) {
     return (
       <HStack spacing={1} justify="flex-end">
-        <Text color="gray.600" fontSize="sm">
+        <Text color={STUDIO_COLORS.secondaryText} fontSize="sm">
           {posStr}
         </Text>
       </HStack>
@@ -447,12 +448,12 @@ function RankChangeCell({ position, change }: { position: number | null; change:
 
   const improved = change < 0;
   const absChange = Math.abs(Math.round(change));
-  const color = improved ? '#34d399' : '#ef4444';
+  const color = improved ? '#34d399' : STUDIO_COLORS.danger;
   const arrow = improved ? '\u2191' : '\u2193';
 
   return (
     <HStack spacing={1.5} justify="flex-end">
-      <Text color="gray.600" fontSize="sm">
+      <Text color={STUDIO_COLORS.secondaryText} fontSize="sm">
         {posStr}
       </Text>
       <Badge

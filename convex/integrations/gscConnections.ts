@@ -55,6 +55,7 @@ export const upsertGSCConnection = mutation({
       accessToken: encryptedAccessToken,
       refreshToken: encryptedRefreshToken,
       availableSites: args.availableSites,
+      status: 'active' as const,
       lastSync: Date.now(),
       updatedAt: Date.now(),
     };
@@ -123,6 +124,7 @@ export const upsertGSCConnectionInternal = internalMutation({
       accessToken: encryptedAccessToken,
       refreshToken: encryptedRefreshToken,
       availableSites: args.availableSites,
+      status: 'active' as const,
       lastSync: Date.now(),
       updatedAt: Date.now(),
     };
@@ -178,6 +180,7 @@ export const getGSCConnection = query({
       projectId: connection.projectId,
       siteUrl: connection.siteUrl,
       availableSites: connection.availableSites,
+      status: connection.status,
       lastSync: connection.lastSync,
       createdAt: connection.createdAt,
       updatedAt: connection.updatedAt,
@@ -199,6 +202,7 @@ export const getGSCConnectionInternal = internalQuery({
     // Decrypt tokens for use
     let finalAccessToken = connection.accessToken;
     let finalRefreshToken = connection.refreshToken;
+    let decryptionFailed = false;
 
     try {
       if (connection.isEncrypted === true && connection.accessToken) {
@@ -212,12 +216,14 @@ export const getGSCConnectionInternal = internalQuery({
       // We will let it flow back to caller which will trigger a re-auth if token is invalid
       finalAccessToken = '';
       finalRefreshToken = undefined;
+      decryptionFailed = true;
     }
 
     return {
       ...connection,
       accessToken: finalAccessToken,
       refreshToken: finalRefreshToken,
+      decryptionFailed,
     };
   },
 });
@@ -230,6 +236,20 @@ export const updateLastSync = internalMutation({
   handler: async (ctx, args) => {
     return await ctx.db.patch(args.connectionId, {
       lastSync: Date.now(),
+      status: 'active', // Ensure it is marked active upon successful sync
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// Mark connection as invalid due to decryption or API failure
+export const markConnectionInvalid = internalMutation({
+  args: {
+    connectionId: v.id('gscConnections'),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.patch(args.connectionId, {
+      status: 'invalid',
       updatedAt: Date.now(),
     });
   },

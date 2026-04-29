@@ -57,6 +57,16 @@ export const syncProjectData = internalAction({
       }
     );
 
+    // Mark GA4 connection invalid if decryption failed
+    if (ga4ConnectionRaw && ga4ConnectionRaw.decryptionFailed) {
+      await ctx.runMutation(internal.integrations.ga4Connections.markConnectionInvalid, { connectionId: ga4ConnectionRaw._id });
+    }
+
+    // Mark GSC connection invalid if decryption failed
+    if (gscConnectionRaw && gscConnectionRaw.decryptionFailed) {
+      await ctx.runMutation(internal.integrations.gscConnections.markConnectionInvalid, { connectionId: gscConnectionRaw._id });
+    }
+
     // Guard: Skip connections that are still awaiting user property/site selection
     const ga4Connection = ga4ConnectionRaw?.propertyId === PENDING_SELECTION
       ? (() => { console.warn(`[Sync Guard] Skipping GA4 for ${projectId}: property selection pending`); return null; })()

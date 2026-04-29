@@ -120,6 +120,7 @@ export const createApiKey = mutation({
       permissions: args.permissions as Permission[],
       isActive: true,
       usageCount: 0,
+      windowUsageCount: 0,
       expiresAt,
       createdAt: now,
     });
@@ -310,30 +311,26 @@ export const checkApiRateLimit = mutation({
     // For a proper implementation, we'd use a separate rate limit table
     // For now, we'll do a simple check based on usageCount per minute
 
-    // Calculate window start
-    const windowStart = now - windowMs;
-
-    // Check if we're in a new window (last used was before window start)
-    const isNewWindow = !apiKey.lastUsedAt || apiKey.lastUsedAt < windowStart;
+    // Check if we're in a new window based on windowStartAt
+    const isNewWindow = !apiKey.windowStartAt || apiKey.windowStartAt < now - windowMs;
 
     // Get current count in this window
-    // For simplicity, we'll reset usageCount if in new window
-    let currentCount = isNewWindow ? 0 : apiKey.usageCount;
+    let currentCount = isNewWindow ? 0 : (apiKey.windowUsageCount || 0);
 
     // Calculate remaining
     const remaining = Math.max(0, limit - currentCount - 1);
     const allowed = currentCount < limit;
 
     // Calculate reset time (end of current window)
-    const resetAt = Math.floor((now + windowMs) / 1000); // Unix timestamp in seconds
+    const currentWindowStart = isNewWindow ? now : (apiKey.windowStartAt || now);
+    const resetAt = Math.floor((currentWindowStart + windowMs) / 1000); // Unix timestamp in seconds
 
-    // Update tracking
-    if (allowed) {
-      await ctx.db.patch(args.keyId, {
-        lastUsedAt: now,
-        usageCount: isNewWindow ? 1 : currentCount + 1,
-      });
-    }
+    // Update tracking ALWAYS to ensure windowStartAt is persisted even if blocked
+    await ctx.db.patch(args.keyId, {
+      lastUsedAt: allowed ? now : apiKey.lastUsedAt,
+      windowStartAt: currentWindowStart,
+      windowUsageCount: isNewWindow ? (allowed ? 1 : 0) : (allowed ? currentCount + 1 : currentCount),
+    });
 
     return {
       allowed,

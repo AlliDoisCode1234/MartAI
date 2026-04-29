@@ -29,6 +29,7 @@ import { useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useProjectContext } from '@/src/providers/ProjectProvider';
 import { Id } from '@/convex/_generated/dataModel';
+import { STUDIO_COLORS } from '@/lib/constants/studioTokens';
 
 export function KeywordImport() {
   const { projectId } = useProjectContext();
@@ -183,10 +184,10 @@ export function KeywordImport() {
   return (
     <VStack spacing={8} align="stretch">
       <Box>
-        <Heading size="md" color="white" mb={2}>
+        <Heading size="md" color="gray.800" mb={2}>
           Import Keywords
         </Heading>
-        <Text color="gray.500">
+        <Text color="gray.600">
           {isGscConnected
             ? 'Sync keywords from your connected Google Search Console or upload a CSV file.'
             : 'Connect Google Search Console for real search data, or upload a CSV file.'}
@@ -196,14 +197,16 @@ export function KeywordImport() {
       <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
         {/* GSC Import — connection-aware */}
         <Box
-          bg={isGscConnected ? 'rgba(52,211,153,0.04)' : 'rgba(255,255,255,0.03)'}
+          bg={isGscConnected ? STUDIO_COLORS.successBg : 'white'}
           p={6}
           borderRadius="16px"
-          border={
-            isGscConnected ? '1px solid rgba(52,211,153,0.2)' : '1px solid rgba(255,255,255,0.1)'
+          border="1px solid"
+          borderColor={
+            isGscConnected ? STUDIO_COLORS.green : 'gray.200'
           }
-          _hover={{ borderColor: isGscConnected ? '#34d399' : '#FF9D00', cursor: 'pointer' }}
+          _hover={{ borderColor: isGscConnected ? STUDIO_COLORS.greenDark : STUDIO_COLORS.amber, cursor: 'pointer' }}
           transition="all 0.2s"
+          boxShadow="sm"
         >
           <VStack spacing={4} align="start">
             <HStack spacing={3} w="100%" justify="space-between">
@@ -225,10 +228,10 @@ export function KeywordImport() {
                 </Badge>
               )}
             </HStack>
-            <Heading size="sm" color="white">
+            <Heading size="sm" color="gray.800">
               Google Search Console
             </Heading>
-            <Text color="gray.500" fontSize="sm">
+            <Text color="gray.600" fontSize="sm">
               {isGscConnected
                 ? `Connected to ${gscConnection.siteUrl}. Sync to pull your latest keywords with real impressions and click data.`
                 : 'Connect your GSC account to import keywords with real search data, impressions, and click metrics.'}
@@ -263,19 +266,21 @@ export function KeywordImport() {
 
         {/* CSV Upload */}
         <Box
-          bg="rgba(255,255,255,0.03)"
+          bg="white"
           p={6}
           borderRadius="16px"
-          border="1px solid rgba(255,255,255,0.1)"
-          _hover={{ borderColor: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}
+          border="1px solid"
+          borderColor="gray.200"
+          _hover={{ borderColor: STUDIO_COLORS.amber, cursor: 'pointer' }}
           transition="all 0.2s"
+          boxShadow="sm"
         >
           <VStack spacing={4} align="start">
-            <Icon as={FiUpload} boxSize={8} color="gray.400" />
-            <Heading size="sm" color="white">
+            <Icon as={FiUpload} boxSize={8} color={STUDIO_COLORS.amber} />
+            <Heading size="sm" color="gray.800">
               Upload CSV
             </Heading>
-            <Text color="gray.500" fontSize="sm">
+            <Text color="gray.600" fontSize="sm">
               Import a list of keywords from a CSV file. Include columns for keyword, volume, and
               difficulty.
             </Text>
@@ -288,9 +293,9 @@ export function KeywordImport() {
             />
             <Button
               leftIcon={isUploadingCsv ? <Spinner size="xs" /> : <FiUpload />}
-              bg="rgba(255,255,255,0.1)"
-              color="white"
-              _hover={{ bg: 'rgba(255,255,255,0.15)' }}
+              bg="gray.100"
+              color="gray.700"
+              _hover={{ bg: 'gray.200' }}
               size="sm"
               isDisabled={isUploadingCsv}
               onClick={() => fileInputRef.current?.click()}
@@ -302,19 +307,21 @@ export function KeywordImport() {
 
         {/* AI Discovery */}
         <Box
-          bg="rgba(167,139,250,0.04)"
+          bg="white"
           p={6}
           borderRadius="16px"
-          border="1px solid rgba(167,139,250,0.15)"
-          _hover={{ borderColor: '#a78bfa', cursor: 'pointer' }}
+          border="1px solid"
+          borderColor="gray.200"
+          _hover={{ borderColor: STUDIO_COLORS.purple, cursor: 'pointer' }}
           transition="all 0.2s"
+          boxShadow="sm"
         >
           <VStack spacing={4} align="start">
-            <Icon as={FiRefreshCw} boxSize={8} color="#a78bfa" />
-            <Heading size="sm" color="white">
+            <Icon as={FiRefreshCw} boxSize={8} color={STUDIO_COLORS.purple} />
+            <Heading size="sm" color="gray.800">
               AI Keyword Discovery
             </Heading>
-            <Text color="gray.500" fontSize="sm">
+            <Text color="gray.600" fontSize="sm">
               Let AI analyze your website and industry to discover high-value keywords
               automatically.
             </Text>

@@ -557,6 +557,12 @@ async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
       modify: async () => isAdmin,
     },
 
+    // Semantic Keyword Cache
+    semanticKeywords: {
+      read: async () => isAdmin,
+      modify: async () => isAdmin,
+    },
+
     // Stripe Webhook Idempotency Reference Table
     stripeProcessedEvents: {
       read: async () => isAdmin,

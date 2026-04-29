@@ -278,6 +278,8 @@ export default defineSchema({
     gscImpressions: v.optional(v.number()),
     gscCtr: v.optional(v.number()),
     gscLastUpdated: v.optional(v.number()),
+    // Added for DataForSEO enrichment tracking
+    metricsLastUpdated: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index('by_project', ['projectId'])
@@ -286,7 +288,8 @@ export default defineSchema({
     .index('by_project_source', ['projectId', 'source'])
     .index('by_project_phase', ['projectId', 'phase'])
     .index('by_project_keyword', ['projectId', 'keyword'])
-    .index('by_project_cluster', ['projectId', 'clusterId']),
+    .index('by_project_cluster', ['projectId', 'clusterId'])
+    .index('by_metrics_updated', ['metricsLastUpdated']),
 
 
 
@@ -374,6 +377,21 @@ export default defineSchema({
     .index('by_prospect', ['prospectId'])
     .index('by_project', ['projectId'])
     .index('by_status', ['status']),
+
+  // Semantic Keyword Cache
+  // Global intelligence layer cache for DataForSEO metrics to reduce API spend.
+  semanticKeywords: defineTable({
+    keyword: v.string(), // Normalized lowercase keyword
+    searchVolume: v.optional(v.number()),
+    difficulty: v.optional(v.number()), // 0-100 logarithmic from bulk_keyword_difficulty
+    cpc: v.optional(v.number()),
+    competition: v.optional(v.string()), // HIGH, MEDIUM, LOW
+    intent: v.optional(v.string()),
+    expiresAt: v.number(), // TTL timestamp (e.g. 30 days)
+    updatedAt: v.number(),
+  })
+    .index('by_keyword', ['keyword'])
+    .index('by_expiry', ['expiresAt']),
 
   keywordIdeas: defineTable({
     prospectId: v.optional(v.id('prospects')),
@@ -582,6 +600,7 @@ export default defineSchema({
       )
     ),
     // Metadata
+    status: v.optional(v.union(v.literal('active'), v.literal('invalid'))),
     lastSync: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -604,6 +623,7 @@ export default defineSchema({
         })
       )
     ),
+    status: v.optional(v.union(v.literal('active'), v.literal('invalid'))),
     lastSync: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -1309,7 +1329,9 @@ export default defineSchema({
     // Usage & Status
     isActive: v.boolean(),
     lastUsedAt: v.optional(v.number()),
-    usageCount: v.number(),
+    usageCount: v.number(), // Cumulative lifetime usage
+    windowUsageCount: v.optional(v.number()), // Current rate-limit window usage
+    windowStartAt: v.optional(v.number()), // When the current rate-limit window started
     // Expiration
     expiresAt: v.optional(v.number()),
     // Timestamps
