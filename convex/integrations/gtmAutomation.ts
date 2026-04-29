@@ -162,6 +162,8 @@ export const listUserContainers = action({
 });
 
 const GTM_API_BASE = 'https://tagmanager.googleapis.com/tagmanager/v2/accounts';
+// Root URL for resolving relative paths returned by the GTM API
+const GTM_API_ROOT = 'https://tagmanager.googleapis.com/tagmanager/v2';
 
 /**
  * Automate GTM Setup:
@@ -270,7 +272,7 @@ export const provisionTenantContainer = internalAction({
         );
         if (!workspacesRes.ok) throw new Error('GTM_WORKSPACES_ERROR');
         const workspacesData = await workspacesRes.json();
-        workspacePath = workspacesData.workspace[0].path;
+        workspacePath = `${GTM_API_ROOT}/${workspacesData.workspace[0].path}`;
         workspaceId = workspacesData.workspace[0].workspaceId;
 
         // Check existing tags and triggers for idempotency
@@ -357,7 +359,7 @@ export const provisionTenantContainer = internalAction({
         }
 
         const workspacesData = await workspacesRes.json();
-        workspacePath = workspacesData.workspace[0].path;
+        workspacePath = `${GTM_API_ROOT}/${workspacesData.workspace[0].path}`;
         workspaceId = workspacesData.workspace[0].workspaceId;
       }
 
