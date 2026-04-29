@@ -346,8 +346,18 @@ export const serverExchangeAndSave = action({
   ): Promise<{ ga4Saved: boolean; gscSaved: boolean; gscSiteCount: number; type?: string }> => {
     // Gate 1: Validate server-to-server shared secret
     const expectedSecret = process.env.CONVEX_SERVER_SECRET;
-    if (!expectedSecret || args.serverSecret !== expectedSecret) {
-      console.error('[GoogleOAuth][Convex] serverExchangeAndSave: Invalid server secret');
+    if (!expectedSecret) {
+      console.error(
+        '[GoogleOAuth][Convex] serverExchangeAndSave: CONVEX_SERVER_SECRET env var is not configured'
+      );
+      throw new Error('Unauthorized: Invalid server credentials');
+    }
+    if (args.serverSecret !== expectedSecret) {
+      console.error(
+        '[GoogleOAuth][Convex] serverExchangeAndSave: Server secret mismatch.',
+        `Caller provided: ${args.serverSecret ? 'yes' : 'empty'}.`,
+        'Verify CONVEX_SERVER_SECRET is identical in both Vercel and Convex environments.'
+      );
       throw new Error('Unauthorized: Invalid server credentials');
     }
 

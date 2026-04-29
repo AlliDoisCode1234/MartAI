@@ -204,6 +204,9 @@ These personas act as historical anchors, representing definitive architectural 
 #### Context Node 00019 (docs/personas/bot_persona_GTM_OAUTH_ZOMBIE_CLEANUP_00019_PERSONA.md)
 - Ask: "What decisions were made regarding GTM OAuth Pre-Authorization, token-only refreshes, and the purging of Zombie API routes?"
 
+#### Context Node 00020 (docs/personas/bot_persona_PIPELINE_HARDENING_00020_PERSONA.md)
+- Ask: "What decisions were made regarding prompt injection resilience, analytics pure functions, and mutation determinism in the Phoo Coach pipeline?"
+
 ---
 
 ## Consultation Process
